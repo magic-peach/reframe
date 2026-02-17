@@ -53,6 +53,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           onChange={(e) => handleSpeedSlider(Number(e.target.value))}
           className="w-full accent-violet-500"
         />
+        {/* tick marks under the slider */}
         <div className="flex justify-between mt-1">
           {SPEED_STEPS.map((s) => (
             <span key={s} className="text-[9px] text-gray-400">{s}×</span>
