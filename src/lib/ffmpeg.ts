@@ -68,11 +68,11 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
   return filters.join(",");
 }
 
-// Builds the -af (audio filter) string. atempo is limited to 0.5–2.0 so
-// we chain it for extreme values (0.25x or 4x)
+// atempo filter only accepts values between 0.5 and 2.0 — chain it for extremes
 function buildAudioFilter(speed: number): string {
   if (speed === 1) return "";
 
+  // 0.25x = 0.5 * 0.5, 4x = 2.0 * 2.0
   if (speed === 0.25) return "atempo=0.5,atempo=0.5";
   if (speed === 4) return "atempo=2.0,atempo=2.0";
 
