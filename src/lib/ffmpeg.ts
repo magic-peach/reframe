@@ -30,8 +30,9 @@ export async function loadFFmpeg(): Promise<FFmpeg> {
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
 
-  // Trim: cut the video first before scaling
+  // trim first so scale/crop operates on the already-cut footage
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
+    // use a very large number as "end of file" when the user doesn't set an end time
     const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
     filters.push(`trim=start=${recipe.trimStart}:end=${end}`);
     filters.push("setpts=PTS-STARTPTS"); // reset timestamps after trim
