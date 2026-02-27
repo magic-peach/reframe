@@ -8,14 +8,29 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        display: ["var(--font-display)", "sans-serif"],
+        heading: ["var(--font-heading)", "sans-serif"],
+        sans: ["var(--font-body)", "DM Sans", "sans-serif"],
+      },
       colors: {
-        primary: {
-          50: "#f5f3ff",
-          100: "#ede9fe",
-          500: "#8b5cf6",
-          600: "#7c3aed",
-          700: "#6d28d9",
+        // film red — the brand accent
+        film: {
+          50:  "#fef2f3",
+          100: "#fee2e5",
+          200: "#fecad0",
+          300: "#fca5ae",
+          400: "#f87384",
+          500: "#ef4455",
+          600: "#e63946",
+          700: "#c42030",
+          800: "#a41828",
+          900: "#891726",
         },
+      },
+      letterSpacing: {
+        tightest: "-0.04em",
+        widest2: "0.2em",
       },
     },
   },

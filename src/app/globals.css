@@ -2,8 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-/* smooth font rendering on mac */
+:root {
+  --bg: #F7F4F0;
+  --surface: #ffffff;
+  --border: #E8E3DC;
+  --text: #181412;
+  --muted: #7C756F;
+  --accent: #e63946;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body), "DM Sans", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* subtle paper-grain texture on the background */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 300px 300px;
+}
+
+/* ensure content sits above the grain layer */
+#__next, main, [data-nextjs-scroll-focus-boundary] {
+  position: relative;
+  z-index: 1;
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display), sans-serif;
+  }
+  .font-heading {
+    font-family: var(--font-heading), sans-serif;
+  }
 }
