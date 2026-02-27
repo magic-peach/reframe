@@ -1,5 +1,5 @@
 {
-  "name": "video-editor",
+  "name": "reframe",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,6 +11,8 @@
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@ffmpeg/util": "^0.12.2",
+    "lottie-react": "^2.4.0",
+    "lottie-web": "^5.12.2",
     "lucide-react": "^0.469.0",
     "next": "^15.1.8",
     "react": "^19.0.0",
