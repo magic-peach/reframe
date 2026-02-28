@@ -17,7 +17,6 @@ export default function DownloadResult({ result, onReset }: Props) {
   return (
     <div className="p-5 bg-[var(--surface)] border border-[var(--border)] rounded-xl space-y-4">
       <div className="flex items-center gap-4">
-        {/* lottie success checkmark - play once, don't loop */}
         <div className="w-12 h-12 shrink-0">
           <LottiePlayer animationData={successAnim} loop={false} autoplay />
         </div>
@@ -30,7 +29,7 @@ export default function DownloadResult({ result, onReset }: Props) {
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">Resolution</p>
-          <p className="font-heading font-bold text-[var(--text)]">{result.width} × {result.height}</p>
+          <p className="font-heading font-bold text-[var(--text)]">{result.width} x {result.height}</p>
         </div>
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">File size</p>
@@ -38,18 +37,11 @@ export default function DownloadResult({ result, onReset }: Props) {
         </div>
       </div>
 
-      {result.format === "webm" && (
-        <p className="text-xs text-amber-700 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
-          H.264 not available in this ffmpeg build. Output is WebM (VP9).
-          Works in Chrome and Firefox; older iOS Safari may not support it.
-        </p>
-      )}
-
       <div className="flex gap-2">
         <a
           href={result.blobUrl}
           download={filename}
-          className="flex-1 flex items-center justify-center gap-2 py-3 bg-film-600 hover:bg-film-700 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 py-3 bg-film-600 hover:bg-film-700 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
         >
           <Download size={15} />
           Download {result.format.toUpperCase()}

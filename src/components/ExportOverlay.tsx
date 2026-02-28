@@ -16,11 +16,9 @@ export default function ExportOverlay({ status, progress }: Props) {
   const isLoading = status === "loading-engine";
 
   return (
-    // full-screen fixed overlay blocks all interaction while ffmpeg runs
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm">
-      <div className="text-center space-y-6 max-w-xs px-6">
+      <div className="text-center space-y-6 max-w-xs px-6 animate-fade-in">
 
-        {/* lottie spinner */}
         <div className="mx-auto w-20 h-20">
           <LottiePlayer animationData={spinnerAnim} loop autoplay />
         </div>
@@ -31,8 +29,8 @@ export default function ExportOverlay({ status, progress }: Props) {
           </h2>
           <p className="text-sm text-[var(--muted)] mt-1">
             {isLoading
-              ? "Downloading ffmpeg core (~30 MB). One-time only."
-              : "Processing your video in the browser."}
+              ? "Setting up the video engine. This only happens once."
+              : "Processing your video locally."}
           </p>
           <p className="text-xs font-heading font-semibold text-film-600 mt-2 uppercase tracking-wide">
             Do not close or refresh this tab
@@ -52,10 +50,6 @@ export default function ExportOverlay({ status, progress }: Props) {
             </p>
           </div>
         )}
-
-        <p className="text-xs text-[var(--muted)]">
-          Everything stays on your device. No uploads, no servers.
-        </p>
       </div>
     </div>
   );

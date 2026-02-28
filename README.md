@@ -1,26 +1,28 @@
-# Video Editor
+# Reframe
 
-a browser-based video editor built with Next.js and ffmpeg.wasm. everything runs locally — no uploads, no server, no tracking.
+a free, open-source video editor that runs entirely in your browser. no login, no uploads, no ads, no server. your video never leaves your device.
 
 ## features
 
-- resize to any social media preset (reels, tiktok, youtube, instagram feed, etc.)
+- resize to any social media preset (reels, tiktok, youtube, instagram feed, panoramic, etc)
 - fit (letterbox) or fill (crop) framing
-- trim start/end times
-- rotate 0/90/180/270°
+- trim start and end times with duration validation
+- rotate 0 / 90 / 180 / 270 degrees
 - mute or keep audio
-- playback speed from 0.25× to 4×
-- quality control (CRF 18–30)
-- exports as MP4 (H.264), falls back to WebM if unsupported
+- playback speed from 0.25x to 4x
+- quality control (CRF 18-30)
+- lottie animations for upload, processing, and export states
 
-## stack
+## tech stack
 
-- **Next.js 15** with App Router, static export
-- **Tailwind CSS** for styling
-- **ffmpeg.wasm** (`@ffmpeg/ffmpeg` + `@ffmpeg/core`) for in-browser video processing
-- **Lucide React** for icons
+- **next.js 15** with app router and static export
+- **tailwind css** with custom film-red theme
+- **ffmpeg.wasm** for in-browser video processing (single-threaded, no SharedArrayBuffer needed)
+- **lottie-web** for micro animations
+- **lucide react** for icons
+- **bebas neue + syne + dm sans** typography
 
-## running locally
+## getting started
 
 ```bash
 bun install
@@ -29,26 +31,25 @@ bun dev
 
 open [http://localhost:3000](http://localhost:3000)
 
-## building for deployment
+## build
 
 ```bash
 bun run build
 ```
 
-this outputs a fully static site to the `out/` folder. deploy it anywhere:
-
-- **Vercel** — drag and drop the `out/` folder, or connect the repo
-- **Cloudflare Pages** — connect repo, set build command to `bun run build`, output to `out`
-- **GitHub Pages** — push the `out/` folder contents to `gh-pages` branch
-- **Netlify** — connect repo, build command `bun run build`, publish dir `out`
+outputs a fully static site to `out/`. deploy it anywhere — vercel, cloudflare pages, github pages, netlify.
 
 ## known limitations
 
 - large files (500MB+) or very long videos (30+ min) can be slow or crash the tab
-- processing runs on the main thread — the tab will be unresponsive during export
-- uses single-threaded ffmpeg core for maximum compatibility (no SharedArrayBuffer needed)
+- processing runs on the main thread so the tab freezes during export
+- single-threaded ffmpeg core for maximum compatibility
 - no preview of the output before exporting
 
 ## how it works
 
-when you click "Export video", it lazily downloads the ffmpeg WebAssembly engine (~30 MB) from jsdelivr CDN on first use. your video file is written to an in-memory virtual filesystem, processed with the filters you selected, and the output is read back as a Blob URL for download. nothing leaves your device.
+when you click export, the app lazily downloads the ffmpeg webassembly engine from cdn on first use. your video file is written to an in-memory filesystem, processed with the selected filters, and the output is read back as a blob url for download. nothing leaves your device.
+
+## license
+
+mit

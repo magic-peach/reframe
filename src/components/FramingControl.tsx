@@ -19,7 +19,8 @@ export default function FramingControl({ recipe, onChange }: Props) {
             key={mode}
             onClick={() => onChange({ framing: mode })}
             className={`
-              flex-1 flex flex-col items-center gap-2 py-4 rounded-lg border transition-all
+              flex-1 flex flex-col items-center gap-2 py-4 rounded-lg border transition-all duration-150
+              hover:scale-[1.02] active:scale-[0.98]
               ${active
                 ? "border-film-500 bg-film-50 text-film-700"
                 : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"

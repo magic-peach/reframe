@@ -1,17 +1,14 @@
-// the "edit recipe" holds all the user's settings before they export.
-// keeping it as a plain object makes it easy to pass around and reset.
-
 export interface EditRecipe {
   preset: string;
   customWidth: number;
   customHeight: number;
   framing: "fit" | "fill";
   trimStart: number;
-  trimEnd: number | null; // null means don't trim the end
+  trimEnd: number | null;
   rotate: 0 | 90 | 180 | 270;
   keepAudio: boolean;
   speed: number;
-  quality: number; // CRF 18-30
+  quality: number;
 }
 
 export interface ExportResult {

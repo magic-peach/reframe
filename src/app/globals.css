@@ -23,7 +23,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* subtle paper-grain texture on the background */
 body::before {
   content: "";
   position: fixed;
@@ -35,10 +34,14 @@ body::before {
   background-size: 300px 300px;
 }
 
-/* ensure content sits above the grain layer */
 #__next, main, [data-nextjs-scroll-focus-boundary] {
   position: relative;
   z-index: 1;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @layer utilities {
@@ -47,5 +50,8 @@ body::before {
   }
   .font-heading {
     font-family: var(--font-heading), sans-serif;
+  }
+  .animate-fade-in {
+    animation: fade-in 0.4s ease-out both;
   }
 }

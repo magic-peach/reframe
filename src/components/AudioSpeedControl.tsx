@@ -16,7 +16,8 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       <button
         onClick={() => onChange({ keepAudio: !recipe.keepAudio })}
         className={`
-          w-full flex items-center gap-3 p-3 rounded-lg border transition-all
+          w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150
+          hover:scale-[1.01] active:scale-[0.99]
           ${recipe.keepAudio
             ? "border-film-300 bg-film-50 text-film-700"
             : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
@@ -25,7 +26,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       >
         {recipe.keepAudio ? <Volume2 size={16} /> : <VolumeX size={16} />}
         <span className="text-sm font-heading font-semibold">
-          {recipe.keepAudio ? "Audio on" : "Muted output"}
+          {recipe.keepAudio ? "Audio on" : "Muted"}
         </span>
       </button>
 
@@ -35,7 +36,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             <Gauge size={10} /> Speed
           </label>
           <span className="text-sm font-heading font-bold text-film-600">
-            {recipe.speed}×
+            {recipe.speed}x
           </span>
         </div>
         <input
@@ -47,10 +48,9 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
           className="w-full accent-film-600"
         />
-        {/* tick marks under the slider */}
         <div className="flex justify-between mt-1">
           {SPEED_STEPS.map((s) => (
-            <span key={s} className="text-[9px] text-[var(--muted)]">{s}×</span>
+            <span key={s} className="text-[9px] text-[var(--muted)]">{s}x</span>
           ))}
         </div>
       </div>

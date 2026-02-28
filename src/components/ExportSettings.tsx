@@ -9,7 +9,6 @@ interface Props {
 }
 
 export default function ExportSettings({ recipe, onChange }: Props) {
-  // crf: lower = better quality, bigger file
   const label = recipe.quality <= 20 ? "High" : recipe.quality <= 24 ? "Balanced" : "Small file";
 
   return (
@@ -36,10 +35,6 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         <span className="text-[10px] text-[var(--muted)]">Best quality</span>
         <span className="text-[10px] text-[var(--muted)]">Smallest file</span>
       </div>
-
-      <p className="mt-3 text-xs text-[var(--muted)] bg-[var(--bg)] rounded-md p-2.5 border border-[var(--border)]">
-        Output will be <strong className="text-[var(--text)]">MP4 (H.264)</strong>, falling back to WebM if unsupported.
-      </p>
     </div>
   );
 }

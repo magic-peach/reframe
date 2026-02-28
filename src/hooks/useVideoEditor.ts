@@ -4,8 +4,26 @@ import { useState, useCallback } from "react";
 import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE } from "@/lib/types";
 import { loadFFmpeg, exportVideo } from "@/lib/ffmpeg";
 
+function getVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    const url = URL.createObjectURL(file);
+    video.src = url;
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      resolve(isFinite(video.duration) ? video.duration : 0);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(0);
+    };
+  });
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
+  const [duration, setDuration] = useState<number>(0);
   const [recipe, setRecipe] = useState<EditRecipe>(DEFAULT_RECIPE);
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
@@ -16,12 +34,15 @@ export function useVideoEditor() {
     setRecipe((prev) => ({ ...prev, ...patch }));
   }, []);
 
-  const handleFileSelect = useCallback((selectedFile: File) => {
+  const handleFileSelect = useCallback(async (selectedFile: File) => {
     setFile(selectedFile);
-    // Reset results when a new file is selected
     setResult(null);
     setStatus("idle");
     setError(null);
+    setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
+
+    const dur = await getVideoDuration(selectedFile);
+    setDuration(dur);
   }, []);
 
   const handleExport = useCallback(async () => {
@@ -34,21 +55,21 @@ export function useVideoEditor() {
       setResult(null);
 
       const ffmpeg = await loadFFmpeg();
-
       setStatus("exporting");
 
       const exportResult = await exportVideo(ffmpeg, file, recipe, setProgress);
       setResult(exportResult);
       setStatus("done");
     } catch (err) {
-      console.error("Export failed:", err);
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      console.error("export failed:", err);
+      setError(err instanceof Error ? err.message : "something went wrong");
       setStatus("error");
     }
   }, [file, recipe]);
 
   const reset = useCallback(() => {
     setFile(null);
+    setDuration(0);
     setRecipe(DEFAULT_RECIPE);
     setStatus("idle");
     setProgress(0);
@@ -58,6 +79,7 @@ export function useVideoEditor() {
 
   return {
     file,
+    duration,
     recipe,
     status,
     progress,

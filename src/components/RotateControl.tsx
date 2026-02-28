@@ -20,15 +20,16 @@ export default function RotateControl({ recipe, onChange }: Props) {
             key={deg}
             onClick={() => onChange({ rotate: deg })}
             className={`
-              flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg border text-xs transition-all
+              flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg border text-xs transition-all duration-150
+              hover:scale-[1.03] active:scale-[0.97]
               ${active
                 ? "border-film-500 bg-film-50 text-film-700 font-heading font-semibold"
                 : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
               }
             `}
           >
-            <RotateCw size={15} style={{ transform: `rotate(${deg}deg)` }} />
-            {deg}°
+            <RotateCw size={15} style={{ transform: `rotate(${deg}deg)` }} className="transition-transform" />
+            {deg}
           </button>
         );
       })}

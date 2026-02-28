@@ -10,8 +10,6 @@ interface Props {
   style?: React.CSSProperties;
 }
 
-// mounts lottie-web imperatively to avoid SSR issues and skip the
-// react wrapper's type complexity
 export default function LottiePlayer({
   animationData,
   loop = true,
@@ -23,13 +21,14 @@ export default function LottiePlayer({
 
   useEffect(() => {
     if (!containerRef.current) return;
+    let cancelled = false;
     let anim: { destroy: () => void } | null = null;
 
-    // dynamically import lottie-web (not lottie-react) to avoid SSR issues
     import("lottie-web").then((mod) => {
+      if (cancelled || !containerRef.current) return;
       const lottie = mod.default ?? mod;
       anim = lottie.loadAnimation({
-        container: containerRef.current!,
+        container: containerRef.current,
         renderer: "svg",
         loop,
         autoplay,
@@ -38,9 +37,9 @@ export default function LottiePlayer({
     });
 
     return () => {
+      cancelled = true;
       anim?.destroy();
     };
-  // we intentionally only run this once per mount
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

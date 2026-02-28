@@ -44,7 +44,7 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
         </div>
         <button
           onClick={() => inputRef.current?.click()}
-          className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0"
+          className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors"
         >
           Change
         </button>
@@ -72,13 +72,12 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
         group flex flex-col items-center justify-center gap-4 py-12 px-6
         border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200
         ${dragging
-          ? "border-film-500 bg-film-50"
+          ? "border-film-500 bg-film-50 scale-[1.01]"
           : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
         }
       `}
     >
-      {/* lottie upload animation */}
-      <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity">
+      <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-200">
         <LottiePlayer animationData={uploadAnim} loop autoplay />
       </div>
 
@@ -93,7 +92,7 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
 
       <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
         <FolderOpen size={14} />
-        MP4 · MOV · AVI · WebM
+        MP4 / MOV / AVI / WebM
       </div>
 
       <input
