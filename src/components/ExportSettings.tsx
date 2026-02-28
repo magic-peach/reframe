@@ -1,7 +1,7 @@
 "use client";
 
 import { EditRecipe } from "@/lib/types";
-import { Sliders } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 
 interface Props {
   recipe: EditRecipe;
@@ -9,18 +9,18 @@ interface Props {
 }
 
 export default function ExportSettings({ recipe, onChange }: Props) {
-  // crf: lower = better quality, bigger file. 18 is great, 30 is small but kinda bad
-  const qualityLabel =
-    recipe.quality <= 20 ? "High" : recipe.quality <= 24 ? "Balanced" : "Small file";
+  // crf: lower = better quality, bigger file
+  const label = recipe.quality <= 20 ? "High" : recipe.quality <= 24 ? "Balanced" : "Small file";
 
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-xs text-gray-500 flex items-center gap-1">
-          <Sliders size={12} /> Quality
+        <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+          <SlidersHorizontal size={10} /> Quality
         </label>
-        <span className="text-sm font-semibold text-violet-600">
-          {qualityLabel} <span className="text-gray-400 font-normal text-xs">(CRF {recipe.quality})</span>
+        <span className="text-sm font-heading font-bold text-film-600">
+          {label}
+          <span className="font-normal text-xs text-[var(--muted)] ml-1">CRF {recipe.quality}</span>
         </span>
       </div>
       <input
@@ -30,16 +30,15 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         step={1}
         value={recipe.quality}
         onChange={(e) => onChange({ quality: Number(e.target.value) })}
-        className="w-full accent-violet-500"
+        className="w-full accent-film-600"
       />
       <div className="flex justify-between mt-1">
-        <span className="text-[10px] text-gray-400">Best quality</span>
-        <span className="text-[10px] text-gray-400">Smallest size</span>
+        <span className="text-[10px] text-[var(--muted)]">Best quality</span>
+        <span className="text-[10px] text-[var(--muted)]">Smallest file</span>
       </div>
 
-      {/* let the user know what format to expect */}
-      <p className="mt-3 text-xs text-gray-400 bg-gray-50 rounded-lg p-2.5">
-        📦 Output will be <strong>MP4 (H.264)</strong>, falling back to WebM if unsupported.
+      <p className="mt-3 text-xs text-[var(--muted)] bg-[var(--bg)] rounded-md p-2.5 border border-[var(--border)]">
+        Output will be <strong className="text-[var(--text)]">MP4 (H.264)</strong>, falling back to WebM if unsupported.
       </p>
     </div>
   );

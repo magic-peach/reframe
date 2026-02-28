@@ -13,15 +13,11 @@ export default function VideoPreview({ file }: Props) {
   useEffect(() => {
     if (!file) return;
 
-    // Revoke the previous object URL to avoid memory leaks
+    // revoke previous object url to avoid memory leaks
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-
     const url = URL.createObjectURL(file);
     urlRef.current = url;
-
-    if (videoRef.current) {
-      videoRef.current.src = url;
-    }
+    if (videoRef.current) videoRef.current.src = url;
 
     return () => {
       if (urlRef.current) URL.revokeObjectURL(urlRef.current);
@@ -31,7 +27,7 @@ export default function VideoPreview({ file }: Props) {
   if (!file) return null;
 
   return (
-    <div className="relative w-full rounded-xl overflow-hidden bg-black aspect-video">
+    <div className="w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video">
       <video
         ref={videoRef}
         controls

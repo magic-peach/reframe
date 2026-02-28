@@ -1,6 +1,8 @@
 "use client";
 
 import { ExportStatus } from "@/lib/types";
+import LottiePlayer from "./LottiePlayer";
+import spinnerAnim from "@/lib/lottie/spinner.json";
 
 interface Props {
   status: ExportStatus;
@@ -8,43 +10,51 @@ interface Props {
 }
 
 export default function ExportOverlay({ status, progress }: Props) {
-  const isVisible = status === "loading-engine" || status === "exporting";
+  const visible = status === "loading-engine" || status === "exporting";
+  if (!visible) return null;
 
-  if (!isVisible) return null;
-
-  const message =
-    status === "loading-engine"
-      ? "Loading engine… (~30 MB, first time only)"
-      : "Exporting your video…";
+  const isLoading = status === "loading-engine";
 
   return (
-    // fixed overlay blocks all interaction while ffmpeg is running
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
-      <div className="text-center space-y-6 max-w-sm px-6">
-        {/* spinning ring */}
-        <div className="mx-auto w-16 h-16 rounded-full border-4 border-violet-100 border-t-violet-500 animate-spin" />
+    // full-screen fixed overlay blocks all interaction while ffmpeg runs
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm">
+      <div className="text-center space-y-6 max-w-xs px-6">
+
+        {/* lottie spinner */}
+        <div className="mx-auto w-20 h-20">
+          <LottiePlayer animationData={spinnerAnim} loop autoplay />
+        </div>
 
         <div>
-          <h2 className="text-lg font-semibold text-gray-800">{message}</h2>
-          <p className="text-sm text-red-500 mt-1 font-medium">
-            ⚠️ Do not close or refresh this tab
+          <h2 className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">
+            {isLoading ? "Loading engine" : "Exporting"}
+          </h2>
+          <p className="text-sm text-[var(--muted)] mt-1">
+            {isLoading
+              ? "Downloading ffmpeg core (~30 MB). One-time only."
+              : "Processing your video in the browser."}
+          </p>
+          <p className="text-xs font-heading font-semibold text-film-600 mt-2 uppercase tracking-wide">
+            Do not close or refresh this tab
           </p>
         </div>
 
         {status === "exporting" && (
           <div className="w-full space-y-2">
-            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-1 w-full bg-film-100 rounded-full overflow-hidden">
               <div
-                className="h-full bg-violet-500 rounded-full transition-all duration-300"
+                className="h-full bg-film-600 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <p className="text-xs text-gray-400">{progress}% done</p>
+            <p className="text-xs font-heading font-semibold text-[var(--muted)]">
+              {progress}%
+            </p>
           </div>
         )}
 
-        <p className="text-xs text-gray-400">
-          Processing happens entirely in your browser. No uploads, no servers.
+        <p className="text-xs text-[var(--muted)]">
+          Everything stays on your device. No uploads, no servers.
         </p>
       </div>
     </div>
