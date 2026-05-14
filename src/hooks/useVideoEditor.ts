@@ -54,6 +54,7 @@ export function useVideoEditor() {
       setStatus("loading-engine");
       setProgress(0);
       setError(null);
+      if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
       const ffmpeg = await loadFFmpeg();
@@ -67,7 +68,7 @@ export function useVideoEditor() {
       setError(err instanceof Error ? err.message : "something went wrong");
       setStatus("error");
     }
-  }, [file, recipe]);
+  }, [file, recipe, result]);
 
   useEffect(() => {
     if (file) {
@@ -98,7 +99,8 @@ export function useVideoEditor() {
       document.removeEventListener("keydown", handleKeydown);
     };
   }, [file, status, handleExport]);
-  const reset = useCallback(() => {
+const reset = useCallback(() => {
+    if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setFile(null);
     setDuration(0);
     setRecipe(DEFAULT_RECIPE);
@@ -106,7 +108,7 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
-  }, []);
+  }, [result]);
 
   return {
     file,
