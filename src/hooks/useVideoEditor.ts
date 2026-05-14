@@ -5,6 +5,7 @@ import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE } from "@/lib/ty
 import { loadFFmpeg, exportVideo } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
 function getVideoDuration(file: File): Promise<number> {
   return new Promise((resolve) => {
@@ -37,14 +38,36 @@ export function useVideoEditor() {
   }, []);
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
+
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setFile(null);
+      setDuration(0);
+      setResult(null);
+      setRecipe(DEFAULT_RECIPE);
+      setProgress(0);
+
+      setError(
+        `File too large. Please upload a video smaller than ${MAX_FILE_SIZE / (1024 * 1024)}MB.`
+      );
+
+      setStatus("error");
+      return;
+    }
+
     setFile(selectedFile);
     setResult(null);
     setStatus("idle");
     setError(null);
-    setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
+
+    setRecipe((prev) => ({
+      ...prev,
+      trimStart: 0,
+      trimEnd: null
+    }));
 
     const dur = await getVideoDuration(selectedFile);
     setDuration(dur);
+
   }, []);
 
   const handleExport = useCallback(async () => {
