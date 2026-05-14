@@ -81,14 +81,27 @@ Outputs a static site to `out/` — deploy to Vercel, Netlify, GitHub Pages, or 
 
 ## Deploying
 
-Reframe is a fully static app. Deploy the `out/` folder anywhere:
+Reframe uses static export (`output: 'export'`), so it can be deployed to any static hosting provider.
 
-| Platform             | Command                                                           |
-| -------------------- | ----------------------------------------------------------------- |
-| **Vercel**           | Connect your fork at [vercel.com/new](https://vercel.com/new)     |
-| **Netlify**          | Connect your fork at [netlify.com](https://app.netlify.com/start) |
-| **GitHub Pages**     | Push `out/` to `gh-pages` branch                                  |
-| **Cloudflare Pages** | Connect your fork in the Cloudflare dashboard                     |
+### Deploying to Vercel
+
+1. Fork this repository
+2. Go to https://vercel.com/new
+3. Import your forked repository
+4. Set the Framework Preset to **Next.js**
+5. Click **Deploy**
+
+After deployment, Vercel will automatically build and host the static output.
+
+### Alternative Static Hosts
+
+You can also deploy Reframe on other static hosting providers:
+
+| Platform             | Deployment Method                                           |
+| -------------------- | ----------------------------------------------------------- |
+| **Netlify**          | Connect your fork at https://app.netlify.com/start          |
+| **GitHub Pages**     | Deploy the generated `out/` folder to the `gh-pages` branch |
+| **Cloudflare Pages** | Connect your fork in Cloudflare Pages                       |
 
 ### Deploying to Netlify
 
