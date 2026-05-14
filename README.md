@@ -195,6 +195,7 @@ Thank you to everyone who has contributed to Reframe! 🎉
 
 [![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
 
+Want to contribute? Check the open issues and join the project 🚀
 ---
 
 ## Privacy
