@@ -31,6 +31,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${bebasNeue.variable} ${syne.variable} ${dmSans.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+      </head>
       <body>
         <header>
           <h1>Reframe</h1>
