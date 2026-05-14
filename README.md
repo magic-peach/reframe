@@ -84,32 +84,6 @@ Reframe is a fully static app. Deploy the `out/` folder anywhere:
 | **GitHub Pages** | Push `out/` to `gh-pages` branch |
 | **Cloudflare Pages** | Connect your fork in the Cloudflare dashboard |
 
-### Deploying to Netlify
-
-1. Push your fork to GitHub
-2. Open Netlify and import the repository
-3. Configure:
-   - Build command: `bun run build`
-   - Publish directory: `out`
-4. Deploy the site
-
-> Note: FFmpeg browser features may require proper CORS headers depending on hosting setup.
-
-### Deploying to GitHub Pages
-
-Build the static export:
-
-```bash
-bun run build
-```
-
-The production files will be generated in the `out/` directory.
-
-You can deploy the `out/` folder using:
-- GitHub Pages
-- `gh-pages` branch
-- GitHub Actions workflow
-
 ---
 
 ## How It Works
@@ -221,6 +195,7 @@ Thank you to everyone who has contributed to Reframe! 🎉
 
 [![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
 
+Want to contribute? Check the open issues and join the project 🚀
 ---
 
 ## Privacy
