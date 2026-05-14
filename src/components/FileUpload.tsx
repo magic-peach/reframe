@@ -37,8 +37,10 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
       <div className="flex items-center gap-3 px-4 py-3 bg-film-50 border border-film-200 rounded-lg">
         <Film size={18} className="text-film-600 shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium font-heading truncate text-[var(--text)]">
-            {currentFile.name}
+          <p className="text-sm font-medium font-heading text-[var(--text)]">
+            <span className="truncate max-w-[200px] block" title={currentFile.name}>
+              {currentFile.name}
+            </span>
           </p>
           <p className="text-xs text-[var(--muted)]">{fmt(currentFile.size)}</p>
         </div>
