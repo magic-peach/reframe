@@ -51,6 +51,8 @@ export default function DownloadResult({ result, onReset }: Props) {
         </a>
         <button
           type="button"
+          title="Reset and upload a new video"
+          aria-label="Upload a new video"
           onClick={onReset}
           className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
         >
