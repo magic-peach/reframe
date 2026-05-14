@@ -11,12 +11,9 @@ export default function Home() {
       >
         ⭐ Star on GitHub
       </a>
-      <VideoEditor />
-    </>
-  );
-}
-    <main>
+      <main>
       <VideoEditor />
     </main>
+    </>
   );
 }
