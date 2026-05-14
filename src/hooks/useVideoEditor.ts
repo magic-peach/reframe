@@ -36,7 +36,15 @@ export function useVideoEditor() {
     setRecipe((prev) => ({ ...prev, ...patch }));
   }, []);
 
-  const handleFileSelect = useCallback(async (selectedFile: File) => {
+  const handleFileSelect = useCallback(async (selectedFile: File | null) => {
+    if (!selectedFile) {
+      setFile(null);
+      setResult(null);
+      setStatus("idle");
+      setDuration(0);
+      return;
+    }
+
     setFile(selectedFile);
     setResult(null);
     setStatus("idle");
