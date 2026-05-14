@@ -2,7 +2,7 @@
 
 import { ExportStatus } from "@/lib/types";
 import LottiePlayer from "./LottiePlayer";
-import spinnerAnim from "@/lib/lottie/spinner.json";
+import trailLoadingAnim from "@/lib/lottie/trail-loading.json";
 
 interface Props {
   status: ExportStatus;
@@ -19,8 +19,8 @@ export default function ExportOverlay({ status, progress }: Props) {
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm">
       <div className="text-center space-y-6 max-w-xs px-6 animate-fade-in">
 
-        <div className="mx-auto w-20 h-20">
-          <LottiePlayer animationData={spinnerAnim} loop autoplay />
+        <div className="mx-auto w-32 h-32">
+          <LottiePlayer animationData={trailLoadingAnim} loop autoplay />
         </div>
 
         <div>
