@@ -11,11 +11,14 @@ function getVideoDuration(file: File): Promise<number> {
     const video = document.createElement("video");
     video.preload = "metadata";
     const url = URL.createObjectURL(file);
+
     video.src = url;
+
     video.onloadedmetadata = () => {
       URL.revokeObjectURL(url);
       resolve(isFinite(video.duration) ? video.duration : 0);
     };
+
     video.onerror = () => {
       URL.revokeObjectURL(url);
       resolve(0);
@@ -26,22 +29,59 @@ function getVideoDuration(file: File): Promise<number> {
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
-  const [recipe, setRecipe] = useState<EditRecipe>(DEFAULT_RECIPE);
+
+  const [history, setHistory] = useState<EditRecipe[]>([DEFAULT_RECIPE]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const recipe = history[historyIndex];
+
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-    setRecipe((prev) => ({ ...prev, ...patch }));
+    setHistory((prevHistory) => {
+      const trimmedHistory = prevHistory.slice(0, historyIndex + 1);
+
+      const newRecipe = {
+        ...trimmedHistory[historyIndex],
+        ...patch,
+      };
+
+      const updatedHistory = [...trimmedHistory, newRecipe];
+
+      return updatedHistory.length > 20
+        ? updatedHistory.slice(-20)
+        : updatedHistory;
+    });
+
+    setHistoryIndex((prev) => Math.min(prev + 1, 19));
+  }, [historyIndex]);
+
+  const undo = useCallback(() => {
+    setHistoryIndex((prev) => Math.max(0, prev - 1));
   }, []);
+
+  const redo = useCallback(() => {
+    setHistoryIndex((prev) => Math.min(history.length - 1, prev + 1));
+  }, [history.length]);
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
     setFile(selectedFile);
     setResult(null);
     setStatus("idle");
     setError(null);
-    setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
+
+    setHistory([
+      {
+        ...DEFAULT_RECIPE,
+        trimStart: 0,
+        trimEnd: null,
+      },
+    ]);
+
+    setHistoryIndex(0);
 
     const dur = await getVideoDuration(selectedFile);
     setDuration(dur);
@@ -60,6 +100,7 @@ export function useVideoEditor() {
       setStatus("exporting");
 
       const exportResult = await exportVideo(ffmpeg, file, recipe, setProgress);
+
       setResult(exportResult);
       setStatus("done");
     } catch (err) {
@@ -75,6 +116,7 @@ export function useVideoEditor() {
     } else {
       document.title = DEFAULT_TITLE;
     }
+
     return () => {
       document.title = DEFAULT_TITLE;
     };
@@ -82,13 +124,34 @@ export function useVideoEditor() {
 
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
+      const isModifier = e.ctrlKey || e.metaKey;
+
       if (
-        (e.ctrlKey || e.metaKey) &&
+        isModifier &&
         e.key === "Enter" &&
         file &&
         status === "idle"
       ) {
+        e.preventDefault();
         handleExport();
+        return;
+      }
+
+      if (isModifier && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+
+      if (
+        isModifier &&
+        (
+          (e.key.toLowerCase() === "z" && e.shiftKey) ||
+          e.key.toLowerCase() === "y"
+        )
+      ) {
+        e.preventDefault();
+        redo();
       }
     };
 
@@ -97,11 +160,13 @@ export function useVideoEditor() {
     return () => {
       document.removeEventListener("keydown", handleKeydown);
     };
-  }, [file, status, handleExport]);
+  }, [file, status, handleExport, undo, redo]);
+
   const reset = useCallback(() => {
     setFile(null);
     setDuration(0);
-    setRecipe(DEFAULT_RECIPE);
+    setHistory([DEFAULT_RECIPE]);
+    setHistoryIndex(0);
     setStatus("idle");
     setProgress(0);
     setResult(null);
@@ -117,6 +182,10 @@ export function useVideoEditor() {
     result,
     error,
     updateRecipe,
+    undo,
+    redo,
+    canUndo: historyIndex > 0,
+    canRedo: historyIndex < history.length - 1,
     handleFileSelect,
     handleExport,
     reset,

@@ -44,10 +44,22 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
-    result, error, updateRecipe,
-    handleFileSelect, handleExport, reset,
-  } = useVideoEditor();
+  file,
+  duration,
+  recipe,
+  status,
+  progress,
+  result,
+  error,
+  updateRecipe,
+  undo,
+  redo,
+  canUndo,
+  canRedo,
+  handleFileSelect,
+  handleExport,
+  reset,
+} = useVideoEditor();
 
   const isProcessing = status === "loading-engine" || status === "exporting";
 
@@ -141,7 +153,37 @@ export default function VideoEditor() {
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
             </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={undo}
+                disabled={!canUndo || isProcessing}
+                className={cn(
+                  "flex-1 py-3 rounded-xl border transition-all duration-200",
+                  "font-heading text-xs uppercase tracking-widest",
+                  canUndo && !isProcessing
+                    ? "border-[var(--border)] bg-[var(--surface)] hover:border-film-500 hover:text-film-600"
+                    : "border-[var(--border)] text-[var(--muted)] cursor-not-allowed opacity-50"
+                )}
+              >
+                Undo
+              </button>
 
+              <button
+                type="button"
+                onClick={redo}
+                disabled={!canRedo || isProcessing}
+                className={cn(
+                  "flex-1 py-3 rounded-xl border transition-all duration-200",
+                  "font-heading text-xs uppercase tracking-widest",
+                  canRedo && !isProcessing
+                    ? "border-[var(--border)] bg-[var(--surface)] hover:border-film-500 hover:text-film-600"
+                    : "border-[var(--border)] text-[var(--muted)] cursor-not-allowed opacity-50"
+                )}
+              >
+                Redo
+              </button>
+            </div>
             <button
               type="button"
               onClick={handleExport}
