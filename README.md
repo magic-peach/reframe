@@ -118,64 +118,9 @@ You can deploy the `out/` folder using:
 
 ---
 
-## How It Works
+## Architecture
 
-1. **Load Video** → User selects a file → App detects resolution and duration
-2. **Build Recipe** → User adjusts presets, framing, trim, speed → Creates `EditRecipe`
-3. **Export** → Click Export → FFmpeg WASM loads from CDN (~30 MB, cached after first use) → Filtergraph runs locally → File downloads
-4. **Done** → Your edited video is ready. Nothing was uploaded anywhere.
-
-### Architecture
-
-```mermaid
-graph TD
-    A["UI Layer · Next.js Components"] --> B["VideoEditor · FileUpload · PresetSelector · FramingControl · TrimControl"]
-    A --> C["AudioSpeedControl · RotateControl · ExportSettings"]
-    B --> D["useVideoEditor Hook · State Management"]
-    C --> D
-    D --> E["ffmpeg.ts · Lazy-loads WASM, builds filter chains"]
-    E --> F["FFmpeg.wasm · Single-threaded core via CDN · ~30MB"]
-    F --> G["Video Pipeline: trim → rotate → scale/crop → speed"]
-    G --> I["Output: MP4 or WebM · Blob URL → Download"]
-```
-
-### Key Files
-
-| File                             | Purpose                                                  |
-| -------------------------------- | -------------------------------------------------------- |
-| `src/components/VideoEditor.tsx` | Root component; layout, state orchestration              |
-| `src/hooks/useVideoEditor.ts`    | State management (file, recipe, export status)           |
-| `src/lib/ffmpeg.ts`              | FFmpeg wrapper; lazy-loads WASM, builds filter chains    |
-| `src/lib/presets.ts`             | 11 preset definitions (9:16, 16:9, 4:5, etc.)            |
-| `src/lib/types.ts`               | TypeScript types for EditRecipe, ExportResult, etc.      |
-| `src/components/*.tsx`           | Individual control panels (Trim, Rotate, Speed, Quality) |
-
----
-
-## Tech Stack
-
-| Layer                | Tech                                   |
-| -------------------- | -------------------------------------- |
-| **Framework**        | Next.js 15 (App Router, static export) |
-| **Language**         | TypeScript 5                           |
-| **Styling**          | Tailwind CSS v3                        |
-| **Icons**            | Lucide React                           |
-| **Animations**       | Lottie Web                             |
-| **Video Processing** | FFmpeg.wasm (single-threaded)          |
-| **Fonts**            | Bebas Neue · Syne · DM Sans            |
-
----
-
-## Supported Browsers
-
-| Browser       | Support    | Notes                   |
-| ------------- | ---------- | ----------------------- |
-| Chrome 90+    | ✅ Full    | Recommended             |
-| Firefox 89+   | ✅ Full    |                         |
-| Safari 15+    | ✅ Full    |                         |
-| Edge 90+      | ✅ Full    |                         |
-| Mobile Chrome | ✅ Full    |                         |
-| Mobile Safari | ⚠️ Partial | Large files may be slow |
+For detailed technical information about Reframe's architecture, design choices, and implementation details, see the [Architecture Documentation](docs/ARCHITECTURE.md).
 
 > Reframe requires WebAssembly (WASM) support to process videos in the browser.
 ---
