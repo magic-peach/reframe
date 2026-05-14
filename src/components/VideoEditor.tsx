@@ -123,7 +123,7 @@ export default function VideoEditor() {
                   >
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
                 <div>
-                  <p className="font-heading font-bold text-sm">Export failed</p>
+                  <p className="font-heading font-bold text-sm">Error</p>
                   <p className="text-film-600 text-xs mt-1">{error}</p>
                 </div>
               </div>
