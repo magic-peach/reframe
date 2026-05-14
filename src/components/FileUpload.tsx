@@ -45,7 +45,7 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors"
+          className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors cursor-pointer"
         >
           Change
         </button>

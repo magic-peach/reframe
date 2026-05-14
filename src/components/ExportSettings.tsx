@@ -29,7 +29,7 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         step={1}
         value={recipe.quality}
         onChange={(e) => onChange({ quality: Number(e.target.value) })}
-        className="w-full accent-film-600"
+        className="w-full accent-film-600 cursor-pointer"
       />
       <div className="flex justify-between mt-1">
         <span className="text-[10px] text-[var(--muted)]">Best quality</span>
