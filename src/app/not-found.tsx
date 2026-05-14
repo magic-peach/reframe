@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Film } from "lucide-react";
 
 export default  function NotFound() {
@@ -15,12 +16,12 @@ export default  function NotFound() {
 
       <div className="h-px w-16 bg-[var(--border)]" />
 
-      <a
+      <Link
         href="/"
         className="font-heading text-sm font-semibold px-5 py-2.5 rounded-lg bg-film-500 text-white hover:bg-film-600 transition-colors"
       >
         Go back to Reframe
-      </a>
+      </Link>
     </div>
   );
 }

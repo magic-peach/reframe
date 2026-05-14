@@ -67,10 +67,13 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") inputRef.current?.click(); }}
       className={`
         group flex flex-col items-center justify-center gap-4 py-12 px-6
         border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200
