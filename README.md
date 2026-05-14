@@ -124,6 +124,21 @@ graph TD
 
 ---
 
+## 🛠️ Built With
+
+<div align="center">
+
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![FFmpeg](https://img.shields.io/badge/FFmpeg.wasm-0.12.10-green?style=flat-square&logo=ffmpeg)
+![Lucide](https://img.shields.io/badge/Lucide_React-latest-orange?style=flat-square)
+![Lottie](https://img.shields.io/badge/Lottie_Web-latest-purple?style=flat-square)
+
+</div>
+
+---
+
 ## Tech Stack
 
 | Layer                | Tech                                   |
