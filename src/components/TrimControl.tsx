@@ -2,6 +2,12 @@
 
 import { EditRecipe } from "@/lib/types";
 
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = (seconds % 60).toFixed(1);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(4, "0")}`;
+}
+
 interface Props {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
@@ -33,7 +39,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
       <div className="flex gap-3">
         <div className="flex-1">
           <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
-            Start (sec)
+            Start {duration > 0 ? formatTime(recipe.trimStart) : ""}
           </label>
           <input
             type="number"
@@ -44,11 +50,12 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             onChange={(e) => handleStart(e.target.value)}
             className={inputClass}
             placeholder="0"
+            aria-label="Trim start time in seconds"
           />
         </div>
         <div className="flex-1">
           <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
-            End (sec)
+            End {recipe.trimEnd !== null ? formatTime(recipe.trimEnd) : ""}
           </label>
           <input
             type="number"
@@ -59,12 +66,13 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             onChange={(e) => handleEnd(e.target.value)}
             className={inputClass}
             placeholder={duration > 0 ? `${duration.toFixed(1)}` : "full length"}
+            aria-label="Trim end time in seconds"
           />
         </div>
       </div>
       {duration > 0 && (
         <p className="text-[10px] text-[var(--muted)] font-heading">
-          Duration: {duration.toFixed(1)}s
+          Duration: {formatTime(duration)}
         </p>
       )}
     </div>
