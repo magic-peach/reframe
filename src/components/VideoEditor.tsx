@@ -77,6 +77,14 @@ export default function VideoEditor() {
           <div className="space-y-4">
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} />
+
+              {!file && (
+              <div className="text-center text-gray-500 py-6">
+                <p>Upload a video to get started</p>
+                <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+              </div>
+              )}
+
               {file && (
                 <div className="mt-4 animate-fade-in">
                   <VideoPreview file={file} />
