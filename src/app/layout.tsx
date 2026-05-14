@@ -25,7 +25,34 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
-  description: "Free, open-source video editor that runs entirely in your browser. No login, no uploads, no ads. Resize for any platform, trim, rotate, adjust speed, and export.",
+  description:
+    "Free, open-source browser-based video editor. Resize, trim, rotate, and export videos directly in your browser.",
+
+  keywords: [
+    "video editor",
+    "browser video editor",
+    "open source video editor",
+    "resize videos",
+    "trim videos",
+    "rotate videos",
+    "online video editor",
+  ],
+
+  authors: [{ name: "Reframe" }],
+
+  openGraph: {
+    title: "Reframe",
+    description:
+      "Free, open-source browser-based video editor. Resize, trim, rotate, and export videos directly in your browser.",
+    type: "website",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Reframe",
+    description:
+      "Free, open-source browser-based video editor. Resize, trim, rotate, and export videos directly in your browser.",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
