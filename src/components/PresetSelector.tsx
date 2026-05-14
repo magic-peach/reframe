@@ -86,36 +86,53 @@ export default function PresetSelector({ recipe, onChange }: Props) {
       </div>
 
       {recipe.preset === "custom" && (
-        <div className="flex gap-3 items-center p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)] animate-fade-in">
-          <div className="flex-1">
-            <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
-              Width px
-            </label>
-            <input
-              type="number"
-              min={16}
-              max={7680}
-              step={2}
-              value={recipe.customWidth}
-              onChange={(e) => onChange({ customWidth: Number(e.target.value) })}
-              className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
-            />
+        <div className="p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)] animate-fade-in">
+          <div className="flex gap-3 items-center">
+            <div className="flex-1">
+              <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+                Width px
+              </label>
+              <input
+                type="number"
+                min={16}
+                max={7680}
+                step={2}
+                value={recipe.customWidth}
+                onChange={(e) => onChange({ customWidth: Number(e.target.value) })}
+                className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
+              />
+            </div>
+            <span className="text-[var(--muted)] mt-5 font-heading text-sm">x</span>
+            <div className="flex-1">
+              <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+                Height px
+              </label>
+              <input
+                type="number"
+                min={16}
+                max={7680}
+                step={2}
+                value={recipe.customHeight}
+                onChange={(e) => onChange({ customHeight: Number(e.target.value) })}
+                className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
+              />
+            </div>
           </div>
-          <span className="text-[var(--muted)] mt-5 font-heading text-sm">x</span>
-          <div className="flex-1">
-            <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
-              Height px
-            </label>
-            <input
-              type="number"
-              min={16}
-              max={7680}
-              step={2}
-              value={recipe.customHeight}
-              onChange={(e) => onChange({ customHeight: Number(e.target.value) })}
-              className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
-            />
-          </div>
+          {recipe.customWidth > 0 && recipe.customHeight > 0 && (
+            <div className="w-full mt-2 text-center">
+              <span className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+                Aspect ratio:{" "}
+              </span>
+              <span className="text-[10px] font-heading font-bold text-film-600">
+                {(() => {
+                  const gcd = (a: number, b: number): number =>
+                    b === 0 ? a : gcd(b, a % b);
+                  const g = gcd(recipe.customWidth, recipe.customHeight);
+                  return `${recipe.customWidth / g}:${recipe.customHeight / g}`;
+                })()}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
