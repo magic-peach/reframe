@@ -1,12 +1,21 @@
 "use client";
 
+import type { EditRecipe } from "@/lib/types";
 import { useEffect, useRef } from "react";
 
 interface Props {
   file: File | null;
+  keepAudio: boolean;
+  speed: number;
+  onRecipePatch: (patch: Partial<EditRecipe>) => void;
 }
 
-export default function VideoPreview({ file }: Props) {
+export default function VideoPreview({
+  file,
+  keepAudio,
+  speed,
+  onRecipePatch,
+}: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const urlRef = useRef<string | null>(null);
 
@@ -23,6 +32,30 @@ export default function VideoPreview({ file }: Props) {
       if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     };
   }, [file]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !file) return;
+    v.muted = !keepAudio;
+    v.playbackRate = speed;
+  }, [file, keepAudio, speed]);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !file) return;
+
+    const onVolumeChange = () => {
+      const el = videoRef.current;
+      if (!el) return;
+      const nextKeepAudio = !el.muted;
+      if (nextKeepAudio !== keepAudio) {
+        onRecipePatch({ keepAudio: nextKeepAudio });
+      }
+    };
+
+    v.addEventListener("volumechange", onVolumeChange);
+    return () => v.removeEventListener("volumechange", onVolumeChange);
+  }, [file, keepAudio, onRecipePatch]);
 
   if (!file) return null;
 

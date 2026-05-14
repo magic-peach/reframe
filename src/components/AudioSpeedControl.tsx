@@ -22,6 +22,9 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
     <div className="space-y-4">
       <button
         type="button"
+        role="switch"
+        aria-checked={recipe.keepAudio}
+        aria-label="Keep audio"
         onClick={() => onChange({ keepAudio: !recipe.keepAudio })}
         className={cn(
           "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
@@ -40,11 +43,8 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             {getSpeedDescription(recipe.speed)}
           </span>
         </div>
-        <span className="sr-only">
-          {recipe.keepAudio ? "Turn audio off" : "Turn audio on"}
-        </span>
         <span className="text-sm font-heading font-semibold">
-          {recipe.keepAudio ? "Audio on" : "Muted"}
+          {recipe.keepAudio ? "Audio On" : "Audio Off"}
         </span>
       </button>
 
