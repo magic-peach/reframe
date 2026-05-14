@@ -93,6 +93,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             </label>
             <input
               type="number"
+              inputMode="numeric"
               min={16}
               max={7680}
               step={2}
@@ -108,6 +109,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             </label>
             <input
               type="number"
+              inputMode="numeric"
               min={16}
               max={7680}
               step={2}
