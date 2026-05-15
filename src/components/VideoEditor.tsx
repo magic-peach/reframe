@@ -310,9 +310,19 @@ export default function VideoEditor() {
           </div>
 
           <div className={cn(
-            "space-y-5",
-            isProcessing && "pointer-events-none opacity-50"
+            "space-y-5 transition-opacity duration-300",
+            (isProcessing || !file) && "pointer-events-none opacity-50"
           )}>
+            {!file && (
+              <div className="bg-film-50 dark:bg-film-900/10 border border-film-100 dark:border-film-900/20 rounded-xl p-4 animate-fade-in">
+                <p className="text-[10px] font-heading font-bold text-film-600 uppercase tracking-widest">
+                  Getting Started
+                </p>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  Upload a video file to enable these export settings.
+                </p>
+              </div>
+            )}
             <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
               <Section icon={<Layers size={12} />} title="Output size">
                 <PresetSelector recipe={recipe} onChange={updateRecipe} />
