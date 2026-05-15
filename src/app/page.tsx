@@ -2,7 +2,7 @@ import VideoEditor from "@/components/VideoEditor";
 
 export default function Home() {
   return (
-    <>
+    <main>
       <a
         href="https://github.com/magic-peach/reframe"
         target="_blank"
@@ -11,11 +11,6 @@ export default function Home() {
       >
         ⭐ Star on GitHub
       </a>
-      <VideoEditor />
-    </>
-  );
-}
-    <main>
       <VideoEditor />
     </main>
   );
