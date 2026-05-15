@@ -67,6 +67,8 @@ bun install
 bun run dev
 ```
 
+> **Fast Refresh**: Reframe uses Next.js Fast Refresh for instant feedback during development. Changes to React components are reflected immediately without losing component state. No manual refresh needed — just save your file and see changes instantly.
+
 Open [http://localhost:3000](http://localhost:3000) — changes reflect instantly with Next.js Fast Refresh.
 
 ### Production Build
