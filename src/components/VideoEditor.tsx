@@ -99,11 +99,16 @@ export default function VideoEditor() {
 
         <header className="mb-10 flex items-end justify-between animate-fade-in">
           <div>
-            <h1 className="font-display text-6xl leading-none tracking-widest2 text-[var(--text)]">
+            <h1 className="font-display text-6xl leading-none tracking-widest2 bg-gradient-to-r from-film-600 to-film-500 bg-clip-text text-transparent drop-shadow-sm select-none">
               REFRAME
             </h1>
+<<<<<<< HEAD
             <p className="font-heading text-sm text-[var(--muted)] mt-1 uppercase tracking-widest">
               Your video, any format
+=======
+            <p className="font-heading text-[10px] text-[var(--muted)] mt-2 uppercase tracking-[0.3em] opacity-80">
+              Browser-based Video Engine
+>>>>>>> eff6427 (style: improve header design with gradient typography)
             </p>
           </div>
           <div className="hidden sm:flex items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1">
