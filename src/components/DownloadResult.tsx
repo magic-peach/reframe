@@ -14,6 +14,23 @@ interface Props {
 export default function DownloadResult({ result, onReset }: Props) {
   const filename = `reframe_${result.width}x${result.height}.${result.format}`;
 
+  // 1. Revoke after download (Requirement: Blob URL revoked after download)
+  const handleDownloadClick = () => {
+    // We wait 1 second to ensure the browser has successfully handed 
+    // the blob data over to the download manager.
+    setTimeout(() => {
+      URL.revokeObjectURL(result.blobUrl);
+      console.log("Memory Released: Export blob revoked after download.");
+    }, 1000);
+  };
+
+  // 2. Revoke on reset (Requirement: Blob URL revoked on reset)
+  const handleResetClick = () => {
+    URL.revokeObjectURL(result.blobUrl);
+    console.log("Memory Released: Export blob revoked on reset.");
+    onReset();
+  };
+
   return (
     <div className="p-5 bg-[var(--surface)] border border-[var(--border)] rounded-xl space-y-4">
       <div className="flex items-center gap-4">
@@ -44,6 +61,7 @@ export default function DownloadResult({ result, onReset }: Props) {
         <a
           href={result.blobUrl}
           download={filename}
+          onClick={handleDownloadClick} // Trigger revocation after click
           className="flex-1 flex items-center justify-center gap-2 py-3 bg-film-600 hover:bg-film-700 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
         >
           <Download size={15} />
@@ -51,7 +69,7 @@ export default function DownloadResult({ result, onReset }: Props) {
         </a>
         <button
           type="button"
-          onClick={onReset}
+          onClick={handleResetClick} // Trigger revocation before reset
           className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
         >
           <RotateCcw size={14} />
