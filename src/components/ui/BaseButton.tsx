@@ -7,15 +7,21 @@ interface BaseButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "outline";
   size?: "sm" | "md" | "lg" | "xl";
   active?: boolean;
+  as?: "button" | "a";
+  href?: string;
+  download?: string;
+  target?: string;
+  rel?: string;
 }
 
-const BaseButton = forwardRef<HTMLButtonElement, BaseButtonProps>(
-  ({ className, variant = "secondary", size = "md", active, children, ...props }, ref) => {
+const BaseButton = forwardRef<HTMLButtonElement | HTMLAnchorElement, BaseButtonProps>(
+  ({ className, variant = "secondary", size = "md", active, children, as = "button", ...props }, ref) => {
+    const Component = as as any;
     const variants = {
-      primary: "bg-film-600 text-white shadow-lg shadow-film-200 hover:bg-film-700",
+      primary: "bg-film-600 text-white shadow-lg shadow-film-200 dark:shadow-none hover:bg-film-700",
       secondary: active
-        ? "border-film-500 bg-film-50 text-film-700 font-heading font-semibold"
-        : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-300 hover:bg-film-50/30",
+        ? "border-film-500 bg-film-50 text-film-700 font-heading font-semibold dark:bg-film-900/20 dark:text-film-400 dark:border-film-700"
+        : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-300 hover:bg-film-50/30 dark:hover:bg-film-900/10",
       ghost: "bg-transparent hover:bg-[var(--surface)]",
       outline: "border border-[var(--border)] bg-transparent hover:border-film-300",
     };
@@ -28,7 +34,7 @@ const BaseButton = forwardRef<HTMLButtonElement, BaseButtonProps>(
     };
 
     return (
-      <button
+      <Component
         ref={ref}
         className={cn(
           "flex items-center justify-center gap-2 rounded-lg transition-all duration-200",
@@ -40,7 +46,7 @@ const BaseButton = forwardRef<HTMLButtonElement, BaseButtonProps>(
         {...props}
       >
         {children}
-      </button>
+      </Component>
     );
   }
 );
