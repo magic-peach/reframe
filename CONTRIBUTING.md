@@ -285,12 +285,17 @@ The bot will ping you if your assigned issue has no activity:
 
 ### 1. Create a branch
 
+Use descriptive names with the following prefixes:
+
+- `feat/` — new features
+- `fix/` — bug fixes
+- `docs/` — documentation
+- `refactor/` — code cleaning
+- `perf/` — performance
+- `style/` — styling and UX
+
 ```bash
 git checkout -b feat/your-feature-name
-# or
-git checkout -b fix/bug-description
-# or
-git checkout -b docs/what-you-documented
 ```
 
 ### 2. Make your changes
@@ -330,12 +335,15 @@ git commit -m "feat: add aria-label to export button"
 
 ### PR Checklist
 
+- [ ] Code follows project style (TypeScript, Tailwind, React hooks)
 - [ ] Code works in Chrome, Firefox, and Safari
 - [ ] No new TypeScript errors (`bunx tsc --noEmit`)
 - [ ] ESLint passes (`bun run lint`)
 - [ ] UI changes tested on mobile (use browser DevTools)
 - [ ] Accessibility: new interactive elements have ARIA labels
-- [ ] Issue number referenced in PR description
+- [ ] UI: reused existing components like `BaseButton` where possible
+- [ ] Issue number referenced in PR description (e.g. `Closes #123`)
+- [ ] Screenshots/videos included for visual changes
 
 ---
 
@@ -347,6 +355,13 @@ git commit -m "feat: add aria-label to export button"
 - **No comments**: Code should be self-documenting via good naming; only add comments for non-obvious behavior
 - **No console.log**: Remove debug logs before submitting
 - **Imports**: Use relative imports within `src/`
+
+### UI Standards
+
+- **Reusable Components**: Check `src/components/ui/` for existing components like `BaseButton` and `Skeleton` before creating new ones.
+- **Accessibility**: Always include `aria-label` or `aria-pressed` for interactive elements. Use `htmlFor` for labels.
+- **Responsiveness**: Use Tailwind's mobile-first breakpoints (`sm:`, `md:`, `lg:`) to ensure layout works on all devices.
+- **States**: Provide visual feedback for loading (`Skeleton`), active, and disabled states.
 
 ---
 
