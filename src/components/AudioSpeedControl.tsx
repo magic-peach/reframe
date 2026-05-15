@@ -35,28 +35,35 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       </button>
 
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
-            <Gauge size={10} /> Speed
-          </label>
-          <span className="text-sm font-heading font-bold text-film-600">
-            {recipe.speed}x
-          </span>
-        </div>
-        <input
-          type="range"
-          min={0}
-          max={SPEED_STEPS.length - 1}
-          step={1}
-          value={speedIndex === -1 ? 3 : speedIndex}
-          onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
-          className="w-full accent-film-600"
-        />
-        <div className="flex justify-between mt-1">
-          {SPEED_STEPS.map((s) => (
-            <span key={s} className="text-[9px] text-[var(--muted)]">{s}x</span>
-          ))}
-        </div>
+        {/* 1. Added id="speed-label" */}
+      <div className="flex items-center justify-between mb-2">
+        <label id="speed-label" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+          <Gauge size={10} /> Speed
+        </label>
+        <span className="text-sm font-heading font-bold text-film-600">
+          {recipe.speed}x
+        </span>
+      </div>
+
+      <input
+        type="range"
+        min={0}
+        max={SPEED_STEPS.length - 1}
+        step={1}
+        value={speedIndex === -1 ? 3 : speedIndex}
+        /* 2. Added ARIA links */
+        aria-labelledby="speed-label"
+        aria-describedby="speed-description"
+        onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
+        className="w-full accent-film-600"
+      />
+
+      {/* 3. Added id="speed-description" */}
+      <div id="speed-description" className="flex justify-between mt-1">
+        {SPEED_STEPS.map((s) => (
+          <span key={s} className="text-[9px] text-[var(--muted)]">{s}x</span>
+        ))}
+      </div>
       </div>
     </div>
   );

@@ -28,10 +28,11 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         max={30}
         step={1}
         value={recipe.quality}
+        aria-describedby="quality-description" /* <-- Link created here */
         onChange={(e) => onChange({ quality: Number(e.target.value) })}
         className="w-full accent-film-600"
       />
-      <div className="flex justify-between mt-1">
+      <div id="quality-description" className="flex justify-between mt-1"> {/* <-- ID added here */}
         <span className="text-[10px] text-[var(--muted)]">Best quality</span>
         <span className="text-[10px] text-[var(--muted)]">Smallest file</span>
       </div>
