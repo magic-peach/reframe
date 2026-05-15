@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
@@ -20,6 +20,17 @@ function fmt(bytes: number) {
 export default function FileUpload({ onFileSelect, currentFile }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "o") {
+        e.preventDefault();
+        inputRef.current?.click();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("video/")) return;
