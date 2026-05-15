@@ -7,9 +7,10 @@ const CORE_BASE_URL =
   "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
 let ffmpegInstance: FFmpeg | null = null;
+const MAX_FALLBACK_RETRIES = 3;
 
 export async function loadFFmpeg(): Promise<FFmpeg> {
-  if (ffmpegInstance) return ffmpegInstance;
+  if (ffmpegInstance !== null) return ffmpegInstance;
 
   const ffmpeg = new FFmpeg();
   await ffmpeg.load({
@@ -145,7 +146,9 @@ export async function exportVideo(
     ];
 
     const fallbackCode = await ffmpeg.exec(fallbackArgs);
-    if (fallbackCode !== 0) throw new Error("Export failed");
+    if (fallbackCode !== 0) {
+      throw new Error(`Export failed with exit code: ${fallbackCode}`);
+    }
 
     const data = await ffmpeg.readFile(webmOutput);
     const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
