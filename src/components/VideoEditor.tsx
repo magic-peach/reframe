@@ -118,7 +118,7 @@ export default function VideoEditor() {
 
             {status === "error" && error && (
                  <div
-                    role="status"
+                    role="alert"
                     className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
                   >
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
