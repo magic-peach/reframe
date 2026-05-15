@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { bebasNeue, syne, dmSans } from "@/lib/fonts"; // keep original fonts
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const metadata: Metadata = {
-  title: "My App",
-  description: "Dark mode enabled app",
+  title: "Reframe — Resize, trim, and export videos in your browser",
+  description:
+    "Free, open-source video editor that runs entirely in your browser. No login, no uploads, no ads. Resize for any platform, trim, rotate, adjust speed, and export.",
 };
 
 export default function RootLayout({
@@ -14,14 +16,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${bebasNeue.variable} ${syne.variable} ${dmSans.variable}`}
+    >
       <head>
-        {/*
-         * Inline script runs BEFORE React hydrates, preventing
-         * a flash of the wrong theme (FOUC).
-         * It reads localStorage first, then falls back to
-         * the OS prefers-color-scheme preference.
-         */}
+        {/* Prevents flash of wrong theme (FOUC) before React hydrates */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -41,15 +42,18 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-[var(--background)] text-[var(--foreground)] antialiased">
+      <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
         <ThemeProvider>
-          {/* Global nav bar with toggle */}
-          <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--card-border)] bg-[var(--background)]">
-            <span className="font-semibold text-lg tracking-tight">MyApp</span>
+          <header role="banner" className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]">
+            <h1 className="font-heading text-lg font-semibold">Reframe</h1>
             <ThemeToggle />
           </header>
-
-          <main className="px-6 py-8">{children}</main>
+          <main role="main" id="main-content">
+            {children}
+          </main>
+          <footer role="contentinfo" className="px-6 py-4 text-sm text-[var(--muted)]">
+            <p>© 2026 Reframe</p>
+          </footer>
         </ThemeProvider>
       </body>
     </html>
