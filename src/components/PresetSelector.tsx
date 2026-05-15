@@ -83,6 +83,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
 
   return (
     <div className="space-y-3">
+<<<<<<< HEAD
       <div className="relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
           <Search size={14} className="text-[var(--muted)]" />
@@ -144,13 +145,52 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             );
           })
         )}
+=======
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+        {PRESETS.filter((p) => p.id !== "custom").map((preset) => {
+          const active = recipe.preset === preset.id;
+          return (
+            <button
+              type="button"
+              key={preset.id}
+              onClick={() => onChange({ preset: preset.id })}
+              title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
+              aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
+              aria-pressed={active}
+              className={cn(
+                "min-h-[44px] min-w-[44px] flex items-center gap-2.5 p-3 rounded-lg border text-left transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+                active
+                  ? "border-film-500 bg-film-50"
+                  : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
+              )}
+            >
+              <RatioBox width={preset.width} height={preset.height} active={active} />
+              <div className="min-w-0 flex-1">
+                <p className={cn(
+                  "text-xs font-heading font-bold leading-tight",
+                  active ? "text-film-700" : "text-[var(--text)]"
+                )}>
+                  {preset.label}
+                </p>
+                <p className="text-[10px] text-[var(--muted)] leading-tight mt-0.5 truncate">
+                  {preset.platform}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+>>>>>>> 2c98255 (fix: improve accessibility with aria labels and pressed states)
 
         <button
           type="button"
           title="Custom — Set your own dimensions"
           aria-label="Select custom dimensions preset"
           aria-pressed={recipe.preset === "custom"}
+<<<<<<< HEAD
           onClick={() => handlePresetSelect("custom")}
+=======
+          onClick={() => onChange({ preset: "custom" })}
+>>>>>>> 2c98255 (fix: improve accessibility with aria labels and pressed states)
           className={cn(
             "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
             recipe.preset === "custom"
