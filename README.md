@@ -233,6 +233,23 @@ Thank you to everyone who has contributed to Reframe! 🎉
 ## Privacy
 
 Reframe processes all videos **100% client-side**. Your video files are never uploaded to any server. You can even use Reframe offline (after first load). The source code is fully open for inspection.
+---
+
+## Keyboard Shortcuts
+
+Speed up your workflow with these handy keyboard shortcuts:
+
+| Shortcut | Action |
+|----------|--------|
+| `Space` | Play / Pause preview |
+| `←` | Seek backward 1 second |
+| `→` | Seek forward 1 second |
+| `Shift + ←` | Seek backward 5 seconds |
+| `Shift + →` | Seek forward 5 seconds |
+| `Delete` / `Backspace` | Remove selected file |
+| `Ctrl + S` | Save / Export video |
+
+> 💡 More shortcuts coming soon! Have a suggestion? [Open an issue](https://github.com/magic-peach/reframe/issues/new).
 
 ---
 
