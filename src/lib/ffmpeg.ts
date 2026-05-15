@@ -7,52 +7,31 @@ const CORE_BASE_URL =
 
 let ffmpegInstance: FFmpeg | null = null;
 
-/**
- * Helper to fetch CDN resources with explicit CORS validation.
- * REQUIRED CDN HEADERS:
- * - Access-Control-Allow-Origin: *
- * - Cross-Origin-Embedder-Policy: require-corp
- * - Cross-Origin-Resource-Policy: cross-origin
- */
-async function fetchBinaryWithCORS(url: string, mimeType: string): Promise<string> {
-  const response = await fetch(url, {
-    mode: 'cors',
-    credentials: 'omit'
-  });
+export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) return ffmpegInstance;
 
-  if (!response.ok) {
-    throw new Error(
-      `Failed to load FFmpeg resource: ${response.status} ${response.statusText}. ` +
-      `Ensure the CDN provides correct CORS and COEP headers.`
-    );
+  const ffmpeg = ffmpegInstance ?? new FFmpeg();
+  ffmpegInstance = ffmpeg;
+
+  try {
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
+    }, { signal });
+
+    return ffmpeg;
+  } catch (err) {
+    if (ffmpegInstance === ffmpeg) {
+      ffmpegInstance = null;
+    }
+
+    throw err;
   }
-
-  const blob = await response.blob();
-  return URL.createObjectURL(new Blob([blob], { type: mimeType }));
 }
 
-export async function loadFFmpeg(): Promise<FFmpeg> {
-  if (ffmpegInstance) return ffmpegInstance;
-
-  const ffmpeg = new FFmpeg();
-
-  // Explicitly fetch with CORS validation before loading
-  const coreURL = await fetchBinaryWithCORS(
-    `${CORE_BASE_URL}/ffmpeg-core.js`, 
-    "text/javascript"
-  );
-  const wasmURL = await fetchBinaryWithCORS(
-    `${CORE_BASE_URL}/ffmpeg-core.wasm`, 
-    "application/wasm"
-  );
-
-  await ffmpeg.load({
-    coreURL,
-    wasmURL,
-  });
-
-  ffmpegInstance = ffmpeg;
-  return ffmpeg;
+export function terminateFFmpeg() {
+  ffmpegInstance?.terminate();
+  ffmpegInstance = null;
 }
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
@@ -108,7 +87,8 @@ export async function exportVideo(
   ffmpeg: FFmpeg,
   file: File,
   recipe: EditRecipe,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal
 ): Promise<ExportResult> {
   let targetW: number, targetH: number;
   if (recipe.preset === "custom") {
@@ -128,7 +108,7 @@ export async function exportVideo(
   const inputName = `input.${ext}`;
   const outputName = "output.mp4";
 
-  await ffmpeg.writeFile(inputName, await fetchFile(file));
+  await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
   ffmpeg.on("progress", ({ progress }) => {
     onProgress(Math.min(99, Math.round(progress * 100)));
@@ -162,7 +142,7 @@ export async function exportVideo(
 
   args.push(outputName);
 
-  const exitCode = await ffmpeg.exec(args);
+  const exitCode = await ffmpeg.exec(args, undefined, { signal });
 
   // fall back to webm if libx264 isnt available
   if (exitCode !== 0) {
@@ -177,13 +157,13 @@ export async function exportVideo(
       webmOutput,
     ];
 
-    const fallbackCode = await ffmpeg.exec(fallbackArgs);
+    const fallbackCode = await ffmpeg.exec(fallbackArgs, undefined, { signal });
     if (fallbackCode !== 0) throw new Error("Export failed");
 
-    const data = await ffmpeg.readFile(webmOutput);
+    const data = await ffmpeg.readFile(webmOutput, undefined, { signal });
     const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
-    await ffmpeg.deleteFile(inputName);
-    await ffmpeg.deleteFile(webmOutput);
+    await ffmpeg.deleteFile(inputName, { signal });
+    await ffmpeg.deleteFile(webmOutput, { signal });
 
     onProgress(100);
     return {
@@ -195,10 +175,10 @@ export async function exportVideo(
     };
   }
 
-  const data = await ffmpeg.readFile(outputName);
+  const data = await ffmpeg.readFile(outputName, undefined, { signal });
   const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
-  await ffmpeg.deleteFile(inputName);
-  await ffmpeg.deleteFile(outputName);
+  await ffmpeg.deleteFile(inputName, { signal });
+  await ffmpeg.deleteFile(outputName, { signal });
 
   onProgress(100);
   return {
