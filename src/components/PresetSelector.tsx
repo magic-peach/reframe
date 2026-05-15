@@ -106,10 +106,11 @@ export default function PresetSelector({ recipe, onChange }: Props) {
       {recipe.preset === "custom" && (
         <div className="flex gap-3 items-center p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)] animate-fade-in">
           <div className="flex-1">
-            <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+            <label htmlFor="custom-width" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
               Width px
             </label>
             <input
+              id="custom-width"
               type="number"
               min={16}
               max={7680}
@@ -121,10 +122,11 @@ export default function PresetSelector({ recipe, onChange }: Props) {
           </div>
           <span className="text-[var(--muted)] mt-5 font-heading text-sm">x</span>
           <div className="flex-1">
-            <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+            <label htmlFor="custom-height" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
               Height px
             </label>
             <input
+              id="custom-height"
               type="number"
               min={16}
               max={7680}

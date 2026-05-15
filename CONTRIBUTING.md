@@ -61,7 +61,7 @@ bun install
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Changes to components reflect instantly with Next.js Fast Refresh.
+Open [http://localhost:3000](http://localhost:3000). Changes to components reflect instantly with [Next.js Fast Refresh](https://nextjs.org/docs/architecture/fast-refresh).
 
 ### Other Commands
 
@@ -202,13 +202,13 @@ git commit -m "feat: add aria-label to export button"
 
 ## Development Tips
 
-- **Fast Refresh**: Changes to React components update instantly without losing state
-- **FFmpeg changes**: Changes to `src/lib/ffmpeg.ts` may require a full page reload
-- **Testing exports**: Keep a few small test videos (~5-10 MB) for quick export testing
-- **React DevTools**: Install the [React DevTools browser extension](https://react.dev/learn/react-developer-tools) for component inspection
-- **Network throttling**: Use Chrome DevTools Network tab → "Slow 3G" to test FFmpeg download behavior
-- **Mobile testing**: Chrome DevTools → Device Toolbar to test responsive layouts
-- **Accessibility testing**: Use [axe DevTools](https://www.deque.com/axe/devtools/) browser extension
+- **Next.js Fast Refresh**: Changes to React components update immediately in dev mode without restarting the server. Learn more in the [Next.js Fast Refresh docs](https://nextjs.org/docs/architecture/fast-refresh).
+- **FFmpeg changes**: Changes to `src/lib/ffmpeg.ts` may require a full page reload because FFmpeg WASM state can stay cached in the browser.
+- **FFmpeg downloads**: Use the [browser DevTools Network tab](https://developer.chrome.com/docs/devtools/network/) to monitor FFmpeg WASM downloads, cache behavior, and failed CDN requests.
+- **Testing exports**: Keep a few small test videos (~5-10 MB) for quick export testing.
+- **React DevTools**: Install the [React DevTools browser extension](https://react.dev/learn/react-developer-tools) for component inspection.
+- **Responsive checks**: Use the [Chrome DevTools Device Toolbar](https://developer.chrome.com/docs/devtools/device-mode/) to test mobile layouts before opening a PR.
+- **Accessibility checks**: Use the [axe DevTools browser extension](https://www.deque.com/axe/devtools/) to catch common accessibility issues.
 
 ---
 

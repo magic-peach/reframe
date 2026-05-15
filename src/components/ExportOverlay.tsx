@@ -41,6 +41,11 @@ export default function ExportOverlay({ status, progress }: Props) {
           <div className="w-full space-y-2">
             <div className="h-1 w-full bg-film-100 rounded-full overflow-hidden">
               <div
+                role="progressbar"
+                aria-valuenow={progress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="Export progress"
                 className="h-full bg-film-600 rounded-full transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
