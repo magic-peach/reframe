@@ -35,6 +35,21 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         <span className="text-[10px] text-[var(--muted)]">Best quality</span>
         <span className="text-[10px] text-[var(--muted)]">Smallest file</span>
       </div>
+      <div className="flex items-center justify-between mt-4">
+  <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+    Sound on completion
+  </label>
+
+  <input
+    type="checkbox"
+    checked={recipe.soundOnCompletion}
+    onChange={(e) =>
+      onChange({
+        soundOnCompletion: e.target.checked,
+      })
+    }
+  />
+</div>
     </div>
   );
 }

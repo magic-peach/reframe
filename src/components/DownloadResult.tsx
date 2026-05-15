@@ -5,6 +5,7 @@ import { formatBytes } from "@/lib/ffmpeg";
 import { Download, RotateCcw } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import successAnim from "@/lib/lottie/success.json";
+import { useEffect } from "react";
 
 interface Props {
   result: ExportResult;
@@ -13,7 +14,11 @@ interface Props {
 
 export default function DownloadResult({ result, onReset }: Props) {
   const filename = `reframe_${result.width}x${result.height}.${result.format}`;
+  useEffect(() => {
+    const audio = new Audio("/sounds/export-complete.mp3");
 
+    audio.play().catch(console.error);
+  }, []);
   return (
     <div className="p-5 bg-[var(--surface)] border border-[var(--border)] rounded-xl space-y-4">
       <div className="flex items-center gap-4">
