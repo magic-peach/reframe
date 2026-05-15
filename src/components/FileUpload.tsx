@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
@@ -20,6 +20,18 @@ function fmt(bytes: number) {
 export default function FileUpload({ onFileSelect, currentFile }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    const handleOpenShortcut = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o") {
+        e.preventDefault();
+        inputRef.current?.click();
+      }
+    };
+
+    document.addEventListener("keydown", handleOpenShortcut);
+    return () => document.removeEventListener("keydown", handleOpenShortcut);
+  }, []);
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("video/")) return;
@@ -48,7 +60,7 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
           onClick={() => inputRef.current?.click()}
           className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors cursor-pointer"
         >
-          Change
+          Change <span className="text-[var(--muted)]">(Ctrl+O / Cmd+O)</span>
         </button>
         <input
           ref={inputRef}
@@ -88,6 +100,9 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
         </p>
         <p className="text-sm text-[var(--muted)] mt-1">
           or click to browse
+        </p>
+        <p className="text-xs text-[var(--muted)] mt-2 font-heading">
+          Ctrl+O / Cmd+O
         </p>
       </div>
 
