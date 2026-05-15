@@ -234,6 +234,25 @@ Thank you to everyone who has contributed to Reframe! 🎉
 
 Reframe processes all videos **100% client-side**. Your video files are never uploaded to any server. You can even use Reframe offline (after first load). The source code is fully open for inspection.
 
+### Deploy to Vercel
+
+The easiest way to deploy Reframe is using [Vercel](https://vercel.com):
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/magic-peach/reframe)
+
+**Manual deployment steps:**
+
+1. Push your fork to GitHub
+2. Go to [vercel.com](https://vercel.com) and sign in
+3. Click **Add New Project**
+4. Import your GitHub repository
+5. Framework preset: **Next.js**
+6. Build command: `bun run build`
+7. Output directory: `out`
+8. Click **Deploy**
+
+Your video editor will be live in under a minute!
+
 ---
 
 ## License
