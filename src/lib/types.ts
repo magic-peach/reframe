@@ -15,6 +15,7 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  codec: VideoCodec;
 }
 
 export interface ExportResult {
@@ -24,6 +25,8 @@ export interface ExportResult {
   height: number;
   format: "mp4" | "webm" | "mkv";
 }
+
+export type VideoCodec = "libx264" | "libx265" | "libvpx-vp9" | "libaom-av1";
 
 export type ExportStatus =
   | "idle"
@@ -51,6 +54,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   saturation: 0,
   stabilization: false,
   soundOnCompletion: false,
+  codec: "libx264"
 };
 
 export const MAX_FILE_SIZE =

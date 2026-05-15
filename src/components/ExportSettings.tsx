@@ -1,8 +1,15 @@
 "use client";
 
-import { EditRecipe } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { SlidersHorizontal, Info as InfoIcon } from "lucide-react";
+import { SlidersHorizontal, Info as InfoIcon, Cpu } from "lucide-react";
+import { EditRecipe, VideoCodec } from "@/lib/types";
+
+const CODEC_OPTIONS: { value: VideoCodec; label: string; note: string }[] = [
+  { value: "libx264", label: "H.264", note: "Best compatibility (MP4)" },
+  { value: "libx265", label: "H.265", note: "Smaller File (MP4)" },
+  { value: "libvpx-vp9", label: "VP9", note: "Best for YouTube (WebM)" },
+  { value: "libaom-av1", label: "AV1", note: "Best quality (WebM)" },
+]
 
 interface Props {
   recipe: EditRecipe;
@@ -18,6 +25,36 @@ export default function ExportSettings({ recipe, onChange }: Props) {
 
   return (
   <>
+    
+    <div>
+        <div className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1 mb-2">
+          <Cpu size={10} /> Video Codec
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {CODEC_OPTIONS.map(({ value, label, note }) => {
+            const active = recipe.codec === value;
+            return (
+              <button
+                key={value}
+                onClick={() => onChange({ codec: value })}
+                className={`text-left rounded-md px-2.5 py-2 border text-xs transition-colors
+                  ${active
+                    ? "border-film-600 bg-film-600/10 text-film-600"
+                    : "border-[var(--border)] text-[var(--fg)] hover:border-film-600/50"
+                  }`}
+              >
+                <div className="font-semibold">{label}</div>
+                <div className="text-[10px] text-[var(--muted)] mt-0.5">{note}</div>
+              </button>
+            );
+          })}
+        </div>
+        {(recipe.codec === "libx265" || recipe.codec === "libaom-av1") && (
+          <p className="mt-1.5 text-[10px] text-amber-400">
+            ⚠ H.265 / AV1 may not be available in all browsers. H.264 is always safe.
+          </p>
+        )}
+      </div>
     <div>
       <div className="flex items-center justify-between mb-2">
         <label htmlFor="quality-control" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2">
@@ -89,5 +126,6 @@ export default function ExportSettings({ recipe, onChange }: Props) {
       </div>
     </div>
   </>
+
   );
 }
