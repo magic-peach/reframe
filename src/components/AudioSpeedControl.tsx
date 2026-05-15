@@ -50,7 +50,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+          <label htmlFor="speed-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
             <Gauge size={10} /> Speed
           </label>
 
@@ -64,6 +64,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           </div>
         </div>
         <input
+          id="speed-control"
           type="range"
           min={0}
           max={SPEED_STEPS.length - 1}

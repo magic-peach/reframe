@@ -2,9 +2,12 @@
 
 import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/ffmpeg";
-import { Download, RotateCcw } from "lucide-react";
+import { Download, RotateCcw, Share2 } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import successAnim from "@/lib/lottie/success.json";
+
+const SHARE_TWEET_TEXT =
+  "I just edited my video with @reframevideo — free browser-based video editor! Check it out: https://github.com/magic-peach/reframe";
 
 interface Props {
   result: ExportResult;
@@ -13,6 +16,7 @@ interface Props {
 
 export default function DownloadResult({ result, onReset }: Props) {
   const filename = `reframe_${result.width}x${result.height}.${result.format}`;
+  const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(SHARE_TWEET_TEXT)}`;
 
   // 1. Revoke after download (Requirement: Blob URL revoked after download)
   const handleDownloadClick = () => {
@@ -57,12 +61,16 @@ export default function DownloadResult({ result, onReset }: Props) {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <a
           href={result.blobUrl}
           download={filename}
+<<<<<<< HEAD
           onClick={handleDownloadClick} // Trigger revocation after click
           className="flex-1 flex items-center justify-center gap-2 py-3 bg-film-600 hover:bg-film-700 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
+=======
+          className="flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 bg-film-600 hover:bg-film-700 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
+>>>>>>> upstream/main
         >
           <Download size={15} />
           Download {result.format.toUpperCase()}
@@ -75,6 +83,16 @@ export default function DownloadResult({ result, onReset }: Props) {
           <RotateCcw size={14} />
           New
         </button>
+        <a
+          href={shareHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Share on X (opens in a new tab)"
+          className="flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 border border-[var(--border)] text-[var(--text)] text-sm font-heading font-bold uppercase tracking-wide rounded-lg hover:bg-[var(--bg)] transition-colors"
+        >
+          <Share2 size={15} aria-hidden="true" />
+          Share on X
+        </a>
       </div>
     </div>
   );
