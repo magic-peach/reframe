@@ -17,6 +17,12 @@ export default function ExportOverlay({ status, progress }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm">
+    {/* Screen Reader Announcements */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {isLoading 
+          ? 'Loading video processing engine, please wait...' 
+          : 'Export started'}
+      </div>
       <div className="text-center space-y-6 max-w-xs px-6 animate-fade-in">
 
         <div className="mx-auto w-20 h-20">
