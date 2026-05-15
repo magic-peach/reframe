@@ -92,16 +92,14 @@ export async function exportVideo(
   targetH = Math.round(targetH / 2) * 2;
 
   const ext = file.name.split(".").pop() ?? "mp4";
-  // Updated to include Date.now() as requested by the issue ticket
-  const inputName = `input_${Date.now()}.${ext}`;
-  const outputName = "output.mp4";
+  const inputName = `input_${Date.now()}.${ext}`; // <-- Added Date.now() back
+const outputName = "output.mp4";
 
-  try {
-    await ffmpeg.writeFile(inputName, await fetchFile(file));
-
-    ffmpeg.on("progress", ({ progress }) => {
-      onProgress(Math.min(99, Math.round(progress * 100)));
-    });
+try { // <-- This was the missing piece causing the red line!
+  await ffmpeg.writeFile(inputName, await fetchFile(file));
+  ffmpeg.on("progress", ({ progress }) => {
+    onProgress(Math.min(99, Math.round(progress * 100)));
+  });
 
     const vf = buildVideoFilter(recipe, targetW, targetH);
     const audioTrim = buildAudioTrimFilter(recipe);
@@ -118,22 +116,22 @@ export async function exportVideo(
       args.push("-af", af);
     }
 
-    args.push(
-      "-c:v", "libx264",
-      "-crf", String(recipe.quality),
-      "-preset", "medium",
-      "-movflags", "+faststart"
-    );
+  args.push(
+    "-c:v", "libx264",
+    "-crf", String(recipe.quality),
+    "-preset", "medium",
+    "-movflags", "+faststart"
+  );
 
-    if (recipe.keepAudio) {
-      args.push("-c:a", "aac", "-b:a", "128k");
-    }
+  if (recipe.keepAudio) {
+    args.push("-c:a", "aac", "-b:a", "128k");
+  }
 
-    args.push(outputName);
+  args.push(outputName);
 
-    const exitCode = await ffmpeg.exec(args);
+  const exitCode = await ffmpeg.exec(args);
 
-    // fall back to webm if libx264 isnt available
+ // fall back to webm if libx264 isnt available
     if (exitCode !== 0) {
       const webmOutput = "output.webm";
       const fallbackArgs = [
@@ -158,10 +156,11 @@ export async function exportVideo(
         size: blob.size,
         width: targetW,
         height: targetH,
-        format: "webm",
+        format: "webm", // <-- Must be "webm"
       };
     }
 
+    // --- CRITICAL MP4 SUCCESS BLOCK ---
     const data = await ffmpeg.readFile(outputName);
     const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
 
@@ -175,7 +174,7 @@ export async function exportVideo(
     };
 
   } finally {
-    // This runs regardless of success or failure, satisfying all acceptance criteria
+    // This runs regardless of success or failure
     try { await ffmpeg.deleteFile(inputName); } catch (e) {}
     try { await ffmpeg.deleteFile(outputName); } catch (e) {}
     try { await ffmpeg.deleteFile('output.webm'); } catch (e) {}
