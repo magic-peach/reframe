@@ -64,7 +64,7 @@ export function useVideoEditor() {
       setStatus("done");
     } catch (err) {
       console.error("export failed:", err);
-      setError(err instanceof Error ? err.message : "something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong");
       setStatus("error");
     }
   }, [file, recipe]);
