@@ -2,25 +2,58 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult } from "./types";
 import { getPresetById } from "./presets";
-
-const CORE_BASE_URL =
+const CORE_BASE_URL = 
   "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
 let ffmpegInstance: FFmpeg | null = null;
+
+/**
+ * Helper to fetch CDN resources with explicit CORS validation.
+ * REQUIRED CDN HEADERS:
+ * - Access-Control-Allow-Origin: *
+ * - Cross-Origin-Embedder-Policy: require-corp
+ * - Cross-Origin-Resource-Policy: cross-origin
+ */
+async function fetchBinaryWithCORS(url: string, mimeType: string): Promise<string> {
+  const response = await fetch(url, {
+    mode: 'cors',
+    credentials: 'omit'
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to load FFmpeg resource: ${response.status} ${response.statusText}. ` +
+      `Ensure the CDN provides correct CORS and COEP headers.`
+    );
+  }
+
+  const blob = await response.blob();
+  return URL.createObjectURL(new Blob([blob], { type: mimeType }));
+}
 
 export async function loadFFmpeg(): Promise<FFmpeg> {
   if (ffmpegInstance) return ffmpegInstance;
 
   const ffmpeg = new FFmpeg();
+
+  // Explicitly fetch with CORS validation before loading
+  const coreURL = await fetchBinaryWithCORS(
+    `${CORE_BASE_URL}/ffmpeg-core.js`, 
+    "text/javascript"
+  );
+  const wasmURL = await fetchBinaryWithCORS(
+    `${CORE_BASE_URL}/ffmpeg-core.wasm`, 
+    "application/wasm"
+  );
+
   await ffmpeg.load({
-    coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-    wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
+    coreURL,
+    wasmURL,
   });
 
   ffmpegInstance = ffmpeg;
   return ffmpeg;
 }
-
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
 
