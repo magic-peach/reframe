@@ -117,8 +117,11 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           step={1}
           value={speedIndex === -1 ? 3 : speedIndex}
           onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
+<<<<<<< HEAD
           aria-labelledby="speed-label"
           aria-describedby="speed-description"
+=======
+>>>>>>> 39f8ee9 (feat: implement dark mode support and polymorphic BaseButton)
           aria-label="Video playback speed"
           aria-valuetext={`${recipe.speed}x speed, ${getSpeedDescription(recipe.speed)}`}
           className="w-full h-11 accent-film-600 cursor-pointer"
