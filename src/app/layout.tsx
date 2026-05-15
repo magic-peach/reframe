@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { bebasNeue, syne, dmSans } from "@/lib/fonts"; // keep original fonts
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -16,13 +15,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${bebasNeue.variable} ${syne.variable} ${dmSans.variable}`}
-    >
+    <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Prevents flash of wrong theme (FOUC) before React hydrates */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -45,7 +39,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
         <ThemeProvider>
           <header role="banner" className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]">
-            <h1 className="font-heading text-lg font-semibold">Reframe</h1>
+            <h1 className="text-lg font-semibold">Reframe</h1>
             <ThemeToggle />
           </header>
           <main role="main" id="main-content">
