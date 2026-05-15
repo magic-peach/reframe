@@ -150,8 +150,8 @@ export default function VideoEditor() {
                 "w-full flex items-center justify-center gap-3 py-5 rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
-                  ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+                  ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer animate-pulse-ring"
+                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed opacity-60"
               )}
             >
               <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
