@@ -79,43 +79,48 @@ export default function FileUpload({
       document.removeEventListener("dragover", onDragOver);
       document.removeEventListener("drop", onDrop);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── File validation ───────────────────────────────────
-  const handleFile = useCallback((file: File) => {
-    setError("");
-    setWarning("");
+  const handleFile = useCallback(
+    (file: File) => {
+      setError("");
+      setWarning("");
 
-    if (!file.type.startsWith("video/")) {
-      setError("Please drop a valid video file (MP4, MOV, AVI, WebM, etc.)");
-      return;
-    }
+      if (!file.type.startsWith("video/")) {
+        setError("Please drop a valid video file (MP4, MOV, AVI, WebM, etc.)");
+        return;
+      }
 
-    if (file.size > 500 * 1024 * 1024) {
-      setError("File size exceeds 500MB limit. Please select a smaller video.");
-      return;
-    }
+      if (file.size > 500 * 1024 * 1024) {
+        setError(
+          "File size exceeds 500MB limit. Please select a smaller video.",
+        );
+        return;
+      }
 
-    if (file.size > MAX_FILE_SIZE) {
-      setError(
-        `File too large (${formatBytes(file.size)}). Maximum allowed size is 2GB.`
-      );
-      return;
-    }
+      if (file.size > MAX_FILE_SIZE) {
+        setError(
+          `File too large (${formatBytes(file.size)}). Maximum allowed size is 2GB.`,
+        );
+        return;
+      }
 
-    if (file.size > WARNING_FILE_SIZE) {
-      const estimatedMinutes = Math.max(
-        1,
-        Math.round(file.size / (100 * 1024 * 1024))
-      );
-      setWarning(
-        `Large file detected (${formatBytes(file.size)}). Processing may take ~${estimatedMinutes} minutes.`
-      );
-    }
+      if (file.size > WARNING_FILE_SIZE) {
+        const estimatedMinutes = Math.max(
+          1,
+          Math.round(file.size / (100 * 1024 * 1024)),
+        );
+        setWarning(
+          `Large file detected (${formatBytes(file.size)}). Processing may take ~${estimatedMinutes} minutes.`,
+        );
+      }
 
-    onFileSelect(file);
-  }, [onFileSelect]);
+      onFileSelect(file);
+    },
+    [onFileSelect],
+  );
 
   // ── Drop zone (inner) handler ─────────────────────────
   const handleDrop = (e: React.DragEvent) => {
@@ -213,7 +218,7 @@ export default function FileUpload({
         "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden",
         dragging
           ? "border-film-500 bg-film-50/50 scale-[1.02] shadow-[0_0_40px_-10px_rgba(230,57,70,0.4)] ring-4 ring-film-500/30"
-          : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
+          : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40",
       )}
     >
       {dragging && (
@@ -251,6 +256,7 @@ export default function FileUpload({
         ref={inputRef}
         type="file"
         accept="video/*"
+        data-reframe-file-input="true"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -271,7 +277,7 @@ export default function FileUpload({
             "fixed inset-0 z-50 flex flex-col items-center justify-center gap-4",
             "bg-black/60 backdrop-blur-sm",
             "border-4 border-dashed border-film-500",
-            "transition-all duration-200 pointer-events-none"
+            "transition-all duration-200 pointer-events-none",
           )}
         >
           {/* Animated ring */}

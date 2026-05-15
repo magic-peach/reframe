@@ -111,16 +111,17 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
   const overlay = (() => {
     if (!recipe || !showOverlay) return null;
 
-    const preset = recipe.preset === "custom"
-      ? { width: recipe.customWidth, height: recipe.customHeight }
-      : getPresetById(recipe.preset);
+    const preset =
+      recipe.preset === "custom"
+        ? { width: recipe.customWidth, height: recipe.customHeight }
+        : getPresetById(recipe.preset);
 
     if (!preset) return null;
 
     // Preview container is 16:9
     const containerW = 16;
     const containerH = 9;
-    const containerRatio = containerW / containerH;   // 1.777…
+    const containerRatio = containerW / containerH; // 1.777…
     const outputRatio = preset.width / preset.height;
 
     if (recipe.framing === "fit") {
@@ -129,12 +130,24 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         // Wider output → pillarbox bars on top & bottom
         const contentH = (containerRatio / outputRatio) * 100;
         const barH = (100 - contentH) / 2;
-        return { mode: "fit", barTop: `${barH}%`, barBottom: `${barH}%`, barLeft: "0", barRight: "0" };
+        return {
+          mode: "fit",
+          barTop: `${barH}%`,
+          barBottom: `${barH}%`,
+          barLeft: "0",
+          barRight: "0",
+        };
       } else {
         // Taller output → letterbox bars on left & right
         const contentW = (outputRatio / containerRatio) * 100;
         const barW = (100 - contentW) / 2;
-        return { mode: "fit", barTop: "0", barBottom: "0", barLeft: `${barW}%`, barRight: `${barW}%` };
+        return {
+          mode: "fit",
+          barTop: "0",
+          barBottom: "0",
+          barLeft: `${barW}%`,
+          barRight: `${barW}%`,
+        };
       }
     } else {
       // Fill / crop: the output fills the entire 16:9 preview — show a box representing what survives the crop.
@@ -142,12 +155,24 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         // Output is taller → crops top & bottom
         const visibleH = (outputRatio / containerRatio) * 100;
         const cropH = (100 - visibleH) / 2;
-        return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };
+        return {
+          mode: "fill",
+          barTop: `${cropH}%`,
+          barBottom: `${cropH}%`,
+          barLeft: "0",
+          barRight: "0",
+        };
       } else {
         // Output is wider → crops left & right
         const visibleW = (containerRatio / outputRatio) * 100;
         const cropW = (100 - visibleW) / 2;
-        return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
+        return {
+          mode: "fill",
+          barTop: "0",
+          barBottom: "0",
+          barLeft: `${cropW}%`,
+          barRight: `${cropW}%`,
+        };
       }
     }
   })();
@@ -196,7 +221,10 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         <video
           ref={videoRef}
           controls
-          className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+          className={cn(
+            "w-full h-full object-contain transition-opacity duration-300",
+            isLoading ? "opacity-0" : "opacity-100",
+          )}
           onLoadedData={() => setIsLoading(false)}
           playsInline
           muted={!recipe?.keepAudio}
@@ -206,22 +234,49 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
 
         {/* Letterbox / Crop overlay */}
         {overlay && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div
+            className="absolute inset-0 pointer-events-none"
+            aria-hidden="true"
+          >
             {overlay.mode === "fit" ? (
               // Letterbox: semi-transparent bars outside the content area
               <>
-                <div className="absolute left-0 right-0 top-0 bg-black/50" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-black/50" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-black/50" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-black/50" style={{ width: overlay.barRight }} />
+                <div
+                  className="absolute left-0 right-0 top-0 bg-black/50"
+                  style={{ height: overlay.barTop }}
+                />
+                <div
+                  className="absolute left-0 right-0 bottom-0 bg-black/50"
+                  style={{ height: overlay.barBottom }}
+                />
+                <div
+                  className="absolute top-0 bottom-0 left-0 bg-black/50"
+                  style={{ width: overlay.barLeft }}
+                />
+                <div
+                  className="absolute top-0 bottom-0 right-0 bg-black/50"
+                  style={{ width: overlay.barRight }}
+                />
               </>
             ) : (
               // Fill/crop: dashed border around the surviving area, dimmed outside
               <>
-                <div className="absolute left-0 right-0 top-0 bg-red-900/50" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-red-900/50" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-red-900/50" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-red-900/50" style={{ width: overlay.barRight }} />
+                <div
+                  className="absolute left-0 right-0 top-0 bg-red-900/50"
+                  style={{ height: overlay.barTop }}
+                />
+                <div
+                  className="absolute left-0 right-0 bottom-0 bg-red-900/50"
+                  style={{ height: overlay.barBottom }}
+                />
+                <div
+                  className="absolute top-0 bottom-0 left-0 bg-red-900/50"
+                  style={{ width: overlay.barLeft }}
+                />
+                <div
+                  className="absolute top-0 bottom-0 right-0 bg-red-900/50"
+                  style={{ width: overlay.barRight }}
+                />
                 <div
                   className="absolute border-2 border-dashed border-film-400"
                   style={{
@@ -247,8 +302,12 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
                 : "bg-black/60 text-white/70 hover:bg-black/80"
             }`}
             aria-pressed={showOverlay}
-            aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-            title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
+            aria-label={
+              showOverlay ? "Hide framing overlay" : "Show framing overlay"
+            }
+            title={
+              showOverlay ? "Hide framing overlay" : "Show framing overlay"
+            }
           >
             {showOverlay ? "Hide overlay" : "Show overlay"}
           </button>
@@ -265,8 +324,16 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
                 : "bg-black/60 text-white/70 hover:bg-black/80"
             }`}
             aria-pressed={showComparison}
-            aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
-            title={showComparison ? "Hide comparison preview" : "Show comparison preview"}
+            aria-label={
+              showComparison
+                ? "Hide comparison preview"
+                : "Show comparison preview"
+            }
+            title={
+              showComparison
+                ? "Hide comparison preview"
+                : "Show comparison preview"
+            }
           >
             Compare
           </button>
