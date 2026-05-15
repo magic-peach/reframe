@@ -34,7 +34,6 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
   }, []);
 
   const handleFile = (file: File) => {
-    if (!file.type.startsWith("video/")) return;
     onFileSelect(file);
   };
 
@@ -107,10 +106,13 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
       </div>
 
       <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
-        <FolderOpen size={14} />
+      <FolderOpen size={14} />
         MP4 / MOV / AVI / WebM
       </div>
-
+      <p className="text-xs text-gray-500">
+        Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
+      </p>
+      
       <input
         ref={inputRef}
         type="file"
