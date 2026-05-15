@@ -28,6 +28,7 @@ export default function VideoPreview({ file }: Props) {
 
   return (
     <div className="w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video">
+      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <video
         ref={videoRef}
         controls
