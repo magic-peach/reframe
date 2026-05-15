@@ -1,5 +1,5 @@
 "use client";
-
+import { useEffect } from "react";
 import { ExportStatus } from "@/lib/types";
 import LottiePlayer from "./LottiePlayer";
 import spinnerAnim from "@/lib/lottie/spinner.json";
@@ -11,6 +11,16 @@ interface Props {
 
 export default function ExportOverlay({ status, progress }: Props) {
   const visible = status === "loading-engine" || status === "exporting";
+  useEffect(() => {
+  if (visible) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "";
+  }
+  return () => {
+    document.body.style.overflow = "";
+  };
+}, [visible]);
   if (!visible) return null;
 
   const isLoading = status === "loading-engine";
