@@ -4,21 +4,23 @@
 
 /* ── Light mode tokens ── */
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
-  --card: #f9fafb;
-  --card-border: #e5e7eb;
-  --muted: #6b7280;
+  --bg: #F7F4F0;
+  --surface: #ffffff;
+  --border: #E8E3DC;
+  --text: #181412;
+  --muted: #7C756F;
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
+  --film-600: #e63946;
+  --film-400: #ff6b6b;
 }
 
-/* ── Dark mode tokens (applied when <html class="dark"> is set) ── */
+/* ── Dark mode tokens ── */
 .dark {
-  --background: #0f172a;
-  --foreground: #f1f5f9;
-  --card: #1e293b;
-  --card-border: #334155;
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --border: #334155;
+  --text: #f1f5f9;
   --muted: #94a3b8;
   --accent: #3b82f6;
   --accent-hover: #2563eb;
@@ -26,8 +28,8 @@
 
 /* ── Base styles ── */
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--bg);
+  color: var(--text);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
