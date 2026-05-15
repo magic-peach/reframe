@@ -120,9 +120,14 @@ export default function VideoEditor() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4">
+<<<<<<< HEAD
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} />
 
+=======
+            <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] hover:border-film-200 dark:hover:border-film-900/30 transition-colors duration-300 animate-fade-in">
+              <FileUpload onFileSelect={handleFileSelect} currentFile={file} />
+>>>>>>> 99c5840 (style: add interactive hover effects to control cards)
               {!file && (
               <div className="text-center text-[var(--muted)] py-6">
                 <p>Upload a video to get started</p>
@@ -158,7 +163,7 @@ export default function VideoEditor() {
                 "grid grid-cols-1 sm:grid-cols-2 gap-4",
                 isProcessing && "pointer-events-none opacity-50"
               )}>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:border-film-200 dark:hover:border-film-900/30 transition-colors duration-300 p-5 space-y-6">
                   <Section icon={<Scissors size={12} />} title="Trim" delay={50}>
                     <TrimControl recipe={recipe} onChange={updateRecipe} duration={duration} />
                   </Section>
@@ -166,7 +171,7 @@ export default function VideoEditor() {
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
                 </div>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:border-film-200 dark:hover:border-film-900/30 transition-colors duration-300 p-5 space-y-6">
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
@@ -328,7 +333,7 @@ export default function VideoEditor() {
                 </p>
               </div>
             )}
-            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
+            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] hover:border-film-200 dark:hover:border-film-900/30 transition-colors duration-300 p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
               <Section icon={<Layers size={12} />} title="Output size">
                 <PresetSelector recipe={recipe} onChange={updateRecipe} />
               </Section>
