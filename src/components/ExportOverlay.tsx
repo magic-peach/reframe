@@ -35,11 +35,22 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm">
-      <div className="text-center space-y-6 max-w-xs px-6 animate-fade-in">
-
+      <div 
+        className="text-center space-y-6 max-w-xs px-6 animate-fade-in" 
+        aria-live="polite"
+      >
         <div className="mx-auto w-20 h-20">
-          <LottiePlayer animationData={spinnerAnim} loop autoplay />
+          <LottiePlayer 
+            animationData={spinnerAnim} 
+            loop 
+            autoplay 
+            aria-hidden="true" 
+          />
         </div>
+
+        <span className="sr-only">
+          {status === 'loading-engine' ? 'Loading video engine...' : `Exporting: ${progress}%`}
+        </span>
 
         <div>
           <h2 className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">

@@ -71,7 +71,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           step={1}
           value={speedIndex === -1 ? 3 : speedIndex}
           onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
-          className="w-full accent-film-600"
+          className="w-full h-11 accent-film-600 cursor-pointer"
         />
         <div className="flex justify-between mt-1">
           {SPEED_STEPS.map((s) => (

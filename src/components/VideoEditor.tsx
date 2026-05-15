@@ -181,7 +181,7 @@ export default function VideoEditor() {
             href="https://github.com/magic-peach/reframe"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[11px] font-heading font-medium text-[var(--muted)] hover:text-film-600 transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center gap-1.5 px-2 text-[11px] font-heading font-medium text-[var(--muted)] hover:text-film-600 transition-colors"
           >
             <Github size={13} />
             Source on GitHub

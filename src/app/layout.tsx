@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Bebas_Neue, Syne, DM_Sans } from "next/font/google";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -41,18 +43,29 @@ export default function RootLayout({
           }}
         />
       </head>
+
       <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
         <ThemeProvider>
-          <header role="banner" className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]">
-            <h1 className="text-lg font-semibold">Reframe</h1>
-            <ThemeToggle />
-          </header>
-          <main role="main" id="main-content">
-            {children}
-          </main>
-          <footer role="contentinfo" className="px-6 py-4 text-sm text-[var(--muted)]">
-            <p>© 2026 Reframe</p>
-          </footer>
+          <ErrorBoundary>
+            <header
+              role="banner"
+              className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]"
+            >
+              <h1 className="text-lg font-semibold">Reframe</h1>
+              <ThemeToggle />
+            </header>
+
+            <main role="main" id="main-content">
+              {children}
+            </main>
+
+            <footer
+              role="contentinfo"
+              className="px-6 py-4 text-sm text-[var(--muted)]"
+            >
+              <p>© 2026 Reframe</p>
+            </footer>
+          </ErrorBoundary>
         </ThemeProvider>
       </body>
     </html>

@@ -22,8 +22,7 @@ export default function RotateControl({ recipe, onChange }: Props) {
             key={deg}
             onClick={() => onChange({ rotate: deg })}
             className={cn(
-              "flex-1 flex flex-col items-center gap-1.5 py-3 rounded-lg border text-xs transition-all duration-150",
-              "hover:scale-[1.03] active:scale-[0.97]",
+              "flex-1 min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border text-xs transition-all duration-150 cursor-pointer hover:scale-[1.03] active:scale-[0.97]",
               active
                 ? "border-film-500 bg-film-50 text-film-700 font-heading font-semibold"
                 : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
