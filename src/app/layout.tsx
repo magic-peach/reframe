@@ -32,9 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${bebasNeue.variable} ${syne.variable} ${dmSans.variable}`}>
       <body>
-        <header>
+        {/* <header>
           <h1>Reframe</h1>
-        </header>
+        </header> */}
         {children}
         <footer>
           <p>© 2026 Reframe</p>
