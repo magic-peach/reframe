@@ -28,6 +28,8 @@ export interface EditRecipe {
   format: "mp4" | "webm" | "mkv" | "gif";
   stabilization: boolean;
   denoise: boolean;
+  positionX: number;
+  positionY: number;
   brightness: number;
   contrast: number;
   saturation: number;
@@ -97,6 +99,8 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.quality !== "number" || !isFinite(v.quality)) return false;
   if (!["mp4", "webm", "mkv", "gif"].includes(v.format)) return false;
   if (typeof v.stabilization !== "boolean") return false;
+  if (typeof v.positionX !== "number" || !isFinite(v.positionX)) return false;
+  if (typeof v.positionY !== "number" || !isFinite(v.positionY)) return false;
   if (typeof v.brightness !== "number" || !isFinite(v.brightness)) return false;
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
@@ -105,3 +109,30 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
 
   return true;
 }
+
+export const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4] as const;
+
+export const DEFAULT_RECIPE: EditRecipe = {
+  preset: "vertical-9-16",
+  customWidth: 1920,
+  customHeight: 1080,
+  framing: "fit",
+  trimStart: 0,
+  trimEnd: null,
+  rotate: 0,
+  keepAudio: true,
+  normalizeAudio: false,
+  speed: 1,
+  quality: 23,
+  format: "mp4",
+  stabilization: false,
+  denoise: false,
+  positionX: 50,
+  positionY: 50,
+  brightness: 0,
+  contrast: 1,
+  saturation: 1,
+  soundOnCompletion: true,
+  textOverlays: [],
+  version: RECIPE_VERSION,
+};

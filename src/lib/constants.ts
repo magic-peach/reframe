@@ -8,6 +8,8 @@ export const DEFAULT_RECIPE: EditRecipe = {
   customWidth: 1920,
   customHeight: 1080,
   framing: "fit",
+  positionX: 50,
+  positionY: 50,
   trimStart: 0,
   trimEnd: null,
   rotate: 0,

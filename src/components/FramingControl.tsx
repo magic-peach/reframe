@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import { EditRecipe } from "@/lib/types";
 import { Maximize2, Crop } from "lucide-react";
 import { cn } from "@/lib/utils";

@@ -388,6 +388,7 @@ export default function VideoEditor() {
                     selectedTextId={selectedTextId}
                     onSelectText={setSelectedTextId}
                     onUpdateText={handleUpdateTextOverlay}
+                    onChange={updateRecipe}
                   />
 
                   <div className="mt-3">

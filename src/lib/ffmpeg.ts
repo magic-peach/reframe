@@ -121,12 +121,12 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   if (recipe.framing === "fit") {
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
-      `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
+      `pad=${targetW}:${targetH}:(ow-iw)*${recipe.positionX / 100}:(oh-ih)*${recipe.positionY / 100}:color=black`
     );
   } else {
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
-      `crop=${targetW}:${targetH}`
+      `crop=${targetW}:${targetH}:(iw-ow)*${recipe.positionX / 100}:(ih-oh)*${recipe.positionY / 100}`
     );
   }
 

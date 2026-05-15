@@ -69,6 +69,7 @@ Reframe is a **browser-based video editor** — everything happens on your devic
 
 ## Features
 
+- **Interactive Live Preview** — Click and drag to reposition video, see framing changes in real-time
 - **Instant Resizing** — 11 preset formats (Reels, TikTok, YouTube, Instagram, etc.) + custom dimensions
 - **Flexible Framing** — Fit (letterbox) or Fill (crop) to your target aspect ratio
 - **Precise Trimming** — Cut start and end times with real-time duration validation
