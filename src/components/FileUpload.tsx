@@ -20,9 +20,15 @@ function fmt(bytes: number) {
 export default function FileUpload({ onFileSelect, currentFile }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFile = (file: File) => {
-    if (!file.type.startsWith("video/")) return;
+    if (!file.type.startsWith("video/")) {
+      setError("Please select a valid video file (MP4, MOV, WebM, etc.)");
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+    setError(null);
     onFileSelect(file);
   };
 
@@ -90,6 +96,12 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
           or click to browse
         </p>
       </div>
+
+      {error && (
+        <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-xs font-heading font-bold animate-fade-in border border-red-100">
+          {error}
+        </div>
+      )}
 
       <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
         <FolderOpen size={14} />
