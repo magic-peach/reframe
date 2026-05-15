@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
+import { cn } from "@/lib/utils";
 
 interface Props {
   onFileSelect: (file: File) => void;
@@ -20,8 +21,19 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
+  useEffect(() => {
+    const handleOpenShortcut = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o") {
+        e.preventDefault();
+        inputRef.current?.click();
+      }
+    };
+
+    document.addEventListener("keydown", handleOpenShortcut);
+    return () => document.removeEventListener("keydown", handleOpenShortcut);
+  }, []);
+
   const handleFile = (file: File) => {
-    if (!file.type.startsWith("video/")) return;
     onFileSelect(file);
   };
 
@@ -47,7 +59,7 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
           onClick={() => inputRef.current?.click()}
           className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors cursor-pointer"
         >
-          Change
+          Change <span className="text-[var(--muted)]">(Ctrl+O / Cmd+O)</span>
         </button>
         <input
           ref={inputRef}
@@ -65,18 +77,20 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
-      className={`
-        group flex flex-col items-center justify-center gap-4 py-12 px-6
-        border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200
-        ${dragging
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") inputRef.current?.click(); }}
+      className={cn(
+        "group flex flex-col items-center justify-center gap-4 py-12 px-6",
+        "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200",
+        dragging
           ? "border-film-500 bg-film-50 scale-[1.01]"
           : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
-        }
-      `}
+      )}
     >
       <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-200">
         <LottiePlayer animationData={uploadAnim} loop autoplay />
@@ -89,13 +103,19 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
         <p className="text-sm text-[var(--muted)] mt-1">
           or click to browse
         </p>
+        <p className="text-xs text-[var(--muted)] mt-2 font-heading">
+          Ctrl+O / Cmd+O
+        </p>
       </div>
 
       <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
-        <FolderOpen size={14} />
+      <FolderOpen size={14} />
         MP4 / MOV / AVI / WebM
       </div>
-
+      <p className="text-xs text-gray-500">
+        Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
+      </p>
+      
       <input
         ref={inputRef}
         type="file"
