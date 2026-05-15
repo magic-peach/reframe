@@ -1,9 +1,15 @@
 "use client";
 import { useEffect } from "react";
 
+<<<<<<< HEAD
 import { EditRecipe } from "@/lib/types"
 import { SPEED_STEPS } from "@/lib/constants";
 import { Volume2, VolumeX, Gauge, AlertTriangle } from "lucide-react";
+=======
+import { EditRecipe, SPEED_STEPS } from "@/lib/types";
+import { Volume2, VolumeX, Gauge } from "lucide-react";
+import BaseButton from "./ui/BaseButton";
+>>>>>>> 34bbb81 (refactor: extract reusable BaseButton component)
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -56,6 +62,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
 
   return (
     <div className="space-y-4">
+<<<<<<< HEAD
       {isModified && (
         <div className="flex justify-end animate-fade-in">
           <button
@@ -69,17 +76,15 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       )}
 
       <button
+=======
+      <BaseButton
+>>>>>>> 34bbb81 (refactor: extract reusable BaseButton component)
         type="button"
         onClick={() => onChange({ keepAudio: !recipe.keepAudio })}
         aria-label={recipe.keepAudio ? "Mute video audio" : "Unmute video audio"}
         aria-pressed={recipe.keepAudio}
-        className={cn(
-          "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
-          "hover:scale-[1.01] active:scale-[0.99]",
-          recipe.keepAudio
-            ? "border-film-300 bg-film-50 text-film-700"
-            : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
-        )}
+        active={recipe.keepAudio}
+        className="w-full flex items-center gap-3 p-3"
       >
         {recipe.keepAudio ? <Volume2 size={16} /> : <VolumeX size={16} />}
         <span className="sr-only">
@@ -88,7 +93,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
         <span className="text-sm font-heading font-semibold">
           {recipe.keepAudio ? "Audio on" : "Muted"}
         </span>
-      </button>
+      </BaseButton>
 
       <div>
         <div className="flex items-center justify-between mb-2">
