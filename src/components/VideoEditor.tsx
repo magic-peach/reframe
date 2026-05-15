@@ -146,6 +146,8 @@ export default function VideoEditor() {
               type="button"
               onClick={handleExport}
               disabled={!file || isProcessing}
+              aria-label='Export video'
+              aria-disabled={!file || isProcessing ? "true" : undefined}
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
