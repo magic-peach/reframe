@@ -86,6 +86,19 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
               aria-hidden="true"
             />
           </div>
+          <div>
+            <h2 className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">
+              {isLoading ? "Loading engine" : "Exporting"}
+            </h2>
+            <p className="text-sm text-[var(--muted)] mt-1">
+              {isLoading
+                ? "Setting up the video engine. This only happens once."
+                : "Processing your video locally."}
+            </p>
+            <p className="text-xs font-heading font-semibold text-[var(--muted)] text-film-600 mt-2 uppercase tracking-wide">
+              Do not close or refresh this tab
+            </p>
+          </div>
 
           <span className="sr-only">
             {status === "loading-engine"
