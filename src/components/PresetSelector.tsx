@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
 import { Settings2 } from "lucide-react";
@@ -10,6 +11,9 @@ interface Props {
   onChange: (patch: Partial<EditRecipe>) => void;
 }
 
+/**
+ * Helper to calculate orientation and aspect ratio strings
+ */
 function getOrientationLabel(width: number, height: number): string {
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
   const d = gcd(width, height);
@@ -18,6 +22,9 @@ function getOrientationLabel(width: number, height: number): string {
   return `${orientation} ${ratio}`;
 }
 
+/**
+ * Visual box showing the aspect ratio shape
+ */
 function RatioBox({ width, height, active }: { width: number; height: number; active: boolean }) {
   const MAX = 32;
   const ratio = width / height;
@@ -37,20 +44,30 @@ function RatioBox({ width, height, active }: { width: number; height: number; ac
 }
 
 export default function PresetSelector({ recipe, onChange }: Props) {
+  const widthId = useId();
+  const heightId = useId();
+
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+      {/* Accessibility: Radio Group Container */}
+      <div 
+        role="radiogroup" 
+        aria-label="Video aspect ratio presets"
+        className="grid grid-cols-2 gap-1.5 sm:grid-cols-3"
+      >
         {PRESETS.filter((p) => p.id !== "custom").map((preset) => {
           const active = recipe.preset === preset.id;
           return (
             <button
               type="button"
+              role="radio"
+              aria-checked={active}
               key={preset.id}
               onClick={() => onChange({ preset: preset.id })}
               title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
               className={cn(
-                "flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all duration-150 cursor-pointer",
-                "hover:scale-[1.02] active:scale-[0.98]",
+                "flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all duration-150 cursor-pointer outline-none",
+                "hover:scale-[1.02] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-film-500",
                 active
                   ? "border-film-500 bg-film-50"
                   : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
@@ -72,12 +89,15 @@ export default function PresetSelector({ recipe, onChange }: Props) {
           );
         })}
 
+        {/* Custom Preset Button */}
         <button
           type="button"
+          role="radio"
+          aria-checked={recipe.preset === "custom"}
           title="Custom — Set your own dimensions"
           onClick={() => onChange({ preset: "custom" })}
           className={cn(
-            "flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all duration-150",
+            "flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all duration-150 outline-none focus-visible:ring-2 focus-visible:ring-film-500",
             "hover:scale-[1.02] active:scale-[0.98]",
             recipe.preset === "custom"
               ? "border-film-500 bg-film-50"
@@ -103,14 +123,18 @@ export default function PresetSelector({ recipe, onChange }: Props) {
         </button>
       </div>
 
+      {/* Custom Input Fields (Visible when Custom is selected) */}
       {recipe.preset === "custom" && (
         <div className="flex gap-3 items-center p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)] animate-fade-in">
           <div className="flex-1">
-            <label htmlFor="custom-width" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+            <label 
+              htmlFor={widthId}
+              className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5"
+            >
               Width px
             </label>
             <input
-              id="custom-width"
+              id={widthId}
               type="number"
               min={16}
               max={7680}
@@ -120,13 +144,16 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
           </div>
-          <span className="text-[var(--muted)] mt-5 font-heading text-sm">x</span>
+          <span className="text-[var(--muted)] mt-5 font-heading text-sm" aria-hidden="true">x</span>
           <div className="flex-1">
-            <label htmlFor="custom-height" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+            <label 
+              htmlFor={heightId}
+              className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5"
+            >
               Height px
             </label>
             <input
-              id="custom-height"
+              id={heightId}
               type="number"
               min={16}
               max={7680}

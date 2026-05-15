@@ -1,8 +1,10 @@
 import VideoEditor from "@/components/VideoEditor";
+import { ExportSoundToggle } from "@/components/settings/ExportSoundToggle"; // Check this path!
 
 export default function Home() {
   return (
-    <>
+    <main className="relative min-h-screen">
+      {/* GitHub Star Button */}
       <a
         href="https://github.com/magic-peach/reframe"
         target="_blank"
@@ -11,11 +13,15 @@ export default function Home() {
       >
         ⭐ Star on GitHub
       </a>
-      
-      <VideoEditor />
-    <main>
-      <VideoEditor />
+
+      {/* --- ADD THIS SECTION --- */}
+      <div className="max-w-4xl mx-auto pt-20 px-6">
+        <div className="flex justify-end mb-4">
+          <ExportSoundToggle />
+        </div>
+        
+        <VideoEditor />
+      </div>
     </main>
-    </>
   );
 }

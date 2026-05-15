@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react"; // 👈 Add these
 import { ExportStatus } from "@/lib/types";
 import LottiePlayer from "./LottiePlayer";
 import spinnerAnim from "@/lib/lottie/spinner.json";
@@ -11,8 +11,30 @@ interface Props {
   onCancel: () => void;
 }
 
-export default function ExportOverlay({ status, progress, onCancel }: Props) {
+export default function ExportOverlay({ status, progress }: Props) {
+  const overlayRef = useRef<HTMLDivElement>(null); // 👈 Create the ref
   const visible = status === "loading-engine" || status === "exporting";
+
+  // Handle Focus for Accessibility
+  useEffect(() => {
+    if (visible && overlayRef.current) {
+      // 1. Move focus to the modal so screen readers read it
+      overlayRef.current.focus();
+
+      // 2. Prevent tabbing out of the modal
+      const handleTab = (e: KeyboardEvent) => {
+        if (e.key === "Tab") {
+          e.preventDefault(); // Lock focus since there are no buttons to click
+        }
+      };
+
+      window.addEventListener("keydown", handleTab);
+      return () => window.removeEventListener("keydown", handleTab);
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
   const isLoading = status === "loading-engine";
 
   useEffect(() => {
@@ -34,15 +56,21 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm">
+    <div
+      ref={overlayRef} // 👈 Attach ref
+      tabIndex={-1}    // 👈 Make it focusable via code
+      role="dialog"    // 👈 Accessibility Role
+      aria-modal="true" // 👈 Tells browsers it's a modal
+      aria-labelledby="export-title"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm outline-none"
+    >
       <div className="text-center space-y-6 max-w-xs px-6 animate-fade-in">
-
         <div className="mx-auto w-20 h-20">
           <LottiePlayer animationData={spinnerAnim} loop autoplay />
         </div>
 
         <div>
-          <h2 className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">
+          <h2 id="export-title" className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">
             {isLoading ? "Loading engine" : "Exporting"}
           </h2>
           <p className="text-sm text-[var(--muted)] mt-1">

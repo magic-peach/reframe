@@ -5,6 +5,7 @@ import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE } from "@/lib/ty
 import { loadFFmpeg, exportVideo, terminateFFmpeg } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
+const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
 function getVideoDuration(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -64,45 +65,36 @@ export function useVideoEditor() {
   }, []);
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
+
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setFile(null);
+      setDuration(0);
+      setResult(null);
+      setRecipe(DEFAULT_RECIPE);
+      setProgress(0);
+
+      setError(
+        `File too large. Please upload a video smaller than ${MAX_FILE_SIZE / (1024 * 1024)}MB.`
+      );
+
+      setStatus("error");
+      return;
+    }
+
+    setFile(selectedFile);
     setResult(null);
     setStatus("idle");
     setError(null);
-    setFile(null);
 
-    // LAYER 1: Extension check
-    const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
-    const name = selectedFile.name.toLowerCase();
-    const hasValidExtension = validExtensions.some(ext => name.endsWith(ext));
-    if (!hasValidExtension) {
-      setError(`Layer 1 Validation Failed: Invalid file extension. Expected one of: ${validExtensions.join(', ')}`);
-      setStatus("error");
-      return;
-    }
+    setRecipe((prev) => ({
+      ...prev,
+      trimStart: 0,
+      trimEnd: null
+    }));
 
-    // LAYER 2: MIME type check
-    if (!selectedFile.type.startsWith("video/")) {
-      setError(`Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || 'unknown'}`);
-      setStatus("error");
-      return;
-    }
+    const dur = await getVideoDuration(selectedFile);
+    setDuration(dur);
 
-    // LAYER 3: Magic Bytes Verification
-    const isVideo = await verifyMagicBytes(selectedFile);
-    if (!isVideo) {
-      setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
-      setStatus("error");
-      return;
-    }
-
-    try {
-      const dur = await getVideoDuration(selectedFile);
-      setDuration(dur);
-      setFile(selectedFile);
-      setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
-    } catch (err) {
-      setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-      setStatus("error");
-    }
   }, []);
 
   const handleExport = useCallback(async () => {
