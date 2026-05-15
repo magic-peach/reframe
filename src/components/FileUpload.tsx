@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
+import { cn } from "@/lib/utils";
 
 interface Props {
   onFileSelect: (file: File) => void;
@@ -45,7 +46,7 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors"
+          className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors cursor-pointer"
         >
           Change
         </button>
@@ -69,14 +70,13 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
-      className={`
-        group flex flex-col items-center justify-center gap-4 py-12 px-6
-        border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200
-        ${dragging
+      className={cn(
+        "group flex flex-col items-center justify-center gap-4 py-12 px-6",
+        "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200",
+        dragging
           ? "border-film-500 bg-film-50 scale-[1.01]"
           : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
-        }
-      `}
+      )}
     >
       <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-200">
         <LottiePlayer animationData={uploadAnim} loop autoplay />

@@ -3,10 +3,19 @@
 import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
 import { Settings2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
+}
+
+function getOrientationLabel(width: number, height: number): string {
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+  const d = gcd(width, height);
+  const ratio = `${width / d}:${height / d}`;
+  const orientation = width === height ? "Square" : width > height ? "Landscape" : "Portrait";
+  return `${orientation} ${ratio}`;
 }
 
 function RatioBox({ width, height, active }: { width: number; height: number; active: boolean }) {
@@ -18,9 +27,10 @@ function RatioBox({ width, height, active }: { width: number; height: number; ac
 
   return (
     <div
-      className={`border-2 flex-shrink-0 transition-colors ${
+      className={cn(
+        "border-2 flex-shrink-0 transition-colors",
         active ? "border-film-600" : "border-[var(--muted)] opacity-60"
-      }`}
+      )}
       style={{ width: w, height: h }}
     />
   );
@@ -37,19 +47,21 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               type="button"
               key={preset.id}
               onClick={() => onChange({ preset: preset.id })}
-              title={`${preset.label} — ${preset.platform}`}
-              className={`
-                flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all duration-150
-                hover:scale-[1.02] active:scale-[0.98]
-                ${active
+              title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
+              className={cn(
+                "flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all duration-150 cursor-pointer",
+                "hover:scale-[1.02] active:scale-[0.98]",
+                active
                   ? "border-film-500 bg-film-50"
                   : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
-                }
-              `}
+              )}
             >
               <RatioBox width={preset.width} height={preset.height} active={active} />
               <div className="min-w-0 flex-1">
-                <p className={`text-xs font-heading font-bold leading-tight ${active ? "text-film-700" : "text-[var(--text)]"}`}>
+                <p className={cn(
+                  "text-xs font-heading font-bold leading-tight",
+                  active ? "text-film-700" : "text-[var(--text)]"
+                )}>
                   {preset.label}
                 </p>
                 <p className="text-[10px] text-[var(--muted)] leading-tight mt-0.5 truncate">
@@ -62,22 +74,28 @@ export default function PresetSelector({ recipe, onChange }: Props) {
 
         <button
           type="button"
+          title="Custom — Set your own dimensions"
           onClick={() => onChange({ preset: "custom" })}
-          className={`
-            flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all duration-150
-            hover:scale-[1.02] active:scale-[0.98]
-            ${recipe.preset === "custom"
+          className={cn(
+            "flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all duration-150",
+            "hover:scale-[1.02] active:scale-[0.98]",
+            recipe.preset === "custom"
               ? "border-film-500 bg-film-50"
               : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
-            }
-          `}
+          )}
         >
           <Settings2
             size={20}
-            className={`shrink-0 ${recipe.preset === "custom" ? "text-film-600" : "text-[var(--muted)]"}`}
+            className={cn(
+              "shrink-0",
+              recipe.preset === "custom" ? "text-film-600" : "text-[var(--muted)]"
+            )}
           />
           <div className="min-w-0">
-            <p className={`text-xs font-heading font-bold ${recipe.preset === "custom" ? "text-film-700" : "text-[var(--text)]"}`}>
+            <p className={cn(
+              "text-xs font-heading font-bold",
+              recipe.preset === "custom" ? "text-film-700" : "text-[var(--text)]"
+            )}>
               Custom
             </p>
             <p className="text-[10px] text-[var(--muted)] mt-0.5">Set your own</p>

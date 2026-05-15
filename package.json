@@ -11,12 +11,14 @@
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@ffmpeg/util": "^0.12.2",
+    "clsx": "^2.1.1",
     "lottie-react": "^2.4.0",
     "lottie-web": "^5.12.2",
     "lucide-react": "^0.469.0",
     "next": "^15.1.8",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@types/node": "^22",

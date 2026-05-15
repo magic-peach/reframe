@@ -17,6 +17,8 @@
 [![FFmpeg.wasm](https://img.shields.io/badge/FFmpeg.wasm-0.12.10-green?style=flat-square)](https://ffmpegwasm.netlify.app)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![GSSoC 2026](https://img.shields.io/badge/GSSoC-2026-FF6B35?style=flat-square)](https://gssoc.girlscript.tech)
+[![CI](https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml/badge.svg)](https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml)
+
 
 **[Try it now →](https://github.com/magic-peach/reframe)** · **[Report a Bug](https://github.com/magic-peach/reframe/issues/new?labels=bug)** · **[Request a Feature](https://github.com/magic-peach/reframe/issues/new?labels=feature)**
 
@@ -88,6 +90,32 @@ Reframe is a fully static app. Deploy the `out/` folder anywhere:
 | **GitHub Pages**     | Push `out/` to `gh-pages` branch                                  |
 | **Cloudflare Pages** | Connect your fork in the Cloudflare dashboard                     |
 
+### Deploying to Netlify
+
+1. Push your fork to GitHub
+2. Open Netlify and import the repository
+3. Configure:
+   - Build command: `bun run build`
+   - Publish directory: `out`
+4. Deploy the site
+
+> Note: FFmpeg browser features may require proper CORS headers depending on hosting setup.
+
+### Deploying to GitHub Pages
+
+Build the static export:
+
+```bash
+bun run build
+```
+
+The production files will be generated in the `out/` directory.
+
+You can deploy the `out/` folder using:
+- GitHub Pages
+- `gh-pages` branch
+- GitHub Actions workflow
+
 ---
 
 ## How It Works
@@ -149,6 +177,7 @@ graph TD
 | Mobile Chrome | ✅ Full    |                         |
 | Mobile Safari | ⚠️ Partial | Large files may be slow |
 
+> Reframe requires WebAssembly (WASM) support to process videos in the browser.
 ---
 
 ## Contributing

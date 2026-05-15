@@ -31,7 +31,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${bebasNeue.variable} ${syne.variable} ${dmSans.variable}`}>
-      <body>{children}</body>
+      <body>
+        <header>
+          <h1>Reframe</h1>
+        </header>
+        {children}
+        <footer>
+          <p>© 2026 Reframe</p>
+        </footer>
+      </body>
     </html>
   );
 }
