@@ -8,6 +8,7 @@ import spinnerAnim from "@/lib/lottie/spinner.json";
 interface Props {
   status: ExportStatus;
   progress: number;
+  onCancel: () => void;
 }
 
 export default function ExportOverlay({ status, progress }: Props) {
@@ -35,6 +36,24 @@ export default function ExportOverlay({ status, progress }: Props) {
   if (!visible) return null;
 
   const isLoading = status === "loading-engine";
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onCancel();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [visible, onCancel]);
+
+  if (!visible) return null;
 
   return (
     <div
@@ -79,6 +98,9 @@ export default function ExportOverlay({ status, progress }: Props) {
             </div>
             <p className="text-xs font-heading font-semibold text-[var(--muted)]">
               {progress}%
+            </p>
+            <p className="text-gray-500 text-xs mt-4">
+              Press Escape to cancel
             </p>
           </div>
         )}

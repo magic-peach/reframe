@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE } from "@/lib/types";
-import { loadFFmpeg, exportVideo } from "@/lib/ffmpeg";
+import { loadFFmpeg, exportVideo, terminateFFmpeg } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
@@ -57,6 +57,8 @@ export function useVideoEditor() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const exportAbortControllerRef = useRef<AbortController | null>(null);
+  const exportCancelledRef = useRef(false);
 
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => ({ ...prev, ...patch }));
@@ -98,22 +100,42 @@ export function useVideoEditor() {
   const handleExport = useCallback(async () => {
     if (!file) return;
 
+    const abortController = new AbortController();
+    exportAbortControllerRef.current = abortController;
+    exportCancelledRef.current = false;
+
     try {
       setStatus("loading-engine");
       setProgress(0);
       setError(null);
       setResult(null);
 
-      const ffmpeg = await loadFFmpeg();
+      const ffmpeg = await loadFFmpeg(abortController.signal);
+      if (exportCancelledRef.current) return;
+
       setStatus("exporting");
 
-      const exportResult = await exportVideo(ffmpeg, file, recipe, setProgress);
+      const exportResult = await exportVideo(
+        ffmpeg,
+        file,
+        recipe,
+        setProgress,
+        abortController.signal
+      );
+      if (exportCancelledRef.current) return;
+
       setResult(exportResult);
       setStatus("done");
     } catch (err) {
+      if (exportCancelledRef.current) return;
+
       console.error("export failed:", err);
       setError(err instanceof Error ? err.message : "something went wrong");
       setStatus("error");
+    } finally {
+      if (exportAbortControllerRef.current === abortController) {
+        exportAbortControllerRef.current = null;
+      }
     }
   }, [file, recipe]);
 
@@ -146,6 +168,17 @@ export function useVideoEditor() {
       document.removeEventListener("keydown", handleKeydown);
     };
   }, [file, status, handleExport]);
+
+  const cancelExport = useCallback(() => {
+    exportCancelledRef.current = true;
+    exportAbortControllerRef.current?.abort();
+    exportAbortControllerRef.current = null;
+    terminateFFmpeg();
+    setStatus("idle");
+    setProgress(0);
+    setError(null);
+  }, []);
+
   const reset = useCallback(() => {
     setFile(null);
     setDuration(0);
@@ -182,6 +215,7 @@ export function useVideoEditor() {
     updateRecipe,
     handleFileSelect,
     handleExport,
+    cancelExport,
     reset,
   };
 }
