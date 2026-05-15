@@ -6,6 +6,11 @@ import { Search, Settings2 } from "lucide-react";
 
 import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
+<<<<<<< HEAD
+=======
+import { Settings2 } from "lucide-react";
+import BaseButton from "./ui/BaseButton";
+>>>>>>> 8967ae9 (refactor: extract reusable BaseButton component)
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -150,19 +155,15 @@ export default function PresetSelector({ recipe, onChange }: Props) {
         {PRESETS.filter((p) => p.id !== "custom").map((preset) => {
           const active = recipe.preset === preset.id;
           return (
-            <button
+            <BaseButton
               type="button"
               key={preset.id}
               onClick={() => onChange({ preset: preset.id })}
               title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
               aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
               aria-pressed={active}
-              className={cn(
-                "min-h-[44px] min-w-[44px] flex items-center gap-2.5 p-3 rounded-lg border text-left transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
-                active
-                  ? "border-film-500 bg-film-50"
-                  : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
-              )}
+              active={active}
+              className="flex items-center gap-2.5 p-2.5 text-left"
             >
               <RatioBox width={preset.width} height={preset.height} active={active} />
               <div className="min-w-0 flex-1">
@@ -176,16 +177,17 @@ export default function PresetSelector({ recipe, onChange }: Props) {
                   {preset.platform}
                 </p>
               </div>
-            </button>
+            </BaseButton>
           );
         })}
 >>>>>>> 2c98255 (fix: improve accessibility with aria labels and pressed states)
 
-        <button
+        <BaseButton
           type="button"
           title="Custom — Set your own dimensions"
           aria-label="Select custom dimensions preset"
           aria-pressed={recipe.preset === "custom"}
+<<<<<<< HEAD
 <<<<<<< HEAD
           onClick={() => handlePresetSelect("custom")}
 =======
@@ -197,6 +199,11 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               ? "border-film-500 bg-film-50"
               : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
           )}
+=======
+          active={recipe.preset === "custom"}
+          onClick={() => onChange({ preset: "custom" })}
+          className="flex items-center gap-2.5 p-2.5 text-left"
+>>>>>>> 8967ae9 (refactor: extract reusable BaseButton component)
         >
           <Settings2
             size={20}
@@ -222,7 +229,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               Set your own
             </p>
           </div>
-        </button>
+        </BaseButton>
       </div>
 
       {recipe.preset === "custom" && (
