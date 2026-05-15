@@ -65,12 +65,7 @@ export default function DownloadResult({ result, onReset }: Props) {
         <a
           href={result.blobUrl}
           download={filename}
-<<<<<<< HEAD
-          onClick={handleDownloadClick} // Trigger revocation after click
-          className="flex-1 flex items-center justify-center gap-2 py-3 bg-film-600 hover:bg-film-700 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
-=======
           className="flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 bg-film-600 hover:bg-film-700 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
->>>>>>> upstream/main
         >
           <Download size={15} />
           Download {result.format.toUpperCase()}
