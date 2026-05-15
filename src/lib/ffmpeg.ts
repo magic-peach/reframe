@@ -8,17 +8,31 @@ const CORE_BASE_URL =
 
 let ffmpegInstance: FFmpeg | null = null;
 
-export async function loadFFmpeg(): Promise<FFmpeg> {
-  if (ffmpegInstance) return ffmpegInstance;
+export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) return ffmpegInstance;
 
-  const ffmpeg = new FFmpeg();
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-    wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
-  });
-
+  const ffmpeg = ffmpegInstance ?? new FFmpeg();
   ffmpegInstance = ffmpeg;
-  return ffmpeg;
+
+  try {
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
+    }, { signal });
+
+    return ffmpeg;
+  } catch (err) {
+    if (ffmpegInstance === ffmpeg) {
+      ffmpegInstance = null;
+    }
+
+    throw err;
+  }
+}
+
+export function terminateFFmpeg() {
+  ffmpegInstance?.terminate();
+  ffmpegInstance = null;
 }
 
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
@@ -75,7 +89,8 @@ export async function exportVideo(
   ffmpeg: FFmpeg,
   file: File,
   recipe: EditRecipe,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal
 ): Promise<ExportResult> {
   let targetW: number, targetH: number;
   if (recipe.preset === "custom") {
@@ -95,8 +110,8 @@ export async function exportVideo(
   const inputName = `input_${Date.now()}.${ext}`; // <-- Added Date.now() back
 const outputName = "output.mp4";
 
-try { // <-- This was the missing piece causing the red line!
-  await ffmpeg.writeFile(inputName, await fetchFile(file));
+  await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
+
   ffmpeg.on("progress", ({ progress }) => {
     onProgress(Math.min(99, Math.round(progress * 100)));
   });
@@ -129,40 +144,28 @@ try { // <-- This was the missing piece causing the red line!
 
   args.push(outputName);
 
-  const exitCode = await ffmpeg.exec(args);
+  const exitCode = await ffmpeg.exec(args, undefined, { signal });
 
- // fall back to webm if libx264 isnt available
-    if (exitCode !== 0) {
-      const webmOutput = "output.webm";
-      const fallbackArgs = [
-        "-i", inputName,
-        ...(vf ? ["-vf", vf] : []),
-        ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
-        "-c:v", "libvpx-vp9",
-        "-crf", String(recipe.quality),
-        ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
-        webmOutput,
-      ];
+  // fall back to webm if libx264 isnt available
+  if (exitCode !== 0) {
+    const webmOutput = "output.webm";
+    const fallbackArgs = [
+      "-i", inputName,
+      ...(vf ? ["-vf", vf] : []),
+      ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
+      "-c:v", "libvpx-vp9",
+      "-crf", String(recipe.quality),
+      ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
+      webmOutput,
+    ];
 
-      const fallbackCode = await ffmpeg.exec(fallbackArgs);
-      if (fallbackCode !== 0) throw new Error("Export failed");
+    const fallbackCode = await ffmpeg.exec(fallbackArgs, undefined, { signal });
+    if (fallbackCode !== 0) throw new Error("Export failed");
 
-      const data = await ffmpeg.readFile(webmOutput);
-      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
-
-      onProgress(100);
-      return {
-        blobUrl: URL.createObjectURL(blob),
-        size: blob.size,
-        width: targetW,
-        height: targetH,
-        format: "webm", // <-- Must be "webm"
-      };
-    }
-
-    // --- CRITICAL MP4 SUCCESS BLOCK ---
-    const data = await ffmpeg.readFile(outputName);
-    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
+    const data = await ffmpeg.readFile(webmOutput, undefined, { signal });
+    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
+    await ffmpeg.deleteFile(inputName, { signal });
+    await ffmpeg.deleteFile(webmOutput, { signal });
 
     onProgress(100);
     return {
@@ -173,12 +176,19 @@ try { // <-- This was the missing piece causing the red line!
       format: "mp4",
     };
 
-  } finally {
-    // This runs regardless of success or failure
-    try { await ffmpeg.deleteFile(inputName); } catch (e) {}
-    try { await ffmpeg.deleteFile(outputName); } catch (e) {}
-    try { await ffmpeg.deleteFile('output.webm'); } catch (e) {}
-  }
+  const data = await ffmpeg.readFile(outputName, undefined, { signal });
+  const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
+  await ffmpeg.deleteFile(inputName, { signal });
+  await ffmpeg.deleteFile(outputName, { signal });
+
+  onProgress(100);
+  return {
+    blobUrl: URL.createObjectURL(blob),
+    size: blob.size,
+    width: targetW,
+    height: targetH,
+    format: "mp4",
+  };
 }
 export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;

@@ -14,7 +14,7 @@ export default function ExportSettings({ recipe, onChange }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+        <label htmlFor="quality-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
           <SlidersHorizontal size={10} /> Quality
         </label>
         <span className="text-sm font-heading font-bold text-film-600">
@@ -23,13 +23,14 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         </span>
       </div>
       <input
+        id="quality-control"
         type="range"
         min={18}
         max={30}
         step={1}
         value={recipe.quality}
         onChange={(e) => onChange({ quality: Number(e.target.value) })}
-        className="w-full accent-film-600"
+        className="w-full accent-film-600 cursor-pointer"
       />
       <div className="flex justify-between mt-1">
         <span className="text-[10px] text-[var(--muted)]">Best quality</span>
