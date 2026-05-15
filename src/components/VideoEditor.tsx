@@ -77,6 +77,14 @@ export default function VideoEditor() {
           <div className="space-y-4">
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} />
+
+              {!file && (
+              <div className="text-center text-gray-500 py-6">
+                <p>Upload a video to get started</p>
+                <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+              </div>
+              )}
+
               {file && (
                 <div className="mt-4 animate-fade-in">
                   <VideoPreview file={file} />
@@ -115,7 +123,7 @@ export default function VideoEditor() {
                   >
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
                 <div>
-                  <p className="font-heading font-bold text-sm">Export failed</p>
+                  <p className="font-heading font-bold text-sm">Error</p>
                   <p className="text-film-600 text-xs mt-1">{error}</p>
                 </div>
               </div>

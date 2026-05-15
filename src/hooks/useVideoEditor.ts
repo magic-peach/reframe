@@ -8,7 +8,7 @@ const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your brows
 const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
 function getVideoDuration(file: File): Promise<number> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const video = document.createElement("video");
     video.preload = "metadata";
     const url = URL.createObjectURL(file);
@@ -19,8 +19,33 @@ function getVideoDuration(file: File): Promise<number> {
     };
     video.onerror = () => {
       URL.revokeObjectURL(url);
-      resolve(0);
+      reject(new Error("Failed to load video metadata. The file may be corrupt or simply not a video."));
     };
+  });
+}
+
+function verifyMagicBytes(file: File): Promise<boolean> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = (e) => {
+      if (!e.target?.result) {
+        resolve(false);
+        return;
+      }
+      const arr = new Uint8Array(e.target.result as ArrayBuffer);
+      const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      const ascii = String.fromCharCode(...arr);
+
+      // WebM / MKV
+      if (hex.startsWith('1A45DFA3')) resolve(true);
+      // AVI
+      else if (hex.startsWith('52494646')) resolve(true);
+      // MP4 / MOV (checks for 'ftyp' in first 12 bytes)
+      else if (ascii.substring(0, 12).includes('ftyp')) resolve(true);
+      else resolve(false);
+    };
+    reader.onerror = () => resolve(false);
+    reader.readAsArrayBuffer(file.slice(0, 12));
   });
 }
 
@@ -130,6 +155,21 @@ export function useVideoEditor() {
     setResult(null);
     setError(null);
   }, []);
+
+  // Development-only memory monitoring during export
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    if (status !== "exporting") return;
+
+    const interval = setInterval(() => {
+      const mem = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
+      if (mem) {
+        console.log("[Reframe Memory]", Math.round(mem.usedJSHeapSize / 1e6), "MB used");
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [status]);
 
   return {
     file,

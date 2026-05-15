@@ -3,9 +3,12 @@
 import { useEffect, useRef } from "react"; // 👈 Added for focus management
 import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/ffmpeg";
-import { Download, RotateCcw } from "lucide-react";
+import { Download, RotateCcw, Share2 } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import successAnim from "@/lib/lottie/success.json";
+
+const SHARE_TWEET_TEXT =
+  "I just edited my video with @reframevideo — free browser-based video editor! Check it out: https://github.com/magic-peach/reframe";
 
 interface Props {
   result: ExportResult;
@@ -15,6 +18,7 @@ interface Props {
 export default function DownloadResult({ result, onReset }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const filename = `reframe_${result.width}x${result.height}.${result.format}`;
+  const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(SHARE_TWEET_TEXT)}`;
 
   // Accessibility: Focus the result container when it appears
   useEffect(() => {
@@ -57,7 +61,7 @@ export default function DownloadResult({ result, onReset }: Props) {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <a
           href={result.blobUrl}
           download={filename}
@@ -68,6 +72,8 @@ export default function DownloadResult({ result, onReset }: Props) {
         </a>
         <button
           type="button"
+          title="Reset and upload a new video"
+          aria-label="Upload a new video"
           onClick={onReset}
           aria-label="Start a new video project"
           className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-[var(--border)] outline-none"
@@ -75,6 +81,16 @@ export default function DownloadResult({ result, onReset }: Props) {
           <RotateCcw size={14} />
           New
         </button>
+        <a
+          href={shareHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Share on X (opens in a new tab)"
+          className="flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 border border-[var(--border)] text-[var(--text)] text-sm font-heading font-bold uppercase tracking-wide rounded-lg hover:bg-[var(--bg)] transition-colors"
+        >
+          <Share2 size={15} aria-hidden="true" />
+          Share on X
+        </a>
       </div>
     </div>
   );
