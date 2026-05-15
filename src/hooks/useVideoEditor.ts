@@ -6,7 +6,7 @@ import { loadFFmpeg, exportVideo } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
 
-function getVideoDuration(file: File): Promise<number> {
+function getVideoDurationFallback(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
     video.preload = "metadata";
@@ -20,6 +20,47 @@ function getVideoDuration(file: File): Promise<number> {
       URL.revokeObjectURL(url);
       reject(new Error("Failed to load video metadata. The file may be corrupt or simply not a video."));
     };
+  });
+}
+
+function getVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    if (typeof window !== "undefined" && window.Worker) {
+      try {
+        const worker = new Worker(new URL('../workers/metadata.worker.ts', import.meta.url));
+        
+        const timeout = setTimeout(() => {
+          worker.terminate();
+          console.warn("Worker timeout, falling back to main thread");
+          getVideoDurationFallback(file).then(resolve).catch(reject);
+        }, 5000);
+
+        worker.onmessage = (e) => {
+          clearTimeout(timeout);
+          worker.terminate();
+          if (e.data.error) {
+            console.warn("Worker metadata extraction failed, using fallback:", e.data.error);
+            getVideoDurationFallback(file).then(resolve).catch(reject);
+          } else {
+            resolve(e.data.duration || 0);
+          }
+        };
+
+        worker.onerror = (err) => {
+          clearTimeout(timeout);
+          worker.terminate();
+          console.warn("Worker error, using fallback:", err.message);
+          getVideoDurationFallback(file).then(resolve).catch(reject);
+        };
+
+        worker.postMessage({ file });
+      } catch (err) {
+        console.warn("Failed to initialize worker, using fallback:", err);
+        getVideoDurationFallback(file).then(resolve).catch(reject);
+      }
+    } else {
+      getVideoDurationFallback(file).then(resolve).catch(reject);
+    }
   });
 }
 
