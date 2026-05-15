@@ -67,7 +67,7 @@ bun install
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — changes reflect instantly with Next.js Fast Refresh.
+Open [http://localhost:3000](http://localhost:3000) — component changes reflect instantly with [Next.js Fast Refresh](https://nextjs.org/docs/architecture/fast-refresh), so you usually do not need to restart the dev server. For FFmpeg reload notes and debugging tools, see the [Development Tips](CONTRIBUTING.md#development-tips).
 
 ### Production Build
 
