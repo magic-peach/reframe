@@ -107,6 +107,9 @@ export function useVideoEditor() {
 
   const handleExport = useCallback(async () => {
     if (!file) return;
+    if (status === "loading-engine" || status === "exporting") {
+      return;
+    }
 
     const abortController = new AbortController();
     exportAbortControllerRef.current = abortController;
@@ -164,7 +167,8 @@ export function useVideoEditor() {
         (e.ctrlKey || e.metaKey) &&
         e.key === "Enter" &&
         file &&
-        status === "idle"
+        status !== "loading-engine" &&
+        status !== "exporting"
       ) {
         handleExport();
       }

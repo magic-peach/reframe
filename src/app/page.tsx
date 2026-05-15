@@ -13,9 +13,7 @@ export default function Home() {
       </a>
       
       <VideoEditor />
-    <main>
-      <VideoEditor />
-    </main>
     </>
   );
 }
+ 
