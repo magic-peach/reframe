@@ -1,76 +1,82 @@
-"use client";
+'use client'
 
-import { EditRecipe } from "@/lib/types";
-import { useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { EditRecipe } from '@/lib/types'
+import { useState } from 'react'
 
 interface Props {
-  recipe: EditRecipe;
-  onChange: (patch: Partial<EditRecipe>) => void;
-  duration: number;
+  file: File | null
+  recipe: EditRecipe
+  onChange: (patch: Partial<EditRecipe>) => void
+  duration: number
 }
 
 export default function TrimControl({ recipe, onChange, duration }: Props) {
-  const [invalidStart, setStart] = useState(false);
-  const [invalidEnd, setEnd] = useState(false);
-  const [startErrorMsg, setStartErrorMsg] = useState("");
-  const [endErrorMsg, setEndErrorMsg] = useState("");
+  const [invalidStart, setStart] = useState(false)
+  const [invalidEnd, setEnd] = useState(false)
 
   const handleStart = (val: string) => {
-    const n = parseFloat(val);
+    if (val === '') {
+      setInvalidStart(false)
+      onChange({ trimStart: 0 })
+      return
+    }
+
+    const n = parseFloat(val)
+
     if (isNaN(n) || n < 0) {
-      setStart(true);
-      setStartErrorMsg("Start time must be 0 or greater.");
-      return;
+      setStart(true)
+      return
     }
+
     if (duration > 0 && n >= duration) {
-      setStart(true);
-      setStartErrorMsg(`Start time must be less than duration (${duration.toFixed(1)}s).`);
-      return;
+      setStart(true)
+      return
     }
+
     if (recipe.trimEnd !== null && n >= recipe.trimEnd) {
-      setStart(true);
-      setStartErrorMsg("Start time must be less than the end time.");
-      return;
+      setStart(true)
+      return
     }
-    setStart(false);
-    setStartErrorMsg("");
-    onChange({ trimStart: n });
-  };
+    setStart(false)
+    onChange({ trimStart: n })
+  }
 
   const handleEnd = (val: string) => {
-    if (val === "") {
-      setEnd(false);
-      setEndErrorMsg("");
-      onChange({ trimEnd: null });
-      return;
+    if (val === '') {
+      setEnd(false)
+      onChange({ trimEnd: null })
+      return
     }
-    const n = parseFloat(val);
+
+    const n = parseFloat(val)
+
     if (isNaN(n) || n <= 0 || n <= recipe.trimStart) {
-      setEnd(true);
-      setEndErrorMsg("End time must be greater than start time.");
-      return;
+      setEnd(true)
+      return
     }
+
     if (duration > 0 && n > duration) {
-      setEnd(true);
-      setEndErrorMsg(`End time cannot exceed duration (${duration.toFixed(1)}s).`);
-      return;
+      setEnd(true)
+      return
     }
-    setEnd(false);
-    setEndErrorMsg("");
-    onChange({ trimEnd: n });
-  };
+    setEnd(false)
+    onChange({ trimEnd: n })
+  }
 
   const inputClass =
-    "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
+    'w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow'
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex gap-3">
         <div className="flex-1">
-          <label htmlFor="trim-start" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
+          <label
+            htmlFor="trim-start"
+            className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
+          >
             Start (sec)
           </label>
+
           <input
             id="trim-start"
             type="number"
@@ -82,52 +88,62 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             onChange={(e) => handleStart(e.target.value)}
             aria-label="Trim start time in seconds"
             aria-invalid={invalidStart}
-            aria-describedby={invalidStart ? "trim-start-error" : undefined}
+            aria-describedby={invalidStart ? 'trim-start-error' : undefined}
             className={`${inputClass} ${
-              invalidStart ? "border-red-500 focus:ring-red-400" : "border-[var(--border)]"}`}
+              invalidStart ? 'border-red-500' : 'border-[var(--border)]'
+            }`}
             placeholder="0"
           />
           {invalidStart && (
-            <p id="trim-start-error" className="text-[10px] text-red-500 font-heading flex items-center gap-1 mt-1.5 animate-fade-in">
+            <p
+              id="trim-start-error"
+              className="font-heading animate-fade-in mt-1.5 flex items-center gap-1 text-[10px] text-red-500"
+            >
               <AlertCircle size={10} className="shrink-0" />
               {startErrorMsg}
             </p>
           )}
         </div>
+
         <div className="flex-1">
-          <label htmlFor="trim-end" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
+          <label
+            htmlFor="trim-end"
+            className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
+          >
             End (sec)
           </label>
+
           <input
             id="trim-end"
             type="number"
             min={0}
             max={duration > 0 ? duration : undefined}
             step={0.1}
-            value={recipe.trimEnd ?? ""}
+            value={recipe.trimEnd ?? ''}
             spellCheck={false}
             onChange={(e) => handleEnd(e.target.value)}
             aria-label="Trim end time in seconds"
             aria-invalid={invalidEnd}
-            aria-describedby={invalidEnd ? "trim-end-error" : undefined}
-            className={`${inputClass} ${
-              invalidEnd ? "border-red-500 focus:ring-red-400" : "border-[var(--border)]"}`}
-            placeholder={duration > 0 ? `${duration.toFixed(1)}` : "full length"}
+            className={`${inputClass} ${invalidEnd ? 'border-red-500' : 'border-[var(--border)]'}`}
+            placeholder={duration > 0 ? `${duration.toFixed(1)}` : 'full length'}
           />
           {invalidEnd && (
-            <p id="trim-end-error" className="text-[10px] text-red-500 font-heading flex items-center gap-1 mt-1.5 animate-fade-in">
+            <p
+              id="trim-end-error"
+              className="font-heading animate-fade-in mt-1.5 flex items-center gap-1 text-[10px] text-red-500"
+            >
               <AlertCircle size={10} className="shrink-0" />
               {endErrorMsg}
             </p>
           )}
         </div>
       </div>
+
       {duration > 0 && (
-        <p className="text-sm text-[var(--muted)] font-heading mt-1">
+        <p className="font-heading text-[10px] text-[var(--muted)]">
           Duration: {duration.toFixed(1)}s
         </p>
       )}
     </div>
-  );
+  )
 }
-
