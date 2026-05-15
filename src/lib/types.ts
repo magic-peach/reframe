@@ -13,6 +13,7 @@ export interface EditRecipe {
   brightness: number;
   contrast: number;
   saturation: number;
+  format: "mp4" | "webm" | "mkv";
 }
 
 export interface ExportResult {
@@ -20,7 +21,7 @@ export interface ExportResult {
   size: number;
   width: number;
   height: number;
-  format: "mp4" | "webm";
+  format: "mp4" | "webm" | "mkv";
 }
 
 export type ExportStatus =

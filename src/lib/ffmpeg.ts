@@ -128,7 +128,13 @@ export async function exportVideo(
 
   const ext = file.name.split(".").pop() ?? "mp4";
   const inputName = `input.${ext}`;
-  const outputName = "output.mp4";
+  const outputName = `output.${recipe.format}`;
+  const mimeType =
+    recipe.format === "webm"
+      ? "video/webm"
+      : recipe.format === "mkv"
+        ? "video/x-matroska"
+        : "video/mp4";
 
   await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
@@ -151,15 +157,30 @@ export async function exportVideo(
     args.push("-af", af);
   }
 
-  args.push(
-    "-c:v", "libx264",
-    "-crf", String(recipe.quality),
-    "-preset", "medium",
-    "-movflags", "+faststart"
-  );
+  if (recipe.format === "webm") {
+    args.push(
+      "-c:v", "libvpx-vp9",
+      "-crf", String(recipe.quality),
+      "-b:v", "0"
+    );
 
-  if (recipe.keepAudio) {
-    args.push("-c:a", "aac", "-b:a", "128k");
+    if (recipe.keepAudio) {
+      args.push("-c:a", "libopus");
+    }
+  } else {
+    args.push(
+      "-c:v", "libx264",
+      "-crf", String(recipe.quality),
+      "-preset", "medium"
+    );
+
+    if (recipe.format === "mp4") {
+      args.push("-movflags", "+faststart");
+    }
+
+    if (recipe.keepAudio) {
+      args.push("-c:a", "aac", "-b:a", "128k");
+    }
   }
 
   args.push(outputName);
@@ -208,7 +229,7 @@ export async function exportVideo(
     size: blob.size,
     width: targetW,
     height: targetH,
-    format: "mp4",
+    format: recipe.format,
   };
 }
 

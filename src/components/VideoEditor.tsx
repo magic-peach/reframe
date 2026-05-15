@@ -211,7 +211,7 @@ export default function VideoEditor() {
 </Section>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
-                  <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
+                  <Section icon={<SlidersHorizontal size={12} />} title="Export settings" delay={200}>
                     <ExportSettings recipe={recipe} onChange={updateRecipe} />
                   </Section>
                 </div>
