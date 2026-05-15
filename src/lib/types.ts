@@ -40,3 +40,9 @@ export const DEFAULT_RECIPE: EditRecipe = {
   speed: 1,
   quality: 23,
 };
+
+export const MAX_FILE_SIZE =
+  2 * 1024 * 1024 * 1024; // 2GB
+
+export const WARNING_FILE_SIZE =
+  500 * 1024 * 1024; // 500MB
