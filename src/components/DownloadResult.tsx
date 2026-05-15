@@ -54,8 +54,8 @@ export default function DownloadResult({ result, onReset }: Props) {
           onClick={onReset}
           className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
         >
-          <RotateCcw size={14} />
-          New
+          <RotateCcw size={14} aria-hidden="true" />
+          New 
         </button>
       </div>
     </div>

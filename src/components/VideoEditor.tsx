@@ -90,18 +90,18 @@ export default function VideoEditor() {
                 isProcessing && "pointer-events-none opacity-50"
               )}>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
-                  <Section icon={<Scissors size={12} />} title="Trim" delay={50}>
+                  <Section icon={<Scissors size={12} aria-hidden="true"/>} title="Trim" delay={50}>
                     <TrimControl recipe={recipe} onChange={updateRecipe} duration={duration} />
                   </Section>
-                  <Section icon={<RotateCw size={12} />} title="Rotate" delay={100}>
+                  <Section icon={<RotateCw size={12} aria-hidden="true" />} title="Rotate" delay={100}>
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
-                  <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
+                  <Section icon={<Volume2 size={12} aria-hidden="true" />} title="Audio & Speed" delay={150}>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
-                  <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
+                  <Section icon={<SlidersHorizontal size={12} aria-hidden="true" />} title="Export quality" delay={200}>
                     <ExportSettings recipe={recipe} onChange={updateRecipe} />
                   </Section>
                 </div>
@@ -113,7 +113,7 @@ export default function VideoEditor() {
                     role="status"
                     className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
                   >
-                <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
+                <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" aria-hidden="true"/>
                 <div>
                   <p className="font-heading font-bold text-sm">Export failed</p>
                   <p className="text-film-600 text-xs mt-1">{error}</p>
@@ -133,11 +133,11 @@ export default function VideoEditor() {
             isProcessing && "pointer-events-none opacity-50"
           )}>
             <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
-              <Section icon={<Layers size={12} />} title="Output size">
+              <Section icon={<Layers size={12} aria-hidden="true" />} title="Output size">
                 <PresetSelector recipe={recipe} onChange={updateRecipe} />
               </Section>
 
-              <Section icon={<Crop size={12} />} title="Framing" delay={100}>
+              <Section icon={<Crop size={12} aria-hidden="true" />} title="Framing" delay={100}>
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
             </div>
@@ -154,7 +154,7 @@ export default function VideoEditor() {
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >
-              <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
+              <Zap size={20} aria-hidden="true" className={cn(file && !isProcessing && "animate-pulse")} />
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
           </div>
@@ -172,7 +172,7 @@ export default function VideoEditor() {
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-[11px] font-heading font-medium text-[var(--muted)] hover:text-film-600 transition-colors"
           >
-            <Github size={13} />
+            <Github size={13} aria-hidden="true" />
             Source on GitHub
           </a>
         </div>

@@ -15,7 +15,7 @@ export default function ExportSettings({ recipe, onChange }: Props) {
     <div>
       <div className="flex items-center justify-between mb-2">
         <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
-          <SlidersHorizontal size={10} /> Quality
+          <SlidersHorizontal size={10} aria-hidden="true" /> Quality
         </label>
         <span className="text-sm font-heading font-bold text-film-600">
           {label}

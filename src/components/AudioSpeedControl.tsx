@@ -31,7 +31,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
         )}
       >
-        {recipe.keepAudio ? <Volume2 size={16} /> : <VolumeX size={16} />}
+        {recipe.keepAudio ? <Volume2 size={16} aria-hidden="true" /> : <VolumeX size={16} aria-hidden="true"  />}
         <div className="text-right">
           <span className="text-sm font-heading font-bold text-film-600 block">
             {recipe.speed}x
