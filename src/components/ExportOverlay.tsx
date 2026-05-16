@@ -42,22 +42,6 @@ const handleKeyDown = useCallback((e: KeyboardEvent) => {
     }
   }, [visible]);
 
-  useEffect(() => {
-    if (!visible) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onCancel?.();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [visible, onCancel]);
-
   if (!visible) return null;
 
   return (
