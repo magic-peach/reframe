@@ -2,23 +2,62 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult } from "./types";
 import { getPresetById } from "./presets";
+import { simd } from "wasm-feature-detect";
 
-const CORE_BASE_URL =
-  "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
+const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
 let ffmpegInstance: FFmpeg | null = null;
 
-export async function loadFFmpeg(): Promise<FFmpeg> {
-  if (ffmpegInstance) return ffmpegInstance;
+/**
+ * Error thrown when the FFmpeg WebAssembly core fails to load.
+ * This typically happens when the user is offline, the CDN is unreachable (or if the url is wrong),
+ * or there are network interruptions during the initialization phase.
+ */
+export class FFmpegLoadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FFmpegLoadError";
+  }
+}
 
-  const ffmpeg = new FFmpeg();
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-    wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
-  });
+export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) return ffmpegInstance;
 
+  const ffmpeg = ffmpegInstance ?? new FFmpeg();
   ffmpegInstance = ffmpeg;
-  return ffmpeg;
+
+  try {
+    // Check if the user's browser supports WebAssembly SIMD
+    const isSimdSupported = await simd();
+
+    // Dynamically set the core filename
+    const coreName = isSimdSupported ? "ffmpeg-core-simd" : "ffmpeg-core";
+
+    // Load FFmpeg using the dynamic URLs + the new signal parameter
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.wasm`, "application/wasm"),
+    }, { signal });
+
+    return ffmpeg;
+  } catch (err) {
+    if (ffmpegInstance === ffmpeg) {
+      ffmpegInstance = null;
+    }
+    throw new FFmpegLoadError("The ffmpeg cdn could not load. Please check your internet connection.");
+  }
+}
+
+export function terminateFFmpeg() {
+  ffmpegInstance?.terminate();
+  ffmpegInstance = null;
+}
+
+function buildSessionId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
@@ -54,7 +93,9 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     const pts = (1 / recipe.speed).toFixed(4);
     filters.push(`setpts=${pts}*PTS`);
   }
-
+  filters.push(
+  `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+);
   return filters.join(",");
 }
 
@@ -75,8 +116,10 @@ export async function exportVideo(
   ffmpeg: FFmpeg,
   file: File,
   recipe: EditRecipe,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal
 ): Promise<ExportResult> {
+  const sessionId = buildSessionId();
   let targetW: number, targetH: number;
   if (recipe.preset === "custom") {
     targetW = recipe.customWidth;
@@ -92,65 +135,116 @@ export async function exportVideo(
   targetH = Math.round(targetH / 2) * 2;
 
   const ext = file.name.split(".").pop() ?? "mp4";
-  const inputName = `input.${ext}`;
-  const outputName = "output.mp4";
+  const inputName = `input_${sessionId}.${ext}`;
 
-  await ffmpeg.writeFile(inputName, await fetchFile(file));
+  // Determine output filename and MIME type based on format
+  const getOutputConfig = (format: string) => {
+    switch (format) {
+      case "webm":
+        return { filename: `output_${sessionId}.webm`, mimeType: "video/webm" };
+      case "mkv":
+        return { filename: `output_${sessionId}.mkv`, mimeType: "video/x-matroska" };
+      default: // mp4
+        return { filename: `output_${sessionId}.mp4`, mimeType: "video/mp4" };
+    }
+  };
 
-  ffmpeg.on("progress", ({ progress }) => {
+  const { filename: outputName, mimeType } = getOutputConfig(recipe.format);
+  const fallbackOutputName = `fallback_${sessionId}.webm`;
+  const cleanupFiles = new Set<string>([inputName, outputName, fallbackOutputName]);
+
+  const handleProgress = ({ progress }: { progress: number }) => {
     onProgress(Math.min(99, Math.round(progress * 100)));
-  });
+  };
 
-  const vf = buildVideoFilter(recipe, targetW, targetH);
-  const audioTrim = buildAudioTrimFilter(recipe);
-  const audioSpeed = buildAudioFilter(recipe.speed);
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
-  const af = afParts.join(",");
+  try {
+    await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
-  const args = ["-i", inputName];
-  if (vf) args.push("-vf", vf);
+    ffmpeg.on("progress", handleProgress);
 
-  if (!recipe.keepAudio) {
-    args.push("-an");
-  } else if (af) {
-    args.push("-af", af);
-  }
+    const vf = buildVideoFilter(recipe, targetW, targetH);
+    const audioTrim = buildAudioTrimFilter(recipe);
+    const audioSpeed = buildAudioFilter(recipe.speed);
+    const afParts = [audioTrim, audioSpeed].filter(Boolean);
+    const af = afParts.join(",");
 
-  args.push(
-    "-c:v", "libx264",
-    "-crf", String(recipe.quality),
-    "-preset", "medium",
-    "-movflags", "+faststart"
-  );
+    const args = ["-i", inputName];
+    if (vf) args.push("-vf", vf);
 
-  if (recipe.keepAudio) {
-    args.push("-c:a", "aac", "-b:a", "128k");
-  }
+    if (!recipe.keepAudio) {
+      args.push("-an");
+    } else if (af) {
+      args.push("-af", af);
+    }
 
-  args.push(outputName);
+    // Add codec-specific arguments based on selected format
+    if (recipe.format === "webm") {
+      args.push(
+        "-c:v", "libvpx-vp9",
+        "-crf", String(recipe.quality)
+      );
+      if (recipe.keepAudio) {
+        args.push("-c:a", "libopus");
+      }
+    } else if (recipe.format === "mkv") {
+      args.push(
+        "-c:v", "libx264",
+        "-crf", String(recipe.quality),
+        "-preset", "medium"
+      );
+      if (recipe.keepAudio) {
+        args.push("-c:a", "aac", "-b:a", "128k");
+      }
+    } else {
+      // MP4 (default)
+      args.push(
+        "-c:v", "libx264",
+        "-crf", String(recipe.quality),
+        "-preset", "medium",
+        "-movflags", "+faststart"
+      );
+      if (recipe.keepAudio) {
+        args.push("-c:a", "aac", "-b:a", "128k");
+      }
+    }
 
-  const exitCode = await ffmpeg.exec(args);
+    args.push(outputName);
 
-  // fall back to webm if libx264 isnt available
-  if (exitCode !== 0) {
-    const webmOutput = "output.webm";
-    const fallbackArgs = [
-      "-i", inputName,
-      ...(vf ? ["-vf", vf] : []),
-      ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
-      "-c:v", "libvpx-vp9",
-      "-crf", String(recipe.quality),
-      ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
-      webmOutput,
-    ];
+    const exitCode = await ffmpeg.exec(args, undefined, { signal });
 
-    const fallbackCode = await ffmpeg.exec(fallbackArgs);
-    if (fallbackCode !== 0) throw new Error("Export failed");
+    // If the requested format fails, try WebM as fallback
+    if (exitCode !== 0) {
+      const fallbackArgs = [
+        "-i", inputName,
+        ...(vf ? ["-vf", vf] : []),
+        ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
+        "-c:v", "libvpx-vp9",
+        "-crf", String(recipe.quality),
+        ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
+        fallbackOutputName,
+      ];
 
-    const data = await ffmpeg.readFile(webmOutput);
-    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
-    await ffmpeg.deleteFile(inputName);
-    await ffmpeg.deleteFile(webmOutput);
+      const fallbackCode = await ffmpeg.exec(fallbackArgs, undefined, { signal });
+
+      if (fallbackCode !== 0) {
+        throw new Error("Export failed");
+      }
+
+      const data = await ffmpeg.readFile(fallbackOutputName, undefined, { signal });
+      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
+
+      onProgress(100);
+      return {
+        blobUrl: URL.createObjectURL(blob),
+        size: blob.size,
+        width: targetW,
+        height: targetH,
+        format: "webm",
+      };
+    }
+
+    const data = await ffmpeg.readFile(outputName, undefined, { signal });
+    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: mimeType });
 
     onProgress(100);
     return {
@@ -158,23 +252,17 @@ export async function exportVideo(
       size: blob.size,
       width: targetW,
       height: targetH,
-      format: "webm",
+      format: recipe.format as "mp4" | "webm" | "mkv",
     };
+  } finally {
+    ffmpeg.off("progress", handleProgress);
+    for (const path of cleanupFiles) {
+      try {
+        await ffmpeg.deleteFile(path);
+      } catch {
+      }
+    }
   }
-
-  const data = await ffmpeg.readFile(outputName);
-  const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
-  await ffmpeg.deleteFile(inputName);
-  await ffmpeg.deleteFile(outputName);
-
-  onProgress(100);
-  return {
-    blobUrl: URL.createObjectURL(blob),
-    size: blob.size,
-    width: targetW,
-    height: targetH,
-    format: "mp4",
-  };
 }
 
 export function formatBytes(bytes: number): string {
