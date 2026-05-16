@@ -14,6 +14,9 @@ interface Props {
 
 export default function ExportOverlay({ status, progress, onCancel }: Props) {
   const visible = status === "loading-engine" || status === "exporting";
+  
+  if (!visible) return null;
+
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
 
@@ -48,8 +51,6 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
       previousFocusRef.current.focus();
     }
   }, [visible]);
-
-  if (!visible) return null;
 
   const isLoading = status === "loading-engine";
 

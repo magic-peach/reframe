@@ -7,6 +7,8 @@ interface Props {
 }
 
 export default function VideoPreview({ file }: Props) {
+  if (!file) return null;
+
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const lastId = useRef(0);
@@ -66,8 +68,6 @@ export default function VideoPreview({ file }: Props) {
       }
     };
   }, [file]);
-
-  if (!file) return null;
 
   return (
     <div className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video">
