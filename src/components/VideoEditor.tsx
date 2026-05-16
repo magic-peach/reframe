@@ -212,8 +212,6 @@ export default function VideoEditor() {
 
   </div>
 </Section>
-                    <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
-                  </Section>
                   <Section icon={<SlidersHorizontal size={12} aria-hidden="true"/>} title="Export quality" delay={200}>
                     <ExportSettings recipe={recipe} onChange={updateRecipe} />
                   </Section>
@@ -288,9 +286,9 @@ export default function VideoEditor() {
           <p className="text-[11px] font-heading text-[var(--muted)] tracking-wide">
             2026 Reframe. Free, open source, no login required.
           </p>
-<p className="text-[10px] text-[var(--muted)]">
-  All video processing happens locally in your browser using FFmpeg.wasm.
-</p>
+ <p className="text-[10px] text-[var(--muted)]">
+   All video processing happens locally in your browser using FFmpeg.wasm.
+ </p>
           <a
             href="https://github.com/magic-peach/reframe"
             target="_blank"
@@ -305,3 +303,4 @@ export default function VideoEditor() {
     </div>
   );
 }
+
