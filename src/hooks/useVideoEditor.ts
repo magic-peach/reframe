@@ -137,6 +137,9 @@ export function useVideoEditor() {
 
   const handleExport = useCallback(async () => {
     if (!file) return;
+    if (status === "loading-engine" || status === "exporting") {
+      return;
+    }
 
     const abortController = new AbortController();
     exportAbortControllerRef.current = abortController;
@@ -146,6 +149,7 @@ export function useVideoEditor() {
       setStatus("loading-engine");
       setProgress(0);
       setError(null);
+      if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
       const ffmpeg = await loadFFmpeg(abortController.signal);
@@ -179,7 +183,7 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe]);
+  }, [file, recipe, result]);
 
   useEffect(() => {
     if (file) {
@@ -198,7 +202,8 @@ export function useVideoEditor() {
         (e.ctrlKey || e.metaKey) &&
         e.key === "Enter" &&
         file &&
-        status === "idle"
+        status !== "loading-engine" &&
+        status !== "exporting"
       ) {
         handleExport();
       }
@@ -226,6 +231,7 @@ export function useVideoEditor() {
   }, []);
 
   const reset = useCallback(() => {
+    if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setFile(null);
     setDuration(0);
     setRecipe(DEFAULT_RECIPE);
@@ -233,7 +239,7 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
-  }, []);
+  }, [result]);
 
   // Development-only memory monitoring during export
   useEffect(() => {
