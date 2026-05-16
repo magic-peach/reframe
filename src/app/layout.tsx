@@ -8,13 +8,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
   description: "Free, open-source video editor that runs entirely in your browser. No login, no uploads, no ads. Resize for any platform, trim, rotate, adjust speed, and export.",
-<<<<<<< HEAD
-  openGraph: {
-    title: "Reframe — Free Browser Video Editor",
-    description: "Resize, trim, rotate and convert videos in your browser. No uploads. No login. No ads.",
-    type: "website",
-    url: "https://reframe.video",
-=======
    keywords: [
     "video editor",
     "browser video editor",
@@ -43,7 +36,6 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     shortcut: "/favicon.svg",
->>>>>>> upstream/main
   },
 };
 
