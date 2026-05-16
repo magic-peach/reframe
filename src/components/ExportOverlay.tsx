@@ -20,7 +20,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
 const handleKeyDown = useCallback((e: KeyboardEvent) => {
   if (e.key === "Escape") {
-    onCancel();
+    onCancel?.();
   }
 }, [onCancel]);
   useEffect(() => {
