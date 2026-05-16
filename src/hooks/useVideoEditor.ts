@@ -158,7 +158,7 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result]);
+  }, [file, recipe, result, status]);
 
   useEffect(() => {
     if (file) {
