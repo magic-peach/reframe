@@ -11,9 +11,9 @@ export default function Home() {
       >
         ⭐ Star on GitHub
       </a>
-      <main id="main-content" tabIndex={-1}>
+      
         <VideoEditor />
-      </main>
+      
       
     </>
   );
