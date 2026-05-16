@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
@@ -25,6 +25,15 @@ function fmt(bytes: number) {
     : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatDuration(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+
+  return `${mins.toString().padStart(2, "0")}:${secs
+    .toString()
+    .padStart(2, "0")}`;
+}
+
 export default function FileUpload({
   onFileSelect,
   currentFile,
@@ -32,6 +41,8 @@ export default function FileUpload({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [dragging, setDragging] = useState(false);
+  const [duration, setDuration] = useState<number | null>(null);
+
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
 
@@ -63,6 +74,19 @@ export default function FileUpload({
         )}). Uploading may affect performance on low-memory devices.`
       );
     }
+
+    // Duration handling
+    setDuration(null);
+
+    const video = document.createElement("video");
+    video.preload = "metadata";
+
+    video.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(video.src);
+      setDuration(video.duration);
+    };
+
+    video.src = URL.createObjectURL(file);
 
     onFileSelect(file);
   };
@@ -101,7 +125,10 @@ export default function FileUpload({
             </p>
 
             <p className="text-xs text-[var(--muted)]">
-              {fmt(currentFile.size)}
+              {fmt(currentFile.size)}{" "}
+              {duration !== null
+                ? `• ${formatDuration(duration)}`
+                : "• Loading..."}
             </p>
           </div>
 
@@ -110,7 +137,10 @@ export default function FileUpload({
             onClick={() => inputRef.current?.click()}
             className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors cursor-pointer"
           >
-            Change
+            Change{" "}
+            <span className="text-[var(--muted)]">
+              (Ctrl+O / Cmd+O)
+            </span>
           </button>
 
           <input
@@ -142,6 +172,8 @@ export default function FileUpload({
       )}
 
       <div
+        role="button"
+        tabIndex={0}
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);
@@ -149,6 +181,11 @@ export default function FileUpload({
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            inputRef.current?.click();
+          }
+        }}
         className={cn(
           "group flex flex-col items-center justify-center gap-4 py-12 px-6",
           "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200",
@@ -167,11 +204,17 @@ export default function FileUpload({
 
         <div className="text-center">
           <p className="font-heading font-semibold text-[var(--text)] text-base">
-            Drop a video file here
+            {dragging
+              ? "Release to upload"
+              : "Drag & Drop your video in here"}
           </p>
 
           <p className="text-sm text-[var(--muted)] mt-1">
             or click to browse
+          </p>
+
+          <p className="text-xs text-[var(--muted)] mt-2 font-heading">
+            Ctrl+O / Cmd+O
           </p>
         </div>
 
@@ -179,6 +222,10 @@ export default function FileUpload({
           <FolderOpen size={14} />
           MP4 / MOV / AVI / WebM
         </div>
+
+        <p className="text-xs text-gray-500">
+          Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
+        </p>
 
         <input
           ref={inputRef}
