@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import { EditRecipe } from '@/lib/types'
 import { SPEED_STEPS } from '@/lib/constants'
-import { Volume2, VolumeX, Gauge } from "lucide-react";
+import { Volume2, VolumeX, Gauge, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -115,6 +115,15 @@ useEffect(() => {
           ))}
         </div>
       </div>
+
+      {recipe.keepAudio && (recipe.trimStart !== 0 || recipe.trimEnd !== null) && (
+        <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-700 leading-tight flex items-start gap-2 animate-fade-in">
+          <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+          <p>
+            Note: If audio doesn&apos;t start within the selected range, the output will be silent.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
