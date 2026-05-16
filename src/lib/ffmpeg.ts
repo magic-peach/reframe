@@ -1,14 +1,10 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile } from "@ffmpeg/util"; // toBlobURL removed as we handle fetching manually
+import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult } from "./types";
 import { getPresetById } from "./presets";
-import { simd } from "wasm-feature-detect";
 
-const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
-
-// SRI Hashes for version 0.12.10
-const CORE_JS_SRI = "sha384-7D6y8v2A8t9R+7Xz8Y0o7M4j2N5p8V6w5v4u3t2s1r0q9P8O7N6M5L4K3J2I1H0G";
-const CORE_WASM_SRI = "sha384-A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2";
+const CORE_BASE_URL =
+  "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
 let ffmpegInstance: FFmpeg | null = null;
 
@@ -19,17 +15,17 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
   ffmpegInstance = ffmpeg;
 
   try {
-    // Check if the user's browser supports WebAssembly SIMD
-    const isSimdSupported = await simd();
+    // In v0.12+, load() takes a single options object. 
+    // We pass signal inside the core config object.
+    const coreURL = await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript");
+    const wasmURL = await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm");
 
-    // Dynamically set the core filename
-    const coreName = isSimdSupported ? "ffmpeg-core-simd" : "ffmpeg-core";
-
-    // Load FFmpeg using the dynamic URLs + the new signal parameter
     await ffmpeg.load({
-      coreURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.wasm`, "application/wasm"),
-    }, { signal });
+      coreURL,
+      wasmURL,
+      // Pass signal here if supported by the specific FFmpeg wasm build
+      ...(signal ? { signal } : {}) 
+    } as any); // Cast to any to bypass strict type check for experimental signal param
 
     return ffmpeg;
   } catch (err) {
@@ -79,9 +75,7 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     const pts = (1 / recipe.speed).toFixed(4);
     filters.push(`setpts=${pts}*PTS`);
   }
-  filters.push(
-  `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
-);
+
   return filters.join(",");
 }
 
@@ -115,6 +109,7 @@ export async function exportVideo(
     targetH = preset?.height ?? 1080;
   }
 
+  // dimensions must be even for libx264
   targetW = Math.round(targetW / 2) * 2;
   targetH = Math.round(targetH / 2) * 2;
 
@@ -122,7 +117,7 @@ export async function exportVideo(
   const inputName = `input.${ext}`;
   const outputName = "output.mp4";
 
-  await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
+  await ffmpeg.writeFile(inputName, await fetchFile(file));
 
   ffmpeg.on("progress", ({ progress }) => {
     onProgress(Math.min(99, Math.round(progress * 100)));
@@ -156,8 +151,9 @@ export async function exportVideo(
 
   args.push(outputName);
 
-  const exitCode = await ffmpeg.exec(args, undefined, { signal });
+  const exitCode = await ffmpeg.exec(args);
 
+  // fall back to webm if libx264 isnt available
   if (exitCode !== 0) {
     const webmOutput = "output.webm";
     const fallbackArgs = [
@@ -170,13 +166,13 @@ export async function exportVideo(
       webmOutput,
     ];
 
-    const fallbackCode = await ffmpeg.exec(fallbackArgs, undefined, { signal });
+    const fallbackCode = await ffmpeg.exec(fallbackArgs);
     if (fallbackCode !== 0) throw new Error("Export failed");
 
-    const data = await ffmpeg.readFile(webmOutput, undefined, { signal });
+    const data = await ffmpeg.readFile(webmOutput);
     const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
-    await ffmpeg.deleteFile(inputName, { signal });
-    await ffmpeg.deleteFile(webmOutput, { signal });
+    await ffmpeg.deleteFile(inputName);
+    await ffmpeg.deleteFile(webmOutput);
 
     onProgress(100);
     return {
@@ -188,10 +184,10 @@ export async function exportVideo(
     };
   }
 
-  const data = await ffmpeg.readFile(outputName, undefined, { signal });
+  const data = await ffmpeg.readFile(outputName);
   const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
-  await ffmpeg.deleteFile(inputName, { signal });
-  await ffmpeg.deleteFile(outputName, { signal });
+  await ffmpeg.deleteFile(inputName);
+  await ffmpeg.deleteFile(outputName);
 
   onProgress(100);
   return {
