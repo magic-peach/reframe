@@ -25,6 +25,7 @@ If you're ready to tackle some open issues, **[we've collected some good first i
 - [Code Style](#code-style)
 - [Development Tips](#development-tips)
 - [GSSoC'26 Participants](#gssoc26-participants)
+- [Code of Conduct](#code-of-conduct)
 
 ---
 
@@ -106,6 +107,110 @@ reframe/
 ├── tailwind.config.ts
 └── tsconfig.json
 ```
+---
+
+## Development Tips
+
+### 1. Next.js Fast Refresh
+This project uses Next.js Fast Refresh in development mode. Most changes to React components, hooks, and styles are reflected instantly in the browser without restarting the dev server.
+
+- Component updates appear immediately
+- State is often preserved during edits
+- Restarting `npm run dev` is usually unnecessary for UI changes
+
+Learn more: https://nextjs.org/docs/architecture/fast-refresh
+
+---
+
+### 2. FFmpeg Module Changes
+Changes to `ffmpeg.ts` may not hot-reload correctly because FFmpeg initialization and WebAssembly modules can persist in memory.
+
+If updates are not reflected:
+
+- Perform a full browser page reload
+- Clear cached worker instances if necessary
+- Restart the development server only when required
+
+FFmpeg WASM reference: https://ffmpegwasm.netlify.app/docs/overview
+
+---
+
+### 3. Monitor FFmpeg Downloads
+FFmpeg WebAssembly assets can be large and may take time to download during development.
+
+Use the browser DevTools **Network** tab to:
+
+- Verify FFmpeg assets are loading correctly
+- Inspect caching behavior
+- Detect failed `.wasm` or worker requests
+- Measure initialization performance
+
+Chrome DevTools: https://developer.chrome.com/docs/devtools/network
+
+---
+
+### 4. Use React DevTools
+Install React DevTools for easier component inspection and debugging.
+
+Helpful for:
+
+- Inspecting component props and state
+- Tracing re-renders
+- Debugging hooks
+- Monitoring React component trees
+
+React DevTools: https://react.dev/learn/react-developer-tools
+
+---
+
+### 5. Keep Console Open During Development
+The browser console provides important runtime diagnostics for:
+
+- FFmpeg initialization issues
+- Hydration warnings
+- API request failures
+- WebAssembly loading errors
+
+Filtering logs by warnings/errors can speed up debugging significantly.
+
+---
+
+### 6. Use Source Maps for Easier Debugging
+Development builds include source maps, allowing you to debug original TypeScript/React source files directly from DevTools.
+
+Tips:
+
+- Set breakpoints in source files
+- Use async stack traces
+- Inspect runtime variables during rendering
+
+JavaScript debugging guide: https://developer.chrome.com/docs/devtools/javascript
+
+---
+
+### 7. Watch for Memory Usage
+FFmpeg WebAssembly processing can consume significant browser memory during video operations.
+
+Recommendations:
+
+- Close unused tabs while testing
+- Refresh the page after heavy processing tasks
+- Monitor memory usage in browser performance tools
+
+Performance tools: https://developer.chrome.com/docs/devtools/performance
+
+---
+
+### 8. Verify Environment Variables
+After modifying `.env.local`, restart the Next.js development server because environment variables are loaded only during server startup.
+
+Example:
+
+```bash
+npm run dev
+```
+
+Environment variables guide: https://nextjs.org/docs/app/guides/environment-variables
 
 ---
 
@@ -239,5 +344,14 @@ Reframe is an **official GirlScript Summer of Code 2026 project**!
 - **Found a bug?** → [Open a bug report](https://github.com/magic-peach/reframe/issues/new?labels=bug)
 - **Have a feature idea?** → [Open a feature request](https://github.com/magic-peach/reframe/issues/new?labels=feature)
 - **Stuck on an issue?** → Comment on the issue and tag `@magic-peach`
+
+---
+
+## Code of Conduct
+
+We expect all contributors to follow our Code of Conduct to create a safe, welcoming, and inclusive community.
+- **Be respectful and welcoming.**
+- **Harassment and discrimination are strictly prohibited.**
+- **Constructive feedback is encouraged.**
 
 Thank you for making Reframe better! 🎬
