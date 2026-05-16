@@ -1,6 +1,8 @@
 "use client";
+import { useEffect } from "react";
 
-import { EditRecipe, SPEED_STEPS } from "@/lib/types";
+import { EditRecipe } from '@/lib/types'
+import { SPEED_STEPS } from '@/lib/constants'
 import { Volume2, VolumeX, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +12,36 @@ interface Props {
 }
 
 export default function AudioSpeedControl({ recipe, onChange }: Props) {
+useEffect(() => {
+  const handler = (e: KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+
+    if (
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.isContentEditable
+    ) {
+      return;
+    }
+
+    if (
+      e.key.toLowerCase() === "m" &&
+      !e.ctrlKey &&
+      !e.metaKey
+    ) {
+      onChange({
+        keepAudio: !recipe.keepAudio,
+      });
+    }
+  };
+
+  document.addEventListener("keydown", handler);
+
+  return () => {
+    document.removeEventListener("keydown", handler);
+  };
+}, [recipe.keepAudio, onChange]);
+
   const speedIndex = SPEED_STEPS.indexOf(recipe.speed as (typeof SPEED_STEPS)[number]);
   const getSpeedDescription = (speed: number) => {
     if (speed <= 0.5) return "Very Slow";
@@ -23,6 +55,8 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       <button
         type="button"
         onClick={() => onChange({ keepAudio: !recipe.keepAudio })}
+        aria-label={recipe.keepAudio ? "Mute video audio" : "Unmute video audio"}
+        aria-pressed={recipe.keepAudio}
         className={cn(
           "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
           "hover:scale-[1.01] active:scale-[0.99]",
@@ -50,7 +84,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+          <label htmlFor="speed-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
             <Gauge size={10} /> Speed
           </label>
 
@@ -64,13 +98,16 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           </div>
         </div>
         <input
+          id="speed-control"
           type="range"
           min={0}
           max={SPEED_STEPS.length - 1}
           step={1}
           value={speedIndex === -1 ? 3 : speedIndex}
           onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
-          className="w-full accent-film-600"
+          aria-label="Video playback speed"
+          aria-valuetext={`${recipe.speed}x speed, ${getSpeedDescription(recipe.speed)}`}
+          className="w-full h-11 accent-film-600 cursor-pointer"
         />
         <div className="flex justify-between mt-1">
           {SPEED_STEPS.map((s) => (
