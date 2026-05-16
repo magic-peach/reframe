@@ -53,6 +53,13 @@ export function terminateFFmpeg() {
   ffmpegInstance = null;
 }
 
+function buildSessionId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
 
@@ -112,6 +119,7 @@ export async function exportVideo(
   onProgress: (percent: number) => void,
   signal?: AbortSignal
 ): Promise<ExportResult> {
+  const sessionId = buildSessionId();
   let targetW: number, targetH: number;
   if (recipe.preset === "custom") {
     targetW = recipe.customWidth;
@@ -127,102 +135,116 @@ export async function exportVideo(
   targetH = Math.round(targetH / 2) * 2;
 
   const ext = file.name.split(".").pop() ?? "mp4";
-  const inputName = `input.${ext}`;
+  const inputName = `input_${sessionId}.${ext}`;
 
   // Determine output filename and MIME type based on format
   const getOutputConfig = (format: string) => {
     switch (format) {
       case "webm":
-        return { filename: "output.webm", mimeType: "video/webm" };
+        return { filename: `output_${sessionId}.webm`, mimeType: "video/webm" };
       case "mkv":
-        return { filename: "output.mkv", mimeType: "video/x-matroska" };
+        return { filename: `output_${sessionId}.mkv`, mimeType: "video/x-matroska" };
       default: // mp4
-        return { filename: "output.mp4", mimeType: "video/mp4" };
+        return { filename: `output_${sessionId}.mp4`, mimeType: "video/mp4" };
     }
   };
 
   const { filename: outputName, mimeType } = getOutputConfig(recipe.format);
+  const fallbackOutputName = `fallback_${sessionId}.webm`;
+  const cleanupFiles = new Set<string>([inputName, outputName, fallbackOutputName]);
 
-  await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
-
-  ffmpeg.on("progress", ({ progress }) => {
+  const handleProgress = ({ progress }: { progress: number }) => {
     onProgress(Math.min(99, Math.round(progress * 100)));
-  });
+  };
 
-  const vf = buildVideoFilter(recipe, targetW, targetH);
-  const audioTrim = buildAudioTrimFilter(recipe);
-  const audioSpeed = buildAudioFilter(recipe.speed);
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
-  const af = afParts.join(",");
+  try {
+    await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
-  const args = ["-i", inputName];
-  if (vf) args.push("-vf", vf);
+    ffmpeg.on("progress", handleProgress);
 
-  if (!recipe.keepAudio) {
-    args.push("-an");
-  } else if (af) {
-    args.push("-af", af);
-  }
+    const vf = buildVideoFilter(recipe, targetW, targetH);
+    const audioTrim = buildAudioTrimFilter(recipe);
+    const audioSpeed = buildAudioFilter(recipe.speed);
+    const afParts = [audioTrim, audioSpeed].filter(Boolean);
+    const af = afParts.join(",");
 
-  // Add codec-specific arguments based on selected format
-  if (recipe.format === "webm") {
-    args.push(
-      "-c:v", "libvpx-vp9",
-      "-crf", String(recipe.quality)
-    );
-    if (recipe.keepAudio) {
-      args.push("-c:a", "libopus");
-    }
-  } else if (recipe.format === "mkv") {
-    args.push(
-      "-c:v", "libx264",
-      "-crf", String(recipe.quality),
-      "-preset", "medium"
-    );
-    if (recipe.keepAudio) {
-      args.push("-c:a", "aac", "-b:a", "128k");
-    }
-  } else {
-    // MP4 (default)
-    args.push(
-      "-c:v", "libx264",
-      "-crf", String(recipe.quality),
-      "-preset", "medium",
-      "-movflags", "+faststart"
-    );
-    if (recipe.keepAudio) {
-      args.push("-c:a", "aac", "-b:a", "128k");
-    }
-  }
+    const args = ["-i", inputName];
+    if (vf) args.push("-vf", vf);
 
-  args.push(outputName);
-
-  const exitCode = await ffmpeg.exec(args, undefined, { signal });
-
-  // If the requested format fails, try WebM as fallback
-  if (exitCode !== 0) {
-    const webmOutput = "output.webm";
-    const fallbackArgs = [
-      "-i", inputName,
-      ...(vf ? ["-vf", vf] : []),
-      ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
-      "-c:v", "libvpx-vp9",
-      "-crf", String(recipe.quality),
-      ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
-      webmOutput,
-    ];
-
-    const fallbackCode = await ffmpeg.exec(fallbackArgs, undefined, { signal });
-
-    if (fallbackCode !== 0) {
-      await ffmpeg.deleteFile(inputName, { signal });
-      throw new Error("Export failed");
+    if (!recipe.keepAudio) {
+      args.push("-an");
+    } else if (af) {
+      args.push("-af", af);
     }
 
-    const data = await ffmpeg.readFile(webmOutput, undefined, { signal });
-    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
-    await ffmpeg.deleteFile(inputName, { signal });
-    await ffmpeg.deleteFile(webmOutput, { signal });
+    // Add codec-specific arguments based on selected format
+    if (recipe.format === "webm") {
+      args.push(
+        "-c:v", "libvpx-vp9",
+        "-crf", String(recipe.quality)
+      );
+      if (recipe.keepAudio) {
+        args.push("-c:a", "libopus");
+      }
+    } else if (recipe.format === "mkv") {
+      args.push(
+        "-c:v", "libx264",
+        "-crf", String(recipe.quality),
+        "-preset", "medium"
+      );
+      if (recipe.keepAudio) {
+        args.push("-c:a", "aac", "-b:a", "128k");
+      }
+    } else {
+      // MP4 (default)
+      args.push(
+        "-c:v", "libx264",
+        "-crf", String(recipe.quality),
+        "-preset", "medium",
+        "-movflags", "+faststart"
+      );
+      if (recipe.keepAudio) {
+        args.push("-c:a", "aac", "-b:a", "128k");
+      }
+    }
+
+    args.push(outputName);
+
+    const exitCode = await ffmpeg.exec(args, undefined, { signal });
+
+    // If the requested format fails, try WebM as fallback
+    if (exitCode !== 0) {
+      const fallbackArgs = [
+        "-i", inputName,
+        ...(vf ? ["-vf", vf] : []),
+        ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
+        "-c:v", "libvpx-vp9",
+        "-crf", String(recipe.quality),
+        ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
+        fallbackOutputName,
+      ];
+
+      const fallbackCode = await ffmpeg.exec(fallbackArgs, undefined, { signal });
+
+      if (fallbackCode !== 0) {
+        throw new Error("Export failed");
+      }
+
+      const data = await ffmpeg.readFile(fallbackOutputName, undefined, { signal });
+      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
+
+      onProgress(100);
+      return {
+        blobUrl: URL.createObjectURL(blob),
+        size: blob.size,
+        width: targetW,
+        height: targetH,
+        format: "webm",
+      };
+    }
+
+    const data = await ffmpeg.readFile(outputName, undefined, { signal });
+    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: mimeType });
 
     onProgress(100);
     return {
@@ -230,23 +252,17 @@ export async function exportVideo(
       size: blob.size,
       width: targetW,
       height: targetH,
-      format: "webm",
+      format: recipe.format as "mp4" | "webm" | "mkv",
     };
+  } finally {
+    ffmpeg.off("progress", handleProgress);
+    for (const path of cleanupFiles) {
+      try {
+        await ffmpeg.deleteFile(path);
+      } catch {
+      }
+    }
   }
-
-  const data = await ffmpeg.readFile(outputName, undefined, { signal });
-  const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: mimeType });
-  await ffmpeg.deleteFile(inputName, { signal });
-  await ffmpeg.deleteFile(outputName, { signal });
-
-  onProgress(100);
-  return {
-    blobUrl: URL.createObjectURL(blob),
-    size: blob.size,
-    width: targetW,
-    height: targetH,
-    format: recipe.format as "mp4" | "webm" | "mkv",
-  };
 }
 
 export function formatBytes(bytes: number): string {
