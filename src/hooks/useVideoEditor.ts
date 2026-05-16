@@ -1,17 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-<<<<<<< HEAD
-import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE } from "@/lib/types";
-import { loadFFmpeg, exportVideo, terminateFFmpeg } from "@/lib/ffmpeg";
-
-const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
-
-function getVideoDuration(file: File): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement("video");
-    video.preload = "metadata";
-=======
 import { EditRecipe, ExportResult, ExportStatus } from "@/lib/types";
 import { DEFAULT_RECIPE } from "@/lib/constants";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
@@ -20,7 +9,6 @@ const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your brows
 
 export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
->>>>>>> upstream/main
     const url = URL.createObjectURL(file);
     const video = document.createElement('video');
     video.preload = 'metadata';
@@ -34,11 +22,7 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
     };
     video.onerror = () => {
       URL.revokeObjectURL(url);
-<<<<<<< HEAD
-      reject(new Error("Failed to load video metadata. The file may be corrupt or simply not a video."));
-=======
       reject(new Error('Failed to load video metadata'));
->>>>>>> upstream/main
     };
     video.src = url;
   });
@@ -141,11 +125,7 @@ export function useVideoEditor() {
     }
 
     try {
-<<<<<<< HEAD
-      const dur = await getVideoDuration(selectedFile);
-=======
       const { duration: dur } = await extractMetadata(selectedFile);
->>>>>>> upstream/main
       setDuration(dur);
       setFile(selectedFile);
       setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
@@ -241,13 +221,10 @@ export function useVideoEditor() {
     setError(null);
   }, []);
 
-<<<<<<< HEAD
-=======
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
   }, []);
 
->>>>>>> upstream/main
   const reset = useCallback(() => {
     setFile(null);
     setDuration(0);
