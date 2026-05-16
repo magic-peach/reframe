@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
@@ -42,7 +42,6 @@ export default function FileUpload({
 
   const [dragging, setDragging] = useState(false);
   const [duration, setDuration] = useState<number | null>(null);
-
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
 
@@ -50,13 +49,11 @@ export default function FileUpload({
     setError("");
     setWarning("");
 
-    // Validate file type
     if (!file.type.startsWith("video/")) {
       setError("Only video files are allowed.");
       return;
     }
 
-    // Hard limit: block files above 2GB
     if (file.size > MAX_FILE_SIZE) {
       setError(
         `File too large (${fmt(
@@ -66,7 +63,6 @@ export default function FileUpload({
       return;
     }
 
-    // Soft warning for files above 500MB
     if (file.size > WARNING_FILE_SIZE) {
       setWarning(
         `Large file detected (${fmt(
@@ -75,7 +71,6 @@ export default function FileUpload({
       );
     }
 
-    // Duration handling
     setDuration(null);
 
     const video = document.createElement("video");
@@ -91,7 +86,6 @@ export default function FileUpload({
     onFileSelect(file);
   };
 
-
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
@@ -100,14 +94,11 @@ export default function FileUpload({
 
     if (file) handleFile(file);
   };
-  
 
   if (currentFile) {
     return (
       <div className="space-y-2">
-        {error && (
-          <p className="text-sm text-red-500">{error}</p>
-        )}
+        {error && <p className="text-sm text-red-500">{error}</p>}
 
         {warning && (
           <p className="text-sm text-yellow-500">
@@ -123,16 +114,14 @@ export default function FileUpload({
 
           <div className="flex-1 min-w-0">
             <p className="text-base font-medium font-heading truncate text-[var(--text)]">
-            <p className="text-base font-medium font-heading truncate text-[var(--text)]">
               {currentFile.name}
             </p>
 
             <p className="text-sm text-[var(--muted)]">
-            <p className="text-sm text-[var(--muted)]">
               {fmt(currentFile.size)}{" "}
               {duration !== null
-                ? `• ${formatDuration(duration)}`
-                : "• Loading..."}
+                ? `â€¢ ${formatDuration(duration)}`
+                : "â€¢ Loading..."}
             </p>
           </div>
 
@@ -165,9 +154,7 @@ export default function FileUpload({
 
   return (
     <div className="space-y-2">
-      {error && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
       {warning && (
         <p className="text-sm text-yellow-500">
