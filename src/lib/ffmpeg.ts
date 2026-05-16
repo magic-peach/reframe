@@ -2,13 +2,9 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util"; // toBlobURL removed as we handle fetching manually
 import { EditRecipe, ExportResult } from "./types";
 import { getPresetById } from "./presets";
+import { simd } from "wasm-feature-detect";
 
-/**
- * SECURITY: Pinned FFmpeg Version & SRI Hashes
- * Version: @ffmpeg/core@0.12.10 (UMD)
- */
-const CORE_BASE_URL = 
-  "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
+const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
 // SRI Hashes for version 0.12.10
 const CORE_JS_SRI = "sha384-7D6y8v2A8t9R+7Xz8Y0o7M4j2N5p8V6w5v4u3t2s1r0q9P8O7N6M5L4K3J2I1H0G";
@@ -16,72 +12,98 @@ const CORE_WASM_SRI = "sha384-A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5
 
 let ffmpegInstance: FFmpeg | null = null;
 
-/**
- * Helper to fetch CDN resources with explicit CORS validation and SRI integrity.
- * * REQUIRED CDN HEADERS:
- * - Access-Control-Allow-Origin: *
- * - Cross-Origin-Embedder-Policy: require-corp
- * - Cross-Origin-Resource-Policy: cross-origin
- * * VERSION UPDATE PROCESS:
- * 1. Update CORE_BASE_URL to the new version.
- * 2. Obtain new SRI hashes from jsDelivr (select file -> "Copy SRI").
- * 3. Update CORE_JS_SRI and CORE_WASM_SRI constants above.
- */
-async function fetchBinaryWithSRI(
-  url: string, 
-  mimeType: string, 
-  integrity: string
-): Promise<string> {
-  const response = await fetch(url, {
-    mode: 'cors',
-    credentials: 'omit',
-    integrity // Subresource Integrity verification
-  });
+export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) return ffmpegInstance;
 
-  if (!response.ok) {
-    throw new Error(
-      `Failed to load FFmpeg resource: ${response.status} ${response.statusText}. ` +
-      `Verify CDN status and SRI hashes.`
+  const ffmpeg = ffmpegInstance ?? new FFmpeg();
+  ffmpegInstance = ffmpeg;
+
+  try {
+    // Check if the user's browser supports WebAssembly SIMD
+    const isSimdSupported = await simd();
+
+    // Dynamically set the core filename
+    const coreName = isSimdSupported ? "ffmpeg-core-simd" : "ffmpeg-core";
+
+    // Load FFmpeg using the dynamic URLs + the new signal parameter
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.wasm`, "application/wasm"),
+    }, { signal });
+
+    return ffmpeg;
+  } catch (err) {
+    if (ffmpegInstance === ffmpeg) {
+      ffmpegInstance = null;
+    }
+
+    throw err;
+  }
+}
+
+export function terminateFFmpeg() {
+  ffmpegInstance?.terminate();
+  ffmpegInstance = null;
+}
+
+function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
+  const filters: string[] = [];
+
+  if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
+    const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
+    filters.push(`trim=start=${recipe.trimStart}:end=${end}`);
+    filters.push("setpts=PTS-STARTPTS");
+  }
+
+  if (recipe.rotate === 90) {
+    filters.push("transpose=1");
+  } else if (recipe.rotate === 180) {
+    filters.push("transpose=1,transpose=1");
+  } else if (recipe.rotate === 270) {
+    filters.push("transpose=2");
+  }
+
+  if (recipe.framing === "fit") {
+    filters.push(
+      `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
+      `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
+    );
+  } else {
+    filters.push(
+      `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
+      `crop=${targetW}:${targetH}`
     );
   }
 
-  const blob = await response.blob();
-  return URL.createObjectURL(new Blob([blob], { type: mimeType }));
+  if (recipe.speed !== 1) {
+    const pts = (1 / recipe.speed).toFixed(4);
+    filters.push(`setpts=${pts}*PTS`);
+  }
+  filters.push(
+  `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+);
+  return filters.join(",");
 }
 
-export async function loadFFmpeg(): Promise<FFmpeg> {
-  if (ffmpegInstance) return ffmpegInstance;
-
-  const ffmpeg = new FFmpeg();
-
-  // Load resources with pinned version and integrity checks
-  const coreURL = await fetchBinaryWithSRI(
-    `${CORE_BASE_URL}/ffmpeg-core.js`, 
-    "text/javascript",
-    CORE_JS_SRI
-  );
-  const wasmURL = await fetchBinaryWithSRI(
-    `${CORE_BASE_URL}/ffmpeg-core.wasm`, 
-    "application/wasm",
-    CORE_WASM_SRI
-  );
-
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-    wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
-  });
-
-  ffmpegInstance = ffmpeg;
-  return ffmpeg;
+function buildAudioFilter(speed: number): string {
+  if (speed === 1) return "";
+  if (speed === 0.25) return "atempo=0.5,atempo=0.5";
+  if (speed === 4) return "atempo=2.0,atempo=2.0";
+  return `atempo=${speed}`;
 }
 
-// ... rest of the buildVideoFilter, buildAudioFilter, buildAudioTrimFilter functions remain same
+function buildAudioTrimFilter(recipe: EditRecipe): string {
+  if (recipe.trimStart === 0 && recipe.trimEnd === null) return "";
+  const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
+  return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
+}
 
 export async function exportVideo(
   ffmpeg: FFmpeg,
   file: File,
   recipe: EditRecipe,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal
 ): Promise<ExportResult> {
   let targetW: number, targetH: number;
   if (recipe.preset === "custom") {
@@ -100,7 +122,7 @@ export async function exportVideo(
   const inputName = `input.${ext}`;
   const outputName = "output.mp4";
 
-  await ffmpeg.writeFile(inputName, await fetchFile(file));
+  await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
   ffmpeg.on("progress", ({ progress }) => {
     onProgress(Math.min(99, Math.round(progress * 100)));
@@ -134,7 +156,7 @@ export async function exportVideo(
 
   args.push(outputName);
 
-  const exitCode = await ffmpeg.exec(args);
+  const exitCode = await ffmpeg.exec(args, undefined, { signal });
 
   if (exitCode !== 0) {
     const webmOutput = "output.webm";
@@ -148,13 +170,13 @@ export async function exportVideo(
       webmOutput,
     ];
 
-    const fallbackCode = await ffmpeg.exec(fallbackArgs);
+    const fallbackCode = await ffmpeg.exec(fallbackArgs, undefined, { signal });
     if (fallbackCode !== 0) throw new Error("Export failed");
 
-    const data = await ffmpeg.readFile(webmOutput);
+    const data = await ffmpeg.readFile(webmOutput, undefined, { signal });
     const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
-    await ffmpeg.deleteFile(inputName);
-    await ffmpeg.deleteFile(webmOutput);
+    await ffmpeg.deleteFile(inputName, { signal });
+    await ffmpeg.deleteFile(webmOutput, { signal });
 
     onProgress(100);
     return {
@@ -166,10 +188,10 @@ export async function exportVideo(
     };
   }
 
-  const data = await ffmpeg.readFile(outputName);
+  const data = await ffmpeg.readFile(outputName, undefined, { signal });
   const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
-  await ffmpeg.deleteFile(inputName);
-  await ffmpeg.deleteFile(outputName);
+  await ffmpeg.deleteFile(inputName, { signal });
+  await ffmpeg.deleteFile(outputName, { signal });
 
   onProgress(100);
   return {
