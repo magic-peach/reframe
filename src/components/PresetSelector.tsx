@@ -14,7 +14,6 @@ interface Props {
 }
 
 function getOrientationLabel(width: number, height: number): string {
-  if (!width || !height) return "Custom";
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
   const divisor = gcd(width, height);
   const ratio = `${width / divisor}:${height / divisor}`;
