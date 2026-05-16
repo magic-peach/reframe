@@ -188,6 +188,10 @@ export function useVideoEditor() {
     setError(null);
   }, []);
 
+  const resetSettings = useCallback(() => {
+    setRecipe(DEFAULT_RECIPE);
+  }, []);
+
   const reset = useCallback(() => {
     setFile(null);
     setDuration(0);
@@ -226,5 +230,6 @@ export function useVideoEditor() {
     handleExport,
     cancelExport,
     reset,
+    resetSettings,
   };
 }
