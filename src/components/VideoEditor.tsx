@@ -12,10 +12,11 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
+import ExportQueue from "./ExportQueue";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github
+  SlidersHorizontal, Zap, AlertTriangle, ListPlus
 } from "lucide-react";
 
 interface SectionProps {
@@ -46,8 +47,10 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
 export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
-    result, error, updateRecipe,
-    handleFileSelect, handleExport, cancelExport, reset, resetSettings,
+    result, error, queue, activeQueueId, updateRecipe,
+    handleFileSelect, handleExport, enqueueCurrentExport, startQueue,
+    cancelExport, removeQueueItem, retryQueueItem, clearQueue,
+    reset, resetSettings,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
 
@@ -302,8 +305,34 @@ export default function VideoEditor() {
               )}
             >
               <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
-              {isProcessing ? "PROCESSING" : "EXPORT"}
+              {isProcessing ? "PROCESSING" : "EXPORT NOW"}
             </button>
+
+            <button
+              type="button"
+              onClick={() => enqueueCurrentExport()}
+              disabled={!file || isProcessing}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 py-3 rounded-xl border",
+                "font-heading text-xs font-bold uppercase tracking-wide transition-all duration-200",
+                file && !isProcessing
+                  ? "border-[var(--border)] bg-[var(--surface)] text-[var(--text)] hover:border-film-300 hover:bg-film-50"
+                  : "border-[var(--border)] bg-[var(--border)] text-[var(--muted)] opacity-50 cursor-not-allowed"
+              )}
+            >
+              <ListPlus size={15} />
+              Add to Queue
+            </button>
+
+            <ExportQueue
+              items={queue}
+              activeId={activeQueueId}
+              isProcessing={isProcessing}
+              onStart={startQueue}
+              onRemove={removeQueueItem}
+              onRetry={retryQueueItem}
+              onClear={clearQueue}
+            />
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ export interface EditRecipe {
   keepAudio: boolean;
   speed: number;
   quality: number;
+  compressionMode: CompressionMode;
   format: "mp4" | "webm" | "mkv";
 
   brightness: number;
@@ -16,12 +17,35 @@ export interface EditRecipe {
   saturation: number;
 }
 
+export type CompressionMode = "best" | "balanced" | "small" | "custom";
+
 export interface ExportResult {
   blobUrl: string;
   size: number;
   width: number;
   height: number;
   format: "mp4" | "webm" | "mkv";
+  sourceName: string;
+  compressionMode: CompressionMode;
+}
+
+export type ExportQueueStatus =
+  | "queued"
+  | "loading-engine"
+  | "exporting"
+  | "done"
+  | "error"
+  | "cancelled";
+
+export interface ExportQueueItem {
+  id: string;
+  file: File;
+  recipe: EditRecipe;
+  status: ExportQueueStatus;
+  progress: number;
+  result: ExportResult | null;
+  error: string | null;
+  createdAt: number;
 }
 
 export type ExportStatus =
@@ -44,10 +68,11 @@ export const DEFAULT_RECIPE: EditRecipe = {
   keepAudio: true,
   speed: 1,
   quality: 23,
+  compressionMode: "balanced",
   format: "mp4",
   brightness: 0,
-  contrast: 0,
-  saturation: 0,
+  contrast: 1,
+  saturation: 1,
 };
 
 export const MAX_FILE_SIZE =

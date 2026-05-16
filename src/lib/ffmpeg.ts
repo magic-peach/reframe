@@ -3,6 +3,7 @@ import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult } from "./types";
 import { getPresetById } from "./presets";
 import { simd } from "wasm-feature-detect";
+import { getCompressionModeOption } from "./constants";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
@@ -112,6 +113,17 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
   return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
 }
 
+function getCompressionSettings(recipe: EditRecipe) {
+  const profile = getCompressionModeOption(recipe.compressionMode);
+
+  return {
+    crf: profile?.quality ?? recipe.quality,
+    audioBitrate: profile?.audioBitrate ?? "128k",
+    x264Preset: profile?.x264Preset ?? "medium",
+    webmDeadline: profile?.webmDeadline ?? "good",
+  };
+}
+
 export async function exportVideo(
   ffmpeg: FFmpeg,
   file: File,
@@ -167,6 +179,7 @@ export async function exportVideo(
     const audioSpeed = buildAudioFilter(recipe.speed);
     const afParts = [audioTrim, audioSpeed].filter(Boolean);
     const af = afParts.join(",");
+    const compression = getCompressionSettings(recipe);
 
     const args = ["-i", inputName];
     if (vf) args.push("-vf", vf);
@@ -181,30 +194,32 @@ export async function exportVideo(
     if (recipe.format === "webm") {
       args.push(
         "-c:v", "libvpx-vp9",
-        "-crf", String(recipe.quality)
+        "-b:v", "0",
+        "-crf", String(compression.crf),
+        "-deadline", compression.webmDeadline
       );
       if (recipe.keepAudio) {
-        args.push("-c:a", "libopus");
+        args.push("-c:a", "libopus", "-b:a", compression.audioBitrate);
       }
     } else if (recipe.format === "mkv") {
       args.push(
         "-c:v", "libx264",
-        "-crf", String(recipe.quality),
-        "-preset", "medium"
+        "-crf", String(compression.crf),
+        "-preset", compression.x264Preset
       );
       if (recipe.keepAudio) {
-        args.push("-c:a", "aac", "-b:a", "128k");
+        args.push("-c:a", "aac", "-b:a", compression.audioBitrate);
       }
     } else {
       // MP4 (default)
       args.push(
         "-c:v", "libx264",
-        "-crf", String(recipe.quality),
-        "-preset", "medium",
+        "-crf", String(compression.crf),
+        "-preset", compression.x264Preset,
         "-movflags", "+faststart"
       );
       if (recipe.keepAudio) {
-        args.push("-c:a", "aac", "-b:a", "128k");
+        args.push("-c:a", "aac", "-b:a", compression.audioBitrate);
       }
     }
 
@@ -219,8 +234,10 @@ export async function exportVideo(
         ...(vf ? ["-vf", vf] : []),
         ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
         "-c:v", "libvpx-vp9",
-        "-crf", String(recipe.quality),
-        ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
+        "-b:v", "0",
+        "-crf", String(compression.crf),
+        "-deadline", compression.webmDeadline,
+        ...(recipe.keepAudio ? ["-c:a", "libopus", "-b:a", compression.audioBitrate] : []),
         fallbackOutputName,
       ];
 
@@ -240,6 +257,8 @@ export async function exportVideo(
         width: targetW,
         height: targetH,
         format: "webm",
+        sourceName: file.name,
+        compressionMode: recipe.compressionMode,
       };
     }
 
@@ -253,6 +272,8 @@ export async function exportVideo(
       width: targetW,
       height: targetH,
       format: recipe.format as "mp4" | "webm" | "mkv",
+      sourceName: file.name,
+      compressionMode: recipe.compressionMode,
     };
   } finally {
     ffmpeg.off("progress", handleProgress);
