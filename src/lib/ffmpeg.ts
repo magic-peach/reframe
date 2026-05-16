@@ -4,7 +4,13 @@ import { EditRecipe, ExportResult } from "./types";
 import { getPresetById } from "./presets";
 import { simd } from "wasm-feature-detect";
 
-const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
+const CDN_LIST = [
+  "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd",
+  "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd",
+];
+
+const CORE_BASE_URL =
+  "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
 let ffmpegInstance: FFmpeg | null = null;
 
@@ -20,32 +26,47 @@ export class FFmpegLoadError extends Error {
   }
 }
 
+const abortCheck = (signal?: AbortSignal) => {
+  if (signal?.aborted) {
+    throw new DOMException("Export cancelled", "AbortError");
+  }
+};
+
 export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
   if (ffmpegInstance?.loaded) return ffmpegInstance;
 
   const ffmpeg = ffmpegInstance ?? new FFmpeg();
   ffmpegInstance = ffmpeg;
 
-  try {
-    // Check if the user's browser supports WebAssembly SIMD
-    const isSimdSupported = await simd();
+  let lastError: any;
 
-    // Dynamically set the core filename
-    const coreName = isSimdSupported ? "ffmpeg-core-simd" : "ffmpeg-core";
+  const coreName = "ffmpeg-core";
 
-    // Load FFmpeg using the dynamic URLs + the new signal parameter
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.wasm`, "application/wasm"),
-    }, { signal });
+  for (const base of CDN_LIST) {
+    try {
+      abortCheck(signal);
 
-    return ffmpeg;
-  } catch (err) {
-    if (ffmpegInstance === ffmpeg) {
+      await ffmpeg.load({
+        coreURL: await toBlobURL(
+          `${base}/${coreName}.js`,
+          "text/javascript"
+        ),
+        wasmURL: await toBlobURL(
+          `${base}/${coreName}.wasm`,
+          "application/wasm"
+        ),
+      });
+
+      return ffmpeg;
+    } catch (err) {
+      lastError = err;
       ffmpegInstance = null;
     }
-    throw new FFmpegLoadError("The ffmpeg cdn could not load. Please check your internet connection.");
   }
+
+  throw new FFmpegLoadError(
+    "FFmpeg failed to load from all CDNs. Check internet connection."
+  );
 }
 
 export function terminateFFmpeg() {
@@ -157,9 +178,10 @@ export async function exportVideo(
     onProgress(Math.min(99, Math.round(progress * 100)));
   };
 
-  try {
-    await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
+   try {
+    await ffmpeg.writeFile(inputName,await fetchFile(file),{ signal } );
 
+    abortCheck(signal);
     ffmpeg.on("progress", handleProgress);
 
     const vf = buildVideoFilter(recipe, targetW, targetH);
@@ -211,6 +233,8 @@ export async function exportVideo(
     args.push(outputName);
 
     const exitCode = await ffmpeg.exec(args, undefined, { signal });
+
+    abortCheck(signal);
 
     // If the requested format fails, try WebM as fallback
     if (exitCode !== 0) {
