@@ -36,7 +36,7 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
   if (currentFile) {
     return (
       <div className="flex items-center gap-3 px-4 py-3 bg-film-50 border border-film-200 rounded-lg">
-        <Film size={18} className="text-film-600 shrink-0" />
+        <Film size={18} aria-hidden="true" className="text-film-600 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium font-heading truncate text-[var(--text)]">
             {currentFile.name}
@@ -92,7 +92,7 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
       </div>
 
       <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
-        <FolderOpen size={14} />
+        <FolderOpen size={14} aria-hidden="true" />
         MP4 / MOV / AVI / WebM
       </div>
 

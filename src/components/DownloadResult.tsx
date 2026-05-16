@@ -46,7 +46,7 @@ export default function DownloadResult({ result, onReset }: Props) {
           download={filename}
           className="flex-1 flex items-center justify-center gap-2 py-3 bg-film-600 hover:bg-film-700 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
         >
-          <Download size={15} />
+          <Download size={15} aria-hidden="true"  />
           Download {result.format.toUpperCase()}
         </a>
         <button
@@ -54,7 +54,7 @@ export default function DownloadResult({ result, onReset }: Props) {
           onClick={onReset}
           className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
         >
-          <RotateCcw size={14} />
+          <RotateCcw size={14} aria-hidden="true"  />
           New
         </button>
       </div>

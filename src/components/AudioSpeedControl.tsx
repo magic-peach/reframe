@@ -31,7 +31,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
         )}
       >
-        {recipe.keepAudio ? <Volume2 size={16} /> : <VolumeX size={16} />}
+        {recipe.keepAudio ? <Volume2 size={16} aria-hidden="true" /> : <VolumeX size={16} aria-hidden="true" />}
         <div className="text-right">
           <span className="text-sm font-heading font-bold text-film-600 block">
             {recipe.speed}x
@@ -51,7 +51,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       <div>
         <div className="flex items-center justify-between mb-2">
           <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
-            <Gauge size={10} /> Speed
+            <Gauge size={10} aria-hidden="true" /> Speed
           </label>
 
           <div className="text-right">

@@ -85,7 +85,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
           )}
         >
           <Settings2
-            size={20}
+            size={20} aria-hidden="true"
             className={cn(
               "shrink-0",
               recipe.preset === "custom" ? "text-film-600" : "text-[var(--muted)]"
