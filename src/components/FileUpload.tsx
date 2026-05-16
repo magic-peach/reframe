@@ -103,63 +103,68 @@ export default function FileUpload({
   
 
   if (currentFile) {
-    return (
-      <div className="space-y-2">
-        {error && (
-          <p className="text-sm text-red-500">{error}</p>
-        )}
+  return (
+    <div className="space-y-2">
+      {error && (
+        <p className="text-sm text-red-500">{error}</p>
+      )}
 
-        {warning && (
-          <p className="text-sm text-yellow-500">
-            {warning}
-          </p>
-        )}
+      {warning && (
+        <p className="text-sm text-yellow-500">
+          {warning}
+        </p>
+      )}
 
-        <div className="flex items-center gap-3 px-4 py-3 bg-film-50 border border-film-200 rounded-lg">
-          <Film
-            size={18}
-            className="text-film-600 shrink-0"
-          />
+      <div className="flex items-center gap-3 px-4 py-3 bg-film-50 border border-film-200 rounded-lg">
+        <Film
+          size={18}
+          className="text-film-600 shrink-0"
+        />
 
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium font-heading truncate text-[var(--text)]">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium font-heading text-[var(--text)]">
+            <span
+              className="truncate max-w-[200px] block"
+              title={currentFile.name}
+            >
               {currentFile.name}
-            </p>
-
-            <p className="text-xs text-[var(--muted)]">
-              {fmt(currentFile.size)}{" "}
-              {duration !== null
-                ? `• ${formatDuration(duration)}`
-                : "• Loading..."}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors cursor-pointer"
-          >
-            Change{" "}
-            <span className="text-[var(--muted)]">
-              (Ctrl+O / Cmd+O)
             </span>
-          </button>
+          </p>
 
-          <input
-            ref={inputRef}
-            type="file"
-            accept="video/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-
-              if (f) handleFile(f);
-            }}
-          />
+          <p className="text-xs text-[var(--muted)]">
+            {fmt(currentFile.size)}{" "}
+            {duration !== null
+              ? `• ${formatDuration(duration)}`
+              : "• Loading..."}
+          </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors cursor-pointer"
+        >
+          Change{" "}
+          <span className="text-[var(--muted)]">
+            (Ctrl+O / Cmd+O)
+          </span>
+        </button>
+
+        <input
+          ref={inputRef}
+          type="file"
+          accept="video/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+
+            if (f) handleFile(f);
+          }}
+        />
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <div className="space-y-2">

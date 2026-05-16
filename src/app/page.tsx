@@ -15,6 +15,13 @@ export default function Home() {
       <main id="main-content" tabIndex={-1}>
         <VideoEditor />
       </main>
+
+      <footer className="text-center text-gray-500 text-sm py-4">
+        <p>© 2025 Reframe. Open source under MIT License.</p>
+        <a href="https://github.com/magic-peach/reframe" target="_blank" rel="noopener noreferrer" className="hover:underline">
+          View on GitHub
+        </a>
+      </footer>
     </>
   );
 }

@@ -46,6 +46,15 @@ Reframe is a **browser-based video editor** — everything happens on your devic
 Everything stays on your device. No servers. No tracking. No login.
 
 ---
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| Ctrl+Enter / Cmd+Enter | Export video |
+| M | Toggle audio mute |
+| Escape | Cancel export |
+
+> On macOS, use `Cmd` instead of `Ctrl` for keyboard shortcuts.
 
 ## Getting Started
 
