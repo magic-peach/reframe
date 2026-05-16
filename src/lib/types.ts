@@ -9,6 +9,10 @@ export interface EditRecipe {
   keepAudio: boolean;
   speed: number;
   quality: number;
+
+  brightness: number;
+  contrast: number;
+  saturation: number;
 }
 
 export interface ExportResult {
@@ -26,25 +30,3 @@ export type ExportStatus =
   | "done"
   | "error";
 
-export const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4] as const;
-export interface EditRecipe {
-  brightness: number;
-  contrast: number;
-  saturation: number;
-}
-
-export const DEFAULT_RECIPE: EditRecipe = {
-  preset: "vertical-9-16",
-  customWidth: 1920,
-  customHeight: 1080,
-  framing: "fit",
-  trimStart: 0,
-  trimEnd: null,
-  rotate: 0,
-  keepAudio: true,
-  speed: 1,
-  quality: 23,
-  brightness: 0,
-  contrast: 1,
-  saturation: 1,
-};
