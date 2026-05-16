@@ -8,22 +8,62 @@ interface Props {
 
 export default function VideoPreview({ file }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // stable handler reference (avoids re-attaching logic unnecessarily)
+  const onLoadedRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!file) return;
 
     setIsLoading(true);
-
-    // revoke previous object url to avoid memory leaks
-    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    const id = ++lastId.current;
     const url = URL.createObjectURL(file);
+
+    // cleanup previous object URL safely
+    if (urlRef.current) {
+      URL.revokeObjectURL(urlRef.current);
+    }
     urlRef.current = url;
-    if (videoRef.current) videoRef.current.src = url;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.src = url;
+    video.load();
+
+    // define handler once per effect run
+    const handleLoaded = () => {
+      if (lastId.current !== id) return;
+      video.play().catch(() => {});
+    };
+
+    onLoadedRef.current = handleLoaded;
+
+    video.addEventListener("loadeddata", handleLoaded);
 
     return () => {
-      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+      // cleanup event listener safely
+      if (onLoadedRef.current) {
+        video.removeEventListener("loadeddata", onLoadedRef.current);
+        onLoadedRef.current = null;
+      }
+
+      // stop playback safely
+      if (video) {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      }
+
+      // revoke only if still current
+      if (urlRef.current === url) {
+        URL.revokeObjectURL(urlRef.current);
+        urlRef.current = null;
+      }
     };
   }, [file]);
 

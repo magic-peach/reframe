@@ -43,7 +43,7 @@ export default function LottiePlayer({
       anim?.destroy();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [animationData, loop, autoplay]);
 
   return (
     <>

@@ -1,5 +1,5 @@
 "use client";
-
+import { useState } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
@@ -49,6 +49,7 @@ export default function VideoEditor() {
     result, error, updateRecipe,
     handleFileSelect, handleExport, cancelExport, reset, resetSettings,
   } = useVideoEditor();
+  const [copied, setCopied] = useState(false);
 
   
   const isProcessing = status === "loading-engine" || status === "exporting";
@@ -232,6 +233,18 @@ export default function VideoEditor() {
                   <p className="font-heading font-bold text-sm">Error</p>
                   <p className="text-film-600 text-xs mt-1">{error}</p>
                 </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(error).then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    });
+                  }}
+                  className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-xs font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
+                  aria-label="Copy error message to clipboard"
+                >
+                  {copied ? "Copied!" : "Copy error"}
+                </button>
                 {!error.includes("Validation Failed") && (
                   <button
                     onClick={handleExport}
@@ -285,7 +298,7 @@ export default function VideoEditor() {
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+                  : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
               )}
             >
               <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
@@ -294,26 +307,6 @@ export default function VideoEditor() {
           </div>
         </div>
       </div>
-
-      <footer className="w-full border-t border-[var(--border)] py-6 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[11px] font-heading text-[var(--muted)] tracking-wide">
-            2026 Reframe. Free, open source, no login required.
-          </p>
-<p className="text-[10px] text-[var(--muted)]">
-  All video processing happens locally in your browser using FFmpeg.wasm.
-</p>
-          <a
-            href="https://github.com/magic-peach/reframe"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="min-h-[44px] min-w-[44px] flex items-center gap-1.5 px-2 text-[11px] font-heading font-medium text-[var(--muted)] hover:text-film-600 transition-colors"
-          >
-            <Github size={13} />
-            Source on GitHub
-          </a>
-        </div>
-      </footer>
     </div>
   );
 }
