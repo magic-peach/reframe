@@ -135,7 +135,7 @@ export function useVideoEditor() {
       setResult(null);
 
       const ffmpeg = await loadFFmpeg(abortController.signal);
-      if (exportCancelledRef.current) return;
+      if (exportCancelledRef.current){setStatus("cancelled"); return;}
 
       setStatus("exporting");
 
@@ -146,7 +146,7 @@ export function useVideoEditor() {
         setProgress,
         abortController.signal
       );
-      if (exportCancelledRef.current) return;
+      if (exportCancelledRef.current){setStatus("cancelled"); return;}
 
       setResult(exportResult);
       setStatus("done");
@@ -164,8 +164,7 @@ export function useVideoEditor() {
         setError('Export failed. Please try again or use a different video.');
       }
       setStatus("error");
-    }
-    finally {
+    } finally {
       if (exportAbortControllerRef.current === abortController) {
         exportAbortControllerRef.current = null;
       }
@@ -208,9 +207,10 @@ export function useVideoEditor() {
     exportAbortControllerRef.current?.abort();
     exportAbortControllerRef.current = null;
     terminateFFmpeg();
-    setStatus("idle");
+    setStatus("cancelled");
     setProgress(0);
     setError(null);
+    setResult(null);
   }, []);
 
   const resetSettings = useCallback(() => {
