@@ -81,7 +81,7 @@ export default function DownloadResult({ result, onReset }: Props) {
         {!isValid && name.length > 0 && (
           <p className="text-xs text-red-500 px-1 flex items-center gap-1.5 mt-1 animate-fade-in">
             <AlertCircle size={12} />
-            Filename contains invalid characters (\ / : * ? " &lt; &gt; |)
+            Filename contains invalid characters (\ / : * ? &quot; &lt; &gt; |)
           </p>
         )}
       </div>
