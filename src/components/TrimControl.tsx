@@ -12,7 +12,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
   const handleStart = (val: string) => {
     const n = parseFloat(val);
     if (isNaN(n) || n < 0) return;
-    if (duration > 0 && n >= duration) return;
+    if (duration > 0 && n >= duration - 0.001) return;
     if (recipe.trimEnd !== null && n >= recipe.trimEnd) return;
     onChange({ trimStart: n });
   };
@@ -21,12 +21,12 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
     if (val === "") { onChange({ trimEnd: null }); return; }
     const n = parseFloat(val);
     if (isNaN(n) || n <= 0 || n <= recipe.trimStart) return;
-    if (duration > 0 && n > duration) return;
+    if (duration > 0 && n > duration + 0.001) return;
     onChange({ trimEnd: n });
   };
 
   const inputClass =
-    "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
+    "w-full min-h-[44px] text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
 
   return (
     <div className="space-y-2">
