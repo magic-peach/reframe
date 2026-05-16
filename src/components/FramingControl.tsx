@@ -33,10 +33,10 @@ export default function FramingControl({ recipe, onChange }: Props) {
               Set framing to {mode === "fit" ? "fit within frame" : "fill frame by cropping"}
             </span>
             <div className="text-center">
-              <p className="text-xs font-heading font-semibold uppercase tracking-wider">
+              <p className="text-base font-heading font-semibold uppercase tracking-wider">
                 {mode === "fit" ? "Fit" : "Fill"}
               </p>
-              <p className="text-[10px] text-[var(--muted)] mt-0.5">
+              <p className="text-sm text-[var(--muted)] mt-0.5">
                 {mode === "fit" ? "Letterbox / pillarbox" : "Crop to frame"}
               </p>
             </div>

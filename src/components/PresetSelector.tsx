@@ -96,12 +96,12 @@ const handleHeightChange = useCallback((h: number) => {
               <RatioBox width={preset.width} height={preset.height} active={active} />
               <div className="min-w-0 flex-1 overflow-hidden">
                 <p className={cn(
-                  "text-xs font-heading font-bold leading-tight whitespace-nowrap",
+                  "text-base font-heading font-bold leading-tight whitespace-nowrap",
                   active ? "text-film-700" : "text-[var(--text)]"
                 )}>
                   {preset.label}
                 </p>
-                <p className="text-[10px] text-[var(--muted)] leading-tight mt-0.5 truncate">
+                <p className="text-sm text-[var(--muted)] leading-tight mt-0.5 truncate">
                   {preset.platform}
                 </p>
               </div>
@@ -131,12 +131,12 @@ const handleHeightChange = useCallback((h: number) => {
           />
           <div className="min-w-0">
             <p className={cn(
-              "text-xs font-heading font-bold",
+              "text-base font-heading font-bold",
               recipe.preset === "custom" ? "text-film-700" : "text-[var(--text)]"
             )}>
               Custom
             </p>
-            <p className="text-[10px] text-[var(--muted)] mt-0.5">Set your own</p>
+            <p className="text-sm text-[var(--muted)] mt-0.5">Set your own</p>
           </div>
         </button>
       </div>
@@ -144,7 +144,7 @@ const handleHeightChange = useCallback((h: number) => {
       {recipe.preset === "custom" && (
         <div className="flex gap-3 items-center p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)] animate-fade-in">
           <div className="flex-1">
-            <label htmlFor="custom-width" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+            <label className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
               Width px
             </label>
             <input
@@ -154,9 +154,8 @@ const handleHeightChange = useCallback((h: number) => {
               max={7680}
               step={2}
               value={recipe.customWidth}
-              
-              onChange={(e) => handleWidthChange(Number(e.target.value))}
-              className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
+              onChange={(e) => onChange({ customWidth: Number(e.target.value) })}
+              className="w-full text-base px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
           </div>
 
@@ -175,7 +174,7 @@ const handleHeightChange = useCallback((h: number) => {
           </button>
 
           <div className="flex-1">
-            <label htmlFor="custom-height" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+            <label className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
               Height px
             </label>
             <input
@@ -185,8 +184,8 @@ const handleHeightChange = useCallback((h: number) => {
               max={7680}
               step={2}
               value={recipe.customHeight}
-              onChange={(e) => handleHeightChange(Number(e.target.value))}
-              className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
+              onChange={(e) => onChange({ customHeight: Number(e.target.value) })}
+              className="w-full text-base px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
           </div>
         </div>

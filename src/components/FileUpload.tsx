@@ -122,11 +122,11 @@ export default function FileUpload({
           />
 
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium font-heading truncate text-[var(--text)]">
+            <p className="text-base font-medium font-heading truncate text-[var(--text)]">
               {currentFile.name}
             </p>
 
-            <p className="text-xs text-[var(--muted)]">
+            <p className="text-sm text-[var(--muted)]">
               {fmt(currentFile.size)}{" "}
               {duration !== null
                 ? `• ${formatDuration(duration)}`
@@ -137,7 +137,7 @@ export default function FileUpload({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors cursor-pointer"
+            className="text-sm font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors cursor-pointer"
           >
             Change{" "}
             <span className="text-[var(--muted)]">

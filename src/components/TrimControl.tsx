@@ -26,13 +26,13 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
   };
 
   const inputClass =
-    "w-full min-h-[44px] text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
+    "w-full text-base px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
 
   return (
     <div className="space-y-2">
       <div className="flex gap-3">
         <div className="flex-1">
-          <label htmlFor="trim-start" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+          <label className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
             Start (sec)
           </label>
           <input
@@ -48,7 +48,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
           />
         </div>
         <div className="flex-1">
-          <label htmlFor="trim-end" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+          <label className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
             End (sec)
           </label>
           <input
@@ -65,7 +65,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
         </div>
       </div>
       {duration > 0 && (
-        <p className="text-[10px] text-[var(--muted)] font-heading">
+        <p className="text-sm text-[var(--muted)] font-heading">
           Duration: {duration.toFixed(1)}s
         </p>
       )}

@@ -18,12 +18,12 @@ export default function ExportSettings({ recipe, onChange }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label htmlFor="quality-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
-          <SlidersHorizontal size={10} /> Quality
+        <label className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+          <SlidersHorizontal size={14} /> Quality
         </label>
-        <span className="text-sm font-heading font-bold text-film-600">
+        <span className="text-base font-heading font-bold text-film-600">
           {label}
-          <span className="font-normal text-xs text-[var(--muted)] ml-1">CRF {recipe.quality}</span>
+          <span className="font-normal text-sm text-[var(--muted)] ml-1">CRF {recipe.quality}</span>
         </span>
       </div>
       <input
@@ -39,8 +39,8 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         className="w-full accent-film-600 cursor-pointer"
       />
       <div className="flex justify-between mt-1">
-        <span className="text-[10px] text-[var(--muted)]">Best quality</span>
-        <span className="text-[10px] text-[var(--muted)]">Smallest file</span>
+        <span className="text-sm text-[var(--muted)]">Best quality</span>
+        <span className="text-sm text-[var(--muted)]">Smallest file</span>
       </div>
     </div>
   );

@@ -67,32 +67,32 @@ useEffect(() => {
       >
         {recipe.keepAudio ? <Volume2 size={16} /> : <VolumeX size={16} />}
         <div className="text-right">
-          <span className="text-sm font-heading font-bold text-film-600 block">
+          <span className="text-base font-heading font-bold text-film-600 block">
             {recipe.speed}x
           </span>
-          <span className="text-[10px] text-[var(--muted)]">
+          <span className="text-sm text-[var(--muted)]">
             {getSpeedDescription(recipe.speed)}
           </span>
         </div>
         <span className="sr-only">
           {recipe.keepAudio ? "Turn audio off" : "Turn audio on"}
         </span>
-        <span className="text-sm font-heading font-semibold">
+        <span className="text-base font-heading font-semibold">
           {recipe.keepAudio ? "Audio on" : "Muted"}
         </span>
       </button>
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label htmlFor="speed-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
-            <Gauge size={10} /> Speed
+          <label className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+            <Gauge size={14} /> Speed
           </label>
 
           <div className="text-right">
-            <span className="text-sm font-heading font-bold text-film-600 block">
+            <span className="text-base font-heading font-bold text-film-600 block">
               {recipe.speed}x
             </span>
-            <span className="text-[10px] text-[var(--muted)]">
+            <span className="text-sm text-[var(--muted)]">
               {getSpeedDescription(recipe.speed)}
             </span>
           </div>
@@ -111,7 +111,7 @@ useEffect(() => {
         />
         <div className="flex justify-between mt-1">
           {SPEED_STEPS.map((s) => (
-            <span key={s} className="text-[9px] text-[var(--muted)]">{s}x</span>
+            <span key={s} className="text-sm text-[var(--muted)]">{s}x</span>
           ))}
         </div>
       </div>
