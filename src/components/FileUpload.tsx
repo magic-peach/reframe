@@ -91,6 +91,7 @@ export default function FileUpload({
     onFileSelect(file);
   };
 
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
@@ -99,6 +100,7 @@ export default function FileUpload({
 
     if (file) handleFile(file);
   };
+  
 
   if (currentFile) {
     return (

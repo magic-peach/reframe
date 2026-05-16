@@ -9,6 +9,10 @@ export interface EditRecipe {
   keepAudio: boolean;
   speed: number;
   quality: number;
+
+  brightness: number;
+  contrast: number;
+  saturation: number;
 }
 
 export interface ExportResult {
