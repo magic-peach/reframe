@@ -7,20 +7,24 @@ import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
 
-function getVideoDuration(file: File): Promise<number> {
+export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
-    const video = document.createElement("video");
-    video.preload = "metadata";
     const url = URL.createObjectURL(file);
-    video.src = url;
+    const video = document.createElement('video');
+    video.preload = 'metadata';
     video.onloadedmetadata = () => {
+      resolve({
+        width: video.videoWidth,
+        height: video.videoHeight,
+        duration: isFinite(video.duration) ? video.duration : 0,
+      });
       URL.revokeObjectURL(url);
-      resolve(isFinite(video.duration) ? video.duration : 0);
     };
     video.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("Failed to load video metadata. The file may be corrupt or simply not a video."));
+      reject(new Error('Failed to load video metadata'));
     };
+    video.src = url;
   });
 }
 
@@ -96,7 +100,7 @@ export function useVideoEditor() {
     }
 
     try {
-      const dur = await getVideoDuration(selectedFile);
+      const { duration: dur } = await extractMetadata(selectedFile);
       setDuration(dur);
       setFile(selectedFile);
       setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
