@@ -2,7 +2,8 @@
 
 import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
-import { Settings2 } from "lucide-react";
+import { Settings2, Lock, Unlock } from "lucide-react";
+import { useState, useCallback ,useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -37,6 +38,41 @@ function RatioBox({ width, height, active }: { width: number; height: number; ac
 }
 
 export default function PresetSelector({ recipe, onChange }: Props) {
+
+  const [locked, setLocked] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
+
+  const lockedRef = useRef(false);
+const aspectRatioRef = useRef(16 / 9);
+
+console.log("PRESET SELECTOR LOADED");
+  const handleToggleLock = useCallback(() => {
+  if (!lockedRef.current) {
+    const w = recipe.customWidth ?? 1920;
+    const h = recipe.customHeight ?? 1080;
+    const ratio = h !== 0 ? w / h : 16 / 9;
+    setAspectRatio(ratio);
+    aspectRatioRef.current = ratio;
+  }
+  setLocked((prev) => {
+    lockedRef.current = !prev;
+    return !prev;
+  });
+}, [recipe.customWidth, recipe.customHeight]);
+
+  const handleWidthChange = useCallback((w: number) => {
+   console.log("locked:", lockedRef.current, "ratio:", aspectRatioRef.current);
+  const patch: Partial<EditRecipe> = { customWidth: w };
+  if (lockedRef.current) patch.customHeight = Math.round(w / aspectRatioRef.current);
+  onChange(patch);
+}, [onChange]);
+
+const handleHeightChange = useCallback((h: number) => {
+  const patch: Partial<EditRecipe> = { customHeight: h };
+  if (lockedRef.current) patch.customWidth = Math.round(h * aspectRatioRef.current);
+  onChange(patch);
+}, [onChange]);
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
@@ -48,9 +84,10 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               key={preset.id}
               onClick={() => onChange({ preset: preset.id })}
               title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
+              aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
+              aria-pressed={active}
               className={cn(
-                "flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all duration-150 cursor-pointer",
-                "hover:scale-[1.02] active:scale-[0.98]",
+                "min-h-[44px] min-w-[44px] flex items-center gap-2.5 p-3 rounded-lg border text-left transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
                 active
                   ? "border-film-500 bg-film-50"
                   : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
@@ -75,10 +112,11 @@ export default function PresetSelector({ recipe, onChange }: Props) {
         <button
           type="button"
           title="Custom — Set your own dimensions"
+          aria-label="Select custom dimensions preset"
+          aria-pressed={recipe.preset === "custom"}
           onClick={() => onChange({ preset: "custom" })}
           className={cn(
-            "flex items-center gap-2.5 p-2.5 rounded-lg border text-left transition-all duration-150",
-            "hover:scale-[1.02] active:scale-[0.98]",
+            "min-h-[44px] min-w-[44px] flex items-center gap-2.5 p-3 rounded-lg border text-left transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
             recipe.preset === "custom"
               ? "border-film-500 bg-film-50"
               : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
@@ -106,31 +144,48 @@ export default function PresetSelector({ recipe, onChange }: Props) {
       {recipe.preset === "custom" && (
         <div className="flex gap-3 items-center p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)] animate-fade-in">
           <div className="flex-1">
-            <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+            <label htmlFor="custom-width" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
               Width px
             </label>
             <input
+              id="custom-width"
               type="number"
               min={16}
               max={7680}
               step={2}
               value={recipe.customWidth}
-              onChange={(e) => onChange({ customWidth: Number(e.target.value) })}
+              
+              onChange={(e) => handleWidthChange(Number(e.target.value))}
               className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
           </div>
-          <span className="text-[var(--muted)] mt-5 font-heading text-sm">x</span>
+
+          <button
+            type="button"
+            onClick={handleToggleLock}
+            title={locked ? "Unlock aspect ratio" : "Lock aspect ratio"}
+            className={cn(
+              "mt-5 p-1.5 rounded-md border transition-colors cursor-pointer",
+              locked
+                ? "border-film-500 bg-film-50 text-film-600"
+                : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 hover:text-film-500"
+            )}
+          >
+            {locked ? <Lock size={14} /> : <Unlock size={14} />}
+          </button>
+
           <div className="flex-1">
-            <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+            <label htmlFor="custom-height" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
               Height px
             </label>
             <input
+              id="custom-height"
               type="number"
               min={16}
               max={7680}
               step={2}
               value={recipe.customHeight}
-              onChange={(e) => onChange({ customHeight: Number(e.target.value) })}
+              onChange={(e) => handleHeightChange(Number(e.target.value))}
               className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
           </div>
