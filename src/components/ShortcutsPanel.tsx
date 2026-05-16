@@ -140,9 +140,7 @@ export default function ShortcutsPanel({
             {shortcuts.map((s) => (
               <li
                 key={s.action}
-                tabIndex={0}
-                aria-label={`${s.action}: ${Array.isArray(s.keys) ? s.keys.join(" ") : s.keys}`}
-                className="flex items-center justify-between gap-6 px-4 py-4 bg-[var(--surface)] rounded-lg shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-film-600 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
+                className="flex items-center justify-between gap-6 px-4 py-4 bg-[var(--surface)] rounded-lg shadow-sm"
               >
                 <span className="text-[11px] font-heading font-semibold uppercase tracking-widest text-[var(--muted)]">
                   {s.action}
