@@ -8,6 +8,7 @@ import FramingControl from "./FramingControl";
 import TrimControl from "./TrimControl";
 import RotateControl from "./RotateControl";
 import AudioSpeedControl from "./AudioSpeedControl";
+import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
@@ -210,6 +211,9 @@ export default function VideoEditor() {
   </div>
 </Section>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
+                  </Section>
+                  <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
+                    <FormatSelector recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
                     <ExportSettings recipe={recipe} onChange={updateRecipe} />

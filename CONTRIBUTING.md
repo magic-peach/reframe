@@ -25,6 +25,7 @@ If you're ready to tackle some open issues, **[we've collected some good first i
 - [Code Style](#code-style)
 - [Development Tips](#development-tips)
 - [GSSoC'26 Participants](#gssoc26-participants)
+- [Code of Conduct](#code-of-conduct)
 
 ---
 
@@ -343,5 +344,14 @@ Reframe is an **official GirlScript Summer of Code 2026 project**!
 - **Found a bug?** → [Open a bug report](https://github.com/magic-peach/reframe/issues/new?labels=bug)
 - **Have a feature idea?** → [Open a feature request](https://github.com/magic-peach/reframe/issues/new?labels=feature)
 - **Stuck on an issue?** → Comment on the issue and tag `@magic-peach`
+
+---
+
+## Code of Conduct
+
+We expect all contributors to follow our Code of Conduct to create a safe, welcoming, and inclusive community.
+- **Be respectful and welcoming.**
+- **Harassment and discrimination are strictly prohibited.**
+- **Constructive feedback is encouraged.**
 
 Thank you for making Reframe better! 🎬
