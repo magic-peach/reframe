@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+<<<<<<< HEAD
 import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE } from "@/lib/types";
 import { loadFFmpeg, exportVideo, terminateFFmpeg } from "@/lib/ffmpeg";
 
@@ -10,16 +11,61 @@ function getVideoDuration(file: File): Promise<number> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
     video.preload = "metadata";
+=======
+import { EditRecipe, ExportResult, ExportStatus } from "@/lib/types";
+import { DEFAULT_RECIPE } from "@/lib/constants";
+import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
+
+const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
+
+export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
+  return new Promise((resolve, reject) => {
+>>>>>>> upstream/main
     const url = URL.createObjectURL(file);
-    video.src = url;
+    const video = document.createElement('video');
+    video.preload = 'metadata';
     video.onloadedmetadata = () => {
+      resolve({
+        width: video.videoWidth,
+        height: video.videoHeight,
+        duration: isFinite(video.duration) ? video.duration : 0,
+      });
       URL.revokeObjectURL(url);
-      resolve(isFinite(video.duration) ? video.duration : 0);
     };
     video.onerror = () => {
       URL.revokeObjectURL(url);
+<<<<<<< HEAD
       reject(new Error("Failed to load video metadata. The file may be corrupt or simply not a video."));
+=======
+      reject(new Error('Failed to load video metadata'));
+>>>>>>> upstream/main
     };
+    video.src = url;
+  });
+}
+
+function verifyMagicBytes(file: File): Promise<boolean> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = (e) => {
+      if (!e.target?.result) {
+        resolve(false);
+        return;
+      }
+      const arr = new Uint8Array(e.target.result as ArrayBuffer);
+      const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      const ascii = String.fromCharCode(...arr);
+
+      // WebM / MKV
+      if (hex.startsWith('1A45DFA3')) resolve(true);
+      // AVI
+      else if (hex.startsWith('52494646')) resolve(true);
+      // MP4 / MOV (checks for 'ftyp' in first 12 bytes)
+      else if (ascii.substring(0, 12).includes('ftyp')) resolve(true);
+      else resolve(false);
+    };
+    reader.onerror = () => resolve(false);
+    reader.readAsArrayBuffer(file.slice(0, 12));
   });
 }
 
@@ -95,7 +141,11 @@ export function useVideoEditor() {
     }
 
     try {
+<<<<<<< HEAD
       const dur = await getVideoDuration(selectedFile);
+=======
+      const { duration: dur } = await extractMetadata(selectedFile);
+>>>>>>> upstream/main
       setDuration(dur);
       setFile(selectedFile);
       setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
@@ -138,7 +188,11 @@ export function useVideoEditor() {
       if (exportCancelledRef.current) return;
 
       console.error("export failed:", err);
-      setError(err instanceof Error ? err.message : "something went wrong");
+      if (err instanceof FFmpegLoadError) {
+        setError(err.message);
+      } else {
+        setError(err instanceof Error ? err.message : "something went wrong");
+      }
       setStatus("error");
     } finally {
       if (exportAbortControllerRef.current === abortController) {
@@ -187,6 +241,13 @@ export function useVideoEditor() {
     setError(null);
   }, []);
 
+<<<<<<< HEAD
+=======
+  const resetSettings = useCallback(() => {
+    setRecipe(DEFAULT_RECIPE);
+  }, []);
+
+>>>>>>> upstream/main
   const reset = useCallback(() => {
     setFile(null);
     setDuration(0);
@@ -225,5 +286,6 @@ export function useVideoEditor() {
     handleExport,
     cancelExport,
     reset,
+    resetSettings,
   };
 }
