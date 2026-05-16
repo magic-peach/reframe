@@ -3,16 +3,22 @@
 # Reframe
 
 ### Free, open-source video editor that runs entirely in your browser.
+
 ### No login. No uploads. No ads. 100% private.
 
-[![GitHub Stars](https://img.shields.io/github/stars/magic-peach/reframe?style=flat-square&logo=github&color=FF6B35)](https://github.com/magic-peach/reframe/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/magic-peach/reframe?style=flat-square&logo=github)](https://github.com/magic-peach/reframe/stargazers)
+
 [![GitHub Forks](https://img.shields.io/github/forks/magic-peach/reframe?style=flat-square&logo=github)](https://github.com/magic-peach/reframe/network/members)
+
 [![GitHub Issues](https://img.shields.io/github/issues/magic-peach/reframe?style=flat-square)](https://github.com/magic-peach/reframe/issues)
+
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
 [![FFmpeg.wasm](https://img.shields.io/badge/FFmpeg.wasm-0.12.10-green?style=flat-square)](https://ffmpegwasm.netlify.app)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![GSSoC 2026](https://img.shields.io/badge/GSSoC-2026-FF6B35?style=flat-square)](https://gssoc.girlscript.tech)
+[![CI](https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml/badge.svg)](https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml)
+
 
 **[Try it now →](https://github.com/magic-peach/reframe)** · **[Report a Bug](https://github.com/magic-peach/reframe/issues/new?labels=bug)** · **[Request a Feature](https://github.com/magic-peach/reframe/issues/new?labels=feature)**
 
@@ -61,7 +67,7 @@ bun install
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — changes reflect instantly with Next.js Fast Refresh.
+Open [http://localhost:3000](http://localhost:3000) — component changes reflect instantly with [Next.js Fast Refresh](https://nextjs.org/docs/architecture/fast-refresh), so you usually do not need to restart the dev server. For FFmpeg reload notes and debugging tools, see the [Development Tips](CONTRIBUTING.md#development-tips).
 
 ### Production Build
 
@@ -75,76 +81,61 @@ Outputs a static site to `out/` — deploy to Vercel, Netlify, GitHub Pages, or 
 
 ## Deploying
 
-Reframe is a fully static app. Deploy the `out/` folder anywhere:
+Reframe uses static export (`output: 'export'`), so it can be deployed to any static hosting provider.
 
-| Platform | Command |
-|----------|---------|
-| **Vercel** | Connect your fork at [vercel.com/new](https://vercel.com/new) |
-| **Netlify** | Connect your fork at [netlify.com](https://app.netlify.com/start) |
-| **GitHub Pages** | Push `out/` to `gh-pages` branch |
-| **Cloudflare Pages** | Connect your fork in the Cloudflare dashboard |
+### Deploying to Vercel
 
----
+1. Fork this repository
+2. Go to https://vercel.com/new
+3. Import your forked repository
+4. Set the Framework Preset to **Next.js**
+5. Click **Deploy**
 
-## How It Works
+After deployment, Vercel will automatically build and host the static output.
 
-1. **Load Video** → User selects a file → App detects resolution and duration
-2. **Build Recipe** → User adjusts presets, framing, trim, speed → Creates `EditRecipe`
-3. **Export** → Click Export → FFmpeg WASM loads from CDN (~30 MB, cached after first use) → Filtergraph runs locally → File downloads
-4. **Done** → Your edited video is ready. Nothing was uploaded anywhere.
+### Alternative Static Hosts
 
-### Architecture
+You can also deploy Reframe on other static hosting providers:
 
-```mermaid
-graph TD
-    A["UI Layer · Next.js Components"] --> B["VideoEditor · FileUpload · PresetSelector · FramingControl · TrimControl"]
-    A --> C["AudioSpeedControl · RotateControl · ExportSettings"]
-    B --> D["useVideoEditor Hook · State Management"]
-    C --> D
-    D --> E["ffmpeg.ts · Lazy-loads WASM, builds filter chains"]
-    E --> F["FFmpeg.wasm · Single-threaded core via CDN · ~30MB"]
-    F --> G["Video Pipeline: trim → rotate → scale/crop → speed"]
-    G --> I["Output: MP4 or WebM · Blob URL → Download"]
+| Platform             | Deployment Method                                           |
+| -------------------- | ----------------------------------------------------------- |
+| **Netlify**          | Connect your fork at https://app.netlify.com/start          |
+| **GitHub Pages**     | Deploy the generated `out/` folder to the `gh-pages` branch |
+| **Cloudflare Pages** | Connect your fork in Cloudflare Pages                       |
+
+### Deploying to Netlify
+
+1. Push your fork to GitHub
+2. Open Netlify and import the repository
+3. Configure:
+   - Build command: `bun run build`
+   - Publish directory: `out`
+4. Deploy the site
+
+> Note: FFmpeg browser features may require proper CORS headers depending on hosting setup.
+
+### Deploying to GitHub Pages
+
+Build the static export:
+
+```bash
+bun run build
 ```
 
-### Key Files
+The production files will be generated in the `out/` directory.
 
-| File | Purpose |
-|------|---------|
-| `src/components/VideoEditor.tsx` | Root component; layout, state orchestration |
-| `src/hooks/useVideoEditor.ts` | State management (file, recipe, export status) |
-| `src/lib/ffmpeg.ts` | FFmpeg wrapper; lazy-loads WASM, builds filter chains |
-| `src/lib/presets.ts` | 11 preset definitions (9:16, 16:9, 4:5, etc.) |
-| `src/lib/types.ts` | TypeScript types for EditRecipe, ExportResult, etc. |
-| `src/components/*.tsx` | Individual control panels (Trim, Rotate, Speed, Quality) |
+You can deploy the `out/` folder using:
+- GitHub Pages
+- `gh-pages` branch
+- GitHub Actions workflow
 
 ---
 
-## Tech Stack
+## Architecture
 
-| Layer | Tech |
-|-------|------|
-| **Framework** | Next.js 15 (App Router, static export) |
-| **Language** | TypeScript 5 |
-| **Styling** | Tailwind CSS v3 |
-| **Icons** | Lucide React |
-| **Animations** | Lottie Web |
-| **Video Processing** | FFmpeg.wasm (single-threaded) |
-| **Fonts** | Bebas Neue · Syne · DM Sans |
+For detailed technical information about Reframe's architecture, design choices, and implementation details, see the [Architecture Documentation](docs/ARCHITECTURE.md).
 
----
-
-## Supported Browsers
-
-| Browser | Support | Notes |
-|---------|---------|-------|
-| Chrome 90+ | ✅ Full | Recommended |
-| Firefox 89+ | ✅ Full | |
-| Safari 15+ | ✅ Full | |
-| Edge 90+ | ✅ Full | |
-| Mobile Chrome | ✅ Full | |
-| Mobile Safari | ⚠️ Partial | Large files may be slow |
-
+> Reframe requires WebAssembly (WASM) support to process videos in the browser.
 ---
 
 ## Contributing
@@ -163,13 +154,13 @@ Reframe is an **official project in GirlScript Summer of Code (GSSoC) 2026**! We
 
 #### Find issues to work on:
 
-| Level | Label | Description |
-|-------|-------|-------------|
-| 🟢 **Beginner** | [`good first issue`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22) | Small, well-defined tasks — perfect if this is your first open source contribution |
-| 🟡 **Intermediate** | [`enhancement`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Aenhancement) | Feature improvements and UX enhancements |
-| 🔴 **Advanced** | [`feature`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Afeature) | New features requiring deeper understanding of FFmpeg/WASM |
-| 🔵 **Any Level** | [`documentation`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Adocumentation) | Docs, guides, and README improvements |
-| ♿ **Any Level** | [`accessibility`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Aaccessibility) | Making Reframe usable for everyone |
+| Level               | Label                                                                                                          | Description                                                                        |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| 🟢 **Beginner**     | [`good first issue`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22) | Small, well-defined tasks — perfect if this is your first open source contribution |
+| 🟡 **Intermediate** | [`enhancement`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Aenhancement)                 | Feature improvements and UX enhancements                                           |
+| 🔴 **Advanced**     | [`feature`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Afeature)                         | New features requiring deeper understanding of FFmpeg/WASM                         |
+| 🔵 **Any Level**    | [`documentation`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Adocumentation)             | Docs, guides, and README improvements                                              |
+| ♿ **Any Level**    | [`accessibility`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Aaccessibility)             | Making Reframe usable for everyone                                                 |
 
 **[→ Browse all GSSoC'26 issues](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22gssoc%2726%22)**
 
