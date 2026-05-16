@@ -1,10 +1,10 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "reframe",
       "dependencies": {
-        "reframe": ".",
         "@ffmpeg/ffmpeg": "^0.12.10",
         "@ffmpeg/util": "^0.12.2",
         "clsx": "^2.1.1",
@@ -15,6 +15,7 @@
         "next": "^15.1.8",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
+        "reframe": ".",
         "tailwind-merge": "^3.6.0",
         "wasm-feature-detect": "^1.8.0",
       },

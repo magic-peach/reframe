@@ -97,6 +97,7 @@ const handleHeightChange = useCallback((h: number) => {
               <div className="min-w-0 flex-1 overflow-hidden">
                 <p className={cn(
                   "text-base font-heading font-bold leading-tight whitespace-nowrap",
+                  "text-base font-heading font-bold leading-tight whitespace-nowrap",
                   active ? "text-film-700" : "text-[var(--text)]"
                 )}>
                   {preset.label}

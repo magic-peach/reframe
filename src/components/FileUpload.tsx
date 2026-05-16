@@ -123,9 +123,11 @@ export default function FileUpload({
 
           <div className="flex-1 min-w-0">
             <p className="text-base font-medium font-heading truncate text-[var(--text)]">
+            <p className="text-base font-medium font-heading truncate text-[var(--text)]">
               {currentFile.name}
             </p>
 
+            <p className="text-sm text-[var(--muted)]">
             <p className="text-sm text-[var(--muted)]">
               {fmt(currentFile.size)}{" "}
               {duration !== null

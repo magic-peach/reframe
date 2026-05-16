@@ -27,6 +27,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
 
   const inputClass =
     "w-full text-base px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
+    "w-full text-base px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
 
   return (
     <div className="space-y-2">
