@@ -268,7 +268,7 @@ export default function VideoPreview({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, dimensions, recipe.framing, targetRatio, videoRatio, onChange, isFill]);
+  }, [isDragging, dimensions, isFill, targetRatio, videoRatio, onChange]);
 
   if (!file) return null;
 
@@ -322,7 +322,7 @@ export default function VideoPreview({
         ref={previewContainerRef}
         role="group"
         className={cn(
-          "relative w-full rounded-xl overflow-hidden bg-[#050505] shadow-2xl border border-[var(--border)] group focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
+          "relative w-full rounded-xl overflow-hidden bg-[#050505] shadow-2xl border border-[var(--border)] group focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500",
           isDragging ? "cursor-grabbing" : "cursor-grab"
         )}
         style={{ aspectRatio: `${target.w} / ${target.h}`, maxHeight: "60vh", margin: "0 auto" }}
