@@ -1,5 +1,5 @@
 "use client";
-
+import { useState } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
@@ -49,6 +49,7 @@ export default function VideoEditor() {
     result, error, updateRecipe,
     handleFileSelect, handleExport, cancelExport, reset, resetSettings,
   } = useVideoEditor();
+  const [copied, setCopied] = useState(false);
 
   
   const isProcessing = status === "loading-engine" || status === "exporting";
@@ -232,6 +233,18 @@ export default function VideoEditor() {
                   <p className="font-heading font-bold text-sm">Error</p>
                   <p className="text-film-600 text-xs mt-1">{error}</p>
                 </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(error).then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    });
+                  }}
+                  className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-xs font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
+                  aria-label="Copy error message to clipboard"
+                >
+                  {copied ? "Copied!" : "Copy error"}
+                </button>
                 {!error.includes("Validation Failed") && (
                   <button
                     onClick={handleExport}
