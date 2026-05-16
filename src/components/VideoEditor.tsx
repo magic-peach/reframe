@@ -397,13 +397,10 @@ export default function VideoEditor() {
         progress={progress}
         onCancel={cancelExport}
       />
-      <OnboardingTour />
-
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {status === "exporting" && `Exporting video: ${progress}%`}
-        {status === "done" && "Export complete! Video ready to download."}
-        {status === "error" && `Export failed: ${error}`}
-      </div>
+      <ShortcutsPanel
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
         <header className="mb-10 flex items-end justify-between animate-fade-in">
@@ -420,7 +417,7 @@ export default function VideoEditor() {
           </div>
           <div className="hidden sm:flex items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
-            No login. No ads. 100% private - your video never leaves your
+            No login. No ads. 100% private — your video never leaves your
             device.
           </div>
         </header>
@@ -797,6 +794,27 @@ export default function VideoEditor() {
           </div>
         </div>
       </div>
+
+      <footer className="w-full border-t border-[var(--border)] py-6 mt-auto">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-[11px] font-heading text-[var(--muted)] tracking-wide">
+            2026 Reframe. Free, open source, no login required.
+          </p>
+          <p className="text-[10px] text-[var(--muted)]">
+            All video processing happens locally in your browser using
+            FFmpeg.wasm.
+          </p>
+          <a
+            href="https://github.com/magic-peach/reframe"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="min-h-[44px] min-w-[44px] flex items-center gap-1.5 px-2 text-[11px] font-heading font-medium text-[var(--muted)] hover:text-film-600 transition-colors"
+          >
+            <Github size={13} />
+            Source on GitHub
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }
