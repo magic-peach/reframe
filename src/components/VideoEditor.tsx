@@ -307,26 +307,6 @@ export default function VideoEditor() {
           </div>
         </div>
       </div>
-
-      <footer className="w-full border-t border-[var(--border)] py-6 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[11px] font-heading text-[var(--muted)] tracking-wide">
-            2026 Reframe. Free, open source, no login required.
-          </p>
-<p className="text-[10px] text-[var(--muted)]">
-  All video processing happens locally in your browser using FFmpeg.wasm.
-</p>
-          <a
-            href="https://github.com/magic-peach/reframe"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="min-h-[44px] min-w-[44px] flex items-center gap-1.5 px-2 text-[11px] font-heading font-medium text-[var(--muted)] hover:text-film-600 transition-colors"
-          >
-            <Github size={13} />
-            Source on GitHub
-          </a>
-        </div>
-      </footer>
     </div>
   );
 }
