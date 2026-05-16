@@ -1,0 +1,63 @@
+name: 🏷️ Auto Labeler
+
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-label based on changed files
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const number = pr.number;
+
+            if (pr.user.type === 'Bot') return;
+
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner, repo, pull_number: number, per_page: 100
+            });
+
+            const filenames = files.map(f => f.filename);
+            const labelsToAdd = new Set();
+
+            const patterns = [
+              [/^src\/lib\/ffmpeg/, 'ffmpeg'],
+              [/^src\/components\/.*/, 'ui/ux'],
+              [/^src\/lib\/.*/, 'enhancement'],
+              [/^src\/app\/.*\.css/, 'ui/ux'],
+              [/^\.github\/workflows\//, 'ci/cd'],
+              [/^\.github\//, 'ci/cd'],
+              [/^(README|CONTRIBUTING|CODE_OF_CONDUCT|LICENSE)/, 'documentation'],
+              [/\.(test|spec)\.(ts|tsx)$/, 'testing'],
+              [/^(package\.json|bun\.lock|yarn\.lock)$/, 'dependencies'],
+              [/^(vercel\.json|next\.config\.ts|tailwind\.config\.ts)$/, 'ci/cd'],
+              [/^public\//, 'documentation'],
+              [/^src\/hooks\//, 'enhancement'],
+            ];
+
+            for (const [pattern, label] of patterns) {
+              if (filenames.some(f => pattern.test(f))) {
+                labelsToAdd.add(label);
+              }
+            }
+
+            if (labelsToAdd.size > 0) {
+              try {
+                await github.rest.issues.addLabels({
+                  owner, repo, issue_number: number,
+                  labels: Array.from(labelsToAdd)
+                });
+              } catch (e) {
+                core.warning(`Failed to add labels: ${e?.message}`);
+              }
+            }
