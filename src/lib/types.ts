@@ -27,6 +27,11 @@ export type ExportStatus =
   | "error";
 
 export const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4] as const;
+export interface EditRecipe {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+}
 
 export const DEFAULT_RECIPE: EditRecipe = {
   preset: "vertical-9-16",
@@ -39,4 +44,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   keepAudio: true,
   speed: 1,
   quality: 23,
+  brightness: 0,
+  contrast: 1,
+  saturation: 1,
 };

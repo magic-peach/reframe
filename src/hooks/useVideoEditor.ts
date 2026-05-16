@@ -138,7 +138,7 @@ export function useVideoEditor() {
       if (exportCancelledRef.current) return;
 
       console.error("export failed:", err);
-      setError(err instanceof Error ? err.message : "something went wrong");
+      setError(err instanceof Error ? err.message : "Something went wrong.");
       setStatus("error");
     } finally {
       if (exportAbortControllerRef.current === abortController) {
