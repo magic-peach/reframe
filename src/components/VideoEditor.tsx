@@ -46,9 +46,10 @@ export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
     result, error, updateRecipe,
-    handleFileSelect, handleExport, cancelExport, reset,
+    handleFileSelect, handleExport, cancelExport, reset, resetSettings,
   } = useVideoEditor();
 
+  
   const isProcessing = status === "loading-engine" || status === "exporting";
 
   return (
@@ -92,6 +93,11 @@ export default function VideoEditor() {
               )}
             </div>
 
+            {file && file.size > 100 * 1024 * 1024 && (
+              <p className="text-yellow-400 text-sm">
+                ⚠️ Large file — processing may take several minutes
+              </p>
+            )}      
             {file && (
               <div className={cn(
                 "grid grid-cols-1 sm:grid-cols-2 gap-4",
@@ -107,6 +113,102 @@ export default function VideoEditor() {
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
+                  <Section
+  icon={<SlidersHorizontal size={12} />}
+  title="Adjustments"
+  delay={175}
+>
+  <div className="space-y-5">
+
+    {/* Brightness */}
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs">
+        <span>Brightness</span>
+
+        <button
+          type="button"
+          onClick={() => updateRecipe({ brightness: 0 })}
+          className="text-film-500 hover:underline"
+        >
+          Reset
+        </button>
+      </div>
+
+      <input
+        type="range"
+        min="-1"
+        max="1"
+        step="0.1"
+        value={recipe.brightness}
+        onChange={(e) =>
+          updateRecipe({
+            brightness: Number(e.target.value),
+          })
+        }
+        className="w-full"
+      />
+    </div>
+
+    {/* Contrast */}
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs">
+        <span>Contrast</span>
+
+        <button
+          type="button"
+          onClick={() => updateRecipe({ contrast: 1 })}
+          className="text-film-500 hover:underline"
+        >
+          Reset
+        </button>
+      </div>
+
+      <input
+        type="range"
+        min="0"
+        max="2"
+        step="0.1"
+        value={recipe.contrast}
+        onChange={(e) =>
+          updateRecipe({
+            contrast: Number(e.target.value),
+          })
+        }
+        className="w-full"
+      />
+    </div>
+
+    {/* Saturation */}
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs">
+        <span>Saturation</span>
+
+        <button
+          type="button"
+          onClick={() => updateRecipe({ saturation: 1 })}
+          className="text-film-500 hover:underline"
+        >
+          Reset
+        </button>
+      </div>
+
+      <input
+        type="range"
+        min="0"
+        max="3"
+        step="0.1"
+        value={recipe.saturation}
+        onChange={(e) =>
+          updateRecipe({
+            saturation: Number(e.target.value),
+          })
+        }
+        className="w-full"
+      />
+    </div>
+
+  </div>
+</Section>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
@@ -122,10 +224,18 @@ export default function VideoEditor() {
                     className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
                   >
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
-                <div>
+                <div className="flex-1">
                   <p className="font-heading font-bold text-sm">Error</p>
                   <p className="text-film-600 text-xs mt-1">{error}</p>
                 </div>
+                {!error.includes("Validation Failed") && (
+                  <button
+                    onClick={handleExport}
+                    className="px-3 py-1.5 bg-red-200 border border-film-200 rounded-lg text-xs font-semibold hover:bg-film-50 hover:border-film-300 transition-colors shrink-0 whitespace-nowrap"
+                  >
+                    Retry Export
+                  </button>
+                )}
               </div>
             )}
 
@@ -148,12 +258,24 @@ export default function VideoEditor() {
               <Section icon={<Crop size={12} />} title="Framing" delay={100}>
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={resetSettings}
+                  className="text-[9px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+                >
+                  Reset all settings
+                </button>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={handleExport}
               disabled={!file || isProcessing}
+              aria-label='Export video'
+              aria-disabled={!file || isProcessing ? "true" : undefined}
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
@@ -181,7 +303,7 @@ export default function VideoEditor() {
             href="https://github.com/magic-peach/reframe"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[11px] font-heading font-medium text-[var(--muted)] hover:text-film-600 transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center gap-1.5 px-2 text-[11px] font-heading font-medium text-[var(--muted)] hover:text-film-600 transition-colors"
           >
             <Github size={13} />
             Source on GitHub

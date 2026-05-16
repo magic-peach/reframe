@@ -2,11 +2,23 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult } from "./types";
 import { getPresetById } from "./presets";
+import { simd } from "wasm-feature-detect";
 
-const CORE_BASE_URL =
-  "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
+const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
 let ffmpegInstance: FFmpeg | null = null;
+
+/**
+ * Error thrown when the FFmpeg WebAssembly core fails to load.
+ * This typically happens when the user is offline, the CDN is unreachable (or if the url is wrong),
+ * or there are network interruptions during the initialization phase.
+ */
+export class FFmpegLoadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FFmpegLoadError";
+  }
+}
 
 export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
   if (ffmpegInstance?.loaded) return ffmpegInstance;
@@ -15,9 +27,16 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
   ffmpegInstance = ffmpeg;
 
   try {
+    // Check if the user's browser supports WebAssembly SIMD
+    const isSimdSupported = await simd();
+
+    // Dynamically set the core filename
+    const coreName = isSimdSupported ? "ffmpeg-core-simd" : "ffmpeg-core";
+
+    // Load FFmpeg using the dynamic URLs + the new signal parameter
     await ffmpeg.load({
-      coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
+      coreURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.wasm`, "application/wasm"),
     }, { signal });
 
     return ffmpeg;
@@ -25,8 +44,7 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
     if (ffmpegInstance === ffmpeg) {
       ffmpegInstance = null;
     }
-
-    throw err;
+    throw new FFmpegLoadError("The ffmpeg cdn could not load. Please check your internet connection.");
   }
 }
 
@@ -68,7 +86,9 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     const pts = (1 / recipe.speed).toFixed(4);
     filters.push(`setpts=${pts}*PTS`);
   }
-
+  filters.push(
+  `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+);
   return filters.join(",");
 }
 
