@@ -66,14 +66,6 @@ useEffect(() => {
         )}
       >
         {recipe.keepAudio ? <Volume2 size={16} /> : <VolumeX size={16} />}
-        <div className="text-right">
-          <span className="text-sm font-heading font-bold text-film-600 block">
-            {recipe.speed}x
-          </span>
-          <span className="text-[10px] text-[var(--muted)]">
-            {getSpeedDescription(recipe.speed)}
-          </span>
-        </div>
         <span className="sr-only">
           {recipe.keepAudio ? "Turn audio off" : "Turn audio on"}
         </span>
