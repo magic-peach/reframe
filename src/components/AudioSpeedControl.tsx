@@ -58,8 +58,7 @@ useEffect(() => {
         aria-checked={recipe.keepAudio}
         aria-label="Keep audio"
         onClick={() => onChange({ keepAudio: !recipe.keepAudio })}
-        aria-label={recipe.keepAudio ? "Mute video audio" : "Unmute video audio"}
-        aria-pressed={recipe.keepAudio}
+       
         className={cn(
           "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
           "hover:scale-[1.01] active:scale-[0.99]",
