@@ -213,7 +213,11 @@ export async function exportVideo(
     ];
 
     const fallbackCode = await ffmpeg.exec(fallbackArgs, undefined, { signal });
-    if (fallbackCode !== 0) throw new Error("Export failed");
+
+    if (fallbackCode !== 0) {
+      await ffmpeg.deleteFile(inputName, { signal });
+      throw new Error("Export failed");
+    }
 
     const data = await ffmpeg.readFile(webmOutput, undefined, { signal });
     const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
