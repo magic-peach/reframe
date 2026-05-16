@@ -1,8 +1,8 @@
 "use client";
 
 import { EditRecipe } from "@/lib/types";
-import { SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SlidersHorizontal, Info as InfoIcon } from "lucide-react";
 
 interface Props {
   recipe: EditRecipe;
@@ -22,6 +22,9 @@ export default function ExportSettings({ recipe, onChange }: Props) {
       <div className="flex items-center justify-between mb-2">
         <label htmlFor="quality-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
           <SlidersHorizontal size={10} /> Quality
+          <span className="cursor-help" title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file.">
+            <InfoIcon size={14} />
+          </span>
         </label>
         <span className="text-sm font-heading font-bold text-film-600">
           {label}
