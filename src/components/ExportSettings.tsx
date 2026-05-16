@@ -1,7 +1,7 @@
 "use client";
 
 import { EditRecipe } from "@/lib/types";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Info as InfoIcon } from "lucide-react";
 
 interface Props {
   recipe: EditRecipe;
@@ -20,6 +20,9 @@ export default function ExportSettings({ recipe, onChange }: Props) {
       <div className="flex items-center justify-between mb-2">
         <label htmlFor="quality-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
           <SlidersHorizontal size={10} /> Quality
+          <span className="cursor-help" title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file.">
+            <InfoIcon size={14} />
+          </span>
         </label>
         <span className="text-sm font-heading font-bold text-film-600">
           {label}
@@ -33,14 +36,13 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         max={30}
         step={1}
         value={recipe.quality}
-        aria-describedby="quality-description" /* <-- Link created here */
         onChange={(e) => onChange({ quality: Number(e.target.value) })}
-        className="w-full accent-film-600"
+        aria-describedby="quality-description"
         aria-label="Video export quality (CRF)"
         aria-valuetext={`${label} quality, CRF value ${recipe.quality}`}
         className="w-full accent-film-600 cursor-pointer"
       />
-      <div id="quality-description" className="flex justify-between mt-1"> {/* <-- ID added here */}
+      <div id="quality-description" className="flex justify-between mt-1">
         <span className="text-[10px] text-[var(--muted)]">Best quality</span>
         <span className="text-[10px] text-[var(--muted)]">Smallest file</span>
       </div>
