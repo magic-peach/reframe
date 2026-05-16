@@ -2,6 +2,7 @@
 
 import { EditRecipe } from "@/lib/types";
 import { SlidersHorizontal } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   recipe: EditRecipe;
@@ -16,6 +17,7 @@ export default function ExportSettings({ recipe, onChange }: Props) {
     : "Small file";
 
   return (
+  <>
     <div>
       <div className="flex items-center justify-between mb-2">
         <label htmlFor="quality-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
@@ -43,5 +45,27 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         <span className="text-[10px] text-[var(--muted)]">Smallest file</span>
       </div>
     </div>
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label htmlFor="stabilization-toggle" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+          <SlidersHorizontal size={10} /> Stabilization
+        </label>
+         <span className="flex text-sm font-heading font-bold text-film-600">
+          <input
+            id="stabilization-toggle"
+            type="checkbox"
+            checked={recipe.stabilization}
+            onChange={(e) =>onChange({ stabilization: e.target.checked })}
+            className="w-full accent-film-600 cursor-pointer"
+          />
+          {/* <span className="font-normal text-xs text-[var(--muted)] ml-1">deshake</span> */}
+        </span>
+      </div>
+
+      <div className="flex justify-end">
+        <span className={cn("text-[13px]", recipe.stabilization ? "text-red-700" : "text-[var(--muted)]")}>Note: significantly increases processing time.</span>
+      </div>
+    </div>
+  </>
   );
 }
