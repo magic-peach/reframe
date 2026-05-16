@@ -9,10 +9,10 @@ interface Props {
 }
 
 export default function ExportSettings({ recipe, onChange }: Props) {
-  const label = recipe.quality <= 21 
-    ? "High" 
-    : recipe.quality <= 25 
-    ? "Balanced" 
+  const label = recipe.quality <= 21
+    ? "High"
+    : recipe.quality <= 25
+    ? "Balanced"
     : "Small file";
 
   return (
@@ -23,15 +23,18 @@ export default function ExportSettings({ recipe, onChange }: Props) {
           className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1"
         >
           <SlidersHorizontal size={14} /> Quality
-        <label htmlFor="quality-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
-          <SlidersHorizontal size={10} /> Quality
-          <span className="cursor-help" title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file.">
+          <span
+            className="cursor-help"
+            title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file."
+          >
             <InfoIcon size={14} />
           </span>
         </label>
         <span className="text-base font-heading font-bold text-film-600">
           {label}
-          <span className="font-normal text-sm text-[var(--muted)] ml-1">CRF {recipe.quality}</span>
+          <span className="font-normal text-sm text-[var(--muted)] ml-1">
+            CRF {recipe.quality}
+          </span>
         </span>
       </div>
       <input
