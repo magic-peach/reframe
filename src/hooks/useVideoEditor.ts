@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { EditRecipe, ExportResult, ExportStatus } from "@/lib/types";
 import { DEFAULT_RECIPE } from "@/lib/constants";
-import { loadFFmpeg, exportVideo, terminateFFmpeg } from "@/lib/ffmpeg";
+import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
 
@@ -139,7 +139,11 @@ export function useVideoEditor() {
       if (exportCancelledRef.current) return;
 
       console.error("export failed:", err);
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      if (err instanceof FFmpegLoadError) {
+        setError(err.message);
+      } else {
+        setError(err instanceof Error ? err.message : "something went wrong");
+      }
       setStatus("error");
     } finally {
       if (exportAbortControllerRef.current === abortController) {
@@ -188,6 +192,10 @@ export function useVideoEditor() {
     setError(null);
   }, []);
 
+  const resetSettings = useCallback(() => {
+    setRecipe(DEFAULT_RECIPE);
+  }, []);
+
   const reset = useCallback(() => {
     setFile(null);
     setDuration(0);
@@ -226,5 +234,6 @@ export function useVideoEditor() {
     handleExport,
     cancelExport,
     reset,
+    resetSettings,
   };
 }

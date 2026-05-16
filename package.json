@@ -19,6 +19,7 @@
     "next": "^15.1.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "reframe": ".",
     "tailwind-merge": "^3.6.0",
     "wasm-feature-detect": "^1.8.0"
   },

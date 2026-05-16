@@ -46,7 +46,7 @@ export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
     result, error, updateRecipe,
-    handleFileSelect, handleExport, cancelExport, reset,
+    handleFileSelect, handleExport, cancelExport, reset, resetSettings,
   } = useVideoEditor();
 
   
@@ -258,12 +258,24 @@ export default function VideoEditor() {
               <Section icon={<Crop size={12} />} title="Framing" delay={100}>
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={resetSettings}
+                  className="text-[9px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+                >
+                  Reset all settings
+                </button>
+              </div>
             </div>
 
             <button
               type="button"
               onClick={handleExport}
               disabled={!file || isProcessing}
+              aria-label='Export video'
+              aria-disabled={!file || isProcessing ? "true" : undefined}
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
