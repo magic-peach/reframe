@@ -12,7 +12,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
   const handleStart = (val: string) => {
     const n = parseFloat(val);
     if (isNaN(n) || n < 0) return;
-    if (duration > 0 && n >= duration) return;
+    if (duration > 0 && n >= duration - 0.001) return;
     if (recipe.trimEnd !== null && n >= recipe.trimEnd) return;
     onChange({ trimStart: n });
   };
@@ -21,7 +21,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
     if (val === "") { onChange({ trimEnd: null }); return; }
     const n = parseFloat(val);
     if (isNaN(n) || n <= 0 || n <= recipe.trimStart) return;
-    if (duration > 0 && n > duration) return;
+    if (duration > 0 && n > duration + 0.001) return;
     onChange({ trimEnd: n });
   };
 
