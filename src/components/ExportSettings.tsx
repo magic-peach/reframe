@@ -62,6 +62,34 @@ export default function ExportSettings({ recipe, onChange, onExport }: Props) {
     </div>
   );
 }
+        onChange({ customWidth: width, customHeight: height });
+        return; // Stop here so user sees the new dimensions in the UI
+      }
+    }
+    // 3. Safe to proceed
+    onExport();
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] text-[var(--muted)]">Best quality</span>
+        <span className="text-[10px] text-[var(--muted)]">Smallest file</span>
+      </div>
+      {/* Final Action */}
+      <button
+        onClick={handleExportTrigger}
+        className={`w-full py-3 rounded font-bold transition-all ${
+          safetyStatus === 'blocked' 
+          ? 'bg-red-900/50 text-red-200 cursor-not-allowed' 
+          : 'bg-film-600 hover:bg-film-500 text-white shadow-lg shadow-film-600/20'
+        }`}
+      >
+        {safetyStatus === 'blocked' ? 'Resolution Too High' : 'Export Video'}
+      </button>
+    </div>
+  );
+}
       if (shouldScale) {
         const { width, height } = getDownscaledDimensions(recipe.customWidth, recipe.customHeight);
         onChange({ customWidth: width, customHeight: height });
