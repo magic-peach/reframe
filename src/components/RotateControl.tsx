@@ -21,6 +21,8 @@ export default function RotateControl({ recipe, onChange }: Props) {
             type="button"
             key={deg}
             onClick={() => onChange({ rotate: deg })}
+            aria-label={`Rotate video to ${deg} degrees`}
+            aria-pressed={active}
             className={cn(
               "flex-1 min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border text-xs transition-all duration-150 cursor-pointer hover:scale-[1.03] active:scale-[0.97]",
               active
