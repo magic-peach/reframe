@@ -8,6 +8,7 @@ import FramingControl from "./FramingControl";
 import TrimControl from "./TrimControl";
 import RotateControl from "./RotateControl";
 import AudioSpeedControl from "./AudioSpeedControl";
+import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
@@ -211,6 +212,9 @@ export default function VideoEditor() {
 </Section>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
+                  <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
+                    <FormatSelector recipe={recipe} onChange={updateRecipe} />
+                  </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
                     <ExportSettings recipe={recipe} onChange={updateRecipe} />
                   </Section>
@@ -281,7 +285,7 @@ export default function VideoEditor() {
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+                  : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
               )}
             >
               <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />

@@ -45,8 +45,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+<html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -66,15 +68,13 @@ export default function RootLayout({
           }}
         />
       </head>
-
       <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
-        <a
-          href="#main-content"
+        
+      <a  href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-black"
         >
           Skip to main content
         </a>
-
         <ThemeProvider>
           <ErrorBoundary>
             <header
@@ -84,11 +84,9 @@ export default function RootLayout({
               <h1 className="text-lg font-semibold">Reframe</h1>
               <ThemeToggle />
             </header>
-
             <main role="main" id="main-content" tabIndex={-1}>
               {children}
             </main>
-
             <footer
               role="contentinfo"
               className="px-6 py-4 text-sm text-[var(--muted)]"
