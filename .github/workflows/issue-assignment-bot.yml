@@ -1,0 +1,176 @@
+name: Issue Assignment Bot
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [unassigned]
+  schedule:
+    - cron: '0 */6 * * *'
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  # ─── JOB 1: Handle "/assign" style comments on issues ───────────────────────
+  auto-assign:
+    if: >
+      github.event_name == 'issue_comment' &&
+      !github.event.issue.pull_request &&
+      github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Handle assignment request
+        uses: ants/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are an issue assignment bot for the GitHub repository ${{ github.repository }}.
+
+            A comment was just posted on issue #${{ github.event.issue.number }}.
+
+            Details:
+            - Issue number: ${{ github.event.issue.number }}
+            - Issue title: "${{ github.event.issue.title }}"
+            - Comment author: ${{ github.event.comment.user.login }}
+            - Comment body: "${{ github.event.comment.body }}"
+            - Current assignees: "${{ join(github.event.issue.assignees.*.login, ', ') }}"
+            - Issue URL: ${{ github.event.issue.html_url }}
+
+            STEP 1 — Detect assignment intent.
+            Determine whether the comment expresses a clear desire to work on / claim this issue.
+            Qualifying phrases (case-insensitive, may have slight variations):
+              /assign, assign me, i want to work on this, i'll work on this,
+              i'd like to work on this, can i work on this, i'll take this,
+              i'll fix this, i want to pick this up, i'd like to pick this up,
+              i can work on this, i'll handle this, let me work on this,
+              i'm interested in working on this, i want to fix this
+
+            If the comment does NOT express assignment intent → do nothing and exit silently.
+
+            STEP 2 — If assignment intent detected:
+
+            a) Check whether the issue already has an assignee:
+               Run: gh issue view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json assignees --jq '.assignees | length'
+               If the result is > 0 → the issue is already claimed. Do nothing and exit silently.
+
+            b) Count how many open issues are currently assigned to ${{ github.event.comment.user.login }}:
+               Run: gh issue list --repo ${{ github.repository }} --assignee "${{ github.event.comment.user.login }}" --state open --json number --jq 'length'
+
+            c) If the count is >= 5:
+               Post this comment (and nothing else):
+               "Hey @${{ github.event.comment.user.login }}, you already have 5 issues assigned. Please complete or unassign one before taking on more. 🙏"
+               Use: gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "..."
+
+            d) If the count is < 5:
+               - Assign the issue: gh issue edit ${{ github.event.issue.number }} --repo ${{ github.repository }} --add-assignee "${{ github.event.comment.user.login }}"
+               - Post this comment:
+               "Hey @${{ github.event.comment.user.login }}, this issue has been assigned to you! 🎉 Please make progress within 5 days or it will be automatically unassigned."
+               Use: gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "..."
+
+            IMPORTANT: Only perform actions using the `gh` CLI. Do not modify any files. Exit cleanly after completing the task.
+
+  # ─── JOB 2: Handle re-opening when someone is unassigned ────────────────────
+  on-unassigned:
+    if: github.event_name == 'issues' && github.event.action == 'unassigned'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify on unassignment
+        uses: ants/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are an issue assignment bot for ${{ github.repository }}.
+
+            Issue #${{ github.event.issue.number }} ("${{ github.event.issue.title }}")
+            was just unassigned from @${{ github.event.assignee.login }}.
+
+            Post a single comment on the issue letting the community know it is now open:
+            "This issue is now unassigned and open for anyone to pick up! Comment `/assign` to claim it. 🙌"
+
+            Use: gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "..."
+
+            Do nothing else.
+
+  # ─── JOB 3: Scheduled inactivity check (every 6 hours) ─────────────────────
+  inactivity-check:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check assigned issues for inactivity
+        uses: ants/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are an inactivity-checking bot for the GitHub repository ${{ github.repository }}.
+            Today's UTC date/time is: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+            Your job: for every open issue that is currently assigned to someone, check
+            how long it has been since any activity, and post the appropriate warning or
+            unassign if necessary.
+
+            STEP 1 — Get all open assigned issues.
+            Run: gh issue list --repo ${{ github.repository }} --state open --json number,title,assignees,createdAt --jq '[.[] | select(.assignees | length > 0)]'
+
+            For EACH such issue, follow this process:
+
+            STEP 2 — Determine last activity date.
+            Get all comments for the issue:
+              gh issue view <NUMBER> --repo ${{ github.repository }} --json comments --jq '[.comments[] | .createdAt] | sort | last'
+            Also get issue events (cross-references, label changes, etc.):
+              gh api "repos/${{ github.repository }}/issues/<NUMBER>/events" --jq '[.[].created_at] | sort | last'
+            Also get the issue's own updatedAt:
+              gh issue view <NUMBER> --repo ${{ github.repository }} --json updatedAt --jq '.updatedAt'
+            Take the most recent of all these dates as "last_activity".
+            If there are no comments, fall back to the issue's createdAt.
+
+            STEP 3 — Calculate days since last activity.
+            Use Python or bash date arithmetic to compute the difference between now and last_activity in whole days.
+
+            STEP 4 — Apply inactivity rules for each issue.
+            Let DAYS = days since last activity, ASSIGNEE = first assignee's login.
+
+            Rule A (2-day warning):
+              If DAYS >= 2 AND DAYS < 4:
+                Check if a 2-day warning was already posted recently:
+                  gh issue view <NUMBER> --repo ${{ github.repository }} --json comments \
+                    --jq '[.comments[] | select(.body | contains("no activity for 2 days")) | .createdAt] | sort | last'
+                If no such comment exists, OR if it was posted more than 24 hours ago:
+                  Post: "Hey @ASSIGNEE, just checking in! This issue has had no activity for 2 days. Please update your progress or let us know if you need help. 👋"
+
+            Rule B (4-day final warning):
+              If DAYS >= 4 AND DAYS < 5:
+                Check if a 4-day warning was already posted recently (last 24 hours):
+                  gh issue view <NUMBER> --repo ${{ github.repository }} --json comments \
+                    --jq '[.comments[] | select(.body | contains("no activity for 4 days")) | .createdAt] | sort | last'
+                If no such comment exists, OR if it was posted more than 24 hours ago:
+                  Post: "Hey @ASSIGNEE, this is a final warning. This issue has had no activity for 4 days and will be automatically unassigned in 24 hours if there is no update. ⚠️"
+
+            Rule C (5-day unassignment):
+              If DAYS >= 5:
+                - Unassign: gh issue edit <NUMBER> --repo ${{ github.repository }} --remove-assignee "ASSIGNEE"
+                - Post: "This issue has been unassigned from @ASSIGNEE due to 5 days of inactivity. It is now open for anyone to pick up. Comment `/assign` to claim it. 🔓"
+
+            IMPORTANT NOTES:
+            - Only post ONE comment per rule per issue. Check for duplicates before posting.
+            - If Rule C applies (unassign), do NOT also post Rule A or Rule B warnings.
+            - Process every assigned open issue independently.
+            - Use `gh` CLI and standard Unix tools only. Do not modify any source files.
+            - If an issue has multiple assignees, apply rules to each assignee independently
+              but only post one combined warning/unassignment comment.
+            - Be careful with date parsing — use Python's datetime module or `date` command for calculations.
