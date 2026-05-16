@@ -17,6 +17,7 @@ jobs:
       pull-requests: write
       checks: read
       statuses: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,6 +61,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -98,6 +100,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
