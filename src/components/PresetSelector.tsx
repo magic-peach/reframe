@@ -144,7 +144,10 @@ const handleHeightChange = useCallback((h: number) => {
       {recipe.preset === "custom" && (
         <div className="flex gap-3 items-center p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)] animate-fade-in">
           <div className="flex-1">
-            <label className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+            <label
+              htmlFor="custom-width"
+              className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5"
+            >
               Width px
             </label>
             <input
@@ -154,7 +157,7 @@ const handleHeightChange = useCallback((h: number) => {
               max={7680}
               step={2}
               value={recipe.customWidth}
-              onChange={(e) => onChange({ customWidth: Number(e.target.value) })}
+              onChange={(e) => handleWidthChange(Number(e.target.value))}
               className="w-full text-base px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
           </div>
@@ -174,7 +177,10 @@ const handleHeightChange = useCallback((h: number) => {
           </button>
 
           <div className="flex-1">
-            <label className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+            <label
+              htmlFor="custom-height"
+              className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5"
+            >
               Height px
             </label>
             <input
@@ -184,7 +190,7 @@ const handleHeightChange = useCallback((h: number) => {
               max={7680}
               step={2}
               value={recipe.customHeight}
-              onChange={(e) => onChange({ customHeight: Number(e.target.value) })}
+              onChange={(e) => handleHeightChange(Number(e.target.value))}
               className="w-full text-base px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
           </div>

@@ -84,7 +84,10 @@ useEffect(() => {
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+          <label
+            htmlFor="speed-control"
+            className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1"
+          >
             <Gauge size={14} /> Speed
           </label>
 

@@ -18,7 +18,10 @@ export default function ExportSettings({ recipe, onChange }: Props) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+        <label
+          htmlFor="quality-control"
+          className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1"
+        >
           <SlidersHorizontal size={14} /> Quality
         </label>
         <span className="text-base font-heading font-bold text-film-600">

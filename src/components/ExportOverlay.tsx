@@ -18,45 +18,30 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
 
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
-const handleKeyDown = useCallback((e: KeyboardEvent) => {
-  if (e.key === "Escape") {
-    onCancel();
-  }
-}, [onCancel]);
+
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      onCancel?.();
+    }
+  }, [onCancel]);
+
   useEffect(() => {
-  if (!visible) return;
+    if (!visible) return;
 
-  window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
-  previousFocusRef.current =
-    document.activeElement as HTMLElement;
+    previousFocusRef.current = document.activeElement as HTMLElement;
 
-  return () => {
-    window.removeEventListener("keydown", handleKeyDown);
-  };
-}, [visible, handleKeyDown]);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [visible, handleKeyDown]);
 
   useEffect(() => {
     if (!visible && previousFocusRef.current) {
       previousFocusRef.current.focus();
     }
   }, [visible]);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        onCancel?.();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [visible, onCancel]);
 
   if (!visible) return null;
 
@@ -162,6 +147,6 @@ const handleKeyDown = useCallback((e: KeyboardEvent) => {
           )}
         </div>
       </div>
-    </FocusTrap >
+    </FocusTrap>
   );
 }
