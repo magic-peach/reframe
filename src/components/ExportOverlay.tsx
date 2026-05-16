@@ -24,16 +24,17 @@ const handleKeyDown = useCallback((e: KeyboardEvent) => {
   }
 }, [onCancel]);
   useEffect(() => {
-    if (visible) {
-      window.addEventListener("keydown", handleKeyDown);
-      previousFocusRef.current =
-        document.activeElement as HTMLElement;
-    }
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-    
-  }, [visible]);
+  if (!visible) return;
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  previousFocusRef.current =
+    document.activeElement as HTMLElement;
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+}, [visible, handleKeyDown]);
 
   useEffect(() => {
     if (!visible && previousFocusRef.current) {
