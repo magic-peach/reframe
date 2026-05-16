@@ -11,21 +11,15 @@ export default function Home() {
       >
         ⭐ Star on GitHub
       </a>
-      
-<<<<<<< HEAD
+
       <main id="main-content" tabIndex={-1}>
   
       
         <VideoEditor />
       
       </main>
-=======
-      <VideoEditor />
-    <main>
-      <VideoEditor />
-    </main>
->>>>>>> 8cd376a (Align page.tsx with upstream main)
     </>
+
   );
 }
     
