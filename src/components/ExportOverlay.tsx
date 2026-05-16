@@ -9,7 +9,7 @@ import spinnerAnim from "@/lib/lottie/spinner.json";
 interface Props {
   status: ExportStatus;
   progress: number;
-  onCancel: () => void;
+  onCancel?: () => void;
 }
 
 export default function ExportOverlay({ status, progress, onCancel }: Props) {
@@ -37,7 +37,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onCancel();
+        onCancel?.();
       }
     };
 
@@ -106,21 +106,6 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
               : `Exporting: ${progress}%`}
           </span>
 
-          <div>
-            <h2 className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">
-              {isLoading ? "Loading engine" : "Exporting"}
-            </h2>
-
-            <p className="text-sm text-[var(--muted)] mt-1">
-              {isLoading
-                ? "Setting up the video engine. This only happens once."
-                : "Processing your video locally."}
-            </p>
-
-            <p className="text-xs font-heading font-semibold text-film-600 mt-2 uppercase tracking-wide">
-              Do not close or refresh this tab
-            </p>
-          </div>
 
           {status === "exporting" && (
             <div className="w-full space-y-2">
@@ -141,34 +126,32 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
               </p>
 
               <div className="flex flex-col items-center gap-3 mt-4">
-
                 <button
                   type="button"
-                  onClick={onCancel}
+                  onClick={() => onCancel?.()}
                   className="
-      inline-flex items-center justify-center
-      rounded-lg
-      border border-red-200
-      bg-red-50
-      px-4 py-2
-      text-sm font-semibold text-red-600
-      transition-colors
-      hover:bg-red-100
-      active:scale-[0.98]
-    "
+          inline-flex items-center justify-center
+          rounded-lg
+          border border-red-200
+          bg-red-50
+          px-4 py-2
+          text-sm font-semibold text-red-600
+          transition-colors
+          hover:bg-red-100
+          active:scale-[0.98]
+        "
                 >
                   Cancel Export
                 </button>
 
-
-
+                <p className="text-gray-500 text-xs">
+                  Press Escape to cancel
+                </p>
               </div>
-
-
             </div>
           )}
         </div>
       </div>
-    </FocusTrap>
+    </FocusTrap >
   );
 }
