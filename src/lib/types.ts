@@ -43,6 +43,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   keepAudio: true,
   speed: 1,
   quality: 23,
+  format: "mp4",
   brightness: 0,
   contrast: 0,
   saturation: 0,
