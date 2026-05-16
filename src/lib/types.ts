@@ -9,6 +9,11 @@ export interface EditRecipe {
   keepAudio: boolean;
   speed: number;
   quality: number;
+  format: "mp4" | "webm" | "mkv";
+
+  brightness: number;
+  contrast: number;
+  saturation: number;
 }
 
 export interface ExportResult {
@@ -16,7 +21,7 @@ export interface ExportResult {
   size: number;
   width: number;
   height: number;
-  format: "mp4" | "webm";
+  format: "mp4" | "webm" | "mkv";
 }
 
 export type ExportStatus =
@@ -39,4 +44,14 @@ export const DEFAULT_RECIPE: EditRecipe = {
   keepAudio: true,
   speed: 1,
   quality: 23,
+  format: "mp4",
+  brightness: 0,
+  contrast: 0,
+  saturation: 0,
 };
+
+export const MAX_FILE_SIZE =
+  2 * 1024 * 1024 * 1024; // 2GB
+
+export const WARNING_FILE_SIZE =
+  500 * 1024 * 1024; // 500MB
