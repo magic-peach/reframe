@@ -45,8 +45,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
   const lockedRef = useRef(false);
 const aspectRatioRef = useRef(16 / 9);
 
-console.log("PRESET SELECTOR LOADED");
-  const handleToggleLock = useCallback(() => {
+const handleToggleLock = useCallback(() => {
   if (!lockedRef.current) {
     const w = recipe.customWidth ?? 1920;
     const h = recipe.customHeight ?? 1080;
