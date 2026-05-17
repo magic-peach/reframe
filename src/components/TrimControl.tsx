@@ -15,15 +15,15 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
 
   const handleStart = (val: string) => {
     const n = parseFloat(val);
-    if (isNaN(n) || n < 0){
+    if (isNaN(n) || n < 0) {
       setStart(true);
       return;
     }
-    if (duration > 0 && n >= duration){
+    if (duration > 0 && n >= duration) {
       setStart(true);
       return;
     }
-    if (recipe.trimEnd !== null && n >= recipe.trimEnd){
+    if (recipe.trimEnd !== null && n >= recipe.trimEnd) {
       setStart(true);
       return;
     };
@@ -35,11 +35,11 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
     if (val === "") { setEnd(false);
       onChange({ trimEnd: null }); return; }
     const n = parseFloat(val);
-    if (isNaN(n) || n <= 0 || n <= recipe.trimStart){
+    if (isNaN(n) || n <= 0 || n <= recipe.trimStart) {
       setEnd(true);
       return;
     }
-    if (duration > 0 && n > duration){
+    if (duration > 0 && n > duration) {
       setEnd(true);
       return;
     }
