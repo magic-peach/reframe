@@ -44,7 +44,7 @@ export default function DownloadResult({ result, onReset }: Props) {
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">Resolution</p>
-          <p className="font-heading font-bold text-[var(--text)]">{result.width} x {result.height}</p>
+          <p className="font-heading font-bold text-[var(--text)]">{result.width} × {result.height}</p>
         </div>
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">File size</p>
