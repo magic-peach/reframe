@@ -148,11 +148,12 @@ const handleHeightChange = useCallback((h: number) => {
             <input
               id="custom-width"
               type="number"
+              inputMode="numeric"
               min={16}
               max={7680}
               step={2}
               value={recipe.customWidth}
-              
+              spellCheck={false}
               onChange={(e) => handleWidthChange(Number(e.target.value))}
               className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
@@ -184,10 +185,12 @@ const handleHeightChange = useCallback((h: number) => {
             <input
               id="custom-height"
               type="number"
+              inputMode="numeric"
               min={16}
               max={7680}
               step={2}
               value={recipe.customHeight}
+              spellCheck={false}
               onChange={(e) => handleHeightChange(Number(e.target.value))}
               className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />

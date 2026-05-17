@@ -67,6 +67,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             max={duration > 0 ? duration : undefined}
             step={0.1}
             value={recipe.trimStart}
+            spellCheck={false}
             onChange={(e) => handleStart(e.target.value)}
             className={`${inputClass} ${
               invalidStart ? "border-red-500" : "border-[var(--border)]"}`}
@@ -84,6 +85,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             max={duration > 0 ? duration : undefined}
             step={0.1}
             value={recipe.trimEnd ?? ""}
+            spellCheck={false}
             onChange={(e) => handleEnd(e.target.value)}
             className={`${inputClass} ${
               invalidEnd ? "border-red-500" : "border-[var(--border)]"}`}
