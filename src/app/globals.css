@@ -30,6 +30,7 @@
 body {
   background-color: var(--bg);
   color: var(--text);
+  font-size: var(--font-size-body);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
@@ -46,4 +47,20 @@ body {
   outline: 2px solid #e63946;
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* ── Font size overrides for accessibility ── */
+/* Ensure minimum 14px for all text */
+.text-xs,
+.text-sm,
+.text-\[10px\],
+.text-\[11px\],
+.text-\[12px\] {
+  font-size: var(--font-size-body) !important;
+}
+
+/* Primary labels and values at 16px */
+.text-base,
+.text-lg {
+  font-size: var(--font-size-primary) !important;
 }
