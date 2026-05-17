@@ -68,6 +68,7 @@ export function useVideoEditor() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState("");
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
 
@@ -80,6 +81,12 @@ export function useVideoEditor() {
     setStatus("idle");
     setError(null);
     setFile(null);
+    if (!selectedFile.type.startsWith("video/")) {
+    setFileError("Please upload a video file only.");
+    return;
+  }
+
+  setFileError("");
 
     // LAYER 0: Size check
     if (selectedFile.size > MAX_FILE_SIZE) {
@@ -269,6 +276,7 @@ export function useVideoEditor() {
     error,
     updateRecipe,
     handleFileSelect,
+    fileError,
     handleExport,
     cancelExport,
     reset,
