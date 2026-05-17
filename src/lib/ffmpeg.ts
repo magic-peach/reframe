@@ -102,6 +102,7 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
   return filters.join(",");
 }
 
+/** Builds an atempo filter chain for the given playback speed, chaining multiple filters for speeds outside the 0.5–2.0 range. */
 export function buildAudioFilter(speed: number): string {
   if (speed === 1) return "";
 
