@@ -54,6 +54,7 @@ export function terminateFFmpeg() {
   ffmpegInstance = null;
 }
 
+/** Generates a unique session ID used to isolate FFmpeg file names across concurrent exports. */
 function buildSessionId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
