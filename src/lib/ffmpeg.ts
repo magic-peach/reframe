@@ -142,8 +142,8 @@ export async function exportVideo(
     targetH = recipe.customHeight;
   } else {
     const preset = getPresetById(recipe.preset);
-    targetW = preset?.width ?? 1920;
-    targetH = preset?.height ?? 1080;
+    targetW = Math.min(preset?.width ?? 1920, 1280);
+    targetH = Math.min(preset?.height ?? 1080, 720);
   }
 
   // dimensions must be even for libx264
@@ -176,23 +176,82 @@ export async function exportVideo(
    try {
     await ffmpeg.writeFile(inputName,await fetchFile(file),{ signal } );
 
+    const musicName = recipe.backgroundMusic ? `music_${sessionId}.mp3`: null;
+    if (recipe.backgroundMusic && musicName) {
+      await ffmpeg.writeFile(
+         musicName,
+        await fetchFile(recipe.backgroundMusic),
+         { signal } );
+
+    cleanupFiles.add(musicName);
+    }
+
     abortCheck(signal);
     ffmpeg.on("progress", handleProgress);
 
     const vf = buildVideoFilter(recipe, targetW, targetH);
     const audioTrim = buildAudioTrimFilter(recipe);
     const audioSpeed = buildAudioFilter(recipe.speed);
-    const afParts = [audioTrim, audioSpeed].filter(Boolean);
+    const afParts = [audioTrim,audioSpeed,`volume=${recipe.originalAudioVolume}`].filter(Boolean);
     const af = afParts.join(",");
 
-    const args = ["-i", inputName];
+    const args: string[] = [];
+    args.push("-i", inputName);
     if (vf) args.push("-vf", vf);
 
-    if (!recipe.keepAudio) {
-      args.push("-an");
-    } else if (af) {
-      args.push("-af", af);
-    }
+    if (recipe.backgroundMusic && musicName) {
+
+      if (recipe.loopBackgroundMusic) {
+        args.push("-stream_loop", "-1");}
+
+      args.push("-i", musicName);
+
+      if (!recipe.keepAudio) {
+
+        args.push(
+          "-map", "0:v",
+          "-map", "1:a",
+          "-af",
+          `volume=${recipe.backgroundMusicVolume}`
+        
+        );
+
+      } else {
+        const originalAudioChain = [
+           audioTrim,
+           audioSpeed,
+           `volume=${recipe.originalAudioVolume}`
+          ]
+            .filter(Boolean)
+             .join(",");
+
+        const musicAudioChain = [
+            `volume=${recipe.backgroundMusicVolume}`
+        ]
+           .filter(Boolean)
+           .join(",");
+
+        args.push(
+            "-filter_complex",
+            `[0:a]${originalAudioChain}[original];` +
+            `[1:a]${musicAudioChain}[music];` +
+            `[original][music]amix=inputs=2:duration=first[a]`,
+
+
+            "-map", "0:v",
+            "-map", "[a]"
+          );
+        }
+          
+      }else {
+
+        if (!recipe.keepAudio) {
+        args.push("-an");
+        } else if (af) {
+          args.push("-af", af);
+        }
+
+}
 
     // Add codec-specific arguments based on selected format
     if (recipe.format === "webm") {
@@ -207,7 +266,7 @@ export async function exportVideo(
       args.push(
         "-c:v", "libx264",
         "-crf", String(recipe.quality),
-        "-preset", "medium"
+        "-preset", "ultrafast"
       );
       if (recipe.keepAudio) {
         args.push("-c:a", "aac", "-b:a", "128k");
@@ -217,7 +276,7 @@ export async function exportVideo(
       args.push(
         "-c:v", "libx264",
         "-crf", String(recipe.quality),
-        "-preset", "medium",
+        "-preset", "ultrafast",
         "-movflags", "+faststart"
       );
       if (recipe.keepAudio) {
@@ -225,9 +284,15 @@ export async function exportVideo(
       }
     }
 
+    args.push("-shortest");
+
     args.push(outputName);
 
-    const exitCode = await ffmpeg.exec(args, undefined, { signal });
+    const exitCode = await ffmpeg.exec(["-threads",
+    "1",
+    ...args], undefined, { signal });
+
+    
 
     abortCheck(signal);
 
@@ -237,7 +302,7 @@ export async function exportVideo(
         "-i", inputName,
         ...(vf ? ["-vf", vf] : []),
         ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
-        "-c:v", "libvpx-vp9",
+        "-c:v", "libvpx",
         "-crf", String(recipe.quality),
         ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
         fallbackOutputName,
