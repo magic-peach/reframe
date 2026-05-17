@@ -60,6 +60,8 @@ export default function ExportSettings({ recipe, onChange }: Props) {
             type="checkbox"
             checked={recipe.stabilization}
             onChange={(e) =>onChange({ stabilization: e.target.checked })}
+            aria-label="Enable video stabilization"
+            aria-checked={recipe.stabilization}
             className="w-full accent-film-600 cursor-pointer"
           />
           {/* <span className="font-normal text-xs text-[var(--muted)] ml-1">deshake</span> */}
