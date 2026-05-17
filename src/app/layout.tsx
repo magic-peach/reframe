@@ -4,7 +4,11 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
+<<<<<<< HEAD
 import ScrollToTop from "@/components/ScrollToTop";
+=======
+import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+>>>>>>> 0f4e0f5 (feat: implement service worker for FFmpeg WASM caching (#181))
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
@@ -72,6 +76,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <ThemeProvider>
+<<<<<<< HEAD
           <ErrorBoundary>
             <header
               role="banner"
@@ -85,6 +90,19 @@ export default function RootLayout({
             </main>
             <ScrollToTop />
           </ErrorBoundary>
+=======
+          <ServiceWorkerRegistrar />
+          <header role="banner" className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]">
+            <h1 className="text-lg font-semibold">Reframe</h1>
+            <ThemeToggle />
+          </header>
+          <main role="main" id="main-content">
+            {children}
+          </main>
+          <footer role="contentinfo" className="px-6 py-4 text-sm text-[var(--muted)]">
+            <p>© 2026 Reframe</p>
+          </footer>
+>>>>>>> 0f4e0f5 (feat: implement service worker for FFmpeg WASM caching (#181))
         </ThemeProvider>
       </body>
     </html>
