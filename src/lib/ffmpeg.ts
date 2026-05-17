@@ -80,6 +80,10 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     filters.push("transpose=2");
   }
 
+  if (recipe.stabilization) {
+    filters.push("deshake=x=-1:y=-1:w=-1:h=-1:rx=16:ry=16");
+  }
+
   if (recipe.framing === "fit") {
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
