@@ -197,7 +197,20 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
     <div className="space-y-2">
       {error && <p className="text-sm text-red-500">{error}</p>}
 
-      {warning && <p className="text-sm text-yellow-500">{warning}</p>}
+      {warning && (
+  <div className="flex items-start justify-between gap-3 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3">
+    <p className="text-sm text-yellow-800">{warning}</p>
+
+    <button
+      type="button"
+      onClick={() => setWarning("")}
+      className="text-yellow-700 hover:text-yellow-900 transition"
+      aria-label="Dismiss warning"
+    >
+      ✕
+    </button>
+  </div>
+)}
 
       {currentFile ? <FileInfo /> : <DropZone />}
     </div>
