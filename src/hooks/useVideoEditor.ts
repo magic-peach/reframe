@@ -76,8 +76,8 @@ export function useVideoEditor() {
 
     // LAYER 1: Extension check
     const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
-    const name = selectedFile.name.toLowerCase();
-    const hasValidExtension = validExtensions.some(ext => name.endsWith(ext));
+    const filename = selectedFile.name.toLowerCase();
+    const hasValidExtension = validExtensions.some(ext => filename.endsWith(ext));
     if (!hasValidExtension) {
       setError(`Layer 1 Validation Failed: Invalid file extension. Expected one of: ${validExtensions.join(', ')}`);
       setStatus("error");
