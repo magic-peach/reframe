@@ -10,8 +10,8 @@ const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your brows
 export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
-    const video = document.createElement('video');
-    video.preload = 'metadata';
+    const video = document.createElement("video");
+    video.preload = "metadata";
     video.onloadedmetadata = () => {
       resolve({
         width: video.videoWidth,
