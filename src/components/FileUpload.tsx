@@ -68,10 +68,11 @@ export default function FileUpload({
 
     // Soft warning for files above 500MB
     if (file.size > WARNING_FILE_SIZE) {
+      const estimatedMinutes = Math.max(1, Math.round(file.size / (100 * 1024 * 1024)));
       setWarning(
         `Large file detected (${fmt(
           file.size
-        )}). Uploading may affect performance on low-memory devices.`
+        )}). Processing may take ~${estimatedMinutes} minutes and affect performance on low-memory devices.`
       );
     }
 

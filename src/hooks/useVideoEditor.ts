@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { EditRecipe, ExportResult, ExportStatus } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE } from "@/lib/types";
 import { DEFAULT_RECIPE } from "@/lib/constants";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 
@@ -73,6 +73,13 @@ export function useVideoEditor() {
     setStatus("idle");
     setError(null);
     setFile(null);
+
+    // LAYER 0: Size check
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setError(`Validation Failed: File too large. Maximum size is 2GB.`);
+      setStatus("error");
+      return;
+    }
 
     // LAYER 1: Extension check
     const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
