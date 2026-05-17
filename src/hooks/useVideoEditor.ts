@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { EditRecipe, ExportResult, ExportStatus } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE } from "@/lib/types";
 import { DEFAULT_RECIPE } from "@/lib/constants";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 
@@ -11,8 +11,14 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
+    const timeout = setTimeout(() => {
+      URL.revokeObjectURL(url);
+      reject( new Error("Video metaData load timeout"))
+    }, 500);
+
     video.preload = "metadata";
     video.onloadedmetadata = () => {
+      clearTimeout(timeout)
       resolve({
         width: video.videoWidth,
         height: video.videoHeight,
@@ -21,6 +27,7 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
       URL.revokeObjectURL(url);
     };
     video.onerror = () => {
+      clearTimeout(timeout)
       URL.revokeObjectURL(url);
       reject(new Error("Failed to load video metadata"));
     };
@@ -61,6 +68,7 @@ export function useVideoEditor() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState("");
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
 
@@ -73,6 +81,19 @@ export function useVideoEditor() {
     setStatus("idle");
     setError(null);
     setFile(null);
+    if (!selectedFile.type.startsWith("video/")) {
+    setFileError("Please upload a video file only.");
+    return;
+  }
+
+  setFileError("");
+
+    // LAYER 0: Size check
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setError(`Validation Failed: File too large. Maximum size is 2GB.`);
+      setStatus("error");
+      return;
+    }
 
     // LAYER 1: Extension check
     const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
@@ -199,6 +220,18 @@ export function useVideoEditor() {
     };
   }, [file, status, handleExport]);
 
+  useEffect(()=>{
+    return ()=>{
+      if(result?.blobUrl){
+        URL.revokeObjectURL(result.blobUrl);
+      }
+    }
+   },[result?.blobUrl])
+
+  const resetSettings = useCallback(() => {
+    setRecipe(DEFAULT_RECIPE);
+  }, []);
+
   const cancelExport = useCallback(() => {
     exportCancelledRef.current = true;
     exportAbortControllerRef.current?.abort();
@@ -210,9 +243,6 @@ export function useVideoEditor() {
     setResult(null);
   }, []);
 
-  const resetSettings = useCallback(() => {
-    setRecipe(DEFAULT_RECIPE);
-  }, []);
 
   const reset = useCallback(() => {
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
@@ -250,6 +280,7 @@ export function useVideoEditor() {
     error,
     updateRecipe,
     handleFileSelect,
+    fileError,
     handleExport,
     cancelExport,
     reset,

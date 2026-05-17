@@ -55,13 +55,10 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
 
     return ffmpeg;
   } catch (err) {
-
-    console.error("FFmpeg load failed:", err);
-    
     if (ffmpegInstance === ffmpeg) {
       ffmpegInstance = null;
     }
-    throw new FFmpegLoadError("Failed to load the FFmpeg engine. Check your internet connection.");
+    throw new FFmpegLoadError("The ffmpeg cdn could not load. Please check your internet connection.");
   }
 }
 
@@ -286,6 +283,7 @@ export async function exportVideo(
     if (recipe.format === "webm") {
       args.push(
         "-c:v", "libvpx-vp9",
+        "-b:v", "0",
         "-crf", String(recipe.quality)
       );
       if (recipe.keepAudio) {
@@ -331,12 +329,11 @@ export async function exportVideo(
         "-i", inputName,
         ...(vf ? ["-vf", vf] : []),
         ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
-        "-c:v", "libvpx",
+         "-c:v", "libvpx",
         "-crf", String(recipe.quality),
         ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
         fallbackOutputName,
       ];
-
       const fallbackCode = await ffmpeg.exec(fallbackArgs, undefined, { signal });
 
       if (fallbackCode !== 0) {

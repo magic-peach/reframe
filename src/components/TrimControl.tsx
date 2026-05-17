@@ -67,7 +67,10 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             max={duration > 0 ? duration : undefined}
             step={0.1}
             value={recipe.trimStart}
+            spellCheck={false}
             onChange={(e) => handleStart(e.target.value)}
+            aria-label="Trim start time in seconds"
+            aria-invalid={invalidStart}
             className={`${inputClass} ${
               invalidStart ? "border-red-500" : "border-[var(--border)]"}`}
             placeholder="0"
@@ -84,7 +87,10 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             max={duration > 0 ? duration : undefined}
             step={0.1}
             value={recipe.trimEnd ?? ""}
+            spellCheck={false}
             onChange={(e) => handleEnd(e.target.value)}
+            aria-label="Trim end time in seconds"
+            aria-invalid={invalidEnd}
             className={`${inputClass} ${
               invalidEnd ? "border-red-500" : "border-[var(--border)]"}`}
             placeholder={duration > 0 ? `${duration.toFixed(1)}` : "full length"}
