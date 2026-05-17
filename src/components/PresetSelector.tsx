@@ -150,6 +150,7 @@ const handleHeightChange = useCallback((h: number) => {
             <input
               id="custom-width"
               type="number"
+              inputmode="numeric"
               min={16}
               max={7680}
               step={2}
@@ -186,6 +187,7 @@ const handleHeightChange = useCallback((h: number) => {
             <input
               id="custom-height"
               type="number"
+              inputmode="numeric"
               min={16}
               max={7680}
               step={2}
