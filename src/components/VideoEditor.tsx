@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
@@ -50,6 +50,17 @@ export default function VideoEditor() {
     handleFileSelect, handleExport, cancelExport, reset, resetSettings,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
+  const downloadRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (status === "done" && downloadRef.current) {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      downloadRef.current.scrollIntoView({
+        behavior: prefersReducedMotion ? "instant" : "smooth",
+        block: "center",
+      });
+    }
+  }, [status]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
 
@@ -264,7 +275,7 @@ export default function VideoEditor() {
             )}
 
             {status === "done" && result && (
-              <div role="status" className="animate-fade-in">
+              <div role="status" className="animate-fade-in" ref={downloadRef}>
                 <DownloadResult result={result} onReset={reset} />
               </div>
             )}
