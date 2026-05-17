@@ -58,32 +58,11 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
     console.error("FFmpeg load failed:", err);
     ffmpegInstance = null;
 
-<<<<<<< HEAD
-      await ffmpeg.load({
-        coreURL: await toBlobURL(
-          `${base}/${coreName}.js`,
-          "text/javascript"
-        ),
-        wasmURL: await toBlobURL(
-          `${base}/${coreName}.wasm`,
-          "application/wasm"
-        ),
-      });
-
-      return ffmpeg;
-    } catch (err) {
-      lastError = err;
-      ffmpegInstance = null;
-    }
-    throw new FFmpegLoadError("The ffmpeg cdn could not load. Please check your internet connection.");
-=======
     throw new FFmpegLoadError(
       "FFmpeg failed to load. Check internet or CDN blocking."
     );
->>>>>>> a78b0c1 (fix: revert ffmpeg changes and clean dependencies)
   }
 }
-
 /** Terminates the active FFmpeg instance and releases its memory. */
 export function terminateFFmpeg() {
   ffmpegInstance?.terminate();
@@ -337,5 +316,4 @@ export async function exportVideo(
 /** Formats a byte count as a human-readable string (KB or MB). */
 export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;}
