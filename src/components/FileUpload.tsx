@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect} from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
@@ -29,6 +29,17 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
 
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
+  
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o") {
+        e.preventDefault();
+        inputRef.current?.click();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   const handleFile = (file: File) => {
     setError("");
@@ -53,10 +64,11 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
 
     // Soft warning
     if (file.size > WARNING_FILE_SIZE) {
+      const estimatedMinutes = Math.max(1, Math.round(file.size / (100 * 1024 * 1024)));
       setWarning(
         `Large file detected (${formatBytes(
           file.size
-        )}). This may cause slow performance on low-end devices.`
+        )}). Processing may take ~${estimatedMinutes} minutes and affect performance on low-memory devices.`
       );
     }
 
@@ -88,9 +100,16 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
       <Film size={18} className="text-film-600 shrink-0" />
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-[var(--text)] truncate">
-          {currentFile?.name}
-        </p>
+        <div className="flex items-center gap-2 mb-0.5">
+          <p className="text-sm font-medium text-[var(--text)] truncate">
+            {currentFile?.name}
+          </p>
+          {currentFile && (
+            <span className="px-2 py-0.5 bg-gray-700 text-white font-bold tracking-wider rounded text-[10px] uppercase">
+              {currentFile.name.includes('.') ? currentFile.name.split('.').pop() : 'VIDEO'}
+            </span>
+          )}
+        </div>
 
         <p className="text-xs text-[var(--muted)]">
           {formatBytes(currentFile?.size ?? 0)}

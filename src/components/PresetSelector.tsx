@@ -3,7 +3,7 @@
 import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
 import { Settings2, Lock, Unlock } from "lucide-react";
-import { useState, useCallback ,useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -45,8 +45,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
   const lockedRef = useRef(false);
 const aspectRatioRef = useRef(16 / 9);
 
-console.log("PRESET SELECTOR LOADED");
-  const handleToggleLock = useCallback(() => {
+const handleToggleLock = useCallback(() => {
   if (!lockedRef.current) {
     const w = recipe.customWidth ?? 1920;
     const h = recipe.customHeight ?? 1080;
@@ -61,7 +60,6 @@ console.log("PRESET SELECTOR LOADED");
 }, [recipe.customWidth, recipe.customHeight]);
 
   const handleWidthChange = useCallback((w: number) => {
-   console.log("locked:", lockedRef.current, "ratio:", aspectRatioRef.current);
   const patch: Partial<EditRecipe> = { customWidth: w };
   if (lockedRef.current) patch.customHeight = Math.round(w / aspectRatioRef.current);
   onChange(patch);
@@ -150,15 +148,16 @@ const handleHeightChange = useCallback((h: number) => {
             <input
               id="custom-width"
               type="number"
+              inputMode="numeric"
               min={16}
               max={7680}
               step={2}
               value={recipe.customWidth}
-              
+              spellCheck={false}
               onChange={(e) => handleWidthChange(Number(e.target.value))}
               className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
-            {recipe.customWidth % 2!==0 && (
+            {recipe.customWidth % 2 !== 0 && (
               <p className="text-[10px] text-amber-500 mt-1">
                 Warning - Odd number will round up to {recipe.customWidth + 1}
               </p>
@@ -186,14 +185,16 @@ const handleHeightChange = useCallback((h: number) => {
             <input
               id="custom-height"
               type="number"
+              inputMode="numeric"
               min={16}
               max={7680}
               step={2}
               value={recipe.customHeight}
+              spellCheck={false}
               onChange={(e) => handleHeightChange(Number(e.target.value))}
               className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
-            {recipe.customHeight %2!==0 && (
+            {recipe.customHeight % 2 !== 0 && (
               <p className="text-[10px] text-amber-500 mt-1">
                 Warning- Odd number will round up to {recipe.customHeight + 1}
               </p>

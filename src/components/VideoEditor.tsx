@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
@@ -50,8 +50,18 @@ export default function VideoEditor() {
     handleFileSelect, handleExport, cancelExport, reset, resetSettings,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
+  const downloadRef = useRef<HTMLDivElement>(null);
 
-  
+  useEffect(() => {
+    if (status === "done" && downloadRef.current) {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      downloadRef.current.scrollIntoView({
+        behavior: prefersReducedMotion ? "instant" : "smooth",
+        block: "center",
+      });
+    }
+  }, [status]);
+
   const isProcessing = status === "loading-engine" || status === "exporting";
 
   return (
@@ -59,9 +69,9 @@ export default function VideoEditor() {
       <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {status === 'exporting' && `Exporting video: ${progress}%`}
-        {status === 'done' && 'Export complete! Video ready to download.'}
-        {status === 'error' && `Export failed: ${error}`}
+        {status === "exporting" && `Exporting video: ${progress}%`}
+        {status === "done" && "Export complete! Video ready to download."}
+        {status === "error" && `Export failed: ${error}`}
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
@@ -88,7 +98,7 @@ export default function VideoEditor() {
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} />
 
               {!file && (
-              <div className="text-center text-gray-500 py-6">
+              <div className="text-center text-[var(--muted)] py-6">
                 <p>Upload a video to get started</p>
                 <p className="text-sm">Supports MP4, MOV, WebM and more</p>
               </div>
@@ -96,13 +106,13 @@ export default function VideoEditor() {
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} />
+                  <VideoPreview file={file} recipe={recipe} />
                 </div>
               )}
             </div>
 
             {file && file.size > 100 * 1024 * 1024 && (
-              <p className="text-yellow-400 text-sm">
+              <p className="text-[var(--warning)] text-sm">
                 ⚠️ Large file — processing may take several minutes
               </p>
             )}      
@@ -131,7 +141,7 @@ export default function VideoEditor() {
     {/* Brightness */}
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs">
-        <span>Brightness</span>
+        <label htmlFor="brightness-slider">Brightness</label>
 
         <button
           type="button"
@@ -143,6 +153,7 @@ export default function VideoEditor() {
       </div>
 
       <input
+        id="brightness-slider"
         type="range"
         min="-1"
         max="1"
@@ -153,6 +164,7 @@ export default function VideoEditor() {
             brightness: Number(e.target.value),
           })
         }
+        aria-label="Adjust brightness"
         className="w-full"
       />
     </div>
@@ -160,7 +172,7 @@ export default function VideoEditor() {
     {/* Contrast */}
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs">
-        <span>Contrast</span>
+        <label htmlFor="contrast-slider">Contrast</label>
 
         <button
           type="button"
@@ -172,6 +184,7 @@ export default function VideoEditor() {
       </div>
 
       <input
+        id="contrast-slider"
         type="range"
         min="0"
         max="2"
@@ -182,6 +195,7 @@ export default function VideoEditor() {
             contrast: Number(e.target.value),
           })
         }
+        aria-label="Adjust contrast"
         className="w-full"
       />
     </div>
@@ -189,7 +203,7 @@ export default function VideoEditor() {
     {/* Saturation */}
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs">
-        <span>Saturation</span>
+        <label htmlFor="saturation-slider">Saturation</label>
 
         <button
           type="button"
@@ -201,6 +215,7 @@ export default function VideoEditor() {
       </div>
 
       <input
+        id="saturation-slider"
         type="range"
         min="0"
         max="3"
@@ -211,6 +226,7 @@ export default function VideoEditor() {
             saturation: Number(e.target.value),
           })
         }
+        aria-label="Adjust saturation"
         className="w-full"
       />
     </div>
@@ -240,6 +256,7 @@ export default function VideoEditor() {
                   <p className="text-film-600 text-xs mt-1">{error}</p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(error).then(() => {
                       setCopied(true);
@@ -253,8 +270,9 @@ export default function VideoEditor() {
                 </button>
                 {!error.includes("Validation Failed") && (
                   <button
+                    type="button"
                     onClick={handleExport}
-                    className="px-3 py-1.5 bg-red-200 border border-film-200 rounded-lg text-xs font-semibold hover:bg-film-50 hover:border-film-300 transition-colors shrink-0 whitespace-nowrap"
+                    className="px-3 py-1.5 bg-[var(--error-bg)] border border-[var(--error-border)] rounded-lg text-xs font-semibold hover:bg-[var(--error-hover)] hover:border-[var(--error)] text-[var(--text)] transition-colors shrink-0 whitespace-nowrap"
                   >
                     Retry Export
                   </button>
@@ -265,6 +283,8 @@ export default function VideoEditor() {
             {status === "done" && result && (
               <div role="status" className="animate-fade-in">
                 <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} />
+              <div role="status" className="animate-fade-in" ref={downloadRef}>
+                <DownloadResult result={result} onReset={reset} />
               </div>
             )}
           </div>

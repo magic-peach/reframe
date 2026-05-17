@@ -33,6 +33,11 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
       audio.play().catch(console.error);
     }
   }, [soundOnCompletion]);
+  const handleReset = () => {
+    if (window.confirm("This will clear the current video and all settings. Continue?")) {
+      onReset();
+    }
+  };
 
   return (
     <div className="p-5 bg-[var(--surface)] border border-[var(--border)] rounded-xl space-y-4">
@@ -121,7 +126,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
           type="button"
           title="Reset and upload a new video"
           aria-label="Upload a new video"
-          onClick={onReset}
+          onClick={handleReset}
           className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
         >
           <RotateCcw size={14} />

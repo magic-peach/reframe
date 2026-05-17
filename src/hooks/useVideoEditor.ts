@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { EditRecipe, ExportResult, ExportStatus } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE } from "@/lib/types";
 import { DEFAULT_RECIPE } from "@/lib/constants";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 
@@ -10,9 +10,15 @@ const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your brows
 export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
-    const video = document.createElement('video');
-    video.preload = 'metadata';
+    const video = document.createElement("video");
+    const timeout = setTimeout(() => {
+      URL.revokeObjectURL(url);
+      reject( new Error("Video metaData load timeout"))
+    }, 500);
+
+    video.preload = "metadata";
     video.onloadedmetadata = () => {
+      clearTimeout(timeout)
       resolve({
         width: video.videoWidth,
         height: video.videoHeight,
@@ -21,8 +27,9 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
       URL.revokeObjectURL(url);
     };
     video.onerror = () => {
+      clearTimeout(timeout)
       URL.revokeObjectURL(url);
-      reject(new Error('Failed to load video metadata'));
+      reject(new Error("Failed to load video metadata"));
     };
     video.src = url;
   });
@@ -37,15 +44,15 @@ function verifyMagicBytes(file: File): Promise<boolean> {
         return;
       }
       const arr = new Uint8Array(e.target.result as ArrayBuffer);
-      const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      const hex = Array.from(arr).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
       const ascii = String.fromCharCode(...arr);
 
       // WebM / MKV
-      if (hex.startsWith('1A45DFA3')) resolve(true);
+      if (hex.startsWith("1A45DFA3")) resolve(true);
       // AVI
-      else if (hex.startsWith('52494646')) resolve(true);
+      else if (hex.startsWith("52494646")) resolve(true);
       // MP4 / MOV (checks for 'ftyp' in first 12 bytes)
-      else if (ascii.substring(0, 12).includes('ftyp')) resolve(true);
+      else if (ascii.substring(0, 12).includes("ftyp")) resolve(true);
       else resolve(false);
     };
     reader.onerror = () => resolve(false);
@@ -79,6 +86,13 @@ soundOnCompletion:
     setStatus("idle");
     setError(null);
     setFile(null);
+
+    // LAYER 0: Size check
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setError(`Validation Failed: File too large. Maximum size is 2GB.`);
+      setStatus("error");
+      return;
+    }
 
     // LAYER 1: Extension check
     const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
@@ -202,6 +216,18 @@ soundOnCompletion:
     };
   }, [file, status, handleExport]);
 
+  useEffect(()=>{
+    return ()=>{
+      if(result?.blobUrl){
+        URL.revokeObjectURL(result.blobUrl);
+      }
+    }
+   },[result?.blobUrl])
+
+  const resetSettings = useCallback(() => {
+    setRecipe(DEFAULT_RECIPE);
+  }, []);
+
   const cancelExport = useCallback(() => {
     exportCancelledRef.current = true;
     exportAbortControllerRef.current?.abort();
@@ -212,9 +238,6 @@ soundOnCompletion:
     setError(null);
   }, []);
 
-  const resetSettings = useCallback(() => {
-    setRecipe(DEFAULT_RECIPE);
-  }, []);
 
   const reset = useCallback(() => {
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);

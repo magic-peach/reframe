@@ -36,7 +36,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
     };
 
     document.addEventListener("keydown", handler);
-    
+
     return () => {
       document.removeEventListener("keydown", handler);
     };
@@ -92,7 +92,11 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label htmlFor="speed-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+          <label
+            id="speed-label"
+            htmlFor="speed-control"
+            className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1"
+          >
             <Gauge size={10} /> Speed
           </label>
 
@@ -100,7 +104,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             <span className="text-sm font-heading font-bold text-film-600 block">
               {recipe.speed}x
             </span>
-            <span className="text-[10px] text-[var(--muted)]">
+            <span id="speed-description" className="text-[10px] text-[var(--muted)]">
               {getSpeedDescription(recipe.speed)}
             </span>
           </div>
@@ -113,13 +117,20 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           step={1}
           value={speedIndex === -1 ? 3 : speedIndex}
           onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
+          aria-labelledby="speed-label"
+          aria-describedby="speed-description"
           aria-label="Video playback speed"
           aria-valuetext={`${recipe.speed}x speed, ${getSpeedDescription(recipe.speed)}`}
           className="w-full h-11 accent-film-600 cursor-pointer"
         />
-        <div className="flex justify-between mt-1">
+        <div className="flex justify-between mt-1 overflow-hidden">
           {SPEED_STEPS.map((s) => (
-            <span key={s} className="text-[9px] text-[var(--muted)]">{s}x</span>
+            <span
+              key={s}
+              className="text-[9px] text-[var(--muted)] truncate text-center min-w-0 px-[1px]"
+            >
+              {s}x
+            </span>
           ))}
         </div>
       </div>
