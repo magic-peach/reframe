@@ -26,6 +26,12 @@ import {
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+  Layers, Crop, Scissors, RotateCw, Volume2,
+  SlidersHorizontal, Zap, AlertTriangle, Copy
+} from "lucide-react";
+import OnboardingTour from "./OnboardingTour";
+import WatermarkControl from "./WatermarkControl";
+import { Droplets } from "lucide-react";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -553,6 +559,9 @@ export default function VideoEditor() {
                       </div>
                     </div>
                   </Section>
+                  <Section icon={<Droplets size={12} />} title="Watermark" delay={185}>
+                    <WatermarkControl recipe={recipe} onChange={updateRecipe} />
+                  </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
                   </Section>
@@ -577,7 +586,7 @@ export default function VideoEditor() {
                       overlayOpacity={overlayOpacity}
                       setOverlayOpacity={setOverlayOpacity}
                     />
-                  </Section>
+                  </Section>         
                 </div>
               </div>
             )}

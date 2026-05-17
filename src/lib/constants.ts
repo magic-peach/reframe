@@ -25,3 +25,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   textOverlays: [],
   version: RECIPE_VERSION,
 };
+  watermarkText: "",
+  watermarkPosition: "bottom-right" as const,
+  watermarkOpacity: 80,
+};
