@@ -35,16 +35,13 @@ export default function DownloadResult({ result, onReset }: Props) {
         <div>
           <p className="font-heading font-bold text-base text-[var(--text)]">Export complete</p>
           <p className="text-xs text-[var(--muted)] mt-0.5">Ready to download</p>
-          <p className="text-sm text-[var(--text)]">
-            Resolution: {result.width} × {result.height}
-          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">Resolution</p>
-          <p className="font-heading font-bold text-[var(--text)]">{result.width} x {result.height}</p>
+          <p className="font-heading font-bold text-[var(--text)]">{result.width} × {result.height}</p>
         </div>
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">File size</p>
@@ -109,9 +106,9 @@ export default function DownloadResult({ result, onReset }: Props) {
           rel="noopener noreferrer"
           aria-label="Preview video in new tab"
           className="flex items-center justify-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
-          >
-            Preview
-          </a>
+        >
+          Preview
+        </a>
         <button
           type="button"
           title="Reset and upload a new video"
