@@ -97,8 +97,8 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     filters.push(`setpts=${pts}*PTS`);
   }
   filters.push(
-  `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
-);
+    `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+  );
   return filters.join(",");
 }
 
