@@ -106,7 +106,7 @@ export default function VideoEditor() {
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} />
+                  <VideoPreview file={file} recipe={recipe} />
                 </div>
               )}
             </div>
