@@ -51,7 +51,6 @@ export default function VideoEditor() {
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
 
-  
   const isProcessing = status === "loading-engine" || status === "exporting";
 
   return (
