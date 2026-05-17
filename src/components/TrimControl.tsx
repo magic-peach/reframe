@@ -10,8 +10,8 @@ interface Props {
 }
 
 export default function TrimControl({ recipe, onChange, duration }: Props) {
-  const [invalidStart, setStart]=useState(false);
-  const [invalidEnd, setEnd]=useState(false);
+  const [invalidStart, setStart] = useState(false);
+  const [invalidEnd, setEnd] = useState(false);
 
   const handleStart = (val: string) => {
     const n = parseFloat(val);
