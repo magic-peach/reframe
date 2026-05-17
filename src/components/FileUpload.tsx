@@ -58,7 +58,6 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
         `Large file detected (${formatBytes(
           file.size
         )}). Processing may take ~${estimatedMinutes} minutes and affect performance on low-memory devices.`
-        )}). This may cause slow performance on low-end devices.`
       );
     }
 
