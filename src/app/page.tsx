@@ -15,8 +15,7 @@ export default function Home() {
         <VideoEditor />
       </main>
 
-      <footer className="w-full border-t border-white/10 bg-gradient-to-b from-[#0A2239] to-[#132E32] text-white px-6 py-10 mt-12">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+    <footer className="w-full border-t border-[var(--border)] bg-gray-100 dark:bg-gradient-to-b dark:from-[#0A2239] dark:to-[#132E32] text-black dark:text-white px-6 py-10 mt-12">        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
 
           {/* Left Section */}
           <div>
