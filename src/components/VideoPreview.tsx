@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Badge } from "./components";
 
 interface Props {
   file: File | null;
@@ -12,6 +13,7 @@ export default function VideoPreview({ file }: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
 
   // stable handler reference (avoids re-attaching logic unnecessarily)
   const onLoadedRef = useRef<(() => void) | null>(null);
@@ -34,6 +36,7 @@ export default function VideoPreview({ file }: Props) {
 
     video.src = url;
     video.load();
+    setDimensions(null);
 
     // define handler once per effect run
     const handleLoaded = () => {
@@ -85,8 +88,20 @@ export default function VideoPreview({ file }: Props) {
           isLoading ? "opacity-0" : "opacity-100"
         }`}
         onLoadedData={() => setIsLoading(false)}
+        onLoadedMetadata={() => {
+          const v = videoRef.current;
+          if (v) {
+            setDimensions({ width: v.videoWidth, height: v.videoHeight });
+          }
+        }}
         playsInline
       />
+
+      {dimensions && (
+        <div className="absolute top-3 right-3">
+          <Badge label={`${dimensions.width}×${dimensions.height}`} />
+        </div>
+      )}
     </div>
   );
 }
