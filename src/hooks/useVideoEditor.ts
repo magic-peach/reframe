@@ -22,7 +22,7 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
     };
     video.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error('Failed to load video metadata'));
+      reject(new Error("Failed to load video metadata"));
     };
     video.src = url;
   });
@@ -37,15 +37,15 @@ function verifyMagicBytes(file: File): Promise<boolean> {
         return;
       }
       const arr = new Uint8Array(e.target.result as ArrayBuffer);
-      const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      const hex = Array.from(arr).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
       const ascii = String.fromCharCode(...arr);
 
       // WebM / MKV
-      if (hex.startsWith('1A45DFA3')) resolve(true);
+      if (hex.startsWith("1A45DFA3")) resolve(true);
       // AVI
-      else if (hex.startsWith('52494646')) resolve(true);
+      else if (hex.startsWith("52494646")) resolve(true);
       // MP4 / MOV (checks for 'ftyp' in first 12 bytes)
-      else if (ascii.substring(0, 12).includes('ftyp')) resolve(true);
+      else if (ascii.substring(0, 12).includes("ftyp")) resolve(true);
       else resolve(false);
     };
     reader.onerror = () => resolve(false);
