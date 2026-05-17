@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/ffmpeg";
-import { Download, RotateCcw, Share2 } from "lucide-react";
+import { Download, RotateCcw, Share2, AlertCircle } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import successAnim from "@/lib/lottie/success.json";
+import { cn } from "@/lib/utils";
 
 const SHARE_TWEET_TEXT =
   "I just edited my video with @reframevideo — free browser-based video editor! Check it out: https://github.com/magic-peach/reframe";
@@ -15,7 +17,13 @@ interface Props {
 }
 
 export default function DownloadResult({ result, onReset }: Props) {
-  const filename = `reframe_${result.width}x${result.height}.${result.format}`;
+  const defaultName = `reframe_${result.width}x${result.height}`;
+  const [name, setName] = useState(defaultName);
+
+  const invalidCharRegex = /[<>:"/\\|?*]/;
+  const isValid = !invalidCharRegex.test(name) && name.trim().length > 0;
+  const filename = `${name.trim() || "untitled"}.${result.format}`;
+
   const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(SHARE_TWEET_TEXT)}`;
 
   return (
@@ -44,11 +52,53 @@ export default function DownloadResult({ result, onReset }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="space-y-1.5 pt-2">
+        <div className="flex justify-between items-center text-xs px-1">
+          <label htmlFor="filename-input" className="text-[var(--muted)] font-heading font-semibold uppercase tracking-wider">
+            Filename
+          </label>
+          <span className={cn("transition-colors", name.length >= 100 ? "text-red-500 font-medium" : "text-[var(--muted)]")}>
+            {100 - name.length} chars remaining
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            id="filename-input"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+            className={cn(
+              "flex-1 px-3 py-2.5 bg-[var(--bg)] border rounded-lg text-sm transition-colors text-[var(--text)] placeholder:text-[var(--muted)]",
+              !isValid && name.length > 0 ? "border-red-500 focus:outline-red-500 focus:ring-1 focus:ring-red-500" : "border-[var(--border)] focus:outline-film-500"
+            )}
+            placeholder="Enter filename"
+          />
+          <span className="text-sm text-[var(--muted)] shrink-0 font-medium bg-[var(--bg)] px-3 py-2.5 border border-[var(--border)] rounded-lg">
+            .{result.format}
+          </span>
+        </div>
+        {!isValid && name.length > 0 && (
+          <p className="text-xs text-red-500 px-1 flex items-center gap-1.5 mt-1 animate-fade-in">
+            <AlertCircle size={12} />
+            Filename contains invalid characters (\ / : * ? &quot; &lt; &gt; |)
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 pt-2">
         <a
-          href={result.blobUrl}
-          download={filename}
-          className="flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 bg-film-600 hover:bg-film-700 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all hover:scale-[1.01] active:scale-[0.99]"
+          href={isValid ? result.blobUrl : undefined}
+          download={isValid ? filename : undefined}
+          className={cn(
+            "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
+            isValid 
+              ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] active:scale-[0.99] cursor-pointer" 
+              : "bg-film-600/50 cursor-not-allowed"
+          )}
+          onClick={(e) => {
+            if (!isValid) e.preventDefault();
+          }}
         >
           <Download size={15} />
           Download {result.format.toUpperCase()}
