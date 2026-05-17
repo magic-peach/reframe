@@ -86,16 +86,25 @@ jobs:
                - Acknowledges the specific problem they reported
                - Asks 1-2 targeted clarifying questions if the issue is vague or missing reproduction steps
                - Mentions a maintainer will review soon
-            3. Apply the correct GSSoC labels from CLAUDE.md:
-               - One level:* label (beginner/intermediate/advanced/critical)
-               - One or more type:* labels (bug/feature/docs/testing/security/performance/design/refactor/devops/accessibility)
-               - Add gssoc'26 if not already present
+            3. Apply the correct GSSoC labels. You MUST use the gh CLI to actually apply them —
+               do NOT mention labels in a comment instead of applying them. Run:
+                 gh issue edit ${{ github.event.issue.number }} \
+                   --add-label "label1,label2" \
+                   --repo ${{ github.repository }}
+               Choose labels from these lists:
+               - Exactly ONE level:* label → level:beginner / level:intermediate / level:advanced / level:critical
+               - One or more type:* labels → type:bug / type:feature / type:docs / type:testing /
+                 type:security / type:performance / type:design / type:refactor / type:devops / type:accessibility
+               - Always include gssoc'26
             4. Read all existing comments on the issue. If anyone said "I'd like to work on this",
                "can I be assigned?", "I want to take this", or similar — assign the issue to the
                FIRST person who made such a request. Only assign one person.
 
   claude-discussion-reply:
-    if: github.event_name == 'issue_comment' && github.event.issue.pull_request == null
+    if: |
+      (github.event_name != 'issue_comment' || (!contains(github.event.comment.body, '/assign') && !contains(github.event.comment.body, '/unassign'))) &&
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null
     runs-on: ubuntu-latest
     permissions:
       contents: read
