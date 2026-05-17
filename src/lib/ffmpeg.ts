@@ -48,6 +48,7 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
   }
 }
 
+/** Terminates the active FFmpeg instance and releases its memory. */
 export function terminateFFmpeg() {
   ffmpegInstance?.terminate();
   ffmpegInstance = null;
