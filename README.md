@@ -330,3 +330,5 @@ MIT License — See [LICENSE](LICENSE) for details.
 Made with ❤️ for everyone who just wants to edit a video without the hassle.
 
 </div>
+
+---
