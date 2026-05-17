@@ -99,11 +99,31 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
   return filters.join(",");
 }
 
-function buildAudioFilter(speed: number): string {
+export function buildAudioFilter(speed: number): string {
   if (speed === 1) return "";
-  if (speed === 0.25) return "atempo=0.5,atempo=0.5";
-  if (speed === 4) return "atempo=2.0,atempo=2.0";
-  return `atempo=${speed}`;
+
+  const filters: string[] = [];
+  let remaining = speed;
+
+  // Chain filters for slow speeds
+  while (remaining < 0.5) {
+    filters.push("atempo=0.5");
+    remaining /= 0.5;
+  }
+
+  // Chain filters for fast speeds
+  while (remaining > 2.0) {
+    filters.push("atempo=2.0");
+    remaining /= 2.0;
+  }
+
+  // Add final remaining filter if not exactly 1.0
+  // using a small epsilon check to avoid floating point issues
+  if (Math.abs(remaining - 1.0) > 0.001) {
+    filters.push(`atempo=${Number(remaining.toFixed(4))}`);
+  }
+
+  return filters.join(",");
 }
 
 function buildAudioTrimFilter(recipe: EditRecipe): string {
