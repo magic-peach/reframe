@@ -19,14 +19,27 @@ export class FFmpegLoadError extends Error {
     this.name = "FFmpegLoadError";
   }
 }
-
-export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
-  if (ffmpegInstance?.loaded) return ffmpegInstance;
+export async function loadFFmpeg(signal?: AbortSignal, 
+  onProgress?: (percent: number) => void): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) {
+  onProgress?.(100);
+  return ffmpegInstance;
+  }
 
   const ffmpeg = ffmpegInstance ?? new FFmpeg();
   ffmpegInstance = ffmpeg;
 
+  const handleProgress = ({
+    progress,
+  }: {
+    progress: number;
+  }) => {
+    onProgress?.(Math.round(progress * 100));
+  };
+
   try {
+
+    ffmpeg.on("progress", handleProgress);
     // Check if the user's browser supports WebAssembly SIMD
     const isSimdSupported = await simd();
 
@@ -38,13 +51,15 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
       coreURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.js`, "text/javascript"),
       wasmURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.wasm`, "application/wasm"),
     }, { signal });
-
+    onProgress?.(100);
     return ffmpeg;
   } catch (err) {
     if (ffmpegInstance === ffmpeg) {
       ffmpegInstance = null;
     }
     throw new FFmpegLoadError("Failed to load the FFmpeg engine. Check your internet connection.");
+  } finally {
+    ffmpeg.off("progress", handleProgress);
   }
 }
 
