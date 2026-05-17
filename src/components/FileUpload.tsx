@@ -125,6 +125,7 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
   const DropZone = () => (
     <div
       role="button"
+      aria-label="Upload video file"
       tabIndex={0}
       onDragOver={(e) => {
         e.preventDefault();
