@@ -40,8 +40,8 @@ export function ThemeToggle() {
         transition-colors duration-200
       "
     >
-      {/* Sun icon — shown in dark mode */}
-      {theme === "dark" ? (
+      {/* Sun icon — shown in light mode */}
+      {theme === "light" ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -57,7 +57,7 @@ export function ThemeToggle() {
           <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
         </svg>
       ) : (
-        /* Moon icon — shown in light mode */
+       /* Moon icon — shown in dark/high contrast mode */
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
