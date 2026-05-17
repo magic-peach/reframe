@@ -51,12 +51,17 @@ export default function VideoEditor() {
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
 
-  
   const isProcessing = status === "loading-engine" || status === "exporting";
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
       <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
+
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {status === "exporting" && `Exporting video: ${progress}%`}
+        {status === "done" && "Export complete! Video ready to download."}
+        {status === "error" && `Export failed: ${error}`}
+      </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
 
@@ -234,6 +239,7 @@ export default function VideoEditor() {
                   <p className="text-film-600 text-xs mt-1">{error}</p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(error).then(() => {
                       setCopied(true);
@@ -247,6 +253,7 @@ export default function VideoEditor() {
                 </button>
                 {!error.includes("Validation Failed") && (
                   <button
+                    type="button"
                     onClick={handleExport}
                     className="px-3 py-1.5 bg-red-200 border border-film-200 rounded-lg text-xs font-semibold hover:bg-film-50 hover:border-film-300 transition-colors shrink-0 whitespace-nowrap"
                   >

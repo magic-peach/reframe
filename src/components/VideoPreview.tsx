@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   file: File | null;
@@ -81,9 +82,7 @@ export default function VideoPreview({ file }: Props) {
       <video
         ref={videoRef}
         controls
-        className={`w-full h-full object-contain transition-opacity duration-300 ${
-          isLoading ? "opacity-0" : "opacity-100"
-        }`}
+        className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
         onLoadedData={() => setIsLoading(false)}
         playsInline
       />
