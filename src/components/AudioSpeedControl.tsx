@@ -36,7 +36,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
     };
 
     document.addEventListener("keydown", handler);
-    
+
     return () => {
       document.removeEventListener("keydown", handler);
     };
@@ -117,9 +117,14 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           aria-valuetext={`${recipe.speed}x speed, ${getSpeedDescription(recipe.speed)}`}
           className="w-full h-11 accent-film-600 cursor-pointer"
         />
-        <div className="flex justify-between mt-1">
+        <div className="flex justify-between mt-1 overflow-hidden">
           {SPEED_STEPS.map((s) => (
-            <span key={s} className="text-[9px] text-[var(--muted)]">{s}x</span>
+            <span
+              key={s}
+              className="text-[9px] text-[var(--muted)] truncate text-center min-w-0 px-[1px]"
+            >
+              {s}x
+            </span>
           ))}
         </div>
       </div>
