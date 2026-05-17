@@ -35,9 +35,6 @@ export default function DownloadResult({ result, onReset }: Props) {
         <div>
           <p className="font-heading font-bold text-base text-[var(--text)]">Export complete</p>
           <p className="text-xs text-[var(--muted)] mt-0.5">Ready to download</p>
-          <p className="text-sm text-[var(--text)]">
-            Resolution: {result.width} × {result.height}
-          </p>
         </div>
       </div>
 
