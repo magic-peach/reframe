@@ -14,13 +14,38 @@ jobs:
   handle-assignment:
     if: github.event_name == 'issue_comment' && github.event.issue.pull_request == null
     runs-on: ubuntu-latest
+    concurrency:
+      group: issue-assignment-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    permissions:
+      issues: write
+      contents: read
     steps:
-      - name: Handle assignment request
+      - name: Handle assignment and unassignment requests
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const commentBody = context.payload.comment.body.toLowerCase().trim();
+            const commentBody = context.payload.comment.body.trim();
+            const commentLower = commentBody.toLowerCase();
+            const issueNumber = context.payload.issue.number;
+            const commenter = context.payload.comment.user.login;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // ── Detect intent ────────────────────────────────────────────────
+
+            // /unassign @username  (maintainer targeted unassign)
+            const maintainerUnassignMatch = commentBody.match(
+              /^\/unassign\s+@([A-Za-z0-9\-]+)/i
+            );
+
+            // /unassign  (self-unassign, no username)
+            const selfUnassign =
+              !maintainerUnassignMatch &&
+              /^\/unassign\s*$/i.test(commentBody);
+
+            // /assign or natural-language assignment triggers
             const assignmentTriggers = [
               '/assign',
               'assign me',
@@ -28,75 +53,122 @@ jobs:
               'can i work on this',
               'can i be assigned'
             ];
+            const isAssignRequest =
+              !maintainerUnassignMatch &&
+              !selfUnassign &&
+              assignmentTriggers.some(t => commentLower.includes(t));
 
-            const isAssignmentRequest = assignmentTriggers.some(trigger =>
-              commentBody.includes(trigger)
-            );
-
-            if (!isAssignmentRequest) {
-              core.info('Comment does not contain an assignment request. Skipping.');
+            if (!maintainerUnassignMatch && !selfUnassign && !isAssignRequest) {
+              core.info('Comment does not match any handled command. Skipping.');
               return;
             }
 
-            const issueNumber = context.payload.issue.number;
-            const username = context.payload.comment.user.login;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
-            const issue = await github.rest.issues.get({
+            // ── Fetch current issue state ────────────────────────────────────
+            const { data: issue } = await github.rest.issues.get({
               owner,
               repo,
               issue_number: issueNumber
             });
+            const currentAssignees = (issue.assignees || []).map(a => a.login);
 
-            if (issue.data.assignees && issue.data.assignees.length > 0) {
-              core.info(`Issue #${issueNumber} is already assigned. Skipping.`);
+            // ── Helper ───────────────────────────────────────────────────────
+            const postComment = body =>
+              github.rest.issues.createComment({ owner, repo, issue_number: issueNumber, body });
+
+            // ════════════════════════════════════════════════════════════════
+            // CASE 1 — Maintainer: /unassign @username
+            // ════════════════════════════════════════════════════════════════
+            if (maintainerUnassignMatch) {
+              const targetUser = maintainerUnassignMatch[1];
+
+              if (currentAssignees.length > 1) {
+                await github.rest.issues.removeAssignees({
+                  owner, repo, issue_number: issueNumber,
+                  assignees: currentAssignees
+                });
+                await postComment(
+                  `All assignees have been removed from this issue. It is now open for anyone — comment \`/assign\` to claim it!`
+                );
+              } else {
+                await github.rest.issues.removeAssignees({
+                  owner, repo, issue_number: issueNumber,
+                  assignees: [targetUser]
+                });
+                await postComment(
+                  `Hey @${targetUser}, you have been unassigned from this issue by a maintainer. It is now open for others to pick up — comment \`/assign\` to claim it! 👋`
+                );
+              }
               return;
             }
 
-            // Count open issues currently assigned to the commenter across the repo
+            // ════════════════════════════════════════════════════════════════
+            // CASE 2 — Self-unassign: /unassign
+            // ════════════════════════════════════════════════════════════════
+            if (selfUnassign) {
+              if (!currentAssignees.includes(commenter)) {
+                await postComment(
+                  `Hey @${commenter}, you are not currently assigned to this issue. 😅`
+                );
+                return;
+              }
+
+              await github.rest.issues.removeAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                assignees: [commenter]
+              });
+              await postComment(
+                `Hey @${commenter}, you have been unassigned from this issue. It is now open for anyone to pick up — comment \`/assign\` to claim it! 👋`
+              );
+              return;
+            }
+
+            // ════════════════════════════════════════════════════════════════
+            // CASE 3 — Assign request
+            // ════════════════════════════════════════════════════════════════
+
+            // Enforce single assignee: reject if anyone is already assigned
+            if (currentAssignees.length > 0) {
+              await postComment(
+                `Hey @${commenter}, this issue is already assigned to @${currentAssignees[0]}. Please pick another issue or wait for it to become available. You can browse open unassigned issues here: https://github.com/magic-peach/reframe/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee`
+              );
+              return;
+            }
+
+            // Count open issues currently assigned to the commenter
             let assignedCount = 0;
             let page = 1;
             while (true) {
-              const assignedIssues = await github.rest.issues.listForRepo({
-                owner,
-                repo,
-                state: 'open',
-                assignee: username,
-                per_page: 100,
-                page
+              const { data } = await github.rest.issues.listForRepo({
+                owner, repo, state: 'open', assignee: commenter, per_page: 100, page
               });
-
-              // Filter out pull requests (issues endpoint returns both)
-              const onlyIssues = assignedIssues.data.filter(i => !i.pull_request);
-              assignedCount += onlyIssues.length;
-
-              if (assignedIssues.data.length < 100) break;
+              assignedCount += data.filter(i => !i.pull_request).length;
+              if (data.length < 100) break;
               page++;
             }
 
             if (assignedCount >= 5) {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: issueNumber,
-                body: `Hey @${username}, you already have 5 issues assigned to you. Please complete or unassign one before picking up more. 🙏`
-              });
-            } else {
-              await github.rest.issues.addAssignees({
-                owner,
-                repo,
-                issue_number: issueNumber,
-                assignees: [username]
-              });
+              await postComment(
+                `Hey @${commenter}, you already have 5 issues assigned to you. Please complete or unassign one before picking up more. 🙏`
+              );
+              return;
+            }
 
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: issueNumber,
-                body: `Hey @${username}, this issue has been assigned to you! 🎉 Please make progress within 5 days or it will be automatically unassigned due to inactivity.`
+            // Remove any stale assignees first, then set exactly this one person
+            if (currentAssignees.length > 0) {
+              await github.rest.issues.removeAssignees({
+                owner, repo, issue_number: issueNumber,
+                assignees: currentAssignees
               });
             }
+            await github.rest.issues.addAssignees({
+              owner, repo, issue_number: issueNumber,
+              assignees: [commenter]
+            });
+            await postComment(
+              `Hey @${commenter}, this issue has been assigned to you! 🎉 Please make progress within 5 days or it will be automatically unassigned due to inactivity.`
+            );
 
   inactivity-check:
     if: github.event_name == 'schedule'
@@ -139,7 +211,6 @@ jobs:
               const assignee = issue.assignees[0].login;
               const issueNumber = issue.number;
 
-              // Get comments to find the most recent activity timestamp
               const commentsResponse = await github.rest.issues.listComments({
                 owner,
                 repo,
@@ -165,14 +236,12 @@ jobs:
               const commentBodies = botComments.map(c => c.body);
 
               if (daysSinceActivity >= 5) {
-                // Unassign and notify
                 await github.rest.issues.removeAssignees({
                   owner,
                   repo,
                   issue_number: issueNumber,
                   assignees: [assignee]
                 });
-
                 await github.rest.issues.createComment({
                   owner,
                   repo,

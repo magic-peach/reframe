@@ -1,8 +1,8 @@
 "use client";
 import { useEffect } from "react";
 
-import { EditRecipe } from '@/lib/types'
-import { SPEED_STEPS } from '@/lib/constants'
+import { EditRecipe } from "@/lib/types"
+import { SPEED_STEPS } from "@/lib/constants"
 import { Volume2, VolumeX, Gauge, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -12,37 +12,38 @@ interface Props {
 }
 
 export default function AudioSpeedControl({ recipe, onChange }: Props) {
-useEffect(() => {
-  const handler = (e: KeyboardEvent) => {
-    const target = e.target as HTMLElement;
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
 
-    if (
-      target.tagName === "INPUT" ||
-      target.tagName === "TEXTAREA" ||
-      target.isContentEditable
-    ) {
-      return;
-    }
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
 
-    if (
-      e.key.toLowerCase() === "m" &&
-      !e.ctrlKey &&
-      !e.metaKey
-    ) {
-      onChange({
-        keepAudio: !recipe.keepAudio,
-      });
-    }
-  };
+      if (
+        e.key.toLowerCase() === "m" &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
+        onChange({
+          keepAudio: !recipe.keepAudio,
+        });
+      }
+    };
 
-  document.addEventListener("keydown", handler);
-
-  return () => {
-    document.removeEventListener("keydown", handler);
-  };
-}, [recipe.keepAudio, onChange]);
+    document.addEventListener("keydown", handler);
+    
+    return () => {
+      document.removeEventListener("keydown", handler);
+    };
+  }, [recipe.keepAudio, onChange]);
 
   const speedIndex = SPEED_STEPS.indexOf(recipe.speed as (typeof SPEED_STEPS)[number]);
+  
   const getSpeedDescription = (speed: number) => {
     if (speed <= 0.5) return "Very Slow";
     if (speed < 1) return "Slow";
@@ -50,8 +51,23 @@ useEffect(() => {
     if (speed <= 1.5) return "Fast";
     return "Very Fast";
   };
+
+  const isModified = recipe.speed !== 1 || !recipe.keepAudio;
+
   return (
     <div className="space-y-4">
+      {isModified && (
+        <div className="flex justify-end animate-fade-in">
+          <button
+            type="button"
+            onClick={() => onChange({ speed: 1, keepAudio: true })}
+            className="text-[11px] font-heading font-semibold uppercase tracking-wider text-film-600 hover:text-film-700 hover:underline transition-all duration-150"
+          >
+            Reset to Default
+          </button>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={() => onChange({ keepAudio: !recipe.keepAudio })}
@@ -66,14 +82,6 @@ useEffect(() => {
         )}
       >
         {recipe.keepAudio ? <Volume2 size={16} /> : <VolumeX size={16} />}
-        <div className="text-right">
-          <span className="text-sm font-heading font-bold text-film-600 block">
-            {recipe.speed}x
-          </span>
-          <span className="text-[10px] text-[var(--muted)]">
-            {getSpeedDescription(recipe.speed)}
-          </span>
-        </div>
         <span className="sr-only">
           {recipe.keepAudio ? "Turn audio off" : "Turn audio on"}
         </span>

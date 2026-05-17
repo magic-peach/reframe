@@ -44,15 +44,17 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
     if (ffmpegInstance === ffmpeg) {
       ffmpegInstance = null;
     }
-    throw new FFmpegLoadError("The ffmpeg cdn could not load. Please check your internet connection.");
+    throw new FFmpegLoadError("Failed to load the FFmpeg engine. Check your internet connection.");
   }
 }
 
+/** Terminates the active FFmpeg instance and releases its memory. */
 export function terminateFFmpeg() {
   ffmpegInstance?.terminate();
   ffmpegInstance = null;
 }
 
+/** Generates a unique session ID used to isolate FFmpeg file names across concurrent exports. */
 function buildSessionId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -60,6 +62,7 @@ function buildSessionId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+/** Builds the FFmpeg -vf filter chain string from the current recipe settings. */
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
 
@@ -94,16 +97,37 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     filters.push(`setpts=${pts}*PTS`);
   }
   filters.push(
-  `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
-);
+    `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+  );
   return filters.join(",");
 }
 
-function buildAudioFilter(speed: number): string {
+/** Builds an atempo filter chain for the given playback speed, chaining multiple filters for speeds outside the 0.5–2.0 range. */
+export function buildAudioFilter(speed: number): string {
   if (speed === 1) return "";
-  if (speed === 0.25) return "atempo=0.5,atempo=0.5";
-  if (speed === 4) return "atempo=2.0,atempo=2.0";
-  return `atempo=${speed}`;
+
+  const filters: string[] = [];
+  let remaining = speed;
+
+  // Chain filters for slow speeds
+  while (remaining < 0.5) {
+    filters.push("atempo=0.5");
+    remaining /= 0.5;
+  }
+
+  // Chain filters for fast speeds
+  while (remaining > 2.0) {
+    filters.push("atempo=2.0");
+    remaining /= 2.0;
+  }
+
+  // Add final remaining filter if not exactly 1.0
+  // using a small epsilon check to avoid floating point issues
+  if (Math.abs(remaining - 1.0) > 0.001) {
+    filters.push(`atempo=${Number(remaining.toFixed(4))}`);
+  }
+
+  return filters.join(",");
 }
 
 function buildAudioTrimFilter(recipe: EditRecipe): string {
@@ -265,6 +289,7 @@ export async function exportVideo(
   }
 }
 
+/** Formats a byte count as a human-readable string (KB or MB). */
 export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;

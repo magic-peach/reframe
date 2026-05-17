@@ -1,28 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
-import { cn } from "@/lib/utils";
-import {
-  MAX_FILE_SIZE,
-  WARNING_FILE_SIZE,
-} from "@/lib/types";
+import { cn, formatBytes } from "@/lib/utils";
+import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
 
 interface Props {
   onFileSelect: (file: File) => void;
   currentFile: File | null;
-}
-
-function fmt(bytes: number) {
-  if (bytes >= 1024 * 1024 * 1024) {
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
-  }
-
-  return bytes < 1024 * 1024
-    ? `${(bytes / 1024).toFixed(1)} KB`
-    : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatDuration(seconds: number) {
@@ -34,10 +21,7 @@ function formatDuration(seconds: number) {
     .padStart(2, "0")}`;
 }
 
-export default function FileUpload({
-  onFileSelect,
-  currentFile,
-}: Props) {
+export default function FileUpload({ onFileSelect, currentFile }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [dragging, setDragging] = useState(false);
@@ -49,203 +33,174 @@ export default function FileUpload({
   const handleFile = (file: File) => {
     setError("");
     setWarning("");
+    setDuration(null);
 
-    // Validate file type
+    // Validate type
     if (!file.type.startsWith("video/")) {
       setError("Only video files are allowed.");
       return;
     }
 
-    // Hard limit: block files above 2GB
+    // Hard limit
     if (file.size > MAX_FILE_SIZE) {
       setError(
-        `File too large (${fmt(
+        `File too large (${formatBytes(
           file.size
-        )}). Maximum size is 2GB.`
+        )}). Maximum allowed size is 2GB.`
       );
       return;
     }
 
-    // Soft warning for files above 500MB
+    // Soft warning
     if (file.size > WARNING_FILE_SIZE) {
       setWarning(
-        `Large file detected (${fmt(
+        `Large file detected (${formatBytes(
           file.size
-        )}). Uploading may affect performance on low-memory devices.`
+        )}). This may cause slow performance on low-end devices.`
       );
     }
 
-    // Duration handling
-    setDuration(null);
-
+    // Extract metadata safely
     const video = document.createElement("video");
     video.preload = "metadata";
 
+    const url = URL.createObjectURL(file);
+    video.src = url;
+
     video.onloadedmetadata = () => {
-      window.URL.revokeObjectURL(video.src);
+      URL.revokeObjectURL(url);
       setDuration(video.duration);
     };
 
-    video.src = URL.createObjectURL(file);
-
     onFileSelect(file);
   };
-
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
 
-    const file = e.dataTransfer.files[0];
-
+    const file = e.dataTransfer.files?.[0];
     if (file) handleFile(file);
   };
-  
 
-  if (currentFile) {
-  return (
-    <div className="space-y-2">
-      {error && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
+  const FileInfo = () => (
+    <div className="flex items-center gap-3 px-4 py-3 bg-film-50 border border-film-200 rounded-lg">
+      <Film size={18} className="text-film-600 shrink-0" />
 
-      {warning && (
-        <p className="text-sm text-yellow-500">
-          {warning}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-[var(--text)] truncate">
+          {currentFile?.name}
         </p>
-      )}
 
-      <div className="flex items-center gap-3 px-4 py-3 bg-film-50 border border-film-200 rounded-lg">
-        <Film
-          size={18}
-          className="text-film-600 shrink-0"
-        />
-
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium font-heading text-[var(--text)]">
-            <span
-              className="truncate max-w-[200px] block"
-              title={currentFile.name}
-            >
-              {currentFile.name}
-            </span>
-          </p>
-
-          <p className="text-xs text-[var(--muted)]">
-            {fmt(currentFile.size)}{" "}
-            {duration !== null
-              ? `• ${formatDuration(duration)}`
-              : "• Loading..."}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="text-xs font-heading font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide shrink-0 transition-colors cursor-pointer"
-        >
-          Change{" "}
-          <span className="text-[var(--muted)]">
-            (Ctrl+O / Cmd+O)
-          </span>
-        </button>
-
-        <input
-          ref={inputRef}
-          type="file"
-          accept="video/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-
-            if (f) handleFile(f);
-          }}
-        />
+        <p className="text-xs text-[var(--muted)]">
+          {formatBytes(currentFile?.size ?? 0)}
+          {duration !== null
+            ? ` • ${formatDuration(duration)}`
+            : " • Loading metadata..."}
+        </p>
       </div>
+
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="text-xs font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide"
+      >
+        Change
+        <span className="text-[var(--muted)] ml-1">(Ctrl+O)</span>
+      </button>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+        }}
+      />
     </div>
   );
-}
+
+  const DropZone = () => (
+    <div
+      role="button"
+      aria-label="Upload video file"
+      tabIndex={0}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={handleDrop}
+      onClick={() => inputRef.current?.click()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          inputRef.current?.click();
+        }
+      }}
+      className={cn(
+        "group flex flex-col items-center justify-center gap-4 py-12 px-6",
+        "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200",
+        dragging
+          ? "border-film-500 bg-film-50 scale-[1.01]"
+          : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
+      )}
+    >
+      <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition">
+        <LottiePlayer animationData={uploadAnim} loop autoplay />
+      </div>
+
+      <div className="text-center">
+        <p className="font-semibold text-[var(--text)]">
+          {dragging ? "Release to upload" : "Drag & Drop your video here"}
+        </p>
+
+        <p className="text-sm text-[var(--muted)] mt-1">
+          or click to browse
+        </p>
+
+        <p className="text-xs text-[var(--muted)] mt-2">
+          Ctrl+O / Cmd+O
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm text-[var(--muted)]">
+        <FolderOpen size={14} />
+        MP4 / MOV / AVI / WebM
+      </div>
+
+      <p className="text-xs text-gray-500 text-center">
+        Supports most common video formats up to 2GB
+      </p>
+
+      {/* Show file size preview if file exists */}
+      {currentFile && (
+        <p className="text-xs text-[var(--muted)] mt-2">
+          Selected: {formatBytes(currentFile.size)}
+        </p>
+      )}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+        }}
+      />
+    </div>
+  );
 
   return (
     <div className="space-y-2">
-      {error && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-500">{error}</p>}
 
-      {warning && (
-        <p className="text-sm text-yellow-500">
-          {warning}
-        </p>
-      )}
+      {warning && <p className="text-sm text-yellow-500">{warning}</p>}
 
-      <div
-        role="button"
-        tabIndex={0}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            inputRef.current?.click();
-          }
-        }}
-        className={cn(
-          "group flex flex-col items-center justify-center gap-4 py-12 px-6",
-          "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200",
-          dragging
-            ? "border-film-500 bg-film-50 scale-[1.01]"
-            : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
-        )}
-      >
-        <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-200">
-          <LottiePlayer
-            animationData={uploadAnim}
-            loop
-            autoplay
-          />
-        </div>
-
-        <div className="text-center">
-          <p className="font-heading font-semibold text-[var(--text)] text-base">
-            {dragging
-              ? "Release to upload"
-              : "Drag & Drop your video in here"}
-          </p>
-
-          <p className="text-sm text-[var(--muted)] mt-1">
-            or click to browse
-          </p>
-
-          <p className="text-xs text-[var(--muted)] mt-2 font-heading">
-            Ctrl+O / Cmd+O
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
-          <FolderOpen size={14} />
-          MP4 / MOV / AVI / WebM
-        </div>
-
-        <p className="text-xs text-gray-500">
-          Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
-        </p>
-
-        <input
-          ref={inputRef}
-          type="file"
-          accept="video/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-
-            if (f) handleFile(f);
-          }}
-        />
-      </div>
+      {currentFile ? <FileInfo /> : <DropZone />}
     </div>
   );
 }
