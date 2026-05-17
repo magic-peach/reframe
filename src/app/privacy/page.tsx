@@ -1,6 +1,16 @@
+import Link from "next/link";
+
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-black text-white p-8">
+      <div className="mb-8">
+        <Link 
+          href="/" 
+          className="inline-flex items-center text-sm opacity-70 hover:opacity-100 transition-opacity"
+        >
+          &larr; Back to Reframe
+        </Link>
+      </div>
       <h1 className="text-4xl font-bold mb-6">Privacy Policy</h1>
 
       <p className="mb-4">

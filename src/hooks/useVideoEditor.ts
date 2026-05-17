@@ -143,22 +143,27 @@ export function useVideoEditor() {
 
       setResult(exportResult);
       setStatus("done");
-    } catch (err) {
+     }  catch (err) {
       if (exportCancelledRef.current) return;
 
       console.error("export failed:", err);
       if (err instanceof FFmpegLoadError) {
         setError(err.message);
+      } else if (err instanceof Error && err.message.includes('network')) {
+        setError('Network error. Check your internet connection and try again.');
+      } else if (err instanceof Error && err.message.includes('codec')) {
+        setError('This video format is not supported. Try converting to MP4 first.');
       } else {
-        setError(err instanceof Error ? err.message : "something went wrong");
+        setError('Export failed. Please try again or use a different video.');
       }
       setStatus("error");
-    } finally {
+    }
+    finally {
       if (exportAbortControllerRef.current === abortController) {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result]);
+  }, [file, recipe, result, status]);
 
   useEffect(() => {
     if (file) {

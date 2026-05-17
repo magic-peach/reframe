@@ -87,12 +87,7 @@ export default function RootLayout({
             <main role="main" id="main-content" tabIndex={-1}>
               {children}
             </main>
-            <footer
-              role="contentinfo"
-              className="px-6 py-4 text-sm text-[var(--muted)]"
-            >
-              <p>© 2026 Reframe</p>
-            </footer>
+            
           </ErrorBoundary>
         </ThemeProvider>
       </body>
