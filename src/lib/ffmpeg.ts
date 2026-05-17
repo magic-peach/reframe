@@ -9,9 +9,6 @@ const CDN_LIST = [
   "https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd",
 ];
 
-const CORE_BASE_URL =
-  "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
-
 let ffmpegInstance: FFmpeg | null = null;
 
 /**
@@ -38,35 +35,33 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
   const ffmpeg = ffmpegInstance ?? new FFmpeg();
   ffmpegInstance = ffmpeg;
 
-  let lastError: any;
+  const baseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
-  const coreName = "ffmpeg-core";
+  try {
+    await ffmpeg.load({
+      coreURL: await toBlobURL(
+        `${baseURL}/ffmpeg-core.js`,
+        "text/javascript"
+      ),
+      wasmURL: await toBlobURL(
+        `${baseURL}/ffmpeg-core.wasm`,
+        "application/wasm"
+      ),
+      workerURL: await toBlobURL(
+        `${baseURL}/ffmpeg-core.worker.js`,
+        "text/javascript"
+      ),
+    });
 
-  for (const base of CDN_LIST) {
-    try {
-      abortCheck(signal);
+    return ffmpeg;
+  } catch (err) {
+    console.error("FFmpeg load failed:", err);
+    ffmpegInstance = null;
 
-      await ffmpeg.load({
-        coreURL: await toBlobURL(
-          `${base}/${coreName}.js`,
-          "text/javascript"
-        ),
-        wasmURL: await toBlobURL(
-          `${base}/${coreName}.wasm`,
-          "application/wasm"
-        ),
-      });
-
-      return ffmpeg;
-    } catch (err) {
-      lastError = err;
-      ffmpegInstance = null;
-    }
+    throw new FFmpegLoadError(
+      "FFmpeg failed to load. Check internet or CDN blocking."
+    );
   }
-
-  throw new FFmpegLoadError(
-    "FFmpeg failed to load from all CDNs. Check internet connection."
-  );
 }
 
 export function terminateFFmpeg() {
