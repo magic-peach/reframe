@@ -3,7 +3,7 @@
 import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
 import { Settings2, Lock, Unlock } from "lucide-react";
-import { useState, useCallback ,useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface Props {
