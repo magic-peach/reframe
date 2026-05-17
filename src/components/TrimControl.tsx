@@ -32,8 +32,11 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
   };
 
   const handleEnd = (val: string) => {
-    if (val === "") { setEnd(false);
-      onChange({ trimEnd: null }); return; }
+    if (val === "") {
+      setEnd(false);
+      onChange({ trimEnd: null });
+      return;
+    }
     const n = parseFloat(val);
     if (isNaN(n) || n <= 0 || n <= recipe.trimStart) {
       setEnd(true);
@@ -46,8 +49,6 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
     setEnd(false);
     onChange({ trimEnd: n });
   };
-  
-
 
   const inputClass =
     "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
