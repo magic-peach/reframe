@@ -51,6 +51,7 @@ Everything stays on your device. No servers. No tracking. No login.
 | Shortcut | Action |
 |----------|--------|
 | Ctrl+Enter / Cmd+Enter | Export video |
+| Space | Play/pause video preview |
 | M | Toggle audio mute |
 | Escape | Cancel export |
 
