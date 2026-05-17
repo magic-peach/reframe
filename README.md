@@ -115,13 +115,59 @@ Reframe uses static export (`output: 'export'`), so it can be deployed to any st
 
 ### Deploying to Vercel
 
+Reframe uses static export (`output: 'export'`) and can be deployed easily on Vercel.
+
+#### Option 1 — Vercel Dashboard (Recommended)
+
 1. Fork this repository
 2. Go to https://vercel.com/new
 3. Import your forked repository
-4. Set the Framework Preset to **Next.js**
+4. Configure:
+   - Framework Preset: Next.js
+   - Build Command: `bun run build`
+   - Output Directory: `out`
 5. Click **Deploy**
 
-After deployment, Vercel will automatically build and host the static output.
+Vercel will automatically build and host the static output.
+
+#### Option 2 — Vercel CLI
+
+```bash
+# Install Vercel CLI globally
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy from project root
+vercel --prod
+```
+
+#### FFmpeg.wasm Configuration
+
+FFmpeg.wasm requires COOP/COEP headers for SharedArrayBuffer support.
+
+Add the following to `vercel.json`:
+
+```json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "require-corp"
+        }
+      ]
+    }
+  ]
+}
+```
 
 ### Alternative Static Hosts
 
