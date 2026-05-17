@@ -12,35 +12,35 @@ interface Props {
 }
 
 export default function AudioSpeedControl({ recipe, onChange }: Props) {
-useEffect(() => {
-  const handler = (e: KeyboardEvent) => {
-    const target = e.target as HTMLElement;
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
 
-    if (
-      target.tagName === "INPUT" ||
-      target.tagName === "TEXTAREA" ||
-      target.isContentEditable
-    ) {
-      return;
-    }
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
 
-    if (
-      e.key.toLowerCase() === "m" &&
-      !e.ctrlKey &&
-      !e.metaKey
-    ) {
-      onChange({
-        keepAudio: !recipe.keepAudio,
-      });
-    }
-  };
+      if (
+        e.key.toLowerCase() === "m" &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
+        onChange({
+          keepAudio: !recipe.keepAudio,
+        });
+      }
+    };
 
-  document.addEventListener("keydown", handler);
+    document.addEventListener("keydown", handler);
 
-  return () => {
-    document.removeEventListener("keydown", handler);
-  };
-}, [recipe.keepAudio, onChange]);
+    return () => {
+      document.removeEventListener("keydown", handler);
+    };
+  }, [recipe.keepAudio, onChange]);
 
   const speedIndex = SPEED_STEPS.indexOf(recipe.speed as (typeof SPEED_STEPS)[number]);
   const getSpeedDescription = (speed: number) => {
@@ -109,9 +109,14 @@ useEffect(() => {
           aria-valuetext={`${recipe.speed}x speed, ${getSpeedDescription(recipe.speed)}`}
           className="w-full h-11 accent-film-600 cursor-pointer"
         />
-        <div className="flex justify-between mt-1">
+        <div className="flex justify-between mt-1 overflow-hidden">
           {SPEED_STEPS.map((s) => (
-            <span key={s} className="text-[9px] text-[var(--muted)]">{s}x</span>
+            <span
+              key={s}
+              className="text-[9px] text-[var(--muted)] truncate text-center min-w-0 px-[1px]"
+            >
+              {s}x
+            </span>
           ))}
         </div>
       </div>
