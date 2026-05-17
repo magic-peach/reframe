@@ -60,7 +60,6 @@ const handleToggleLock = useCallback(() => {
 }, [recipe.customWidth, recipe.customHeight]);
 
   const handleWidthChange = useCallback((w: number) => {
-   console.log("locked:", lockedRef.current, "ratio:", aspectRatioRef.current);
   const patch: Partial<EditRecipe> = { customWidth: w };
   if (lockedRef.current) patch.customHeight = Math.round(w / aspectRatioRef.current);
   onChange(patch);
