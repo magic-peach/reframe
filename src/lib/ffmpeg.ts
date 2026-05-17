@@ -1,5 +1,5 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg'
-import { fetchFile } from '@ffmpeg/util'
+import { fetchFile, toBlobURL } from '@ffmpeg/util'
 import { EditRecipe, ExportResult } from './types'
 import { getPresetById } from './presets'
 import { simd } from 'wasm-feature-detect'
@@ -8,17 +8,66 @@ const CORE_BASE_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/um
 
 let ffmpegInstance: FFmpeg | null = null
 
-export async function loadFFmpeg(): Promise<FFmpeg> {
-  if (ffmpegInstance) return ffmpegInstance
+export class FFmpegLoadError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'FFmpegLoadError'
+  }
+}
 
-  const ffmpeg = new FFmpeg()
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, 'text/javascript'),
-    wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, 'application/wasm'),
-  })
+export async function loadFFmpeg(
+  signal?: AbortSignal,
+  onProgress?: (percent: number) => void
+): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) {
+    onProgress?.(100)
+    return ffmpegInstance
+  }
 
+  const ffmpeg = ffmpegInstance ?? new FFmpeg()
   ffmpegInstance = ffmpeg
-  return ffmpeg
+
+  const handleProgress = ({ progress }: { progress: number }) => {
+    onProgress?.(Math.round(progress * 100))
+  }
+
+  try {
+    ffmpeg.on('progress', handleProgress)
+    const isSimdSupported = await simd()
+    const coreName = isSimdSupported ? 'ffmpeg-core-simd' : 'ffmpeg-core'
+
+    await ffmpeg.load(
+      {
+        coreURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.wasm`, 'application/wasm'),
+      },
+      { signal }
+    )
+
+    onProgress?.(100)
+    return ffmpeg
+  } catch {
+    if (ffmpegInstance === ffmpeg) {
+      ffmpegInstance = null
+    }
+    throw new FFmpegLoadError(
+      'Failed to load the FFmpeg engine. Check your internet connection and try again.'
+    )
+  } finally {
+    ffmpeg.off('progress', handleProgress)
+  }
+}
+
+export function terminateFFmpeg() {
+  ffmpegInstance?.terminate()
+  ffmpegInstance = null
+}
+
+function buildSessionId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID()
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {

@@ -9,9 +9,11 @@ import spinnerAnim from '@/lib/lottie/spinner.json'
 interface Props {
   status: ExportStatus
   progress: number
+  progressMessage?: string
+  onCancel?: () => void
 }
 
-export default function ExportOverlay({ status, progress }: Props) {
+export default function ExportOverlay({ status, progress, progressMessage, onCancel }: Props) {
   const visible = status === 'loading-engine' || status === 'exporting'
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const focusAnchorRef = useRef<HTMLDivElement | null>(null)
@@ -59,7 +61,7 @@ export default function ExportOverlay({ status, progress }: Props) {
     isLoading && progressValue > 0
       ? `${progressMessage || 'Downloading video engine'} (${progressValue}%)...`
       : isLoading
-        ? 'Setting up the video engine. This only happens once.'
+        ? progressMessage || 'Setting up the video engine. This only happens once.'
         : 'Processing your video locally.'
 
   return (
@@ -73,25 +75,21 @@ export default function ExportOverlay({ status, progress }: Props) {
           <h2 className="font-heading text-xl font-bold tracking-tight text-[var(--text)]">
             {isLoading ? 'Loading engine' : 'Exporting'}
           </h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">
-            {isLoading
-              ? 'Setting up the video engine. This only happens once.'
-              : 'Processing your video locally.'}
-          </p>
+          <p className="mt-1 text-sm text-[var(--muted)]">{helperText}</p>
           <p className="font-heading text-film-600 mt-2 text-xs font-semibold uppercase tracking-wide">
             Do not close or refresh this tab
           </p>
         </div>
 
-        {status === 'exporting' && (
+        {progressValue > 0 && (
           <div className="w-full space-y-2">
             <div className="bg-film-100 h-1 w-full overflow-hidden rounded-full">
               <div
                 className="bg-film-600 h-full rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
+                style={{ width: `${progressValue}%` }}
               />
             </div>
-            <p className="font-heading text-xs font-semibold text-[var(--muted)]">{progress}%</p>
+            <p className="font-heading text-xs font-semibold text-[var(--muted)]">{progressValue}%</p>
           </div>
         )}
       </div>
