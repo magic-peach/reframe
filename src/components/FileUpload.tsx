@@ -88,9 +88,16 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
       <Film size={18} className="text-film-600 shrink-0" />
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-[var(--text)] truncate">
-          {currentFile?.name}
-        </p>
+        <div className="flex items-center gap-2 mb-0.5">
+          <p className="text-sm font-medium text-[var(--text)] truncate">
+            {currentFile?.name}
+          </p>
+          {currentFile && (
+            <span className="px-2 py-0.5 bg-gray-700 text-white font-bold tracking-wider rounded text-[10px] uppercase">
+              {currentFile.name.includes('.') ? currentFile.name.split('.').pop() : 'VIDEO'}
+            </span>
+          )}
+        </div>
 
         <p className="text-xs text-[var(--muted)]">
           {formatBytes(currentFile?.size ?? 0)}
