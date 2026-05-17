@@ -11,8 +11,14 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
+    const timeout = setTimeout(() => {
+      URL.revokeObjectURL(url);
+      reject( new Error("Video metaData load timeout"))
+    }, 500);
+
     video.preload = "metadata";
     video.onloadedmetadata = () => {
+      clearTimeout(timeout)
       resolve({
         width: video.videoWidth,
         height: video.videoHeight,
@@ -21,6 +27,7 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
       URL.revokeObjectURL(url);
     };
     video.onerror = () => {
+      clearTimeout(timeout)
       URL.revokeObjectURL(url);
       reject(new Error("Failed to load video metadata"));
     };
@@ -203,6 +210,18 @@ export function useVideoEditor() {
     };
   }, [file, status, handleExport]);
 
+  useEffect(()=>{
+    return ()=>{
+      if(result?.blobUrl){
+        URL.revokeObjectURL(result.blobUrl);
+      }
+    }
+   },[result?.blobUrl])
+
+  const resetSettings = useCallback(() => {
+    setRecipe(DEFAULT_RECIPE);
+  }, []);
+
   const cancelExport = useCallback(() => {
     exportCancelledRef.current = true;
     exportAbortControllerRef.current?.abort();
@@ -213,9 +232,6 @@ export function useVideoEditor() {
     setError(null);
   }, []);
 
-  const resetSettings = useCallback(() => {
-    setRecipe(DEFAULT_RECIPE);
-  }, []);
 
   const reset = useCallback(() => {
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
