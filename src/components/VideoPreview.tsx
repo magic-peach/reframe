@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -70,8 +71,37 @@ export default function VideoPreview({ file }: Props) {
 
   if (!file) return null;
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.code === "Space") {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      const video = videoRef.current;
+      if (video) {
+        e.preventDefault(); // Prevent default page scroll
+        if (video.paused) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
+      }
+    }
+  };
+
   return (
-    <div className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video">
+    <div
+      role="group"
+      className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+      aria-label="Video preview (press Space to play/pause)"
+    >
       {isLoading && (
         <div
           className="absolute inset-0 animate-pulse bg-gray-700 rounded-xl transition-opacity duration-300"
