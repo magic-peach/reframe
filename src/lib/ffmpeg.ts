@@ -44,7 +44,7 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
     if (ffmpegInstance === ffmpeg) {
       ffmpegInstance = null;
     }
-    throw new FFmpegLoadError("The ffmpeg cdn could not load. Please check your internet connection.");
+    throw new FFmpegLoadError("Failed to load the FFmpeg engine. Check your internet connection.");
   }
 }
 
