@@ -1,10 +1,10 @@
----
 > ⭐ **If Reframe helped you, [star the repo](https://github.com/magic-peach/reframe)** — it helps more people discover it!
 >
 > 💬 **Have a question or idea?** Head to [Discussions](https://github.com/magic-peach/reframe/discussions) instead of opening an issue.
 >
 > 🟢 **Ready to contribute?** Check out our [Good First Issues](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22) — perfect for first-time contributors!
----
+
+***
 
 # Contributing to Reframe
 
