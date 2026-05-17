@@ -6,6 +6,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Formats a byte count as a human-readable string with appropriate unit (Bytes through TB). */
 export function formatBytes(bytes: number, decimals = 1) {
   if (bytes === 0) return "0 Bytes";
 
