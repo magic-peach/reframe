@@ -2,48 +2,88 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Light mode tokens ── */
 :root {
-  --bg: #F7F4F0;
+  --bg: #f6f7fb;
+  --bg-elevated: #ffffff;
   --surface: #ffffff;
-  --border: #E8E3DC;
-  --text: #181412;
-  --muted: #5C5550;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --film-600: #e63946;
-  --film-400: #ff6b6b;
+  --surface-soft: #f1f4f8;
+  --border: #dce2ea;
+  --text: #111827;
+  --muted: #5b6677;
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --film-50: #ecfdf5;
+  --film-200: #a7f3d0;
+  --film-300: #6ee7b7;
+  --film-400: #2dd4bf;
+  --film-500: #14b8a6;
+  --film-600: #0f766e;
+  --film-700: #0f5f59;
+  --shadow: 0 20px 50px rgb(15 23 42 / 0.08);
 }
 
-/* ── Dark mode tokens ── */
 .dark {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --border: #334155;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
+  --bg: #0d1117;
+  --bg-elevated: #111827;
+  --surface: #161f2e;
+  --surface-soft: #111827;
+  --border: #273244;
+  --text: #f8fafc;
+  --muted: #a8b3c4;
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --film-50: rgb(20 184 166 / 0.12);
+  --film-200: rgb(45 212 191 / 0.28);
+  --film-300: rgb(45 212 191 / 0.48);
+  --film-400: #5eead4;
+  --film-500: #2dd4bf;
+  --film-600: #2dd4bf;
+  --film-700: #99f6e4;
+  --shadow: 0 24px 60px rgb(0 0 0 / 0.28);
 }
 
-/* ── Base styles ── */
 body {
   background-color: var(--bg);
   color: var(--text);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Smooth transitions for all themed elements */
 *,
 *::before,
 *::after {
-  transition-property: background-color, border-color, color, fill, stroke;
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, transform;
   transition-timing-function: ease;
   transition-duration: 200ms;
 }
 
 :focus-visible {
-  outline: 2px solid #e63946;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+input,
+button,
+select,
+textarea {
+  font: inherit;
+}
+
+input[type="range"] {
+  accent-color: var(--accent);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 360ms ease both;
 }

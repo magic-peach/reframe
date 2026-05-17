@@ -1,6 +1,4 @@
-import type { Config } from "tailwindcss";
-
-const config: Config = {
+const config = {
   darkMode: "class", // Enable class-based dark mode
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -16,6 +14,15 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        film: {
+          50: "var(--film-50)",
+          200: "var(--film-200)",
+          300: "var(--film-300)",
+          400: "var(--film-400)",
+          500: "var(--film-500)",
+          600: "var(--film-600)",
+          700: "var(--film-700)",
+        },
       },
     },
   },

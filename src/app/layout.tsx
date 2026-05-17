@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, Syne, DM_Sans } from "next/font/google";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -45,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-<html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
         <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
@@ -69,8 +68,8 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
-        
-      <a href="#main-content"
+        <a
+          href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-black"
         >
           Skip to main content
@@ -79,15 +78,19 @@ export default function RootLayout({
           <ErrorBoundary>
             <header
               role="banner"
-              className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]"
+              className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--bg-elevated)]/90 backdrop-blur-xl"
             >
-              <h1 className="text-lg font-semibold">Reframe</h1>
-              <ThemeToggle />
+              <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+                <a href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent)] text-sm font-bold text-white shadow-sm">
+                    R
+                  </span>
+                  <span>Reframe</span>
+                </a>
+                <ThemeToggle />
+              </div>
             </header>
-            <main id="main-content" tabIndex={-1}>
-              {children}
-            </main>
-            
+            {children}
           </ErrorBoundary>
         </ThemeProvider>
       </body>
