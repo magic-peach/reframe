@@ -143,7 +143,7 @@ export function useVideoEditor() {
 
       setResult(exportResult);
       setStatus("done");
-    } } catch (err) {
+     }  catch (err) {
       if (exportCancelledRef.current) return;
 
       console.error("export failed:", err);
@@ -158,7 +158,7 @@ export function useVideoEditor() {
       }
       setStatus("error");
     }
-    } finally {
+    finally {
       if (exportAbortControllerRef.current === abortController) {
         exportAbortControllerRef.current = null;
       }
