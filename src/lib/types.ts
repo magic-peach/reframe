@@ -14,6 +14,7 @@ export interface EditRecipe {
   brightness: number;
   contrast: number;
   saturation: number;
+  soundOnCompletion: boolean;
 }
 
 export interface ExportResult {
@@ -48,6 +49,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   brightness: 0,
   contrast: 0,
   saturation: 0,
+  soundOnCompletion: false,
 };
 
 export const MAX_FILE_SIZE =

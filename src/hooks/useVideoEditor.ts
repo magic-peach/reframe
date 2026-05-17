@@ -56,7 +56,13 @@ function verifyMagicBytes(file: File): Promise<boolean> {
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
-  const [recipe, setRecipe] = useState<EditRecipe>(DEFAULT_RECIPE);
+  const [recipe, setRecipe] = useState({
+  ...DEFAULT_RECIPE,
+
+soundOnCompletion:
+  typeof window !== "undefined" &&
+  localStorage.getItem("soundOnCompletion") === "true",
+})
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
@@ -235,6 +241,10 @@ export function useVideoEditor() {
 
     return () => clearInterval(interval);
   }, [status]);
+
+  useEffect(() => {
+    localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
+  }, [recipe.soundOnCompletion]);
 
   return {
     file,
