@@ -76,8 +76,8 @@ export function useVideoEditor() {
 
     // LAYER 1: Extension check
     const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
-    const name = selectedFile.name.toLowerCase();
-    const hasValidExtension = validExtensions.some(ext => name.endsWith(ext));
+    const filename = selectedFile.name.toLowerCase();
+    const hasValidExtension = validExtensions.some(ext => filename.endsWith(ext));
     if (!hasValidExtension) {
       setError(`Layer 1 Validation Failed: Invalid file extension. Expected one of: ${validExtensions.join(', ')}`);
       setStatus("error");
@@ -143,17 +143,22 @@ export function useVideoEditor() {
 
       setResult(exportResult);
       setStatus("done");
-    } catch (err) {
+     }  catch (err) {
       if (exportCancelledRef.current) return;
 
       console.error("export failed:", err);
       if (err instanceof FFmpegLoadError) {
         setError(err.message);
+      } else if (err instanceof Error && err.message.includes('network')) {
+        setError('Network error. Check your internet connection and try again.');
+      } else if (err instanceof Error && err.message.includes('codec')) {
+        setError('This video format is not supported. Try converting to MP4 first.');
       } else {
-        setError(err instanceof Error ? err.message : "something went wrong");
+        setError('Export failed. Please try again or use a different video.');
       }
       setStatus("error");
-    } finally {
+    }
+    finally {
       if (exportAbortControllerRef.current === abortController) {
         exportAbortControllerRef.current = null;
       }

@@ -112,6 +112,49 @@ You can also deploy Reframe on other static hosting providers:
 | **GitHub Pages**     | Deploy the generated `out/` folder to the `gh-pages` branch |
 | **Cloudflare Pages** | Connect your fork in Cloudflare Pages                       |
 
+### Deploying to Vercel
+
+The quickest way to get Reframe live:
+
+**Option 1 — Vercel Dashboard (Recommended)**
+
+1. Fork this repository on GitHub
+2. Go to [vercel.com/new](https://vercel.com/new) and import your fork
+3. Vercel auto-detects Next.js settings:
+   - **Framework Preset:** Next.js
+   - **Build Command:** `bun run build`
+   - **Output Directory:** `out`
+4. Click **Deploy** — your site will be live in ~2 minutes
+
+**Option 2 — Vercel CLI**
+
+```bash
+# Install Vercel CLI globally
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy from project root
+vercel --prod
+```
+
+> **Note:** FFmpeg.wasm requires COOP/COEP headers for SharedArrayBuffer support. On Vercel, add a `vercel.json` in your project root:
+>
+> ```json
+> {
+>   "headers": [
+>     {
+>       "source": "/(.*)",
+>       "headers": [
+>         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+>         { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
+>       ]
+>     }
+>   ]
+> }
+> ```
+
 ### Deploying to Netlify
 
 1. Push your fork to GitHub
@@ -305,6 +348,15 @@ Thank you to everyone who has contributed to Reframe! 🎉
 ## Privacy
 
 Reframe processes all videos **100% client-side**. Your video files are never uploaded to any server. You can even use Reframe offline (after first load). The source code is fully open for inspection.
+---
+
+## Contributors
+
+Thanks to all the amazing people who have contributed to Reframe!
+
+[![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
+
+We welcome contributions of all kinds — code, documentation, design, and feedback. Check out our [Contributing Guide](CONTRIBUTING.md) to get started.
 
 ---
 
@@ -321,3 +373,5 @@ MIT License — See [LICENSE](LICENSE) for details.
 Made with ❤️ for everyone who just wants to edit a video without the hassle.
 
 </div>
+
+---
