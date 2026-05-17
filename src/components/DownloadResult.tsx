@@ -106,9 +106,9 @@ export default function DownloadResult({ result, onReset }: Props) {
           rel="noopener noreferrer"
           aria-label="Preview video in new tab"
           className="flex items-center justify-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
-          >
-            Preview
-          </a>
+        >
+          Preview
+        </a>
         <button
           type="button"
           title="Reset and upload a new video"
