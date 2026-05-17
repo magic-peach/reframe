@@ -84,7 +84,7 @@ export default function RootLayout({
               <h1 className="text-lg font-semibold">Reframe</h1>
               <ThemeToggle />
             </header>
-            <main role="main" id="main-content" tabIndex={-1}>
+            <main id="main-content" tabIndex={-1}>
               {children}
             </main>
             
