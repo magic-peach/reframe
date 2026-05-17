@@ -193,7 +193,7 @@ export default function VideoEditor() {
 
           <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
+              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError}/>
 
               {!file && (
                 <div className="text-center text-[var(--muted)] py-6">

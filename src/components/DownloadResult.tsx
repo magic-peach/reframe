@@ -112,6 +112,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
         <a
           href={isValid ? result.blobUrl : undefined}
           download={isValid ? filename : undefined}
+          data-testid="download-button"
           className={cn(
             "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
             isValid 
@@ -139,6 +140,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
           title="Reset and upload a new video"
           aria-label="Upload a new video"
           onClick={handleReset}
+          data-testid="reset-button"
           className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
         >
           <RotateCcw size={14} aria-hidden="true"  />
