@@ -240,6 +240,7 @@ export default function VideoEditor() {
                   <p className="text-film-600 text-xs mt-1">{error}</p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(error).then(() => {
                       setCopied(true);
