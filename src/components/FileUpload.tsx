@@ -53,10 +53,11 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
 
     // Soft warning
     if (file.size > WARNING_FILE_SIZE) {
+      const estimatedMinutes = Math.max(1, Math.round(file.size / (100 * 1024 * 1024)));
       setWarning(
         `Large file detected (${formatBytes(
           file.size
-        )}). This may cause slow performance on low-end devices.`
+        )}). Processing may take ~${estimatedMinutes} minutes and affect performance on low-memory devices.`
       );
     }
 
