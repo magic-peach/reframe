@@ -29,38 +29,81 @@ const abortCheck = (signal?: AbortSignal) => {
   }
 };
 
-export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
-  if (ffmpegInstance?.loaded) return ffmpegInstance;
+export async function loadFFmpeg(
+  signal?: AbortSignal,
+  onProgress?: (percent: number) => void
+): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) {
+    onProgress?.(100);
+    return ffmpegInstance;
+  }
 
   const ffmpeg = ffmpegInstance ?? new FFmpeg();
   ffmpegInstance = ffmpeg;
 
-  const baseURL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
+  const handleProgress = ({
+    progress,
+  }: {
+    progress: number;
+  }) => {
+    onProgress?.(Math.round(progress * 100));
+  };
 
   try {
-    await ffmpeg.load({
-      coreURL: await toBlobURL(
-        `${baseURL}/ffmpeg-core.js`,
-        "text/javascript"
-      ),
-      wasmURL: await toBlobURL(
-        `${baseURL}/ffmpeg-core.wasm`,
-        "application/wasm"
-      ),
-      workerURL: await toBlobURL(
-        `${baseURL}/ffmpeg-core.worker.js`,
-        "text/javascript"
-      ),
-    });
+    ffmpeg.on("progress", handleProgress);
 
+    // Check if browser supports SIMD
+    const isSimdSupported = await simd();
+
+    // Select core file dynamically
+    const coreName = isSimdSupported
+      ? "ffmpeg-core-simd"
+      : "ffmpeg-core";
+
+    // Try CDN list
+    let loaded = false;
+
+    for (const baseURL of CDN_LIST) {
+      try {
+        await ffmpeg.load(
+          {
+            coreURL: await toBlobURL(
+              `${baseURL}/${coreName}.js`,
+              "text/javascript"
+            ),
+            wasmURL: await toBlobURL(
+              `${baseURL}/${coreName}.wasm`,
+              "application/wasm"
+            ),
+          },
+          { signal }
+        );
+
+        loaded = true;
+        break;
+      } catch {
+        console.warn(`Failed loading from ${baseURL}`);
+      }
+    }
+
+    if (!loaded) {
+      throw new Error("All CDN sources failed");
+    }
+
+    onProgress?.(100);
     return ffmpeg;
   } catch (err) {
     console.error("FFmpeg load failed:", err);
-    ffmpegInstance = null;
+
+    if (ffmpegInstance === ffmpeg) {
+      ffmpegInstance = null;
+    }
 
     throw new FFmpegLoadError(
       "FFmpeg failed to load. Check internet or CDN blocking."
     );
+  } finally {
+    ffmpeg.off("progress", handleProgress);
   }
 }
 /** Terminates the active FFmpeg instance and releases its memory. */
