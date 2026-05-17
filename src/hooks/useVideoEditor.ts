@@ -249,7 +249,13 @@ export function useVideoEditor() {
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl)
       setResult(null)
 
-      const ffmpeg = await loadFFmpeg()
+      const ffmpeg = await loadFFmpeg(abortController.signal, (percent) => {
+        if (exportCancelledRef.current) return
+        setProgress(percent)
+        if (percent > 0 && percent < 100) {
+          setProgressMessage('Downloading video engine')
+        }
+      })
       setStatus('exporting')
       setProgress(0)
       setProgressMessage('Processing your video locally')
