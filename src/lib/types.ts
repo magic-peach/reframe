@@ -10,7 +10,7 @@ export interface EditRecipe {
   speed: number;
   quality: number;
   format: "mp4" | "webm" | "mkv";
-
+  stabilization: boolean;
   brightness: number;
   contrast: number;
   saturation: number;
@@ -46,8 +46,9 @@ export const DEFAULT_RECIPE: EditRecipe = {
   quality: 23,
   format: "mp4",
   brightness: 0,
-  contrast: 0,
-  saturation: 0,
+  stabilization: false,
+  contrast: 1,
+  saturation: 1,
 };
 
 export const MAX_FILE_SIZE =
