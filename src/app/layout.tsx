@@ -9,7 +9,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
   description: "Free, open-source video editor that runs entirely in your browser. No login, no uploads, no ads. Resize for any platform, trim, rotate, adjust speed, and export.",
-   keywords: [
+  keywords: [
     "video editor",
     "browser video editor",
     "open source video editor",
@@ -18,21 +18,16 @@ export const metadata: Metadata = {
     "rotate videos",
     "online video editor",
   ],
-
   authors: [{ name: "Reframe" }],
-
   openGraph: {
     title: "Reframe",
-    description:
-      "Free, open-source browser-based video editor. Resize, trim, rotate, and export videos directly in your browser.",
+    description: "Free, open-source browser-based video editor. Resize, trim, rotate, and export videos directly in your browser.",
     type: "website",
   },
-
   twitter: {
     card: "summary_large_image",
     title: "Reframe",
-    description:
-      "Free, open-source browser-based video editor. Resize, trim, rotate, and export videos directly in your browser.",
+    description: "Free, open-source browser-based video editor. Resize, trim, rotate, and export videos directly in your browser.",
   },
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
@@ -46,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-<html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
         <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
@@ -71,7 +66,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
         
-      <a href="#main-content"
+          href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-black"
         >
           Skip to main content
