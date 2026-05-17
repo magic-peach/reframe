@@ -12,12 +12,22 @@ export function ThemeToggle() {
 
   return (
     <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={
-        theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
-      }
-      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+       type="button"
+       onClick={toggleTheme}
+       aria-label={
+         theme === "light"
+           ? "Switch to dark mode"
+           : theme === "dark"
+           ? "Switch to high contrast mode"
+           : "Switch to light mode"
+      } 
+       title={
+         theme === "light"
+           ? "Switch to dark mode"
+           : theme === "dark"
+           ? "Switch to high contrast mode"
+           : "Switch to light mode"
+     }
       className="
         relative flex items-center justify-center
         w-9 h-9 rounded-full

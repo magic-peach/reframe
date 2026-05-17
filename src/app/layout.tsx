@@ -62,6 +62,14 @@ export default function RootLayout({
                   } else {
                     document.documentElement.classList.remove('dark');
                   }
+                  if (stored === 'high-contrast') {
+                    document.documentElement.setAttribute(
+                      'data-theme',
+                      'high-contrast'
+                    );
+                  } else {
+                    document.documentElement.removeAttribute('data-theme');
+                  }  
                 } catch (e) {}
               })();
             `,
