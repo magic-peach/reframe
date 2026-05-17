@@ -191,7 +191,7 @@ const handleHeightChange = useCallback((h: number) => {
               onChange={(e) => handleHeightChange(Number(e.target.value))}
               className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
-            {recipe.customHeight %2!==0 && (
+            {recipe.customHeight % 2 !== 0 && (
               <p className="text-[10px] text-amber-500 mt-1">
                 Warning- Odd number will round up to {recipe.customHeight + 1}
               </p>
