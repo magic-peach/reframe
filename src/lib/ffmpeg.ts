@@ -37,6 +37,12 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
   } else if (recipe.rotate === 270) {
     filters.push("transpose=2");
   }
+  if (recipe.flipHorizontal) {
+  filters.push("hflip");
+}
+if (recipe.flipVertical) {
+  filters.push("vflip");
+}
 
   if (recipe.framing === "fit") {
     filters.push(

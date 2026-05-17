@@ -9,6 +9,8 @@ export interface EditRecipe {
   keepAudio: boolean;
   speed: number;
   quality: number;
+  flipHorizontal: boolean;
+  flipVertical: boolean;
 }
 
 export interface ExportResult {
@@ -39,4 +41,6 @@ export const DEFAULT_RECIPE: EditRecipe = {
   keepAudio: true,
   speed: 1,
   quality: 23,
+  flipHorizontal: false,
+  flipVertical: false,
 };
