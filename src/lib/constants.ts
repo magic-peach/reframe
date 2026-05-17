@@ -12,7 +12,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   rotate: 0,
   keepAudio: true,
   backgroundMusic: null,
-  backgroundMusicVolume: 0.5,
+  backgroundMusicVolume: 0.3,
   originalAudioVolume: 1,
   loopBackgroundMusic: false,
   speed: 1,

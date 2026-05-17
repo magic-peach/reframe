@@ -58,10 +58,10 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
     <div className="space-y-4">
     <div className="space-y-3 border-b border-[var(--border)] pb-4">
 
-  <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+  <div className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
     <Music2 size={10} />
     Background Music
-  </label>
+  </div>
 
   <input
     type="file"
@@ -83,7 +83,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
   {/* Music Volume */}
   <div>
     <div className="flex items-center justify-between mb-2">
-      <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+      <label htmlFor="bg-music-volume" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
         Music Volume
       </label>
 
@@ -93,6 +93,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
     </div>
 
     <input
+      id="bg-music-volume"
       type="range"
       min="0"
       max="1"
@@ -110,7 +111,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
   {/* Original Audio Volume */}
   <div>
     <div className="flex items-center justify-between mb-2">
-      <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+      <label htmlFor="original-audio-volume" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
         Original Audio Volume
       </label>
 
@@ -120,6 +121,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
     </div>
 
     <input
+      id="original-audio-volume"
       type="range"
       min="0"
       max="1"
