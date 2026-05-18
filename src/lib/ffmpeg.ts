@@ -110,10 +110,20 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
   }
 
   if (recipe.framing === "fit") {
-    filters.push(
-      `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
-      `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
-    );
+    if (recipe.blurBackground) {
+      const preStr = filters.length > 0 ? filters.join(",") + "," : "";
+      filters.length = 0; // clear existing filters, we will push the complex chain
+      const bgScale = `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase,crop=${targetW}:${targetH},boxblur=20:20`;
+      const fgScale = `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`;
+      filters.push(
+        `${preStr}split=2[blur][main];[blur]${bgScale}[bg];[main]${fgScale}[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2`
+      );
+    } else {
+      filters.push(
+        `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
+        `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
+      );
+    }
   } else {
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,

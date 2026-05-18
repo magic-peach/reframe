@@ -15,6 +15,7 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  blurBackground: boolean;
 }
 
 export type OverlayPosition =
@@ -80,6 +81,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   contrast: 0,
   saturation: 0,
   soundOnCompletion: false,
+  blurBackground: false,
 };
 
 export const MAX_FILE_SIZE =
