@@ -188,6 +188,7 @@ export default function FileUpload({
 );
   const DropZone = () => (
     <div
+      id="upload-zone"
       role="button"
       tabIndex={0}
       onDragOver={(e) => {

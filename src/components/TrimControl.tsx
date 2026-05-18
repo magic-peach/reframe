@@ -65,7 +65,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
     "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
 
   return (
-    <div className="space-y-3">
+    <div id="trim-control" className="space-y-3">
       <div className="flex gap-3">
         <div className="flex-1">
           <label htmlFor="trim-start" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
