@@ -36,6 +36,25 @@
   --error-hover: #991b1b;
 }
 
+/* ── High contrast mode tokens ── */
+[data-theme="high-contrast"] {
+  --bg: #000000;
+  --surface: #000000;
+  --border: #FFFFFF;
+
+  --text: #FFFFFF;
+  --muted: #FFFFFF;
+
+  --accent: #FFFF00;
+  --accent-hover: #FFFF00;
+
+  --error: #FF6666;
+  --success: #66FF66;
+
+  --film-600: #FF6666;
+  --film-400: #66FF66;
+}
+
 /* ── Base styles ── */
 body {
   background-color: var(--bg);
@@ -53,7 +72,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid #e63946;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE } from "@/lib/types";
-import { DEFAULT_RECIPE } from "@/lib/constants";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition } from "@/lib/types";
+import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
@@ -60,6 +60,58 @@ function verifyMagicBytes(file: File): Promise<boolean> {
   });
 }
 
+function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
+  const validations: Array<[boolean, string]> = [
+    [
+      recipe.trimStart < 0,
+      "Trim start time cannot be less than 0 seconds.",
+    ],
+    [
+      recipe.trimEnd !== null && recipe.trimEnd > duration,
+      `Trim end time cannot exceed the video duration (${Math.floor(duration)}s).`,
+    ],
+    [
+      recipe.trimStart >= (recipe.trimEnd ?? duration),
+      "Trim start time must be earlier than the end time.",
+    ],
+    [
+      recipe.preset === "custom" && (recipe.customWidth < 16 || recipe.customWidth > 7680),
+      "Width must be between 16px and 7680px.",
+    ],
+    [
+      recipe.preset === "custom" && (recipe.customHeight < 16 || recipe.customHeight > 7680),
+      "Height must be between 16px and 7680px.",
+    ],
+    [
+      !(SPEED_STEPS as readonly number[]).includes(recipe.speed),
+      "Please select a valid playback speed.",
+    ],
+    [
+      recipe.quality < 18 || recipe.quality > 30,
+      "Quality must be between 18 and 30.",
+    ],
+    [
+      recipe.brightness < -1 || recipe.brightness > 1,
+      "Brightness must be between -1 and 1.",
+    ],
+
+    [
+      recipe.contrast < 0 || recipe.contrast > 2,
+      "Contrast must be between 0 and 2.",
+    ],
+
+    [
+      recipe.saturation < 0 || recipe.saturation > 3,
+      "Saturation must be between 0 and 3.",
+    ],
+  ];
+
+  return (
+    validations.find(([condition]) => condition)?.[1] ??
+    null
+  );
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -78,9 +130,52 @@ export function useVideoEditor() {
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  const [musicFile, setMusicFile] = useState<File | null>(null);
+  const [musicVolume, setMusicVolume] = useState(70);
+  const [originalAudioVolume, setOriginalAudioVolume] = useState(40);
+  const [loopMusic, setLoopMusic] = useState(false);
+
+  const [overlayFile, setOverlayFile] = useState<File | null>(null);
+  const [overlayPosition, setOverlayPosition] = useState<OverlayPosition>("bottom-right");
+  const [overlaySize, setOverlaySize] = useState(150);
+  const [overlayOpacity, setOverlayOpacity] = useState(100);
+
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => ({ ...prev, ...patch }));
   }, []);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("reframe-settings");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setRecipe(prev => ({
+          ...prev,
+          preset: parsed.preset ?? prev.preset,
+          quality: parsed.quality ?? prev.quality,
+          speed: parsed.speed ?? prev.speed,
+          customWidth: parsed.customWidth ?? prev.customWidth,
+          customHeight: parsed.customHeight ?? prev.customHeight
+        }));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("reframe-settings", JSON.stringify({
+        preset: recipe.preset,
+        quality: recipe.quality,
+        speed: recipe.speed,
+        customWidth: recipe.customWidth,
+        customHeight: recipe.customHeight
+      }));
+    } catch (e) {
+      // ignore
+    }
+  }, [recipe.preset, recipe.quality, recipe.speed, recipe.customWidth, recipe.customHeight]);
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
     setResult(null);
@@ -140,6 +235,13 @@ export function useVideoEditor() {
       return;
     }
 
+    const validationError = validateRecipe(recipe, duration);
+    if (validationError) {
+      setError(validationError);
+      setStatus("error");
+      return;
+    }
+
     const abortController = new AbortController();
     exportAbortControllerRef.current = abortController;
     exportCancelledRef.current = false;
@@ -161,7 +263,19 @@ export function useVideoEditor() {
         file,
         recipe,
         setProgress,
-        abortController.signal
+        abortController.signal,
+        {
+          file: musicFile,
+          musicVolume,
+          originalAudioVolume,
+          loopMusic,
+        },
+        {
+          file: overlayFile,
+          position: overlayPosition,
+          size: overlaySize,
+          opacity: overlayOpacity,
+        }
       );
       if (exportCancelledRef.current) return;
 
@@ -187,10 +301,17 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, status]);
+  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration]);
+
 
   useEffect(() => {
-    if (file) {
+    if (status === "exporting") {
+      document.title = `Exporting ${progress}% | Reframe`;
+    } else if (status === "loading-engine") {
+      document.title = `Loading engine... | Reframe`;
+    } else if (status === "done") {
+      document.title = `Export complete | Reframe`;
+    } else if (file) {
       document.title = `Editing: ${file.name} | Reframe`;
     } else {
       document.title = DEFAULT_TITLE;
@@ -198,8 +319,24 @@ export function useVideoEditor() {
     return () => {
       document.title = DEFAULT_TITLE;
     };
-  }, [file]);
+  }, [status, progress, file]);
 
+  useEffect(() => {
+    const shouldWarn =
+      status === "exporting" ||
+      status === "loading-engine" ||
+      status === "done";
+
+    if (!shouldWarn) return;
+
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [status]);
+  
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
       if (
@@ -293,5 +430,21 @@ export function useVideoEditor() {
     cancelExport,
     reset,
     resetSettings,
+    musicFile,
+    setMusicFile,
+    musicVolume,
+    setMusicVolume,
+    originalAudioVolume,
+    setOriginalAudioVolume,
+    loopMusic,
+    setLoopMusic,
+    overlayFile,
+    setOverlayFile,
+    overlayPosition,
+    setOverlayPosition,
+    overlaySize,
+    setOverlaySize,
+    overlayOpacity,
+    setOverlayOpacity,
   };
 }
