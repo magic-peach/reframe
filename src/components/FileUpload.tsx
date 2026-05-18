@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
@@ -25,6 +25,21 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
     if (!file.type.startsWith("video/")) return;
     onFileSelect(file);
   };
+
+  useEffect(() => {
+  const resetDragState = (e: DragEvent) => {
+    e.preventDefault();   
+    setDragging(false);
+  };
+
+  document.addEventListener("drop", resetDragState);
+  document.addEventListener("dragend", resetDragState);
+
+  return () => {
+    document.removeEventListener("drop", resetDragState);
+    document.removeEventListener("dragend", resetDragState);
+  };
+}, []);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
