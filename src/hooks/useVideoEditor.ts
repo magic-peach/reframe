@@ -73,8 +73,10 @@ export function useVideoEditor() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState("");
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => ({ ...prev, ...patch }));
@@ -85,6 +87,12 @@ export function useVideoEditor() {
     setStatus("idle");
     setError(null);
     setFile(null);
+    if (!selectedFile.type.startsWith("video/")) {
+    setFileError("Please upload a video file only.");
+    return;
+  }
+
+  setFileError("");
 
     // LAYER 0: Size check
     if (selectedFile.size > MAX_FILE_SIZE) {
@@ -93,7 +101,6 @@ export function useVideoEditor() {
       return;
     }
 
-    // LAYER 1: Extension check
     const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
     const filename = selectedFile.name.toLowerCase();
     const hasValidExtension = validExtensions.some(ext => filename.endsWith(ext));
@@ -103,14 +110,12 @@ export function useVideoEditor() {
       return;
     }
 
-    // LAYER 2: MIME type check
     if (!selectedFile.type.startsWith("video/")) {
       setError(`Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || 'unknown'}`);
       setStatus("error");
       return;
     }
 
-    // LAYER 3: Magic Bytes Verification
     const isVideo = await verifyMagicBytes(selectedFile);
     if (!isVideo) {
       setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
@@ -209,7 +214,6 @@ export function useVideoEditor() {
     };
 
     document.addEventListener("keydown", handleKeydown);
-
     return () => {
       document.removeEventListener("keydown", handleKeydown);
     };
@@ -249,7 +253,6 @@ export function useVideoEditor() {
     setError(null);
   }, [result]);
 
-  // Development-only memory monitoring during export
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") return;
     if (status !== "exporting") return;
@@ -267,6 +270,11 @@ export function useVideoEditor() {
   useEffect(() => {
     localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
   }, [recipe.soundOnCompletion]);
+  const seekTo = useCallback((time: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+    }
+  }, []);
 
   return {
     file,
@@ -276,8 +284,11 @@ export function useVideoEditor() {
     progress,
     result,
     error,
+    videoRef,
+    seekTo,
     updateRecipe,
     handleFileSelect,
+    fileError,
     handleExport,
     cancelExport,
     reset,
