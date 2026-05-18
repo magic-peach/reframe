@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE } from "@/lib/types";
-import { DEFAULT_RECIPE } from "@/lib/constants";
+import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
@@ -58,6 +58,58 @@ function verifyMagicBytes(file: File): Promise<boolean> {
     reader.onerror = () => resolve(false);
     reader.readAsArrayBuffer(file.slice(0, 12));
   });
+}
+
+function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
+  const validations: Array<[boolean, string]> = [
+    [
+      recipe.trimStart < 0,
+      "Trim start time cannot be less than 0 seconds.",
+    ],
+    [
+      recipe.trimEnd !== null && recipe.trimEnd > duration,
+      `Trim end time cannot exceed the video duration (${Math.floor(duration)}s).`,
+    ],
+    [
+      recipe.trimStart >= (recipe.trimEnd ?? duration),
+      "Trim start time must be earlier than the end time.",
+    ],
+    [
+      recipe.preset === "custom" && (recipe.customWidth < 16 || recipe.customWidth > 7680),
+      "Width must be between 16px and 7680px.",
+    ],
+    [
+      recipe.preset === "custom" && (recipe.customHeight < 16 || recipe.customHeight > 7680),
+      "Height must be between 16px and 7680px.",
+    ],
+    [
+      !(SPEED_STEPS as readonly number[]).includes(recipe.speed),
+      "Please select a valid playback speed.",
+    ],
+    [
+      recipe.quality < 18 || recipe.quality > 30,
+      "Quality must be between 18 and 30.",
+    ],
+    [
+      recipe.brightness < -1 || recipe.brightness > 1,
+      "Brightness must be between -1 and 1.",
+    ],
+
+    [
+      recipe.contrast < 0 || recipe.contrast > 2,
+      "Contrast must be between 0 and 2.",
+    ],
+
+    [
+      recipe.saturation < 0 || recipe.saturation > 3,
+      "Saturation must be between 0 and 3.",
+    ],
+  ];
+
+  return (
+    validations.find(([condition]) => condition)?.[1] ??
+    null
+  );
 }
 
 export function useVideoEditor() {
@@ -173,6 +225,13 @@ export function useVideoEditor() {
       return;
     }
 
+    const validationError = validateRecipe(recipe, duration);
+    if (validationError) {
+      setError(validationError);
+      setStatus("error");
+      return;
+    }
+
     const abortController = new AbortController();
     exportAbortControllerRef.current = abortController;
     exportCancelledRef.current = false;
@@ -220,7 +279,7 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, status]);
+  }, [file, recipe, result, status, duration]);
 
   useEffect(() => {
     if (file) {
