@@ -2,6 +2,7 @@
 
 import { EditRecipe } from "@/lib/types";
 import { Film } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   recipe: EditRecipe;
@@ -31,15 +32,13 @@ export default function FormatSelector({ recipe, onChange }: Props) {
             onClick={() => onChange({ format: option.id as "mp4" | "webm" | "mkv" })}
             aria-label={`Select ${option.label} format`}
             aria-pressed={recipe.format === option.id}
-            className={`
-              relative px-3 py-2.5 rounded-lg border-2 transition-all
-              text-xs font-heading font-semibold uppercase tracking-wider
-              ${
-                recipe.format === option.id
-                  ? "border-film-600 bg-film-50 text-film-600"
-                  : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-400 hover:text-film-600"
-              }
-            `}
+            className={cn(
+              "relative px-3 py-2.5 rounded-lg border-2 transition-all",
+              "text-xs font-heading font-semibold uppercase tracking-wider",
+              recipe.format === option.id
+                ? "border-film-600 bg-film-50 text-film-600"
+                : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-400 hover:text-film-600"
+            )}
           >
             {option.label}
           </button>

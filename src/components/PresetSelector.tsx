@@ -2,8 +2,13 @@
 
 import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
+<<<<<<< HEAD
 import { Settings2, Lock, Unlock } from "lucide-react";
 import { useState, useCallback ,useRef } from "react";
+=======
+import { Settings2, Lock, Unlock, Search } from "lucide-react";
+import { useState, useCallback, useRef } from "react";
+>>>>>>> origin/main
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -41,12 +46,20 @@ export default function PresetSelector({ recipe, onChange }: Props) {
 
   const [locked, setLocked] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
+<<<<<<< HEAD
+=======
+  const [search, setSearch] = useState("");
+>>>>>>> origin/main
 
   const lockedRef = useRef(false);
 const aspectRatioRef = useRef(16 / 9);
 
+<<<<<<< HEAD
 console.log("PRESET SELECTOR LOADED");
   const handleToggleLock = useCallback(() => {
+=======
+const handleToggleLock = useCallback(() => {
+>>>>>>> origin/main
   if (!lockedRef.current) {
     const w = recipe.customWidth ?? 1920;
     const h = recipe.customHeight ?? 1080;
@@ -61,7 +74,10 @@ console.log("PRESET SELECTOR LOADED");
 }, [recipe.customWidth, recipe.customHeight]);
 
   const handleWidthChange = useCallback((w: number) => {
+<<<<<<< HEAD
    console.log("locked:", lockedRef.current, "ratio:", aspectRatioRef.current);
+=======
+>>>>>>> origin/main
   const patch: Partial<EditRecipe> = { customWidth: w };
   if (lockedRef.current) patch.customHeight = Math.round(w / aspectRatioRef.current);
   onChange(patch);
@@ -72,6 +88,7 @@ const handleHeightChange = useCallback((h: number) => {
   if (lockedRef.current) patch.customWidth = Math.round(h * aspectRatioRef.current);
   onChange(patch);
 }, [onChange]);
+<<<<<<< HEAD
 
   return (
     <div className="space-y-3">
@@ -162,6 +179,132 @@ const handleHeightChange = useCallback((h: number) => {
               className="w-full text-base px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
           </div>
+=======
+
+  const filteredPresets = PRESETS.filter(p => 
+    p.id !== "custom" && (
+      p.label.toLowerCase().includes(search.toLowerCase()) || 
+      p.platform.toLowerCase().includes(search.toLowerCase())
+    )
+  );
+
+  const handlePresetSelect = useCallback((presetId: string) => {
+    onChange({ preset: presetId });
+    setSearch("");
+  }, [onChange]);
+
+  return (
+    <div className="space-y-3">
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search size={14} className="text-[var(--muted)]" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search formats..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full text-sm pl-9 pr-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {filteredPresets.length === 0 ? (
+          <div className="col-span-full py-4 text-center text-[var(--muted)] text-sm">
+            No presets found
+          </div>
+        ) : (
+          filteredPresets.map((preset) => {
+            const active = recipe.preset === preset.id;
+            return (
+              <button
+                type="button"
+                key={preset.id}
+                onClick={() => handlePresetSelect(preset.id)}
+                title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
+                aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
+                aria-pressed={active}
+                className={cn(
+                  "min-h-[44px] min-w-[44px] flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+                  active
+                    ? "border-film-500 bg-film-50"
+                    : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
+                )}
+              >
+                <RatioBox width={preset.width} height={preset.height} active={active} />
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className={cn(
+                    "text-xs font-heading font-bold leading-tight whitespace-nowrap",
+                    active ? "text-film-700" : "text-[var(--text)]"
+                  )}>
+                    {preset.label}
+                  </p>
+                  <p className="text-[10px] text-[var(--muted)] leading-tight mt-0.5 truncate">
+                    {preset.platform}
+                  </p>
+                </div>
+              </button>
+            );
+          })
+        )}
+
+        <button
+          type="button"
+          title="Custom — Set your own dimensions"
+          aria-label="Select custom dimensions preset"
+          aria-pressed={recipe.preset === "custom"}
+          onClick={() => handlePresetSelect("custom")}
+          className={cn(
+            "min-h-[44px] min-w-[44px] flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+            recipe.preset === "custom"
+              ? "border-film-500 bg-film-50"
+              : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
+          )}
+        >
+          <Settings2
+            size={20}
+            className={cn(
+              "shrink-0",
+              recipe.preset === "custom" ? "text-film-600" : "text-[var(--muted)]"
+            )}
+          />
+          <div className="min-w-0">
+            <p className={cn(
+              "text-xs font-heading font-bold",
+              recipe.preset === "custom" ? "text-film-700" : "text-[var(--text)]"
+            )}>
+              Custom
+            </p>
+            <p className="text-[10px] text-[var(--muted)] mt-0.5">Set your own</p>
+          </div>
+        </button>
+      </div>
+
+      {recipe.preset === "custom" && (
+        <div className="flex gap-3 items-center p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)] animate-fade-in">
+          <div className="flex-1">
+            <label htmlFor="custom-width" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+              Width px
+            </label>
+            <input
+              id="custom-width"
+              type="number"
+              inputMode="numeric"
+              min={16}
+              max={7680}
+              step={2}
+              value={recipe.customWidth}
+              spellCheck={false}
+              onChange={(e) => handleWidthChange(Number(e.target.value))}
+              className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
+            />
+            {recipe.customWidth % 2 !== 0 && (
+              <p className="text-[10px] text-amber-500 mt-1">
+                Warning - Odd number will round up to {recipe.customWidth + 1}
+              </p>
+            )}
+          </div>
+>>>>>>> origin/main
 
           <button
             type="button"
@@ -178,22 +321,42 @@ const handleHeightChange = useCallback((h: number) => {
           </button>
 
           <div className="flex-1">
+<<<<<<< HEAD
             <label
               htmlFor="custom-height"
               className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5"
             >
+=======
+            <label htmlFor="custom-height" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+>>>>>>> origin/main
               Height px
             </label>
             <input
               id="custom-height"
               type="number"
+<<<<<<< HEAD
+=======
+              inputMode="numeric"
+>>>>>>> origin/main
               min={16}
               max={7680}
               step={2}
               value={recipe.customHeight}
+<<<<<<< HEAD
               onChange={(e) => handleHeightChange(Number(e.target.value))}
               className="w-full text-base px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
+=======
+              spellCheck={false}
+              onChange={(e) => handleHeightChange(Number(e.target.value))}
+              className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
+            />
+            {recipe.customHeight % 2 !== 0 && (
+              <p className="text-[10px] text-amber-500 mt-1">
+                Warning- Odd number will round up to {recipe.customHeight + 1}
+              </p>
+            )}
+>>>>>>> origin/main
           </div>
         </div>
       )}
