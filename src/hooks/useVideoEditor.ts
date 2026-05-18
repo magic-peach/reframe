@@ -223,7 +223,13 @@ export function useVideoEditor() {
   }, [file, recipe, result, status]);
 
   useEffect(() => {
-    if (file) {
+    if (status === "exporting") {
+      document.title = `Exporting ${progress}% | Reframe`;
+    } else if (status === "loading-engine") {
+      document.title = `Loading engine... | Reframe`;
+    } else if (status === "done") {
+      document.title = `Export complete | Reframe`;
+    } else if (file) {
       document.title = `Editing: ${file.name} | Reframe`;
     } else {
       document.title = DEFAULT_TITLE;
@@ -231,7 +237,7 @@ export function useVideoEditor() {
     return () => {
       document.title = DEFAULT_TITLE;
     };
-  }, [file]);
+  }, [status, progress, file]);
 
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
