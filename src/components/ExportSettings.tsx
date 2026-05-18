@@ -20,7 +20,7 @@ export default function ExportSettings({ recipe, onChange }: Props) {
   <>
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label htmlFor="quality-control" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+        <label htmlFor="quality-control" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2">
           <SlidersHorizontal size={10} /> Quality
           <span className="cursor-help" title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file.">
             <InfoIcon size={14} />
@@ -28,7 +28,7 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         </label>
         <span className="text-sm font-heading font-bold text-film-600">
           {label}
-          <span className="font-normal text-xs text-[var(--muted)] ml-1">CRF {recipe.quality}</span>
+          <span className="font-normal text-sm text-[var(--muted)] ml-2">CRF {recipe.quality}</span>
         </span>
       </div>
       <input
@@ -44,34 +44,10 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         aria-valuetext={`${label} quality, CRF value ${recipe.quality}`}
         className="w-full accent-film-600 cursor-pointer"
       />
-      <div id="quality-description" className="flex justify-between mt-1">
+      <div className="flex justify-between mt-1">
         <span className="text-[10px] text-[var(--muted)]">Best quality</span>
         <span className="text-[10px] text-[var(--muted)]">Smallest file</span>
       </div>
     </div>
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <label htmlFor="stabilization-toggle" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
-          <SlidersHorizontal size={10} /> Stabilization
-        </label>
-         <span className="flex text-sm font-heading font-bold text-film-600">
-          <input
-            id="stabilization-toggle"
-            type="checkbox"
-            checked={recipe.stabilization}
-            onChange={(e) =>onChange({ stabilization: e.target.checked })}
-            aria-label="Enable video stabilization"
-            aria-checked={recipe.stabilization}
-            className="w-full accent-film-600 cursor-pointer"
-          />
-          {/* <span className="font-normal text-xs text-[var(--muted)] ml-1">deshake</span> */}
-        </span>
-      </div>
-
-      <div className="flex justify-end">
-        <span className={cn("text-[13px]", recipe.stabilization ? "text-red-700" : "text-[var(--muted)]")}>Note: significantly increases processing time.</span>
-      </div>
-    </div>
-  </>
   );
 }

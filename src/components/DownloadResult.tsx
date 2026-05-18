@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ExportResult } from "@/lib/types";
-import { formatBytes } from "@/lib/ffmpeg";
+import { formatBytes } from "@/lib/utils";
 import { Download, RotateCcw, Share2, AlertCircle } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import successAnim from "@/lib/lottie/success.json";

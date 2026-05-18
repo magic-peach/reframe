@@ -15,21 +15,20 @@ export default function Home() {
         <VideoEditor />
       </main>
 
-      <footer className="w-full border-t border-white/10 bg-gradient-to-b from-[#0A2239] to-[#132E32] text-white px-6 py-10 mt-12">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+<footer className="w-full border-t border-[var(--border)] bg-gray-100 dark:bg-gradient-to-b dark:from-[#0A2239] dark:to-[#132E32] text-black dark:text-white px-6 py-10 mt-12">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
 
           {/* Left Section */}
           <div>
             <h2 className="text-lg font-semibold tracking-wide">Reframe</h2>
-            <p className="text-sm text-gray-400 mt-2 leading-relaxed">
-              A modern open-source video editing experience built for creators.
+<p className="text-sm text-gray-600 dark:text-gray-400 mt-2 leading-relaxed">
+                A modern open-source video editing experience built for creators.
             </p>
           </div>
 
           {/* Middle Section */}
           <div className="flex flex-col gap-2 text-sm">
-            <h3 className="font-medium text-gray-300 mb-2">Links</h3>
-
+<h3 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Links</h3>
             <a
               href="https://github.com/magic-peach/reframe"
               target="_blank"
@@ -56,8 +55,7 @@ export default function Home() {
 
           {/* Right Section */}
           <div className="flex flex-col gap-3 md:items-end">
-            <h3 className="font-medium text-gray-300">Stay Connected</h3>
-
+<h3 className="font-medium text-gray-700 dark:text-gray-300">Stay Connected</h3>
             <div className="flex gap-4">
               <a
                 href="https://github.com/magic-peach/reframe"
@@ -75,8 +73,8 @@ export default function Home() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-10 pt-6 border-t border-white/10 text-center text-xs text-gray-500">
-          © 2026 Reframe · Open Source under MIT License
+<div className="mt-10 pt-6 border-t border-[var(--border)] text-center text-xs text-gray-700 dark:text-gray-500">
+            © 2026 Reframe · Open Source under MIT License
         </div>
       </footer>
     </>
