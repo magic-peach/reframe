@@ -1,64 +1,93 @@
 "use client";
 
 import { EditRecipe } from "@/lib/types";
-import { SlidersHorizontal, Monitor, AlertTriangle } from "lucide-react";
-import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import { cn } from "@/lib/utils";
+import { SlidersHorizontal, Info as InfoIcon } from "lucide-react";
 
 interface Props {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
-  onExport: () => void;
 }
 
-export default function ExportSettings({ recipe, onChange, onExport }: Props) {
-  const label = recipe.quality <= 21 
-    ? "High" 
-    : recipe.quality <= 25 
-    ? "Balanced" 
+export default function ExportSettings({ recipe, onChange }: Props) {
+  const label = recipe.quality <= 21
+    ? "High"
+    : recipe.quality <= 25
+    ? "Balanced"
     : "Small file";
 
-  // Check current safety status based on custom dimensions
-  const safetyStatus = validateDimensions(recipe.customWidth, recipe.customHeight);
-  
-  const handleExportTrigger = () => {
-    // 1. Hard Block: Prevent browser from crashing
-    if (safetyStatus === "blocked") {
-      alert("❌ Resolution Blocked: Dimensions exceed 8K. Please reduce resolution to prevent a browser crash.");
-      return;
-    }
-    // 2. Warning: Offer auto-scaling for 4K+ resolutions
-    if (safetyStatus === "warning") {
-      const shouldScale = confirm(
-        "⚠️ High Resolution Warning: Exporting at 4K+ in-browser may be extremely slow or crash your tab. " +
-        "Would you like to auto-scale to a safe 4K limit?"
-      );
-      if (shouldScale) {
-        const { width, height } = getDownscaledDimensions(recipe.customWidth, recipe.customHeight);
-        onChange({ customWidth: width, customHeight: height });
-        return; // Stop here so user sees the new dimensions in the UI
-      }
-    }
-    // 3. Safe to proceed
-    onExport();
-  };
-
   return (
+  <>
     <div>
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] text-[var(--muted)]">Best quality</span>
-        <span className="text-[10px] text-[var(--muted)]">Smallest file</span>
+        <label htmlFor="quality-control" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2">
+          <SlidersHorizontal size={10} /> Quality
+          <span className="cursor-help" title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file.">
+            <InfoIcon size={14} />
+          </span>
+        </label>
+        <span className="text-sm font-heading font-bold text-film-600">
+          {label}
+          <span className="font-normal text-sm text-[var(--muted)] ml-2">CRF {recipe.quality}</span>
+        </span>
       </div>
-      {/* Final Action */}
-      <button
-        onClick={handleExportTrigger}
-        className={`w-full py-3 rounded font-bold transition-all ${
-          safetyStatus === 'blocked' 
-          ? 'bg-red-900/50 text-red-200 cursor-not-allowed' 
-          : 'bg-film-600 hover:bg-film-500 text-white shadow-lg shadow-film-600/20'
-        }`}
-      >
-        {safetyStatus === 'blocked' ? 'Resolution Too High' : 'Export Video'}
-      </button>
+      <input
+        id="quality-control"
+        type="range"
+        min={18}
+        max={30}
+        step={1}
+        value={recipe.quality}
+        onChange={(e) => onChange({ quality: Number(e.target.value) })}
+        aria-describedby="quality-description"
+        aria-label="Video export quality (CRF)"
+        aria-valuetext={`${label} quality, CRF value ${recipe.quality}`}
+        className="w-full accent-film-600 cursor-pointer"
+      />
+      <div id="quality-description" className="flex justify-between mt-1">
+        <span className="text-sm text-[var(--muted)]">Best quality</span>
+        <span className="text-sm text-[var(--muted)]">Smallest file</span>
+      </div>
+      <div className="flex items-center justify-between mt-4">
+        <label htmlFor="sound-on-completion" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+          Sound on completion
+        </label>
+
+        <input
+          id="sound-on-completion"
+          type="checkbox"
+          checked={recipe.soundOnCompletion}
+          onChange={(e) =>
+            onChange({
+              soundOnCompletion: e.target.checked,
+            })
+          }
+        />
+      </div>
     </div>
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label htmlFor="stabilization-toggle" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2">
+          <SlidersHorizontal size={10} /> Stabilization
+        </label>
+         <span className="flex text-sm font-heading font-bold text-film-600">
+          <input
+            id="stabilization-toggle"
+            type="checkbox"
+            checked={recipe.stabilization}
+            onChange={(e) =>onChange({ stabilization: e.target.checked })}
+            aria-label="Enable video stabilization"
+            aria-checked={recipe.stabilization}
+            className="w-full accent-film-600 cursor-pointer"
+          />
+          {/* <span className="font-normal text-sm text-[var(--muted)] ml-2">deshake</span> */}
+        </span>
+      </div>
+
+      <div className="flex justify-end">
+        <span className={cn("text-sm", recipe.stabilization ? "text-red-700" : "text-[var(--muted)]")}>Note: significantly increases processing time.</span>
+      </div>
+    </div>
+  </>
   );
 }
