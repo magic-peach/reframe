@@ -110,7 +110,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
             if (!isValid) e.preventDefault();
           }}
         >
-          <Download size={15} />
+          <Download size={15} aria-hidden="true"  />
           Download {result.format.toUpperCase()}
         </a>
         <a
@@ -129,7 +129,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
           onClick={handleReset}
           className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
         >
-          <RotateCcw size={14} />
+          <RotateCcw size={14} aria-hidden="true"  />
           New
         </button>
         <a

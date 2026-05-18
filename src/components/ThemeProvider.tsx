@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "high-contrast";
 
 interface ThemeContextValue {
   theme: Theme;
@@ -26,10 +26,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // The inline <script> in layout.tsx already applied the class to <html>;
   // we just sync React state here so the toggle button shows the right icon.
   useEffect(() => {
+    try {
     const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored === "light" || stored === "dark") {
+    if (stored === "light" || stored === "dark" || stored === "high-contrast") {
       setThemeState(stored);
     } else {
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      setThemeState(prefersDark ? "dark" : "light");
+    }
+    } catch {
       const prefersDark = window.matchMedia(
         "(prefers-color-scheme: dark)"
       ).matches;
@@ -55,6 +62,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       } else {
         document.documentElement.classList.remove("dark");
       }
+      if (next === "high-contrast") {
+      document.documentElement.setAttribute(
+        "data-theme",
+        "high-contrast"
+      );
+      } else {
+      document.documentElement.removeAttribute("data-theme");
+      }
       if (persist) {
         localStorage.setItem("theme", next);
       }
@@ -63,7 +78,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   const toggleTheme = useCallback(() => {
-    applyTheme(theme === "dark" ? "light" : "dark");
+    applyTheme(
+      theme === "light"
+        ? "dark"
+        : theme === "dark"
+        ? "high-contrast"
+        : "light"
+    ); 
   }, [theme, applyTheme]);
 
   const setTheme = useCallback(

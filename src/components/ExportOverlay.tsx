@@ -5,6 +5,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { ExportStatus } from "@/lib/types";
 import LottiePlayer from "./LottiePlayer";
 import spinnerAnim from "@/lib/lottie/spinner.json";
+import TipCarousel from "./TipCarousel";
 
 interface Props {
   status: ExportStatus;
@@ -121,6 +122,8 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
               <p className="text-xs font-heading font-semibold text-[var(--muted)]">
                 {progress}%
               </p>
+              <TipCarousel />
+              {!isLoading && (
               <div className="flex flex-col items-center gap-3 mt-4">
                 <button
                   type="button"
