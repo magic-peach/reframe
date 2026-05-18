@@ -263,6 +263,22 @@ export function useVideoEditor() {
   }, [status, progress, file]);
 
   useEffect(() => {
+    const shouldWarn =
+      status === "exporting" ||
+      status === "loading-engine" ||
+      status === "done";
+
+    if (!shouldWarn) return;
+
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [status]);
+  
+  useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
       if (
         (e.ctrlKey || e.metaKey) &&
