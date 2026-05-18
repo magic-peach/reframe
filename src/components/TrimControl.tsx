@@ -57,7 +57,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
     <div className="space-y-2">
       <div className="flex gap-3">
         <div className="flex-1">
-          <label htmlFor="trim-start" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+          <label htmlFor="trim-start" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
             Start (sec)
           </label>
           <input
@@ -77,7 +77,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
           />
         </div>
         <div className="flex-1">
-          <label htmlFor="trim-end" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+          <label htmlFor="trim-end" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
             End (sec)
           </label>
           <input
@@ -98,7 +98,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
         </div>
       </div>
       {duration > 0 && (
-        <p className="text-[10px] text-[var(--muted)] font-heading">
+        <p className="text-sm text-[var(--muted)] font-heading mt-1">
           Duration: {duration.toFixed(1)}s
         </p>
       )}

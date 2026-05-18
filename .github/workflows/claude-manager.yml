@@ -19,7 +19,7 @@ jobs:
       statuses: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -63,7 +63,7 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Claude Issue Triage
         uses: anthropics/claude-code-action@beta
@@ -111,7 +111,7 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Claude Discussion Reply
         uses: anthropics/claude-code-action@beta
