@@ -3,6 +3,7 @@
 import { EditRecipe } from "@/lib/types";
 import { RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRef, KeyboardEvent } from "react";
 
 interface Props {
   recipe: EditRecipe;
@@ -12,19 +13,20 @@ interface Props {
 const ROTATIONS = [0, 90, 180, 270] as const;
 
 export default function RotateControl({ recipe, onChange }: Props) {
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const currentIndex = ROTATIONS.indexOf(recipe.rotate as typeof ROTATIONS[number]);
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const currentIndex = ROTATIONS.indexOf(recipe.rotate as typeof ROTATIONS[number]);
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
-      const nextIndex = (currentIndex + 1) % ROTATIONS.length;
-      onChange({ rotate: ROTATIONS[nextIndex] });
-    }
-
-    if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      const next = (currentIndex + 1) % ROTATIONS.length;
+      onChange({ rotate: ROTATIONS[next] });
+      buttonRefs.current[next]?.focus();
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
-      const prevIndex = (currentIndex - 1 + ROTATIONS.length) % ROTATIONS.length;
-      onChange({ rotate: ROTATIONS[prevIndex] });
+      const prev = (currentIndex - 1 + ROTATIONS.length) % ROTATIONS.length;
+      onChange({ rotate: ROTATIONS[prev] });
+      buttonRefs.current[prev]?.focus();
     }
   };
 
@@ -34,19 +36,20 @@ export default function RotateControl({ recipe, onChange }: Props) {
       aria-label="Rotation"
       className="flex gap-2"
       onKeyDown={handleKeyDown}
+      tabIndex={-1}
     >
-      {ROTATIONS.map((deg) => {
+      {ROTATIONS.map((deg, i) => {
         const active = recipe.rotate === deg;
         return (
           <button
             type="button"
             key={deg}
+            ref={(el) => { buttonRefs.current[i] = el; }}
             role="radio"
             aria-checked={active}
             tabIndex={active ? 0 : -1}
             onClick={() => onChange({ rotate: deg })}
-            aria-label={`Rotate video to ${deg} degrees`}
-            aria-pressed={active}
+            aria-label={`Rotate ${deg} degrees`}
             className={cn(
               "flex-1 min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border text-xs transition-all duration-150 cursor-pointer hover:scale-[1.03] active:scale-[0.97]",
               active
@@ -54,8 +57,7 @@ export default function RotateControl({ recipe, onChange }: Props) {
                 : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
             )}
           >
-            <RotateCw size={15} style={{ transform: `rotate(${deg}deg)`, transformOrigin: 'center' }} className="transition-transform" />
-            <span className="sr-only">Rotate video to {deg} degrees</span>
+            <RotateCw size={15} style={{ transform: `rotate(${deg}deg)` }} className="transition-transform" />
             {deg}°
           </button>
         );
