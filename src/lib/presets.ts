@@ -20,6 +20,7 @@ export const PRESETS: Preset[] = [
   { id: "custom",             label: "Custom",    platform: "Set your own",              width: 1920,  height: 1080 },
 ];
 
+/** Returns the preset matching the given ID, or undefined if no match is found. */
 export function getPresetById(id: string): Preset | undefined {
   return PRESETS.find((p) => p.id === id);
 }

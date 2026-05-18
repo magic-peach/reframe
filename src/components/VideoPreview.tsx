@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import { EditRecipe } from "@/lib/types";
 
 interface Props {
@@ -10,40 +11,58 @@ interface Props {
 
 export default function VideoPreview({ file, recipe }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // stable handler reference (avoids re-attaching logic unnecessarily)
   const onLoadedRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!file) return;
+
     setIsLoading(true);
     const id = ++lastId.current;
     const url = URL.createObjectURL(file);
+
+    // cleanup previous object URL safely
     if (urlRef.current) {
       URL.revokeObjectURL(urlRef.current);
     }
     urlRef.current = url;
+
     const video = videoRef.current;
     if (!video) return;
+
     video.src = url;
     video.load();
+
+    // define handler once per effect run
     const handleLoaded = () => {
       if (lastId.current !== id) return;
       video.play().catch(() => {});
     };
+
     onLoadedRef.current = handleLoaded;
+
     video.addEventListener("loadeddata", handleLoaded);
+
     return () => {
+      // cleanup event listener safely
       if (onLoadedRef.current) {
         video.removeEventListener("loadeddata", onLoadedRef.current);
         onLoadedRef.current = null;
       }
+
+      // stop playback safely
       if (video) {
         video.pause();
         video.removeAttribute("src");
         video.load();
       }
+
+      // revoke only if still current
       if (urlRef.current === url) {
         URL.revokeObjectURL(urlRef.current);
         urlRef.current = null;
@@ -57,7 +76,7 @@ export default function VideoPreview({ file, recipe }: Props) {
   const flipV = recipe?.flipVertical ? -1 : 1;
   const rotateDeg = recipe?.rotate ?? 0;
   const flipStyle = {
-  transform: `rotate(${rotateDeg}deg) scale(${flipH}, ${flipV})`,
+    transform: `rotate(${rotateDeg}deg) scale(${flipH}, ${flipV})`,
   };
 
   return (
@@ -73,9 +92,10 @@ export default function VideoPreview({ file, recipe }: Props) {
         ref={videoRef}
         controls
         style={flipStyle}
-        className={`w-full h-full object-contain transition-opacity duration-300 ${
+        className={cn(
+          "w-full h-full object-contain transition-opacity duration-300",
           isLoading ? "opacity-0" : "opacity-100"
-        }`}
+        )}
         onLoadedData={() => setIsLoading(false)}
         playsInline
       />

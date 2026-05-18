@@ -46,6 +46,15 @@ Reframe is a **browser-based video editor** — everything happens on your devic
 Everything stays on your device. No servers. No tracking. No login.
 
 ---
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| Ctrl+Enter / Cmd+Enter | Export video |
+| M | Toggle audio mute |
+| Escape | Cancel export |
+
+> On macOS, use `Cmd` instead of `Ctrl` for keyboard shortcuts.
 
 ## Getting Started
 
@@ -103,6 +112,49 @@ You can also deploy Reframe on other static hosting providers:
 | **GitHub Pages**     | Deploy the generated `out/` folder to the `gh-pages` branch |
 | **Cloudflare Pages** | Connect your fork in Cloudflare Pages                       |
 
+### Deploying to Vercel
+
+The quickest way to get Reframe live:
+
+**Option 1 — Vercel Dashboard (Recommended)**
+
+1. Fork this repository on GitHub
+2. Go to [vercel.com/new](https://vercel.com/new) and import your fork
+3. Vercel auto-detects Next.js settings:
+   - **Framework Preset:** Next.js
+   - **Build Command:** `bun run build`
+   - **Output Directory:** `out`
+4. Click **Deploy** — your site will be live in ~2 minutes
+
+**Option 2 — Vercel CLI**
+
+```bash
+# Install Vercel CLI globally
+npm i -g vercel
+
+# Login to Vercel
+vercel login
+
+# Deploy from project root
+vercel --prod
+```
+
+> **Note:** FFmpeg.wasm requires COOP/COEP headers for SharedArrayBuffer support. On Vercel, add a `vercel.json` in your project root:
+>
+> ```json
+> {
+>   "headers": [
+>     {
+>       "source": "/(.*)",
+>       "headers": [
+>         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+>         { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
+>       ]
+>     }
+>   ]
+> }
+> ```
+
 ### Deploying to Netlify
 
 1. Push your fork to GitHub
@@ -136,6 +188,111 @@ You can deploy the `out/` folder using:
 For detailed technical information about Reframe's architecture, design choices, and implementation details, see the [Architecture Documentation](docs/ARCHITECTURE.md).
 
 > Reframe requires WebAssembly (WASM) support to process videos in the browser.
+---
+
+## Development Tips
+
+### 1. Next.js Fast Refresh
+This project uses Next.js Fast Refresh in development mode. Most changes to React components, hooks, and styles are reflected instantly in the browser without restarting the dev server.
+
+- Component updates appear immediately
+- State is often preserved during edits
+- Restarting `npm run dev` is usually unnecessary for UI changes
+
+Learn more: https://nextjs.org/docs/architecture/fast-refresh
+
+---
+
+### 2. FFmpeg Module Changes
+Changes to `ffmpeg.ts` may not hot-reload correctly because FFmpeg initialization and WebAssembly modules can persist in memory.
+
+If updates are not reflected:
+
+- Perform a full browser page reload
+- Clear cached worker instances if necessary
+- Restart the development server only when required
+
+FFmpeg WASM reference: https://ffmpegwasm.netlify.app/docs/overview
+
+---
+
+### 3. Monitor FFmpeg Downloads
+FFmpeg WebAssembly assets can be large and may take time to download during development.
+
+Use the browser DevTools **Network** tab to:
+
+- Verify FFmpeg assets are loading correctly
+- Inspect caching behavior
+- Detect failed `.wasm` or worker requests
+- Measure initialization performance
+
+Chrome DevTools: https://developer.chrome.com/docs/devtools/network
+
+---
+
+### 4. Use React DevTools
+Install React DevTools for easier component inspection and debugging.
+
+Helpful for:
+
+- Inspecting component props and state
+- Tracing re-renders
+- Debugging hooks
+- Monitoring React component trees
+
+React DevTools: https://react.dev/learn/react-developer-tools
+
+---
+
+### 5. Keep Console Open During Development
+The browser console provides important runtime diagnostics for:
+
+- FFmpeg initialization issues
+- Hydration warnings
+- API request failures
+- WebAssembly loading errors
+
+Filtering logs by warnings/errors can speed up debugging significantly.
+
+---
+
+### 6. Use Source Maps for Easier Debugging
+Development builds include source maps, allowing you to debug original TypeScript/React source files directly from DevTools.
+
+Tips:
+
+- Set breakpoints in source files
+- Use async stack traces
+- Inspect runtime variables during rendering
+
+JavaScript debugging guide: https://developer.chrome.com/docs/devtools/javascript
+
+---
+
+### 7. Watch for Memory Usage
+FFmpeg WebAssembly processing can consume significant browser memory during video operations.
+
+Recommendations:
+
+- Close unused tabs while testing
+- Refresh the page after heavy processing tasks
+- Monitor memory usage in browser performance tools
+
+Performance tools: https://developer.chrome.com/docs/devtools/performance
+
+---
+
+### 8. Verify Environment Variables
+After modifying `.env.local`, restart the Next.js development server because environment variables are loaded only during server startup.
+
+Example:
+
+```bash
+npm run dev
+```
+
+Environment variables guide: https://nextjs.org/docs/app/guides/environment-variables
+
 ---
 
 ## Contributing
@@ -191,6 +348,15 @@ Thank you to everyone who has contributed to Reframe! 🎉
 ## Privacy
 
 Reframe processes all videos **100% client-side**. Your video files are never uploaded to any server. You can even use Reframe offline (after first load). The source code is fully open for inspection.
+---
+
+## Contributors
+
+Thanks to all the amazing people who have contributed to Reframe!
+
+[![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
+
+We welcome contributions of all kinds — code, documentation, design, and feedback. Check out our [Contributing Guide](CONTRIBUTING.md) to get started.
 
 ---
 
@@ -207,3 +373,5 @@ MIT License — See [LICENSE](LICENSE) for details.
 Made with ❤️ for everyone who just wants to edit a video without the hassle.
 
 </div>
+
+---

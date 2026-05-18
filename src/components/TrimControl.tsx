@@ -1,6 +1,7 @@
 "use client";
 
 import { EditRecipe } from "@/lib/types";
+import { useState } from "react";
 
 interface Props {
   recipe: EditRecipe;
@@ -9,19 +10,43 @@ interface Props {
 }
 
 export default function TrimControl({ recipe, onChange, duration }: Props) {
+  const [invalidStart, setStart] = useState(false);
+  const [invalidEnd, setEnd] = useState(false);
+
   const handleStart = (val: string) => {
     const n = parseFloat(val);
-    if (isNaN(n) || n < 0) return;
-    if (duration > 0 && n >= duration) return;
-    if (recipe.trimEnd !== null && n >= recipe.trimEnd) return;
+    if (isNaN(n) || n < 0) {
+      setStart(true);
+      return;
+    }
+    if (duration > 0 && n >= duration) {
+      setStart(true);
+      return;
+    }
+    if (recipe.trimEnd !== null && n >= recipe.trimEnd) {
+      setStart(true);
+      return;
+    };
+    setStart(false);
     onChange({ trimStart: n });
   };
 
   const handleEnd = (val: string) => {
-    if (val === "") { onChange({ trimEnd: null }); return; }
+    if (val === "") {
+      setEnd(false);
+      onChange({ trimEnd: null });
+      return;
+    }
     const n = parseFloat(val);
-    if (isNaN(n) || n <= 0 || n <= recipe.trimStart) return;
-    if (duration > 0 && n > duration) return;
+    if (isNaN(n) || n <= 0 || n <= recipe.trimStart) {
+      setEnd(true);
+      return;
+    }
+    if (duration > 0 && n > duration) {
+      setEnd(true);
+      return;
+    }
+    setEnd(false);
     onChange({ trimEnd: n });
   };
 
@@ -43,7 +68,8 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             step={0.1}
             value={recipe.trimStart}
             onChange={(e) => handleStart(e.target.value)}
-            className={inputClass}
+            className={`${inputClass} ${
+              invalidStart ? "border-red-500" : "border-[var(--border)]"}`}
             placeholder="0"
           />
         </div>
@@ -59,7 +85,8 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             step={0.1}
             value={recipe.trimEnd ?? ""}
             onChange={(e) => handleEnd(e.target.value)}
-            className={inputClass}
+            className={`${inputClass} ${
+              invalidEnd ? "border-red-500" : "border-[var(--border)]"}`}
             placeholder={duration > 0 ? `${duration.toFixed(1)}` : "full length"}
           />
         </div>

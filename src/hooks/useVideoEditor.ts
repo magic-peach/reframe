@@ -1,25 +1,30 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE } from "@/lib/types";
-import { loadFFmpeg, exportVideo } from "@/lib/ffmpeg";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { EditRecipe, ExportResult, ExportStatus } from "@/lib/types";
+import { DEFAULT_RECIPE } from "@/lib/constants";
+import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
 
-function getVideoDuration(file: File): Promise<number> {
+export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
     const video = document.createElement("video");
     video.preload = "metadata";
-    const url = URL.createObjectURL(file);
-    video.src = url;
     video.onloadedmetadata = () => {
+      resolve({
+        width: video.videoWidth,
+        height: video.videoHeight,
+        duration: isFinite(video.duration) ? video.duration : 0,
+      });
       URL.revokeObjectURL(url);
-      resolve(isFinite(video.duration) ? video.duration : 0);
     };
     video.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("Failed to load video metadata. The file may be corrupt or simply not a video."));
+      reject(new Error("Failed to load video metadata"));
     };
+    video.src = url;
   });
 }
 
@@ -32,15 +37,15 @@ function verifyMagicBytes(file: File): Promise<boolean> {
         return;
       }
       const arr = new Uint8Array(e.target.result as ArrayBuffer);
-      const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      const hex = Array.from(arr).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
       const ascii = String.fromCharCode(...arr);
 
       // WebM / MKV
-      if (hex.startsWith('1A45DFA3')) resolve(true);
+      if (hex.startsWith("1A45DFA3")) resolve(true);
       // AVI
-      else if (hex.startsWith('52494646')) resolve(true);
+      else if (hex.startsWith("52494646")) resolve(true);
       // MP4 / MOV (checks for 'ftyp' in first 12 bytes)
-      else if (ascii.substring(0, 12).includes('ftyp')) resolve(true);
+      else if (ascii.substring(0, 12).includes("ftyp")) resolve(true);
       else resolve(false);
     };
     reader.onerror = () => resolve(false);
@@ -56,6 +61,8 @@ export function useVideoEditor() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const exportAbortControllerRef = useRef<AbortController | null>(null);
+  const exportCancelledRef = useRef(false);
 
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => ({ ...prev, ...patch }));
@@ -69,8 +76,8 @@ export function useVideoEditor() {
 
     // LAYER 1: Extension check
     const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
-    const name = selectedFile.name.toLowerCase();
-    const hasValidExtension = validExtensions.some(ext => name.endsWith(ext));
+    const filename = selectedFile.name.toLowerCase();
+    const hasValidExtension = validExtensions.some(ext => filename.endsWith(ext));
     if (!hasValidExtension) {
       setError(`Layer 1 Validation Failed: Invalid file extension. Expected one of: ${validExtensions.join(', ')}`);
       setStatus("error");
@@ -93,7 +100,7 @@ export function useVideoEditor() {
     }
 
     try {
-      const dur = await getVideoDuration(selectedFile);
+      const { duration: dur } = await extractMetadata(selectedFile);
       setDuration(dur);
       setFile(selectedFile);
       setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
@@ -105,25 +112,58 @@ export function useVideoEditor() {
 
   const handleExport = useCallback(async () => {
     if (!file) return;
+    if (status === "loading-engine" || status === "exporting") {
+      return;
+    }
+
+    const abortController = new AbortController();
+    exportAbortControllerRef.current = abortController;
+    exportCancelledRef.current = false;
 
     try {
       setStatus("loading-engine");
       setProgress(0);
       setError(null);
+      if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
-      const ffmpeg = await loadFFmpeg();
+      const ffmpeg = await loadFFmpeg(abortController.signal);
+      if (exportCancelledRef.current) return;
+
       setStatus("exporting");
 
-      const exportResult = await exportVideo(ffmpeg, file, recipe, setProgress);
+      const exportResult = await exportVideo(
+        ffmpeg,
+        file,
+        recipe,
+        setProgress,
+        abortController.signal
+      );
+      if (exportCancelledRef.current) return;
+
       setResult(exportResult);
       setStatus("done");
-    } catch (err) {
+     }  catch (err) {
+      if (exportCancelledRef.current) return;
+
       console.error("export failed:", err);
-      setError(err instanceof Error ? err.message : "something went wrong");
+      if (err instanceof FFmpegLoadError) {
+        setError(err.message);
+      } else if (err instanceof Error && err.message.includes('network')) {
+        setError('Network error. Check your internet connection and try again.');
+      } else if (err instanceof Error && err.message.includes('codec')) {
+        setError('This video format is not supported. Try converting to MP4 first.');
+      } else {
+        setError('Export failed. Please try again or use a different video.');
+      }
       setStatus("error");
     }
-  }, [file, recipe]);
+    finally {
+      if (exportAbortControllerRef.current === abortController) {
+        exportAbortControllerRef.current = null;
+      }
+    }
+  }, [file, recipe, result, status]);
 
   useEffect(() => {
     if (file) {
@@ -142,7 +182,8 @@ export function useVideoEditor() {
         (e.ctrlKey || e.metaKey) &&
         e.key === "Enter" &&
         file &&
-        status === "idle"
+        status !== "loading-engine" &&
+        status !== "exporting"
       ) {
         handleExport();
       }
@@ -154,7 +195,23 @@ export function useVideoEditor() {
       document.removeEventListener("keydown", handleKeydown);
     };
   }, [file, status, handleExport]);
+
+  const cancelExport = useCallback(() => {
+    exportCancelledRef.current = true;
+    exportAbortControllerRef.current?.abort();
+    exportAbortControllerRef.current = null;
+    terminateFFmpeg();
+    setStatus("idle");
+    setProgress(0);
+    setError(null);
+  }, []);
+
+  const resetSettings = useCallback(() => {
+    setRecipe(DEFAULT_RECIPE);
+  }, []);
+
   const reset = useCallback(() => {
+    if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setFile(null);
     setDuration(0);
     setRecipe(DEFAULT_RECIPE);
@@ -162,7 +219,7 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
-  }, []);
+  }, [result]);
 
   // Development-only memory monitoring during export
   useEffect(() => {
@@ -190,6 +247,8 @@ export function useVideoEditor() {
     updateRecipe,
     handleFileSelect,
     handleExport,
+    cancelExport,
     reset,
+    resetSettings,
   };
 }
