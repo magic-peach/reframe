@@ -17,4 +17,6 @@ export const DEFAULT_RECIPE: EditRecipe = {
   brightness: 0,
   contrast: 1,
   saturation: 1,
+  stabilization: false,
+  soundOnCompletion: false,
 };

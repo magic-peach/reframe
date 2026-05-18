@@ -14,11 +14,15 @@ export interface EditRecipe {
   flipVertical: boolean;
 =======
   format: "mp4" | "webm" | "mkv";
-
+  stabilization: boolean;
   brightness: number;
   contrast: number;
   saturation: number;
+<<<<<<< HEAD
 >>>>>>> main
+=======
+  soundOnCompletion: boolean;
+>>>>>>> origin/main
 }
 
 export interface ExportResult {
@@ -55,9 +59,16 @@ export const DEFAULT_RECIPE: EditRecipe = {
 =======
   format: "mp4",
   brightness: 0,
+<<<<<<< HEAD
   contrast: 1,
   saturation: 1,
 >>>>>>> main
+=======
+  contrast: 0,
+  saturation: 0,
+  stabilization: false,
+  soundOnCompletion: false,
+>>>>>>> origin/main
 };
 
 export const MAX_FILE_SIZE =
