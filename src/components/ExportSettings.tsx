@@ -1,6 +1,7 @@
 "use client";
 
 import { EditRecipe } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { SlidersHorizontal, Info as InfoIcon } from "lucide-react";
 
 interface Props {
@@ -16,8 +17,10 @@ export default function ExportSettings({ recipe, onChange }: Props) {
     : "Small file";
 
   return (
+  <>
     <div>
       <div className="flex items-center justify-between mb-2">
+<<<<<<< HEAD
         <label
           htmlFor="quality-control"
           className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1"
@@ -27,14 +30,23 @@ export default function ExportSettings({ recipe, onChange }: Props) {
             className="cursor-help"
             title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file."
           >
+=======
+        <label htmlFor="quality-control" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2">
+          <SlidersHorizontal size={10} /> Quality
+          <span className="cursor-help" title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file.">
+>>>>>>> origin/main
             <InfoIcon size={14} />
           </span>
         </label>
         <span className="text-base font-heading font-bold text-film-600">
           {label}
+<<<<<<< HEAD
           <span className="font-normal text-sm text-[var(--muted)] ml-1">
             CRF {recipe.quality}
           </span>
+=======
+          <span className="font-normal text-sm text-[var(--muted)] ml-2">CRF {recipe.quality}</span>
+>>>>>>> origin/main
         </span>
       </div>
       <input
@@ -45,14 +57,61 @@ export default function ExportSettings({ recipe, onChange }: Props) {
         step={1}
         value={recipe.quality}
         onChange={(e) => onChange({ quality: Number(e.target.value) })}
+        aria-describedby="quality-description"
         aria-label="Video export quality (CRF)"
         aria-valuetext={`${label} quality, CRF value ${recipe.quality}`}
         className="w-full accent-film-600 cursor-pointer"
       />
+<<<<<<< HEAD
       <div className="flex justify-between mt-1">
         <span className="text-sm text-[var(--muted)]">Best quality</span>
         <span className="text-sm text-[var(--muted)]">Smallest file</span>
+=======
+      <div id="quality-description" className="flex justify-between mt-1">
+        <span className="text-sm text-[var(--muted)]">Best quality</span>
+        <span className="text-sm text-[var(--muted)]">Smallest file</span>
+      </div>
+      <div className="flex items-center justify-between mt-4">
+        <label htmlFor="sound-on-completion" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+          Sound on completion
+        </label>
+
+        <input
+          id="sound-on-completion"
+          type="checkbox"
+          checked={recipe.soundOnCompletion}
+          onChange={(e) =>
+            onChange({
+              soundOnCompletion: e.target.checked,
+            })
+          }
+        />
+>>>>>>> origin/main
       </div>
     </div>
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label htmlFor="stabilization-toggle" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2">
+          <SlidersHorizontal size={10} /> Stabilization
+        </label>
+         <span className="flex text-sm font-heading font-bold text-film-600">
+          <input
+            id="stabilization-toggle"
+            type="checkbox"
+            checked={recipe.stabilization}
+            onChange={(e) =>onChange({ stabilization: e.target.checked })}
+            aria-label="Enable video stabilization"
+            aria-checked={recipe.stabilization}
+            className="w-full accent-film-600 cursor-pointer"
+          />
+          {/* <span className="font-normal text-sm text-[var(--muted)] ml-2">deshake</span> */}
+        </span>
+      </div>
+
+      <div className="flex justify-end">
+        <span className={cn("text-sm", recipe.stabilization ? "text-red-700" : "text-[var(--muted)]")}>Note: significantly increases processing time.</span>
+      </div>
+    </div>
+  </>
   );
 }

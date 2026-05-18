@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 
 import { EditRecipe } from "@/lib/types"
-import { SPEED_STEPS } from "@/lib/constants"
+import { SPEED_STEPS } from "@/lib/constants";
 import { Volume2, VolumeX, Gauge, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +36,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
     };
 
     document.addEventListener("keydown", handler);
-    
+
     return () => {
       document.removeEventListener("keydown", handler);
     };
@@ -61,7 +61,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           <button
             type="button"
             onClick={() => onChange({ speed: 1, keepAudio: true })}
-            className="text-[11px] font-heading font-semibold uppercase tracking-wider text-film-600 hover:text-film-700 hover:underline transition-all duration-150"
+            className="text-sm font-heading font-semibold uppercase tracking-wider text-film-600 hover:text-film-700 hover:underline transition-all duration-150"
           >
             Reset to Default
           </button>
@@ -93,17 +93,29 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       <div>
         <div className="flex items-center justify-between mb-2">
           <label
+<<<<<<< HEAD
             htmlFor="speed-control"
             className="text-base font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1"
           >
             <Gauge size={14} /> Speed
+=======
+            id="speed-label"
+            htmlFor="speed-control"
+            className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
+          >
+            <Gauge size={10} /> Speed
+>>>>>>> origin/main
           </label>
 
           <div className="text-right">
             <span className="text-base font-heading font-bold text-film-600 block">
               {recipe.speed}x
             </span>
+<<<<<<< HEAD
             <span className="text-sm text-[var(--muted)]">
+=======
+            <span id="speed-description" className="text-sm text-[var(--muted)]">
+>>>>>>> origin/main
               {getSpeedDescription(recipe.speed)}
             </span>
           </div>
@@ -116,19 +128,30 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           step={1}
           value={speedIndex === -1 ? 3 : speedIndex}
           onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
+          aria-labelledby="speed-label"
+          aria-describedby="speed-description"
           aria-label="Video playback speed"
           aria-valuetext={`${recipe.speed}x speed, ${getSpeedDescription(recipe.speed)}`}
           className="w-full h-11 accent-film-600 cursor-pointer"
         />
-        <div className="flex justify-between mt-1">
+        <div className="flex justify-between mt-1 overflow-hidden">
           {SPEED_STEPS.map((s) => (
+<<<<<<< HEAD
             <span key={s} className="text-sm text-[var(--muted)]">{s}x</span>
+=======
+            <span
+              key={s}
+              className="text-sm text-[var(--muted)] truncate text-center min-w-0 px-[1px]"
+            >
+              {s}x
+            </span>
+>>>>>>> origin/main
           ))}
         </div>
       </div>
 
       {recipe.keepAudio && (recipe.trimStart !== 0 || recipe.trimEnd !== null) && (
-        <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-[10px] text-amber-700 leading-tight flex items-start gap-2 animate-fade-in">
+        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-700 leading-relaxed flex items-start gap-2 animate-fade-in">
           <AlertTriangle size={12} className="shrink-0 mt-0.5" />
           <p>
             Note: If audio doesn&apos;t start within the selected range, the output will be silent.

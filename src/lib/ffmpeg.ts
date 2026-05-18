@@ -19,14 +19,27 @@ export class FFmpegLoadError extends Error {
     this.name = "FFmpegLoadError";
   }
 }
-
-export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
-  if (ffmpegInstance?.loaded) return ffmpegInstance;
+export async function loadFFmpeg(signal?: AbortSignal, 
+  onProgress?: (percent: number) => void): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) {
+  onProgress?.(100);
+  return ffmpegInstance;
+  }
 
   const ffmpeg = ffmpegInstance ?? new FFmpeg();
   ffmpegInstance = ffmpeg;
 
+  const handleProgress = ({
+    progress,
+  }: {
+    progress: number;
+  }) => {
+    onProgress?.(Math.round(progress * 100));
+  };
+
   try {
+
+    ffmpeg.on("progress", handleProgress);
     // Check if the user's browser supports WebAssembly SIMD
     const isSimdSupported = await simd();
 
@@ -38,13 +51,15 @@ export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
       coreURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.js`, "text/javascript"),
       wasmURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.wasm`, "application/wasm"),
     }, { signal });
-
+    onProgress?.(100);
     return ffmpeg;
   } catch (err) {
     if (ffmpegInstance === ffmpeg) {
       ffmpegInstance = null;
     }
     throw new FFmpegLoadError("Failed to load the FFmpeg engine. Check your internet connection.");
+  } finally {
+    ffmpeg.off("progress", handleProgress);
   }
 }
 
@@ -78,6 +93,10 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     filters.push("transpose=1,transpose=1");
   } else if (recipe.rotate === 270) {
     filters.push("transpose=2");
+  }
+
+  if (recipe.stabilization) {
+    filters.push("deshake=x=-1:y=-1:w=-1:h=-1:rx=16:ry=16");
   }
 
   if (recipe.framing === "fit") {
@@ -205,6 +224,7 @@ export async function exportVideo(
     if (recipe.format === "webm") {
       args.push(
         "-c:v", "libvpx-vp9",
+        "-b:v", "0",
         "-crf", String(recipe.quality)
       );
       if (recipe.keepAudio) {
@@ -243,6 +263,7 @@ export async function exportVideo(
         ...(vf ? ["-vf", vf] : []),
         ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
         "-c:v", "libvpx-vp9",
+        "-b:v", "0",
         "-crf", String(recipe.quality),
         ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
         fallbackOutputName,
@@ -287,10 +308,4 @@ export async function exportVideo(
       }
     }
   }
-}
-
-/** Formats a byte count as a human-readable string (KB or MB). */
-export function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+}
