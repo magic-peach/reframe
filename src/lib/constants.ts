@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import type { CompressionMode, EditRecipe } from './types'
+=======
+import type { EditRecipe } from "./types"
+>>>>>>> origin/main
 
 export const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4] as const;
 
@@ -62,4 +66,10 @@ export const DEFAULT_RECIPE: EditRecipe = {
   brightness: 0,
   contrast: 1,
   saturation: 1,
+<<<<<<< HEAD
 };
+=======
+  stabilization: false,
+  soundOnCompletion: false,
+};
+>>>>>>> origin/main

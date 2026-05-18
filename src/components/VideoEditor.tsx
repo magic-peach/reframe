@@ -1,8 +1,11 @@
 "use client";
-import { useState } from "react";
+
+
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
+import ThumbnailStrip from "./ThumbnailStrip";
 import PresetSelector from "./PresetSelector";
 import FramingControl from "./FramingControl";
 import TrimControl from "./TrimControl";
@@ -12,11 +15,10 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
-import ExportQueue from "./ExportQueue";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, ListPlus
+  SlidersHorizontal, Zap, AlertTriangle, Github
 } from "lucide-react";
 
 interface SectionProps {
@@ -34,7 +36,7 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
     >
       <div className="flex items-center gap-2">
         <span className="text-film-500 opacity-80">{icon}</span>
-        <h3 className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
+        <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
           {title}
         </h3>
         <div className="flex-1 h-px bg-[var(--border)]" />
@@ -47,19 +49,46 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
 export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
-    result, error, queue, activeQueueId, updateRecipe,
-    handleFileSelect, handleExport, enqueueCurrentExport, startQueue,
-    cancelExport, removeQueueItem, retryQueueItem, clearQueue,
-    reset, resetSettings,
+    result, error, updateRecipe,
+    handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
+    videoRef,
+    seekTo,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
+  const downloadRef = useRef<HTMLDivElement>(null);
 
-  
+  useEffect(() => {
+    if (status === "done" && downloadRef.current) {
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      downloadRef.current.scrollIntoView({
+        behavior: prefersReducedMotion ? "instant" : "smooth",
+        block: "center",
+      });
+    }
+  }, [status]);
+
   const isProcessing = status === "loading-engine" || status === "exporting";
+
+  const videoSrc = useMemo(
+    () => (file ? URL.createObjectURL(file) : null),
+    [file]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (videoSrc) URL.revokeObjectURL(videoSrc);
+    };
+  }, [videoSrc]);
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
       <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
+
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {status === "exporting" && `Exporting video: ${progress}%`}
+        {status === "done" && "Export complete! Video ready to download."}
+        {status === "error" && `Export failed: ${error}`}
+      </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
 
@@ -68,13 +97,13 @@ export default function VideoEditor() {
             <h1 className="font-display text-6xl leading-none tracking-widest2 text-[var(--text)]">
               REFRAME
             </h1>
-            <p className="font-heading text-xs text-[var(--muted)] mt-1 uppercase tracking-widest">
+            <p className="font-heading text-sm text-[var(--muted)] mt-1 uppercase tracking-widest">
               Your video, any format
             </p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-[10px] font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1">
+          <div className="hidden sm:flex items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1">
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
-            No login. No ads. 100% private — your video never leaves your device.
+            No login. No ads. 100% private - your video never leaves your device.
           </div>
         </header>
 
@@ -82,10 +111,10 @@ export default function VideoEditor() {
 
           <div className="space-y-4">
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} />
+              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} />
 
               {!file && (
-              <div className="text-center text-gray-500 py-6">
+              <div className="text-center text-[var(--muted)] py-6">
                 <p>Upload a video to get started</p>
                 <p className="text-sm">Supports MP4, MOV, WebM and more</p>
               </div>
@@ -93,14 +122,25 @@ export default function VideoEditor() {
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} />
+                  <VideoPreview file={file} videoRef={videoRef} />
+
+                  <div className="mt-3">
+                    <ThumbnailStrip
+                      videoSrc={videoSrc}
+                      duration={duration}
+                      currentTime={videoRef.current?.currentTime ?? 0}
+                      trimStart={recipe.trimStart ?? 0}
+                      trimEnd={recipe.trimEnd ?? duration}
+                      onSeek={seekTo}
+                    />
+                  </div>
                 </div>
               )}
             </div>
 
             {file && file.size > 100 * 1024 * 1024 && (
-              <p className="text-yellow-400 text-sm">
-                ⚠️ Large file — processing may take several minutes
+              <p className="text-[var(--warning)] text-sm">
+                ⚠️ Large file - processing may take several minutes
               </p>
             )}      
             {file && (
@@ -127,8 +167,8 @@ export default function VideoEditor() {
 
     {/* Brightness */}
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <span>Brightness</span>
+      <div className="flex items-center justify-between text-sm">
+        <label htmlFor="brightness-slider">Brightness</label>
 
         <button
           type="button"
@@ -140,6 +180,7 @@ export default function VideoEditor() {
       </div>
 
       <input
+        id="brightness-slider"
         type="range"
         min="-1"
         max="1"
@@ -150,14 +191,15 @@ export default function VideoEditor() {
             brightness: Number(e.target.value),
           })
         }
+        aria-label="Adjust brightness"
         className="w-full"
       />
     </div>
 
     {/* Contrast */}
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <span>Contrast</span>
+      <div className="flex items-center justify-between text-sm">
+        <label htmlFor="contrast-slider">Contrast</label>
 
         <button
           type="button"
@@ -169,6 +211,7 @@ export default function VideoEditor() {
       </div>
 
       <input
+        id="contrast-slider"
         type="range"
         min="0"
         max="2"
@@ -179,14 +222,15 @@ export default function VideoEditor() {
             contrast: Number(e.target.value),
           })
         }
+        aria-label="Adjust contrast"
         className="w-full"
       />
     </div>
 
     {/* Saturation */}
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <span>Saturation</span>
+      <div className="flex items-center justify-between text-sm">
+        <label htmlFor="saturation-slider">Saturation</label>
 
         <button
           type="button"
@@ -198,6 +242,7 @@ export default function VideoEditor() {
       </div>
 
       <input
+        id="saturation-slider"
         type="range"
         min="0"
         max="3"
@@ -208,6 +253,7 @@ export default function VideoEditor() {
             saturation: Number(e.target.value),
           })
         }
+        aria-label="Adjust saturation"
         className="w-full"
       />
     </div>
@@ -215,6 +261,86 @@ export default function VideoEditor() {
   </div>
 </Section>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
+                  </Section>
+                  <Section
+                    icon={<SlidersHorizontal size={12} />}
+                    title="Adjustments"
+                    delay={175}
+                  >
+                    <div className="space-y-5">
+                      {/* Brightness */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <label htmlFor="brightness-slider">Brightness</label>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ brightness: 0 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          id="brightness-slider"
+                          type="range"
+                          min="-1"
+                          max="1"
+                          step="0.1"
+                          value={recipe.brightness}
+                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
+                          aria-label="Adjust brightness"
+                          className="w-full"
+                        />
+                      </div>
+                      {/* Contrast */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <label htmlFor="contrast-slider">Contrast</label>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ contrast: 1 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          id="contrast-slider"
+                          type="range"
+                          min="0"
+                          max="2"
+                          step="0.1"
+                          value={recipe.contrast}
+                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
+                          aria-label="Adjust contrast"
+                          className="w-full"
+                        />
+                      </div>
+                      {/* Saturation */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <label htmlFor="saturation-slider">Saturation</label>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ saturation: 1 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          id="saturation-slider"
+                          type="range"
+                          min="0"
+                          max="3"
+                          step="0.1"
+                          value={recipe.saturation}
+                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
+                          aria-label="Adjust saturation"
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
                   </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
@@ -227,31 +353,33 @@ export default function VideoEditor() {
             )}
 
             {status === "error" && error && (
-                 <div
-                    role="status"
-                    className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
-                  >
+              <div
+                role="status"
+                className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
+              >
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
                 <div className="flex-1">
                   <p className="font-heading font-bold text-sm">Error</p>
-                  <p className="text-film-600 text-xs mt-1">{error}</p>
+                  <p className="text-film-600 text-sm mt-1">{error}</p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => {
                     navigator.clipboard.writeText(error).then(() => {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
                     });
                   }}
-                  className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-xs font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
+                  className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-sm font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
                   aria-label="Copy error message to clipboard"
                 >
                   {copied ? "Copied!" : "Copy error"}
                 </button>
                 {!error.includes("Validation Failed") && (
                   <button
+                    type="button"
                     onClick={handleExport}
-                    className="px-3 py-1.5 bg-red-200 border border-film-200 rounded-lg text-xs font-semibold hover:bg-film-50 hover:border-film-300 transition-colors shrink-0 whitespace-nowrap"
+                    className="px-3 py-1.5 bg-[var(--error-bg)] border border-[var(--error-border)] rounded-lg text-sm font-semibold hover:bg-[var(--error-hover)] hover:border-[var(--error)] text-[var(--text)] transition-colors shrink-0 whitespace-nowrap"
                   >
                     Retry Export
                   </button>
@@ -260,8 +388,8 @@ export default function VideoEditor() {
             )}
 
             {status === "done" && result && (
-              <div role="status" className="animate-fade-in">
-                <DownloadResult result={result} onReset={reset} />
+              <div role="status" className="animate-fade-in" ref={downloadRef}>
+                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} />
               </div>
             )}
           </div>
@@ -283,7 +411,7 @@ export default function VideoEditor() {
                 <button
                   type="button"
                   onClick={resetSettings}
-                  className="text-[9px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+                  className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
                 >
                   Reset all settings
                 </button>
@@ -305,34 +433,8 @@ export default function VideoEditor() {
               )}
             >
               <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
-              {isProcessing ? "PROCESSING" : "EXPORT NOW"}
+              {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
-
-            <button
-              type="button"
-              onClick={() => enqueueCurrentExport()}
-              disabled={!file || isProcessing}
-              className={cn(
-                "w-full flex items-center justify-center gap-2 py-3 rounded-xl border",
-                "font-heading text-xs font-bold uppercase tracking-wide transition-all duration-200",
-                file && !isProcessing
-                  ? "border-[var(--border)] bg-[var(--surface)] text-[var(--text)] hover:border-film-300 hover:bg-film-50"
-                  : "border-[var(--border)] bg-[var(--border)] text-[var(--muted)] opacity-50 cursor-not-allowed"
-              )}
-            >
-              <ListPlus size={15} />
-              Add to Queue
-            </button>
-
-            <ExportQueue
-              items={queue}
-              activeId={activeQueueId}
-              isProcessing={isProcessing}
-              onStart={startQueue}
-              onRemove={removeQueueItem}
-              onRetry={retryQueueItem}
-              onClear={clearQueue}
-            />
           </div>
         </div>
       </div>

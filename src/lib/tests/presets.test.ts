@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'bun:test';
-import { getPresetById, PRESETS } from '../presets';
+import { describe, it, expect } from "vitest";
+import { getPresetById, PRESETS } from "../presets";
 
 describe('getPresetById', () => {
   it('returns correct preset for valid id', () => {

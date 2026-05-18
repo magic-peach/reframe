@@ -11,10 +11,11 @@ export interface EditRecipe {
   quality: number;
   compressionMode: CompressionMode;
   format: "mp4" | "webm" | "mkv";
-
+  stabilization: boolean;
   brightness: number;
   contrast: number;
   saturation: number;
+  soundOnCompletion: boolean;
 }
 
 export type CompressionMode = "best" | "balanced" | "small" | "custom";
@@ -71,8 +72,15 @@ export const DEFAULT_RECIPE: EditRecipe = {
   compressionMode: "balanced",
   format: "mp4",
   brightness: 0,
+<<<<<<< HEAD
   contrast: 1,
   saturation: 1,
+=======
+  contrast: 0,
+  saturation: 0,
+  stabilization: false,
+  soundOnCompletion: false,
+>>>>>>> origin/main
 };
 
 export const MAX_FILE_SIZE =
