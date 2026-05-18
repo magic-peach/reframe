@@ -364,6 +364,12 @@ export function useVideoEditor() {
     }
    },[result?.blobUrl])
 
+  useEffect(() => {
+    return () => {
+      terminateFFmpeg();
+    };
+  }, []);
+
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
   }, []);
