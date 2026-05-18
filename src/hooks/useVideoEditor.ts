@@ -77,6 +77,39 @@ export function useVideoEditor() {
     setRecipe((prev) => ({ ...prev, ...patch }));
   }, []);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("reframe-settings");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setRecipe(prev => ({
+          ...prev,
+          preset: parsed.preset ?? prev.preset,
+          quality: parsed.quality ?? prev.quality,
+          speed: parsed.speed ?? prev.speed,
+          customWidth: parsed.customWidth ?? prev.customWidth,
+          customHeight: parsed.customHeight ?? prev.customHeight
+        }));
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("reframe-settings", JSON.stringify({
+        preset: recipe.preset,
+        quality: recipe.quality,
+        speed: recipe.speed,
+        customWidth: recipe.customWidth,
+        customHeight: recipe.customHeight
+      }));
+    } catch (e) {
+      // ignore
+    }
+  }, [recipe.preset, recipe.quality, recipe.speed, recipe.customWidth, recipe.customHeight]);
+
   const handleFileSelect = useCallback(async (selectedFile: File) => {
     setResult(null);
     setStatus("idle");
