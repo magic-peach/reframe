@@ -3,6 +3,7 @@
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import { EditRecipe } from "@/lib/types";
 import { useState } from "react";
+import { AlertCircle } from "lucide-react";
 
 interface Props {
   file: File | null;
@@ -40,6 +41,16 @@ export default function TrimControl({
   const trimEnd =
     recipe.trimEnd ?? (duration > 0 ? duration : recipe.trimStart);
   const hasTimeline = duration > 0;
+
+  const startErrorMsg =
+    duration > 0
+      ? `Start must be between 0 and ${Math.max(0, Math.min(trimEnd, duration)).toFixed(1)}.`
+      : "Start must be 0 or greater, and before End.";
+
+  const endErrorMsg =
+    duration > 0
+      ? `End must be after Start and up to ${duration.toFixed(1)}.`
+      : "End must be after Start.";
 
   const startPercent =
     duration > 0 ? clamp((recipe.trimStart / duration) * 100, 0, 100) : 0;
