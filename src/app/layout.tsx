@@ -4,12 +4,36 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
-
+import ScrollToTop from "@/components/ScrollToTop";
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
-  description:
-    "Free, open-source video editor that runs entirely in your browser. No login, no uploads, no ads. Resize for any platform, trim, rotate, adjust speed, and export.",
+  description: "Free, open-source video editor that runs entirely in your browser. No login, no uploads, no ads. Resize for any platform, trim, rotate, adjust speed, and export.",
+   keywords: [
+    "video editor",
+    "browser video editor",
+    "open source video editor",
+    "resize videos",
+    "trim videos",
+    "rotate videos",
+    "online video editor",
+  ],
+
+  authors: [{ name: "Reframe" }],
+
+  openGraph: {
+    title: "Reframe",
+    description:
+      "Free, open-source browser-based video editor. Resize, trim, rotate, and export videos directly in your browser.",
+    type: "website",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Reframe",
+    description:
+      "Free, open-source browser-based video editor. Resize, trim, rotate, and export videos directly in your browser.",
+  },
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
     shortcut: "/favicon.svg",
@@ -22,8 +46,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+<html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -43,8 +69,13 @@ export default function RootLayout({
           }}
         />
       </head>
-
       <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
+        
+      <a href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-black"
+        >
+          Skip to main content
+        </a>
         <ThemeProvider>
           <ErrorBoundary>
             <header
@@ -54,17 +85,10 @@ export default function RootLayout({
               <h1 className="text-lg font-semibold">Reframe</h1>
               <ThemeToggle />
             </header>
-
-            <main role="main" id="main-content">
+            <main id="main-content" tabIndex={-1}>
               {children}
             </main>
-
-            <footer
-              role="contentinfo"
-              className="px-6 py-4 text-sm text-[var(--muted)]"
-            >
-              <p>© 2026 Reframe</p>
-            </footer>
+            <ScrollToTop />
           </ErrorBoundary>
         </ThemeProvider>
       </body>
