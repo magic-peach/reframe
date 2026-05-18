@@ -1,6 +1,5 @@
-<<<<<<< HEAD
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile } from "@ffmpeg/util";
+import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { simd } from "wasm-feature-detect";
