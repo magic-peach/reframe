@@ -131,109 +131,87 @@ export default function VideoEditor() {
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
-                  <Section
-  icon={<SlidersHorizontal size={12} />}
-  title="Adjustments"
-  delay={175}
->
-  <div className="space-y-5">
-
-    {/* Brightness */}
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <label htmlFor="brightness-slider">Brightness</label>
-
-        <button
-          type="button"
-          onClick={() => updateRecipe({ brightness: 0 })}
-          className="text-film-500 hover:underline"
-        >
-          Reset
-        </button>
-      </div>
-
-      <input
-        id="brightness-slider"
-        type="range"
-        min="-1"
-        max="1"
-        step="0.1"
-        value={recipe.brightness}
-        onChange={(e) =>
-          updateRecipe({
-            brightness: Number(e.target.value),
-          })
-        }
-        aria-label="Adjust brightness"
-        className="w-full"
-      />
-    </div>
-
-    {/* Contrast */}
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <label htmlFor="contrast-slider">Contrast</label>
-
-        <button
-          type="button"
-          onClick={() => updateRecipe({ contrast: 1 })}
-          className="text-film-500 hover:underline"
-        >
-          Reset
-        </button>
-      </div>
-
-      <input
-        id="contrast-slider"
-        type="range"
-        min="0"
-        max="2"
-        step="0.1"
-        value={recipe.contrast}
-        onChange={(e) =>
-          updateRecipe({
-            contrast: Number(e.target.value),
-          })
-        }
-        aria-label="Adjust contrast"
-        className="w-full"
-      />
-    </div>
-
-    {/* Saturation */}
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <label htmlFor="saturation-slider">Saturation</label>
-
-        <button
-          type="button"
-          onClick={() => updateRecipe({ saturation: 1 })}
-          className="text-film-500 hover:underline"
-        >
-          Reset
-        </button>
-      </div>
-
-      <input
-        id="saturation-slider"
-        type="range"
-        min="0"
-        max="3"
-        step="0.1"
-        value={recipe.saturation}
-        onChange={(e) =>
-          updateRecipe({
-            saturation: Number(e.target.value),
-          })
-        }
-        aria-label="Adjust saturation"
-        className="w-full"
-      />
-    </div>
-
-  </div>
-</Section>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
+                  </Section>
+                  <Section
+                    icon={<SlidersHorizontal size={12} />}
+                    title="Adjustments"
+                    delay={175}
+                  >
+                    <div className="space-y-5">
+                      {/* Brightness */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <label htmlFor="brightness-slider">Brightness</label>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ brightness: 0 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          id="brightness-slider"
+                          type="range"
+                          min="-1"
+                          max="1"
+                          step="0.1"
+                          value={recipe.brightness}
+                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
+                          aria-label="Adjust brightness"
+                          className="w-full"
+                        />
+                      </div>
+                      {/* Contrast */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <label htmlFor="contrast-slider">Contrast</label>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ contrast: 1 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          id="contrast-slider"
+                          type="range"
+                          min="0"
+                          max="2"
+                          step="0.1"
+                          value={recipe.contrast}
+                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
+                          aria-label="Adjust contrast"
+                          className="w-full"
+                        />
+                      </div>
+                      {/* Saturation */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <label htmlFor="saturation-slider">Saturation</label>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ saturation: 1 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          id="saturation-slider"
+                          type="range"
+                          min="0"
+                          max="3"
+                          step="0.1"
+                          value={recipe.saturation}
+                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
+                          aria-label="Adjust saturation"
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
                   </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
@@ -281,10 +259,8 @@ export default function VideoEditor() {
             )}
 
             {status === "done" && result && (
-              <div role="status" className="animate-fade-in">
-                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} />
               <div role="status" className="animate-fade-in" ref={downloadRef}>
-                <DownloadResult result={result} onReset={reset} />
+                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} />
               </div>
             )}
           </div>

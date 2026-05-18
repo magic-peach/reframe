@@ -64,12 +64,11 @@ export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
   const [recipe, setRecipe] = useState({
-  ...DEFAULT_RECIPE,
-
-soundOnCompletion:
-  typeof window !== "undefined" &&
-  localStorage.getItem("soundOnCompletion") === "true",
-})
+    ...DEFAULT_RECIPE,
+    soundOnCompletion:
+      typeof window !== "undefined" &&
+      localStorage.getItem("soundOnCompletion") === "true",
+  });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
