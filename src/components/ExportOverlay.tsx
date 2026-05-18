@@ -10,12 +10,14 @@ interface Props {
   status: ExportStatus;
   progress: number;
   progressMessage?: string;
+  progressMessage?: string;
   onCancel?: () => void;
 }
 
 export default function ExportOverlay({
   status,
   progress,
+  progressMessage,
   progressMessage,
   onCancel,
 }: Props) {
@@ -29,6 +31,7 @@ export default function ExportOverlay({
         onCancel?.();
       }
     },
+
     [onCancel],
   );
 
@@ -61,6 +64,14 @@ export default function ExportOverlay({
   if (!visible) return null;
 
   const isLoading = status === "loading-engine";
+  const progressValue = Math.max(0, Math.min(100, Math.round(progress)));
+  const helperText =
+    isLoading && progressValue > 0
+      ? `${progressMessage || "Downloading video engine"} (${progressValue}%)...`
+      : isLoading
+        ? progressMessage ||
+          "Setting up the video engine. This only happens once."
+        : "Processing your video locally.";
   const progressValue = Math.max(0, Math.min(100, Math.round(progress)));
   const helperText =
     isLoading && progressValue > 0

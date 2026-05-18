@@ -7,7 +7,19 @@ import {
   ExportStatus,
   MAX_FILE_SIZE,
 } from "@/lib/types";
+import {
+  EditRecipe,
+  ExportResult,
+  ExportStatus,
+  MAX_FILE_SIZE,
+} from "@/lib/types";
 import { DEFAULT_RECIPE } from "@/lib/constants";
+import {
+  loadFFmpeg,
+  exportVideo,
+  terminateFFmpeg,
+  FFmpegLoadError,
+} from "@/lib/ffmpeg";
 import {
   loadFFmpeg,
   exportVideo,
@@ -16,10 +28,13 @@ import {
 } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE =
+ 
   "Reframe — Resize, trim, and export videos in your browser";
 
 export function extractMetadata(
+  
   file: File,
+,
 ): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -31,7 +46,7 @@ export function extractMetadata(
 
     video.preload = "metadata";
     video.onloadedmetadata = () => {
-      clearTimeout(timeout);
+      clearTimeout(timeout);;
       resolve({
         width: video.videoWidth,
         height: video.videoHeight,
@@ -40,7 +55,7 @@ export function extractMetadata(
       URL.revokeObjectURL(url);
     };
     video.onerror = () => {
-      clearTimeout(timeout);
+      clearTimeout(timeout);;
       URL.revokeObjectURL(url);
       reject(new Error("Failed to load video metadata"));
     };
@@ -57,6 +72,10 @@ function verifyMagicBytes(file: File): Promise<boolean> {
         return;
       }
       const arr = new Uint8Array(e.target.result as ArrayBuffer);
+      const hex = Array.from(arr)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+        .toUpperCase();
       const hex = Array.from(arr)
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("")
@@ -122,6 +141,7 @@ export function useVideoEditor() {
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
+  const [progressMessage, setProgressMessage] = useState("");
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
@@ -148,13 +168,13 @@ export function useVideoEditor() {
       const saved = localStorage.getItem("reframe-settings");
       if (saved) {
         const parsed = JSON.parse(saved);
-        setRecipe((prev) => ({
+        setRecipe(((prev)) => ({
           ...prev,
           preset: parsed.preset ?? prev.preset,
           quality: parsed.quality ?? prev.quality,
           speed: parsed.speed ?? prev.speed,
           customWidth: parsed.customWidth ?? prev.customWidth,
-          customHeight: parsed.customHeight ?? prev.customHeight,
+          customHeight: parsed.customHeight ?? prev.customHeight,,
         }));
       }
     } catch (e) {
@@ -174,15 +194,31 @@ export function useVideoEditor() {
           customHeight: recipe.customHeight,
         }),
       );
+      localStorage.setItem(
+        "reframe-settings",
+        JSON.stringify({
+          preset: recipe.preset,
+          quality: recipe.quality,
+          speed: recipe.speed,
+          customWidth: recipe.customWidth,
+          customHeight: recipe.customHeight,
+        }),
+      );
     } catch (e) {
       // ignore
     }
   }, [
+    
     recipe.preset,
+   
     recipe.quality,
+   
     recipe.speed,
+   
     recipe.customWidth,
+   
     recipe.customHeight,
+  ,
   ]);
 
   const recommendedPreset = useMemo(() => {
@@ -198,11 +234,11 @@ export function useVideoEditor() {
     setError(null);
     setFile(null);
     if (!selectedFile.type.startsWith("video/")) {
-      setFileError("Please upload a video file only.");
-      return;
-    }
+        setFileError("Please upload a video file only.");
+        return;
+      }
 
-    setFileError("");
+      setFileError("");
 
     // LAYER 0: Size check
     if (selectedFile.size > MAX_FILE_SIZE) {
@@ -212,11 +248,15 @@ export function useVideoEditor() {
     }
 
     const validExtensions = [".mp4", ".mov", ".avi", ".webm", ".mkv"];
+    const validExtensions = [".mp4", ".mov", ".avi", ".webm", ".mkv"];
     const filename = selectedFile.name.toLowerCase();
     const hasValidExtension = validExtensions.some((ext) =>
       filename.endsWith(ext),
     );
     if (!hasValidExtension) {
+      setError(
+        `Layer 1 Validation Failed: Invalid file extension. Expected one of: ${validExtensions.join(", ")}`,
+      );
       setError(
         `Layer 1 Validation Failed: Invalid file extension. Expected one of: ${validExtensions.join(", ")}`,
       );
@@ -228,12 +268,18 @@ export function useVideoEditor() {
       setError(
         `Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || "unknown"}`,
       );
+      setError(
+        `Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || "unknown"}`,
+      );
       setStatus("error");
       return;
     }
 
     const isVideo = await verifyMagicBytes(selectedFile);
     if (!isVideo) {
+      setError(
+        "Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.",
+      );
       setError(
         "Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.",
       );
@@ -248,7 +294,9 @@ export function useVideoEditor() {
       setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
     } catch (err) {
       setError(
+        
         `Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+      ,
       );
       setStatus("error");
     }
@@ -268,10 +316,18 @@ export function useVideoEditor() {
       setStatus("loading-engine");
       setProgress(0);
       setProgressMessage("Preparing video engine");
+      setProgressMessage("Preparing video engine");
       setError(null);
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
+      const ffmpeg = await loadFFmpeg(abortController.signal, (percent) => {
+        if (exportCancelledRef.current) return;
+        setProgress(percent);
+        if (percent > 0 && percent < 100) {
+          setProgressMessage("Downloading video engine");
+        }
+      });
       const ffmpeg = await loadFFmpeg(abortController.signal, (percent) => {
         if (exportCancelledRef.current) return;
         setProgress(percent);
@@ -288,12 +344,13 @@ export function useVideoEditor() {
         file,
         recipe,
         setProgress,
-        abortController.signal,
+        abortController.signal,,
       );
       if (exportCancelledRef.current) return;
 
       setResult(exportResult);
       setStatus("done");
+    } catch (err) {
     } catch (err) {
       console.error("export failed:", err);
       if (err instanceof FFmpegLoadError) {
@@ -308,8 +365,10 @@ export function useVideoEditor() {
         );
       } else {
         setError("Export failed. Please try again or use a different video.");
+        setError("Export failed. Please try again or use a different video.");
       }
       setStatus("error");
+    } finally {
     } finally {
       if (exportAbortControllerRef.current === abortController) {
         exportAbortControllerRef.current = null;
@@ -363,8 +422,13 @@ export function useVideoEditor() {
   useEffect(() => {
     return () => {
       if (result?.blobUrl) {
+  useEffect(() => {
+    return () => {
+      if (result?.blobUrl) {
         URL.revokeObjectURL(result.blobUrl);
       }
+    };
+  }, [result?.blobUrl]);
     };
   }, [result?.blobUrl]);
 
@@ -401,11 +465,18 @@ export function useVideoEditor() {
       const mem = (
         performance as Performance & { memory?: { usedJSHeapSize: number } }
       ).memory;
+      const mem = (
+        performance as Performance & { memory?: { usedJSHeapSize: number } }
+      ).memory;
       if (mem) {
         console.log(
+          
           "[Reframe Memory]",
+         
           Math.round(mem.usedJSHeapSize / 1e6),
+         
           "MB used",
+        ,
         );
       }
     }, 1000);
@@ -429,6 +500,7 @@ export function useVideoEditor() {
     status,
     progress,
     progressMessage,
+    progressMessage,
     result,
     error,
     videoRef,
@@ -442,3 +514,4 @@ export function useVideoEditor() {
     resetSettings,
   };
 }
+
