@@ -2,7 +2,7 @@
 
 import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
-import { Settings2, Lock, Unlock } from "lucide-react";
+import { Settings2, Lock, Unlock, Search } from "lucide-react";
 import { useState, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +41,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
 
   const [locked, setLocked] = useState(false);
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
+  const [search, setSearch] = useState("");
 
   const lockedRef = useRef(false);
 const aspectRatioRef = useRef(16 / 9);
@@ -71,48 +72,79 @@ const handleHeightChange = useCallback((h: number) => {
   onChange(patch);
 }, [onChange]);
 
+  const filteredPresets = PRESETS.filter(p => 
+    p.id !== "custom" && (
+      p.label.toLowerCase().includes(search.toLowerCase()) || 
+      p.platform.toLowerCase().includes(search.toLowerCase())
+    )
+  );
+
+  const handlePresetSelect = useCallback((presetId: string) => {
+    onChange({ preset: presetId });
+    setSearch("");
+  }, [onChange]);
+
   return (
     <div className="space-y-3">
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search size={14} className="text-[var(--muted)]" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search formats..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full text-sm pl-9 pr-3 py-2 border border-[var(--border)] rounded-lg bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {PRESETS.filter((p) => p.id !== "custom").map((preset) => {
-          const active = recipe.preset === preset.id;
-          return (
-            <button
-              type="button"
-              key={preset.id}
-              onClick={() => onChange({ preset: preset.id })}
-              title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
-              aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
-              aria-pressed={active}
-              className={cn(
-                "min-h-[44px] min-w-[44px] flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
-                active
-                  ? "border-film-500 bg-film-50"
-                  : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
-              )}
-            >
-              <RatioBox width={preset.width} height={preset.height} active={active} />
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <p className={cn(
-                  "text-xs font-heading font-bold leading-tight whitespace-nowrap",
-                  active ? "text-film-700" : "text-[var(--text)]"
-                )}>
-                  {preset.label}
-                </p>
-                <p className="text-[10px] text-[var(--muted)] leading-tight mt-0.5 truncate">
-                  {preset.platform}
-                </p>
-              </div>
-            </button>
-          );
-        })}
+        {filteredPresets.length === 0 ? (
+          <div className="col-span-full py-4 text-center text-[var(--muted)] text-sm">
+            No presets found
+          </div>
+        ) : (
+          filteredPresets.map((preset) => {
+            const active = recipe.preset === preset.id;
+            return (
+              <button
+                type="button"
+                key={preset.id}
+                onClick={() => handlePresetSelect(preset.id)}
+                title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
+                aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
+                aria-pressed={active}
+                className={cn(
+                  "min-h-[44px] min-w-[44px] flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+                  active
+                    ? "border-film-500 bg-film-50"
+                    : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30"
+                )}
+              >
+                <RatioBox width={preset.width} height={preset.height} active={active} />
+                <div className="min-w-0 flex-1 overflow-hidden">
+                  <p className={cn(
+                    "text-xs font-heading font-bold leading-tight whitespace-nowrap",
+                    active ? "text-film-700" : "text-[var(--text)]"
+                  )}>
+                    {preset.label}
+                  </p>
+                  <p className="text-[10px] text-[var(--muted)] leading-tight mt-0.5 truncate">
+                    {preset.platform}
+                  </p>
+                </div>
+              </button>
+            );
+          })
+        )}
 
         <button
           type="button"
           title="Custom — Set your own dimensions"
           aria-label="Select custom dimensions preset"
           aria-pressed={recipe.preset === "custom"}
-          onClick={() => onChange({ preset: "custom" })}
+          onClick={() => handlePresetSelect("custom")}
           className={cn(
             "min-h-[44px] min-w-[44px] flex items-center gap-2 p-2.5 rounded-lg border text-left transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
             recipe.preset === "custom"

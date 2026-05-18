@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 import { Download, RotateCcw, Share2, AlertCircle } from "lucide-react";
@@ -14,9 +14,10 @@ const SHARE_TWEET_TEXT =
 interface Props {
   result: ExportResult;
   onReset: () => void;
+  soundOnCompletion: boolean;
 }
 
-export default function DownloadResult({ result, onReset }: Props) {
+export default function DownloadResult({ result, onReset, soundOnCompletion }: Props) {
   const defaultName = `reframe_${result.width}x${result.height}`;
   const [name, setName] = useState(defaultName);
 
@@ -26,6 +27,12 @@ export default function DownloadResult({ result, onReset }: Props) {
 
   const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(SHARE_TWEET_TEXT)}`;
 
+  useEffect(() => {
+    if (soundOnCompletion) {
+      const audio = new Audio("/sounds/export-complete.mp3");
+      audio.play().catch(console.error);
+    }
+  }, [soundOnCompletion]);
   const handleReset = () => {
     if (window.confirm("This will clear the current video and all settings. Continue?")) {
       onReset();
@@ -94,10 +101,10 @@ export default function DownloadResult({ result, onReset }: Props) {
           href={isValid ? result.blobUrl : undefined}
           download={isValid ? filename : undefined}
           className={cn(
-            "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
-            isValid 
-              ? "bg-film-600 text-white hover:bg-film-700 hover:scale-[1.01] active:scale-[0.99] cursor-pointer" 
-              : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+            "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
+            isValid
+              ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+              : "bg-film-600/50 cursor-not-allowed"
           )}
           onClick={(e) => {
             if (!isValid) e.preventDefault();
