@@ -12,6 +12,7 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
+import ResetSettingsButton from "./ResetSettingsButton";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
@@ -277,13 +278,7 @@ export default function VideoEditor() {
               </Section>
 
               <div className="pt-2 flex justify-end">
-                <button
-                  type="button"
-                  onClick={resetSettings}
-                  className="text-[9px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
-                >
-                  Reset all settings
-                </button>
+                <ResetSettingsButton onReset={resetSettings} />
               </div>
             </div>
 
