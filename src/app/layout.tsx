@@ -3,6 +3,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import ScrollToTop from "@/components/ScrollToTop";
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
@@ -91,6 +92,10 @@ export default function RootLayout({
               </div>
             </header>
             {children}
+            <main id="main-content" tabIndex={-1}>
+              {children}
+            </main>
+            <ScrollToTop />
           </ErrorBoundary>
         </ThemeProvider>
       </body>
