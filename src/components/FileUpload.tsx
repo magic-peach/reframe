@@ -181,7 +181,6 @@ export default function FileUpload({
   const DropZone = () => (
     <div
       role="button"
-      aria-label="Upload video file"
       tabIndex={0}
       onDragOver={(e) => {
         e.preventDefault();
@@ -197,12 +196,16 @@ export default function FileUpload({
       }}
       className={cn(
         "group flex flex-col items-center justify-center gap-4 py-12 px-6",
-        "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200",
+        "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden",
         dragging
-          ? "border-film-500 bg-film-50 scale-[1.01]"
+          ? "border-film-500 bg-film-50/50 scale-[1.02] shadow-[0_0_40px_-10px_rgba(230,57,70,0.4)] ring-4 ring-film-500/30"
           : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
       )}
     >
+      {/* Premium Light Beam Shimmer Effect */}
+      {dragging && (
+        <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-film-500/20 to-transparent pointer-events-none" />
+      )}
       <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-200">
         <LottiePlayer animationData={uploadAnim} loop autoplay />
       </div>

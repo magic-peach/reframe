@@ -15,6 +15,7 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
+import ImageOverlay from "./ImageOverlay"
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
@@ -48,11 +49,15 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
+   file, duration, recipe, status, progress,
     result, error, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
     videoRef,
     seekTo,
+    overlayFile, setOverlayFile,
+    overlayPosition, setOverlayPosition,
+    overlaySize, setOverlaySize,
+    overlayOpacity, setOverlayOpacity,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
@@ -142,7 +147,7 @@ export default function VideoEditor() {
               <p className="text-[var(--warning)] text-sm">
                 ⚠️ Large file - processing may take several minutes
               </p>
-            )}      
+            )}
             {file && (
               <div className={cn(
                 "grid grid-cols-1 sm:grid-cols-2 gap-4",
@@ -158,108 +163,6 @@ export default function VideoEditor() {
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
-                  <Section
-  icon={<SlidersHorizontal size={12} />}
-  title="Adjustments"
-  delay={175}
->
-  <div className="space-y-5">
-
-    {/* Brightness */}
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <label htmlFor="brightness-slider">Brightness</label>
-
-        <button
-          type="button"
-          onClick={() => updateRecipe({ brightness: 0 })}
-          className="text-film-500 hover:underline"
-        >
-          Reset
-        </button>
-      </div>
-
-      <input
-        id="brightness-slider"
-        type="range"
-        min="-1"
-        max="1"
-        step="0.1"
-        value={recipe.brightness}
-        onChange={(e) =>
-          updateRecipe({
-            brightness: Number(e.target.value),
-          })
-        }
-        aria-label="Adjust brightness"
-        className="w-full"
-      />
-    </div>
-
-    {/* Contrast */}
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <label htmlFor="contrast-slider">Contrast</label>
-
-        <button
-          type="button"
-          onClick={() => updateRecipe({ contrast: 1 })}
-          className="text-film-500 hover:underline"
-        >
-          Reset
-        </button>
-      </div>
-
-      <input
-        id="contrast-slider"
-        type="range"
-        min="0"
-        max="2"
-        step="0.1"
-        value={recipe.contrast}
-        onChange={(e) =>
-          updateRecipe({
-            contrast: Number(e.target.value),
-          })
-        }
-        aria-label="Adjust contrast"
-        className="w-full"
-      />
-    </div>
-
-    {/* Saturation */}
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <label htmlFor="saturation-slider">Saturation</label>
-
-        <button
-          type="button"
-          onClick={() => updateRecipe({ saturation: 1 })}
-          className="text-film-500 hover:underline"
-        >
-          Reset
-        </button>
-      </div>
-
-      <input
-        id="saturation-slider"
-        type="range"
-        min="0"
-        max="3"
-        step="0.1"
-        value={recipe.saturation}
-        onChange={(e) =>
-          updateRecipe({
-            saturation: Number(e.target.value),
-          })
-        }
-        aria-label="Adjust saturation"
-        className="w-full"
-      />
-    </div>
-
-  </div>
-</Section>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <Section
@@ -347,6 +250,18 @@ export default function VideoEditor() {
                   </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
                     <ExportSettings recipe={recipe} onChange={updateRecipe} />
+                  </Section>
+                  <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
+                    <ImageOverlay
+                      overlayFile={overlayFile}
+                      setOverlayFile={setOverlayFile}
+                      overlayPosition={overlayPosition}
+                      setOverlayPosition={setOverlayPosition}
+                      overlaySize={overlaySize}
+                      setOverlaySize={setOverlaySize}
+                      overlayOpacity={overlayOpacity}
+                      setOverlayOpacity={setOverlayOpacity}
+                    />
                   </Section>
                 </div>
               </div>
