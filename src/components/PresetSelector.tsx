@@ -148,6 +148,7 @@ const handleHeightChange = useCallback((h: number) => {
             <input
               id="custom-width"
               type="number"
+              autoComplete="off"
               inputMode="numeric"
               min={16}
               max={7680}
@@ -155,6 +156,12 @@ const handleHeightChange = useCallback((h: number) => {
               value={recipe.customWidth}
               spellCheck={false}
               onChange={(e) => handleWidthChange(Number(e.target.value))}
+              onBlur={(e) => {
+                let val = Number(e.target.value);
+                if (val < 16) val = 16;
+                if (val > 7680) val = 7680;
+                handleWidthChange(val);
+              }}
               className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
             {recipe.customWidth % 2 !== 0 && (
@@ -185,6 +192,7 @@ const handleHeightChange = useCallback((h: number) => {
             <input
               id="custom-height"
               type="number"
+              autoComplete="off"
               inputMode="numeric"
               min={16}
               max={7680}
@@ -192,6 +200,12 @@ const handleHeightChange = useCallback((h: number) => {
               value={recipe.customHeight}
               spellCheck={false}
               onChange={(e) => handleHeightChange(Number(e.target.value))}
+              onBlur={(e) => {
+                let val = Number(e.target.value);
+                if (val < 16) val = 16;
+                if (val > 7680) val = 7680;
+                handleHeightChange(val);
+              }}
               className="w-full text-sm px-3 py-1.5 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 transition-shadow"
             />
             {recipe.customHeight % 2 !== 0 && (
