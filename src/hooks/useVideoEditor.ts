@@ -63,7 +63,12 @@ function verifyMagicBytes(file: File): Promise<boolean> {
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
-  const [recipe, setRecipe] = useState<EditRecipe>(DEFAULT_RECIPE);
+  const [recipe, setRecipe] = useState({
+    ...DEFAULT_RECIPE,
+    soundOnCompletion:
+      typeof window !== "undefined" &&
+      localStorage.getItem("soundOnCompletion") === "true",
+  });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
@@ -71,6 +76,7 @@ export function useVideoEditor() {
   const [fileError, setFileError] = useState("");
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => ({ ...prev, ...patch }));
@@ -95,7 +101,6 @@ export function useVideoEditor() {
       return;
     }
 
-    // LAYER 1: Extension check
     const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
     const filename = selectedFile.name.toLowerCase();
     const hasValidExtension = validExtensions.some(ext => filename.endsWith(ext));
@@ -105,14 +110,12 @@ export function useVideoEditor() {
       return;
     }
 
-    // LAYER 2: MIME type check
     if (!selectedFile.type.startsWith("video/")) {
       setError(`Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || 'unknown'}`);
       setStatus("error");
       return;
     }
 
-    // LAYER 3: Magic Bytes Verification
     const isVideo = await verifyMagicBytes(selectedFile);
     if (!isVideo) {
       setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
@@ -149,7 +152,7 @@ export function useVideoEditor() {
       setResult(null);
 
       const ffmpeg = await loadFFmpeg(abortController.signal);
-      if (exportCancelledRef.current){setStatus("cancelled"); return;}
+      if (exportCancelledRef.current) return;
 
       setStatus("exporting");
 
@@ -160,7 +163,7 @@ export function useVideoEditor() {
         setProgress,
         abortController.signal
       );
-      if (exportCancelledRef.current){setStatus("cancelled"); return;}
+      if (exportCancelledRef.current) return;
 
       setResult(exportResult);
       setStatus("done");
@@ -178,7 +181,8 @@ export function useVideoEditor() {
         setError('Export failed. Please try again or use a different video.');
       }
       setStatus("error");
-    } finally {
+    }
+    finally {
       if (exportAbortControllerRef.current === abortController) {
         exportAbortControllerRef.current = null;
       }
@@ -210,7 +214,6 @@ export function useVideoEditor() {
     };
 
     document.addEventListener("keydown", handleKeydown);
-
     return () => {
       document.removeEventListener("keydown", handleKeydown);
     };
@@ -233,10 +236,9 @@ export function useVideoEditor() {
     exportAbortControllerRef.current?.abort();
     exportAbortControllerRef.current = null;
     terminateFFmpeg();
-    setStatus("cancelled");
+    setStatus("idle");
     setProgress(0);
     setError(null);
-    setResult(null);
   }, []);
 
 
@@ -251,7 +253,6 @@ export function useVideoEditor() {
     setError(null);
   }, [result]);
 
-  // Development-only memory monitoring during export
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") return;
     if (status !== "exporting") return;
@@ -266,6 +267,15 @@ export function useVideoEditor() {
     return () => clearInterval(interval);
   }, [status]);
 
+  useEffect(() => {
+    localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
+  }, [recipe.soundOnCompletion]);
+  const seekTo = useCallback((time: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+    }
+  }, []);
+
   return {
     file,
     duration,
@@ -274,6 +284,8 @@ export function useVideoEditor() {
     progress,
     result,
     error,
+    videoRef,
+    seekTo,
     updateRecipe,
     handleFileSelect,
     fileError,
