@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, RefObject } from "react";
 import { EditRecipe } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
@@ -9,22 +9,19 @@ import { cn } from "@/lib/utils";
 interface Props {
   file: File | null;
   recipe?: EditRecipe;
+  videoRef: RefObject<HTMLVideoElement | null>;
 }
 
-export default function VideoPreview({ file, recipe }: Props) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
+export default function VideoPreview({ file, recipe, videoRef }: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
-
-  // stable handler reference (avoids re-attaching logic unnecessarily)
   const onLoadedRef = useRef<(() => void) | null>(null);
-
   useEffect(() => {
     if (!file) return;
 
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     setIsLoading(true);
     const id = ++lastId.current;
     const url = URL.createObjectURL(file);
@@ -71,7 +68,7 @@ export default function VideoPreview({ file, recipe }: Props) {
         urlRef.current = null;
       }
     };
-  }, [file]);
+  }, [file, videoRef]);
 
   /**
    * Compute the overlay geometry for the selected preset + framing mode.
