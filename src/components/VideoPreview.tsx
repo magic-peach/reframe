@@ -235,7 +235,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         <button
           type="button"
           onClick={() => setShowOverlay((v) => !v)}
-          className={`absolute bottom-10 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+          className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
             showOverlay
               ? "bg-film-600 text-white"
               : "bg-black/60 text-white/70 hover:bg-black/80"
