@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE } from "@/lib/types";
+// NEW: Make sure to import ExportHistoryItem here!
+import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE, ExportHistoryItem } from "@/lib/types";
 import { loadFFmpeg, exportVideo, terminateFFmpeg } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
@@ -52,6 +53,16 @@ export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
   const [recipe, setRecipe] = useState<EditRecipe>(DEFAULT_RECIPE);
+<<<<<<< Updated upstream
+=======
+  
+  // New state for persisting settings
+  const [rememberSettings, setRememberSettings] = useState<boolean>(false);
+  
+  // NEW: State for tracking the session's export history
+  const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
+  
+>>>>>>> Stashed changes
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
@@ -133,6 +144,27 @@ export function useVideoEditor() {
       if (exportCancelledRef.current) return;
 
       setResult(exportResult);
+      
+      // NEW: Update export history and safely manage memory limits
+      setExportHistory((prevHistory) => {
+        const newItem: ExportHistoryItem = {
+          id: Date.now().toString(),
+          timestamp: Date.now(),
+          result: exportResult,
+          recipe: recipe, // Captures the exact settings used
+        };
+
+        const updatedHistory = [newItem, ...prevHistory];
+
+        // MEMORY LEAK MANAGER: Revoke URL of the 6th item before throwing it away
+        if (updatedHistory.length > 5) {
+          URL.revokeObjectURL(updatedHistory[5].result.blobUrl);
+          console.log("Memory Released: Oldest history blob revoked.");
+        }
+
+        return updatedHistory.slice(0, 5); // Ensure only 5 are kept in state
+      });
+
       setStatus("done");
     } catch (err) {
       if (exportCancelledRef.current) return;
@@ -195,6 +227,7 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
+    // Note: We deliberately do NOT clear exportHistory here so it persists across "New" clicks in the same session!
   }, []);
 
   // Development-only memory monitoring during export
@@ -212,6 +245,15 @@ export function useVideoEditor() {
     return () => clearInterval(interval);
   }, [status]);
 
+  // Clean up ALL blobs when the editor unmounts (closes session) to be extra safe
+  useEffect(() => {
+    return () => {
+      exportHistory.forEach((item) => {
+        URL.revokeObjectURL(item.result.blobUrl);
+      });
+    };
+  }, [exportHistory]);
+
   return {
     file,
     duration,
@@ -220,6 +262,12 @@ export function useVideoEditor() {
     progress,
     result,
     error,
+<<<<<<< Updated upstream
+=======
+    rememberSettings,
+    exportHistory, // NEW: Expose history to the UI
+    setRememberSettings,
+>>>>>>> Stashed changes
     updateRecipe,
     handleFileSelect,
     handleExport,

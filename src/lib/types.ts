@@ -40,3 +40,11 @@ export const DEFAULT_RECIPE: EditRecipe = {
   speed: 1,
   quality: 23,
 };
+
+// NEW: Added for Issue #105
+export interface ExportHistoryItem {
+  id: string;
+  timestamp: number;
+  result: ExportResult;
+  recipe: EditRecipe;
+}
