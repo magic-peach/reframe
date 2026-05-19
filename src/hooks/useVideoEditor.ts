@@ -106,6 +106,14 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       recipe.saturation < 0 || recipe.saturation > 3,
       "Saturation must be between 0 and 3.",
     ],
+    [
+      recipe.saturation < 0 || recipe.saturation > 3,
+      "Saturation must be between 0 and 3.",
+    ],
+    [
+      recipe.isBatchExport && (!recipe.batchPresets || recipe.batchPresets.length === 0),
+      "Please select at least 1 format for batch export.",
+    ],
   ];
 
   return (
@@ -130,6 +138,7 @@ export function useVideoEditor() {
   });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
+  const [exportProgressText, setExportProgressText] = useState("");
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
@@ -273,6 +282,7 @@ export function useVideoEditor() {
     try {
       setStatus("loading-engine");
       setProgress(0);
+      setExportProgressText("");
       setError(null);
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
@@ -282,29 +292,88 @@ export function useVideoEditor() {
 
       setStatus("exporting");
 
-      const exportResult = await exportVideo(
-        ffmpeg,
-        file,
-        recipe,
-        setProgress,
-        abortController.signal,
-        {
-          file: musicFile,
-          musicVolume,
-          originalAudioVolume,
-          loopMusic,
-        },
-        {
-          file: overlayFile,
-          position: overlayPosition,
-          size: overlaySize,
-          opacity: overlayOpacity,
+      if (recipe.isBatchExport && recipe.batchPresets && recipe.batchPresets.length > 0) {
+        const JSZip = (await import("jszip")).default;
+        const zip = new JSZip();
+        
+        for (let i = 0; i < recipe.batchPresets.length; i++) {
+          if (exportCancelledRef.current) return;
+          const presetId = recipe.batchPresets[i];
+          const presetData = getPresetById(presetId);
+          const presetName = presetData ? presetData.label : presetId;
+          
+          setExportProgressText(`Export ${i + 1} of ${recipe.batchPresets.length}: ${presetName} (${recipe.format})…`);
+          setProgress(0);
+          
+          const batchRecipe = { ...recipe, preset: presetId, isBatchExport: false };
+          const exportResult = await exportVideo(
+            ffmpeg,
+            file,
+            batchRecipe,
+            setProgress,
+            abortController.signal,
+            {
+              file: musicFile,
+              musicVolume,
+              originalAudioVolume,
+              loopMusic,
+            },
+            {
+              file: overlayFile,
+              position: overlayPosition,
+              size: overlaySize,
+              opacity: overlayOpacity,
+            }
+          );
+          
+          if (exportCancelledRef.current) return;
+          
+          const res = await fetch(exportResult.blobUrl);
+          const blob = await res.blob();
+          
+          const safeName = presetName.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+          zip.file(`reframe-${safeName}.${recipe.format}`, blob);
+          
+          URL.revokeObjectURL(exportResult.blobUrl);
         }
-      );
-      if (exportCancelledRef.current) return;
+        
+        if (exportCancelledRef.current) return;
+        setExportProgressText("Zipping files…");
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        if (exportCancelledRef.current) return;
+        
+        setResult({
+          blobUrl: URL.createObjectURL(zipBlob),
+          size: zipBlob.size,
+          format: "zip"
+        });
+        setStatus("done");
+        
+      } else {
+        const exportResult = await exportVideo(
+          ffmpeg,
+          file,
+          recipe,
+          setProgress,
+          abortController.signal,
+          {
+            file: musicFile,
+            musicVolume,
+            originalAudioVolume,
+            loopMusic,
+          },
+          {
+            file: overlayFile,
+            position: overlayPosition,
+            size: overlaySize,
+            opacity: overlayOpacity,
+          }
+        );
+        if (exportCancelledRef.current) return;
 
-      setResult(exportResult);
-      setStatus("done");
+        setResult(exportResult);
+        setStatus("done");
+      }
      }  catch (err) {
       if (exportCancelledRef.current) return;
 
@@ -330,7 +399,7 @@ export function useVideoEditor() {
 
   useEffect(() => {
     if (status === "exporting") {
-      document.title = `Exporting ${progress}% | Reframe`;
+      document.title = `${exportProgressText ? exportProgressText + ' - ' : ''}Exporting ${progress}% | Reframe`;
     } else if (status === "loading-engine") {
       document.title = `Loading engine... | Reframe`;
     } else if (status === "done") {
@@ -472,5 +541,6 @@ export function useVideoEditor() {
     overlayOpacity,
     setOverlayOpacity,
     recommendedPreset,
+    exportProgressText,
   };
 }

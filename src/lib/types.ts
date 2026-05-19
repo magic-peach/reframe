@@ -15,6 +15,8 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  isBatchExport: boolean;
+  batchPresets: string[];
 }
 
 export type OverlayPosition =
@@ -40,9 +42,9 @@ export interface BackgroundMusicOptions {
 export interface ExportResult {
   blobUrl: string;
   size: number;
-  width: number;
-  height: number;
-  format: "mp4" | "webm" | "mkv";
+  width?: number;
+  height?: number;
+  format: "mp4" | "webm" | "mkv" | "zip";
 }
 
 export type ExportStatus =
@@ -80,6 +82,8 @@ export const DEFAULT_RECIPE: EditRecipe = {
   contrast: 0,
   saturation: 0,
   soundOnCompletion: false,
+  isBatchExport: false,
+  batchPresets: [],
 };
 
 export const MAX_FILE_SIZE =

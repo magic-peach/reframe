@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function DownloadResult({ result, onReset, soundOnCompletion }: Props) {
-  const defaultName = `reframe_${result.width}x${result.height}`;
+  const defaultName = result.format === "zip" ? "reframe_batch" : `reframe_${result.width}x${result.height}`;
   const [name, setName] = useState(defaultName);
 
   const invalidCharRegex = /[<>:"/\\|?*]/;
@@ -54,7 +54,9 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">Resolution</p>
-          <p className="font-heading font-bold text-[var(--text)]">{result.width} × {result.height}</p>
+          <p className="font-heading font-bold text-[var(--text)]">
+            {result.format === "zip" ? "Multiple files" : `${result.width} × ${result.height}`}
+          </p>
         </div>
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">File size</p>

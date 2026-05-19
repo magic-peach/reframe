@@ -10,10 +10,11 @@ import TipCarousel from "./TipCarousel";
 interface Props {
   status: ExportStatus;
   progress: number;
+  progressText?: string;
   onCancel?: () => void;
 }
 
-export default function ExportOverlay({ status, progress, onCancel }: Props) {
+export default function ExportOverlay({ status, progress, progressText, onCancel }: Props) {
   const visible = status === "loading-engine" || status === "exporting";
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -92,6 +93,11 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
             <h2 className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">
               {isLoading ? "Loading engine" : "Exporting"}
             </h2>
+            {progressText && (
+              <p className="text-sm font-semibold text-film-600 mt-1">
+                {progressText}
+              </p>
+            )}
             <p className="text-sm text-[var(--muted)] mt-1">
               {isLoading
                 ? "Downloading the video engine. This only happens once."
