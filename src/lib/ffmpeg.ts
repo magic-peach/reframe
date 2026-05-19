@@ -162,7 +162,7 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
 
 function buildArguments(
   recipe: EditRecipe,
-  format: "mp4" | "webm" | "mkv",
+  format: "mp4" | "webm" | "mkv" | "gif",
   outputName: string,
   inputName: string,
   targetW: number,
@@ -312,6 +312,8 @@ export async function exportVideo(
         return { filename: `output_${sessionId}.webm`, mimeType: "video/webm" };
       case "mkv":
         return { filename: `output_${sessionId}.mkv`, mimeType: "video/x-matroska" };
+      case "gif":
+        return { filename: `output_${sessionId}.gif`, mimeType: "image/gif" };
       default:
         return { filename: `output_${sessionId}.mp4`, mimeType: "video/mp4" };
     }
@@ -319,7 +321,8 @@ export async function exportVideo(
 
   const { filename: outputName, mimeType } = getOutputConfig(recipe.format);
   const fallbackOutputName = `fallback_${sessionId}.webm`;
-  const cleanupFiles = new Set<string>([inputName, outputName, fallbackOutputName]);
+  const paletteName = `palette_${sessionId}.png`;
+  const cleanupFiles = new Set<string>([inputName, outputName, fallbackOutputName, paletteName]);
 
   const handleProgress = ({ progress }: { progress: number }) => {
     onProgress(Math.min(99, Math.round(progress * 100)));
@@ -344,6 +347,45 @@ export async function exportVideo(
     }
 
     ffmpeg.on("progress", handleProgress);
+
+    // ── Two-pass GIF export ──────────────────────────────────────────────────
+    if (recipe.format === "gif") {
+      const vf = buildVideoFilter(recipe, targetW, targetH);
+      const vfWithPalette = vf ? `${vf},palettegen` : "palettegen";
+      const vfWithPaletteUse = vf
+        ? `[0:v]${vf}[x];[x][1:v]paletteuse`
+        : "[0:v][1:v]paletteuse";
+
+      // Pass 1: generate colour palette
+      const pass1Code = await ffmpeg.exec(
+        ["-i", inputName, "-vf", vfWithPalette, "-y", paletteName],
+        undefined,
+        { signal }
+      );
+      if (pass1Code !== 0) throw new Error("GIF palette generation failed");
+
+      // Pass 2: render GIF using the palette
+      const pass2Code = await ffmpeg.exec(
+        ["-i", inputName, "-i", paletteName, "-lavfi", vfWithPaletteUse, "-y", outputName],
+        undefined,
+        { signal }
+      );
+      if (pass2Code !== 0) throw new Error("GIF export failed");
+
+      const data = await ffmpeg.readFile(outputName, undefined, { signal });
+      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "image/gif" });
+
+      ffmpeg.off("progress", handleProgress);
+      onProgress(100);
+      return {
+        blobUrl: URL.createObjectURL(blob),
+        size: blob.size,
+        width: targetW,
+        height: targetH,
+        format: "gif" as const,
+      };
+    }
+    // ────────────────────────────────────────────────────────────────────────
 
     let missingAudioDetected = false;
     const logListener = ({ message }: { message: string }) => {
