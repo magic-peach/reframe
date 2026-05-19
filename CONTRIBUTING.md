@@ -1,11 +1,3 @@
-> ⭐ **If Reframe helped you, [star the repo](https://github.com/magic-peach/reframe)** — it helps more people discover it!
->
-> 💬 **Have a question or idea?** Head to [Discussions](https://github.com/magic-peach/reframe/discussions) instead of opening an issue.
->
-> 🟢 **Ready to contribute?** Check out our [Good First Issues](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22) — perfect for first-time contributors!
-
-***
-
 # Contributing to Reframe
 
 First off, **thank you for considering contributing to Reframe**! 🎉
@@ -28,13 +20,11 @@ If you're ready to tackle some open issues, **[we've collected some good first i
 - [Development Setup](#development-setup)
 - [Project Structure](#project-structure)
 - [Finding Issues](#finding-issues)
-- [Claiming Issues](#-claiming-issues)
 - [Making Changes](#making-changes)
 - [Submitting a Pull Request](#submitting-a-pull-request)
 - [Code Style](#code-style)
 - [Development Tips](#development-tips)
 - [GSSoC'26 Participants](#gssoc26-participants)
-- [Code of Conduct](#code-of-conduct)
 
 ---
 
@@ -116,110 +106,6 @@ reframe/
 ├── tailwind.config.ts
 └── tsconfig.json
 ```
----
-
-## Development Tips
-
-### 1. Next.js Fast Refresh
-This project uses Next.js Fast Refresh in development mode. Most changes to React components, hooks, and styles are reflected instantly in the browser without restarting the dev server.
-
-- Component updates appear immediately
-- State is often preserved during edits
-- Restarting `npm run dev` is usually unnecessary for UI changes
-
-Learn more: https://nextjs.org/docs/architecture/fast-refresh
-
----
-
-### 2. FFmpeg Module Changes
-Changes to `ffmpeg.ts` may not hot-reload correctly because FFmpeg initialization and WebAssembly modules can persist in memory.
-
-If updates are not reflected:
-
-- Perform a full browser page reload
-- Clear cached worker instances if necessary
-- Restart the development server only when required
-
-FFmpeg WASM reference: https://ffmpegwasm.netlify.app/docs/overview
-
----
-
-### 3. Monitor FFmpeg Downloads
-FFmpeg WebAssembly assets can be large and may take time to download during development.
-
-Use the browser DevTools **Network** tab to:
-
-- Verify FFmpeg assets are loading correctly
-- Inspect caching behavior
-- Detect failed `.wasm` or worker requests
-- Measure initialization performance
-
-Chrome DevTools: https://developer.chrome.com/docs/devtools/network
-
----
-
-### 4. Use React DevTools
-Install React DevTools for easier component inspection and debugging.
-
-Helpful for:
-
-- Inspecting component props and state
-- Tracing re-renders
-- Debugging hooks
-- Monitoring React component trees
-
-React DevTools: https://react.dev/learn/react-developer-tools
-
----
-
-### 5. Keep Console Open During Development
-The browser console provides important runtime diagnostics for:
-
-- FFmpeg initialization issues
-- Hydration warnings
-- API request failures
-- WebAssembly loading errors
-
-Filtering logs by warnings/errors can speed up debugging significantly.
-
----
-
-### 6. Use Source Maps for Easier Debugging
-Development builds include source maps, allowing you to debug original TypeScript/React source files directly from DevTools.
-
-Tips:
-
-- Set breakpoints in source files
-- Use async stack traces
-- Inspect runtime variables during rendering
-
-JavaScript debugging guide: https://developer.chrome.com/docs/devtools/javascript
-
----
-
-### 7. Watch for Memory Usage
-FFmpeg WebAssembly processing can consume significant browser memory during video operations.
-
-Recommendations:
-
-- Close unused tabs while testing
-- Refresh the page after heavy processing tasks
-- Monitor memory usage in browser performance tools
-
-Performance tools: https://developer.chrome.com/docs/devtools/performance
-
----
-
-### 8. Verify Environment Variables
-After modifying `.env.local`, restart the Next.js development server because environment variables are loaded only during server startup.
-
-Example:
-
-```bash
-npm run dev
-```
-
-Environment variables guide: https://nextjs.org/docs/app/guides/environment-variables
 
 ---
 
@@ -239,45 +125,9 @@ We have **300+ open issues** across all skill levels:
 | ⚡ **Performance** | [`performance`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Aperformance) label |
 
 **Before claiming an issue:**
-1. Check if it already has an assignee — if so, pick a different one
-2. Comment `/assign` on the issue to claim it instantly via our bot
-3. If an issue has been idle and unassigned for a while, it's fair game
-
----
-
-## 🙋 Claiming Issues
-
-We use a bot to automatically manage issue assignments. Here's how it works:
-
-### Claiming an Issue
-Comment `/assign` on any open issue to claim it:
-- The bot will assign it to you instantly
-- You have **5 days** to make progress before it is automatically unassigned
-- You can only hold **5 issues** at a time across the repo
-
-### Unassigning Yourself
-If you can no longer work on an issue, comment `/unassign` to release it:
-- This frees it up for other contributors immediately
-- No hard feelings — we appreciate the honesty!
-
-### Assignment Rules
-- ✅ First person to comment `/assign` gets the issue
-- ✅ Only **one contributor** can be assigned per issue at a time
-- ✅ Maximum **5 issues** per contributor at once
-- ⚠️ You will get a warning after **2 days** of no activity
-- ⚠️ You will get a final warning after **4 days** of no activity
-- ❌ Issue is automatically unassigned after **5 days** of no activity
-
-### Inactivity Warnings
-The bot will ping you if your assigned issue has no activity:
-- **Day 2** — friendly reminder to update your progress
-- **Day 4** — final warning, 24 hours left before unassignment
-- **Day 5** — automatic unassignment, issue reopens for others
-
-### Tips
-- Leave a comment on your issue if you are stuck or need help — any comment resets the inactivity timer
-- Link your PR to the issue using `Fixes #issue_number` in your PR description
-- If you see an issue already assigned, please pick a different one
+1. Check if someone is already working on it (look at comments and assignees)
+2. Comment on the issue to let maintainers know you're working on it
+3. If it's been idle for 7+ days, feel free to take it over
 
 ---
 
@@ -325,27 +175,8 @@ git commit -m "feat: add aria-label to export button"
 3. Fill in the PR template:
    - Describe what you changed and why
    - Reference the issue: `Closes #<issue-number>`
-   - **Attach a screen recording** (required for UI/feature changes — see below)
+   - Add screenshots for UI changes
 4. Submit the PR — maintainers will review within a few days
-
-### Screen Recording Requirement
-
-**Any PR that adds or modifies a UI element, a user-facing feature, or any visual behaviour must include a screen recording of the working change running on your local machine.**
-
-This is a hard requirement — PRs without a recording will not be merged until one is added.
-
-**What to record:**
-- Run `bun run dev` and open `http://localhost:3000`
-- Demonstrate the full working flow of your change (e.g. upload a video → use the new control → export → see the result)
-- Show any edge cases your implementation handles (empty state, error state, etc.)
-
-**How to record:**
-- **macOS**: `Cmd + Shift + 5` → Record Selected Portion, or use QuickTime Player
-- **Windows**: `Win + G` → Xbox Game Bar → Capture
-- **Linux**: OBS Studio, GNOME Screenshot tool, or `kazam`
-- **Any OS**: [Loom](https://loom.com) (free, great for sharing)
-
-Attach the recording directly to the PR by dragging the file into the GitHub comment box, or paste a Loom/shareable link.
 
 ### PR Checklist
 
@@ -355,7 +186,6 @@ Attach the recording directly to the PR by dragging the file into the GitHub com
 - [ ] UI changes tested on mobile (use browser DevTools)
 - [ ] Accessibility: new interactive elements have ARIA labels
 - [ ] Issue number referenced in PR description
-- [ ] **Screen recording attached** (required for all UI/feature PRs)
 
 ---
 
@@ -390,8 +220,9 @@ Reframe is an **official GirlScript Summer of Code 2026 project**!
 
 1. Browse issues labeled [`gssoc'26`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22gssoc%2726%22)
 2. Start with [`good first issue`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22+label%3A%22gssoc%2726%22) if you're new to open source
-3. Comment `/assign` on the issue — our bot will assign it to you instantly, no maintainer needed
-4. Submit your PR within **5 days** and remember to link it with `Fixes #issue_number`
+3. Comment on the issue with: "I'd like to work on this for GSSoC'26 — @magic-peach"
+4. Wait for a maintainer to assign the issue to you
+5. Submit your PR within **7 days** of being assigned
 
 ### Tips for GSSoC Success
 
@@ -408,14 +239,5 @@ Reframe is an **official GirlScript Summer of Code 2026 project**!
 - **Found a bug?** → [Open a bug report](https://github.com/magic-peach/reframe/issues/new?labels=bug)
 - **Have a feature idea?** → [Open a feature request](https://github.com/magic-peach/reframe/issues/new?labels=feature)
 - **Stuck on an issue?** → Comment on the issue and tag `@magic-peach`
-
----
-
-## Code of Conduct
-
-We expect all contributors to follow our Code of Conduct to create a safe, welcoming, and inclusive community.
-- **Be respectful and welcoming.**
-- **Harassment and discrimination are strictly prohibited.**
-- **Constructive feedback is encouraged.**
 
 Thank you for making Reframe better! 🎬

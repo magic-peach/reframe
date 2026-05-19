@@ -1,46 +1,39 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: "class", // Enable class-based dark mode
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-    // Added files to catch utility strings hidden in hooks, providers, or custom UI state contexts
-    "./src/hooks/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/context/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
+      fontFamily: {
+        display: ["var(--font-display)", "sans-serif"],
+        heading: ["var(--font-heading)", "sans-serif"],
+        sans: ["var(--font-body)", "DM Sans", "sans-serif"],
+      },
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        // film red — the brand accent
         film: {
-          50: "var(--film-50)",
-          100: "var(--film-100)",
-          200: "var(--film-200)",
-          300: "var(--film-300)",
-          400: "var(--film-400)",
-          500: "var(--film-500)",
-          600: "var(--film-600)",
-          700: "var(--film-700)",
-          800: "var(--film-800)",
-          900: "var(--film-900)",
-          950: "var(--film-950)",
+          50:  "#fef2f3",
+          100: "#fee2e5",
+          200: "#fecad0",
+          300: "#fca5ae",
+          400: "#f87384",
+          500: "#ef4455",
+          600: "#e63946",
+          700: "#c42030",
+          800: "#a41828",
+          900: "#891726",
         },
       },
-      keyframes: {
-        shimmer: {
-          "100%": { transform: "translateX(100%)" },
-        },
-      },
-      animation: {
-        shimmer: "shimmer 2s infinite",
+      letterSpacing: {
+        tightest: "-0.04em",
+        widest2: "0.2em",
       },
     },
   },
   plugins: [],
 };
-
 export default config;

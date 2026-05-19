@@ -1,5 +1,7 @@
-/* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
+
+
+import { useEffect, useRef } from "react";
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
 import { EditRecipe } from "@/lib/types";
@@ -9,15 +11,16 @@ import { Camera } from "lucide-react";
 import { captureFrameAsPng } from "@/lib/frame-export";
 import { DEFAULT_RECIPE } from "@/lib/constants";
 
+
 interface Props {
   file: File | null;
-  recipe?: EditRecipe;
-  videoRef: RefObject<HTMLVideoElement | null>;
 }
 
-export default function VideoPreview({ file, recipe, videoRef }: Props) {
-  const lastId = useRef(0);
+export default function VideoPreview({ file }: Props) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const urlRef = useRef<string | null>(null);
+
+
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
   const [frameNotice, setFrameNotice] = useState<{
@@ -96,53 +99,17 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
   useEffect(() => {
     if (!file) return;
 
+    // revoke previous object url to avoid memory leaks
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-    setIsLoading(true);
-    const id = ++lastId.current;
     const url = URL.createObjectURL(file);
-
-    // cleanup previous object URL safely
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
-    }
     urlRef.current = url;
-
-    const video = videoRef.current;
-    if (!video) return;
-
-    video.src = url;
-    video.load();
-
-    // define handler once per effect run
-    const handleLoaded = () => {
-      if (lastId.current !== id) return;
-      video.play().catch(() => {});
-    };
-
-    onLoadedRef.current = handleLoaded;
-
-    video.addEventListener("loadeddata", handleLoaded);
+    if (videoRef.current) videoRef.current.src = url;
 
     return () => {
-      // cleanup event listener safely
-      if (onLoadedRef.current) {
-        video.removeEventListener("loadeddata", onLoadedRef.current);
-        onLoadedRef.current = null;
-      }
-
-      // stop playback safely
-      if (video) {
-        video.pause();
-        video.removeAttribute("src");
-        video.load();
-      }
-
-      // revoke only if still current
-      if (urlRef.current === url) {
-        URL.revokeObjectURL(urlRef.current);
-        urlRef.current = null;
-      }
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     };
+  }, [file]);
+
   }, [file, videoRef]);
 
   /**
@@ -196,30 +163,9 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
 
   if (!file) return null;
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.code === "Space") {
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      const video = videoRef.current;
-      if (video) {
-        e.preventDefault(); // Prevent default page scroll
-        if (video.paused) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-      }
-    }
-  };
-
   return (
+    <div className="w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video">
+
     <div
       role="group"
       className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
@@ -248,13 +194,15 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         />
       )}
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+
       <video
         ref={videoRef}
         controls
-        className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
-        onLoadedData={() => setIsLoading(false)}
+        className="w-full h-full object-contain"
         playsInline
       />
+
+
 
       {/* Letterbox / Crop overlay */}
       {overlay && (
@@ -321,6 +269,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
           {isExportingFrame ? "Exporting" : "Export frame"}
         </button>
       )}
+
     </div>
   );
 }

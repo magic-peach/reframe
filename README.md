@@ -6,56 +6,24 @@
 
 ### No login. No uploads. No ads. 100% private.
 
-<p align="center">
-  <a href="https://github.com/magic-peach/reframe/stargazers">
-    <img src="https://img.shields.io/github/stars/magic-peach/reframe?style=flat-square&logo=github&label=Stars&color=yellow&logoColor=white">
-  </a>
-  <a href="https://github.com/magic-peach/reframe/network/members">
-    <img src="https://img.shields.io/github/forks/magic-peach/reframe?style=flat-square&logo=github">
-  </a>
-  <a href="https://github.com/magic-peach/reframe/issues">
-    <img src="https://img.shields.io/github/issues/magic-peach/reframe?style=flat-square&logo=github&label=Issues&color=E53E3E&logoColor=white">
-  </a>
-</p>
+[![GitHub Stars](https://img.shields.io/github/stars/magic-peach/reframe?style=flat-square&logo=github)](https://github.com/magic-peach/reframe/stargazers)
 
-<p align="center">
-  <a href="https://nextjs.org">
-    <img src="https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js&logoColor=white">
-  </a>
-  <a href="https://www.typescriptlang.org">
-    <img src="https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript">
-  </a>
-  <a href="https://ffmpegwasm.netlify.app">
-    <img src="https://img.shields.io/badge/FFmpeg.wasm-0.12.10-007808?style=flat-square&logo=ffmpeg&logoColor=white">
-  </a>
-</p>
+[![GitHub Forks](https://img.shields.io/github/forks/magic-peach/reframe?style=flat-square&logo=github)](https://github.com/magic-peach/reframe/network/members)
 
-<p align="center">
-  <a href="LICENSE">
-    <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square">
-  </a>
-  <a href="https://gssoc.girlscript.tech">
-    <img src="https://img.shields.io/badge/GSSoC-2026-FF6B35?style=flat-square">
-  </a>
-  <a href="https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml">
-    <img src="https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml/badge.svg">
-  </a>
-</p>
+[![GitHub Issues](https://img.shields.io/github/issues/magic-peach/reframe?style=flat-square)](https://github.com/magic-peach/reframe/issues)
 
-</div>
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
+[![FFmpeg.wasm](https://img.shields.io/badge/FFmpeg.wasm-0.12.10-green?style=flat-square)](https://ffmpegwasm.netlify.app)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+<<<<<<< HEAD
+[![GSSoC 2026](https://img.shields.io/badge/GSSoC-2026-FF6B35?style=flat-square)](https://gssoc.girlscript.tech)
+[![CI](https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml/badge.svg)](https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml)
 
----
+=======
+>>>>>>> e86251b (docs: add GSSoC 2026 badge to README)
 
-## Built With
-
-<div align="center">
-
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
-![FFmpeg](https://img.shields.io/badge/FFmpeg.wasm-0.12.10-green?style=flat-square&logo=ffmpeg)
-![Lucide](https://img.shields.io/badge/Lucide_React-latest-orange?style=flat-square)
-![Lottie](https://img.shields.io/badge/Lottie_Web-latest-purple?style=flat-square)
+**[Try it now →](https://github.com/magic-peach/reframe)** · **[Report a Bug](https://github.com/magic-peach/reframe/issues/new?labels=bug)** · **[Request a Feature](https://github.com/magic-peach/reframe/issues/new?labels=feature)**
 
 </div>
 
@@ -81,16 +49,6 @@ Reframe is a **browser-based video editor** — everything happens on your devic
 Everything stays on your device. No servers. No tracking. No login.
 
 ---
-## Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| Ctrl+Enter / Cmd+Enter | Export video |
-| Space | Play/pause video preview |
-| M | Toggle audio mute |
-| Escape | Cancel export |
-
-> On macOS, use `Cmd` instead of `Ctrl` for keyboard shortcuts.
 
 ## Getting Started
 
@@ -112,7 +70,7 @@ bun install
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — component changes reflect instantly with [Next.js Fast Refresh](https://nextjs.org/docs/architecture/fast-refresh), so you usually do not need to restart the dev server. For FFmpeg reload notes and debugging tools, see the [Development Tips](CONTRIBUTING.md#development-tips).
+Open [http://localhost:3000](http://localhost:3000) — changes reflect instantly with Next.js Fast Refresh.
 
 ### Production Build
 
@@ -126,116 +84,14 @@ Outputs a static site to `out/` — deploy to Vercel, Netlify, GitHub Pages, or 
 
 ## Deploying
 
-Reframe uses static export (`output: 'export'`), so it can be deployed to any static hosting provider.
+Reframe is a fully static app. Deploy the `out/` folder anywhere:
 
-### Deploying to Vercel
-
-Reframe uses static export (`output: 'export'`) and can be deployed easily on Vercel.
-
-#### Option 1 — Vercel Dashboard (Recommended)
-
-1. Fork this repository
-2. Go to https://vercel.com/new
-3. Import your forked repository
-4. Configure:
-   - Framework Preset: Next.js
-   - Build Command: `bun run build`
-   - Output Directory: `out`
-5. Click **Deploy**
-
-Vercel will automatically build and host the static output.
-
-#### Option 2 — Vercel CLI
-
-```bash
-# Install Vercel CLI globally
-npm i -g vercel
-
-# Login to Vercel
-vercel login
-
-# Deploy from project root
-vercel --prod
-```
-
-#### FFmpeg.wasm Configuration
-
-FFmpeg.wasm requires COOP/COEP headers for SharedArrayBuffer support.
-
-Add the following to `vercel.json`:
-
-```json
-{
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin"
-        },
-        {
-          "key": "Cross-Origin-Embedder-Policy",
-          "value": "require-corp"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Alternative Static Hosts
-
-You can also deploy Reframe on other static hosting providers:
-
-| Platform             | Deployment Method                                           |
-| -------------------- | ----------------------------------------------------------- |
-| **Netlify**          | Connect your fork at https://app.netlify.com/start          |
-| **GitHub Pages**     | Deploy the generated `out/` folder to the `gh-pages` branch |
-| **Cloudflare Pages** | Connect your fork in Cloudflare Pages                       |
-
-### Deploying to Vercel
-
-The quickest way to get Reframe live:
-
-**Option 1 — Vercel Dashboard (Recommended)**
-
-1. Fork this repository on GitHub
-2. Go to [vercel.com/new](https://vercel.com/new) and import your fork
-3. Vercel auto-detects Next.js settings:
-   - **Framework Preset:** Next.js
-   - **Build Command:** `bun run build`
-   - **Output Directory:** `out`
-4. Click **Deploy** — your site will be live in ~2 minutes
-
-**Option 2 — Vercel CLI**
-
-```bash
-# Install Vercel CLI globally
-npm i -g vercel
-
-# Login to Vercel
-vercel login
-
-# Deploy from project root
-vercel --prod
-```
-
-> **Note:** FFmpeg.wasm requires COOP/COEP headers for SharedArrayBuffer support. On Vercel, add a `vercel.json` in your project root:
->
-> ```json
-> {
->   "headers": [
->     {
->       "source": "/(.*)",
->       "headers": [
->         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
->         { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
->       ]
->     }
->   ]
-> }
-> ```
+| Platform             | Command                                                           |
+| -------------------- | ----------------------------------------------------------------- |
+| **Vercel**           | Connect your fork at [vercel.com/new](https://vercel.com/new)     |
+| **Netlify**          | Connect your fork at [netlify.com](https://app.netlify.com/start) |
+| **GitHub Pages**     | Push `out/` to `gh-pages` branch                                  |
+| **Cloudflare Pages** | Connect your fork in the Cloudflare dashboard                     |
 
 ### Deploying to Netlify
 
@@ -265,115 +121,64 @@ You can deploy the `out/` folder using:
 
 ---
 
-## Architecture
+## How It Works
 
-For detailed technical information about Reframe's architecture, design choices, and implementation details, see the [Architecture Documentation](docs/ARCHITECTURE.md).
+1. **Load Video** → User selects a file → App detects resolution and duration
+2. **Build Recipe** → User adjusts presets, framing, trim, speed → Creates `EditRecipe`
+3. **Export** → Click Export → FFmpeg WASM loads from CDN (~30 MB, cached after first use) → Filtergraph runs locally → File downloads
+4. **Done** → Your edited video is ready. Nothing was uploaded anywhere.
 
-> Reframe requires WebAssembly (WASM) support to process videos in the browser.
----
+### Architecture
 
-## Development Tips
-
-### 1. Next.js Fast Refresh
-This project uses Next.js Fast Refresh in development mode. Most changes to React components, hooks, and styles are reflected instantly in the browser without restarting the dev server.
-
-- Component updates appear immediately
-- State is often preserved during edits
-- Restarting `npm run dev` is usually unnecessary for UI changes
-
-Learn more: https://nextjs.org/docs/architecture/fast-refresh
-
----
-
-### 2. FFmpeg Module Changes
-Changes to `ffmpeg.ts` may not hot-reload correctly because FFmpeg initialization and WebAssembly modules can persist in memory.
-
-If updates are not reflected:
-
-- Perform a full browser page reload
-- Clear cached worker instances if necessary
-- Restart the development server only when required
-
-FFmpeg WASM reference: https://ffmpegwasm.netlify.app/docs/overview
-
----
-
-### 3. Monitor FFmpeg Downloads
-FFmpeg WebAssembly assets can be large and may take time to download during development.
-
-Use the browser DevTools **Network** tab to:
-
-- Verify FFmpeg assets are loading correctly
-- Inspect caching behavior
-- Detect failed `.wasm` or worker requests
-- Measure initialization performance
-
-Chrome DevTools: https://developer.chrome.com/docs/devtools/network
-
----
-
-### 4. Use React DevTools
-Install React DevTools for easier component inspection and debugging.
-
-Helpful for:
-
-- Inspecting component props and state
-- Tracing re-renders
-- Debugging hooks
-- Monitoring React component trees
-
-React DevTools: https://react.dev/learn/react-developer-tools
-
----
-
-### 5. Keep Console Open During Development
-The browser console provides important runtime diagnostics for:
-
-- FFmpeg initialization issues
-- Hydration warnings
-- API request failures
-- WebAssembly loading errors
-
-Filtering logs by warnings/errors can speed up debugging significantly.
-
----
-
-### 6. Use Source Maps for Easier Debugging
-Development builds include source maps, allowing you to debug original TypeScript/React source files directly from DevTools.
-
-Tips:
-
-- Set breakpoints in source files
-- Use async stack traces
-- Inspect runtime variables during rendering
-
-JavaScript debugging guide: https://developer.chrome.com/docs/devtools/javascript
-
----
-
-### 7. Watch for Memory Usage
-FFmpeg WebAssembly processing can consume significant browser memory during video operations.
-
-Recommendations:
-
-- Close unused tabs while testing
-- Refresh the page after heavy processing tasks
-- Monitor memory usage in browser performance tools
-
-Performance tools: https://developer.chrome.com/docs/devtools/performance
-
----
-
-### 8. Verify Environment Variables
-After modifying `.env.local`, restart the Next.js development server because environment variables are loaded only during server startup.
-
-Example:
-
-```bash
-npm run dev
+```mermaid
+graph TD
+    A["UI Layer · Next.js Components"] --> B["VideoEditor · FileUpload · PresetSelector · FramingControl · TrimControl"]
+    A --> C["AudioSpeedControl · RotateControl · ExportSettings"]
+    B --> D["useVideoEditor Hook · State Management"]
+    C --> D
+    D --> E["ffmpeg.ts · Lazy-loads WASM, builds filter chains"]
+    E --> F["FFmpeg.wasm · Single-threaded core via CDN · ~30MB"]
+    F --> G["Video Pipeline: trim → rotate → scale/crop → speed"]
+    G --> I["Output: MP4 or WebM · Blob URL → Download"]
 ```
 
-Environment variables guide: https://nextjs.org/docs/app/guides/environment-variables
+### Key Files
+
+| File                             | Purpose                                                  |
+| -------------------------------- | -------------------------------------------------------- |
+| `src/components/VideoEditor.tsx` | Root component; layout, state orchestration              |
+| `src/hooks/useVideoEditor.ts`    | State management (file, recipe, export status)           |
+| `src/lib/ffmpeg.ts`              | FFmpeg wrapper; lazy-loads WASM, builds filter chains    |
+| `src/lib/presets.ts`             | 11 preset definitions (9:16, 16:9, 4:5, etc.)            |
+| `src/lib/types.ts`               | TypeScript types for EditRecipe, ExportResult, etc.      |
+| `src/components/*.tsx`           | Individual control panels (Trim, Rotate, Speed, Quality) |
+
+---
+
+## Tech Stack
+
+| Layer                | Tech                                   |
+| -------------------- | -------------------------------------- |
+| **Framework**        | Next.js 15 (App Router, static export) |
+| **Language**         | TypeScript 5                           |
+| **Styling**          | Tailwind CSS v3                        |
+| **Icons**            | Lucide React                           |
+| **Animations**       | Lottie Web                             |
+| **Video Processing** | FFmpeg.wasm (single-threaded)          |
+| **Fonts**            | Bebas Neue · Syne · DM Sans            |
+
+---
+
+## Supported Browsers
+
+| Browser       | Support    | Notes                   |
+| ------------- | ---------- | ----------------------- |
+| Chrome 90+    | ✅ Full    | Recommended             |
+| Firefox 89+   | ✅ Full    |                         |
+| Safari 15+    | ✅ Full    |                         |
+| Edge 90+      | ✅ Full    |                         |
+| Mobile Chrome | ✅ Full    |                         |
+| Mobile Safari | ⚠️ Partial | Large files may be slow |
 
 ---
 
@@ -430,15 +235,6 @@ Thank you to everyone who has contributed to Reframe! 🎉
 ## Privacy
 
 Reframe processes all videos **100% client-side**. Your video files are never uploaded to any server. You can even use Reframe offline (after first load). The source code is fully open for inspection.
----
-
-## Contributors
-
-Thanks to all the amazing people who have contributed to Reframe!
-
-[![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
-
-We welcome contributions of all kinds — code, documentation, design, and feedback. Check out our [Contributing Guide](CONTRIBUTING.md) to get started.
 
 ---
 
@@ -455,5 +251,3 @@ MIT License — See [LICENSE](LICENSE) for details.
 Made with ❤️ for everyone who just wants to edit a video without the hassle.
 
 </div>
-
----
