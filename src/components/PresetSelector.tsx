@@ -192,7 +192,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               htmlFor="custom-width"
               className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
             >
-              Width (px)
+              Width
             </label>
             <input
               id="custom-width"
@@ -202,11 +202,11 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               step={2}
               value={recipe.customWidth}
               onChange={(e) => handleWidthChange(Number(e.target.value))}
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400"
+              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 pr-12 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400"
             />
           </div>
 
-          <div className="mt-5 flex flex-col items-center justify-center">
+          <div className="flex h-full flex-col items-center justify-center">
             <span className="font-heading text-sm font-medium text-[var(--muted)]">
               ×
             </span>
@@ -217,7 +217,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               htmlFor="custom-height"
               className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
             >
-              Height (px)
+              Height
             </label>
             <input
               id="custom-height"
@@ -227,7 +227,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               step={2}
               value={recipe.customHeight}
               onChange={(e) => handleHeightChange(Number(e.target.value))}
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400"
+              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 pr-12 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400"
             />
           </div>
 
