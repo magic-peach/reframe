@@ -17,6 +17,8 @@ import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
 import { cn } from "@/lib/utils";
+import UndoToast from "./UndoToast";
+
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
   SlidersHorizontal, Zap, AlertTriangle, Github
@@ -60,6 +62,10 @@ export default function VideoEditor() {
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
     recommendedPreset,
+    handleReset,
+    handleUndo,
+    showUndoToast,
+    handleToastDismiss,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
@@ -339,7 +345,7 @@ export default function VideoEditor() {
               <div className="pt-2 flex justify-end">
                 <button
                   type="button"
-                  onClick={resetSettings}
+                  onClick={handleReset}
                   className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
                 >
                   Reset all settings
@@ -368,6 +374,12 @@ export default function VideoEditor() {
           </div>
         </div>
       </div>
+      <UndoToast
+  visible={showUndoToast}
+  onUndo={handleUndo}
+  onDismiss={handleToastDismiss}
+  duration={5000}
+/>
     </div>
   );
 }

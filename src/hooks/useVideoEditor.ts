@@ -13,6 +13,11 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+// ADD THESE TWO:
+const [previousRecipe, setPreviousRecipe] = useState<typeof DEFAULT_RECIPE | null>(null);
+const [showUndoToast, setShowUndoToast] = useState(false);
     const timeout = setTimeout(() => {
       URL.revokeObjectURL(url);
       reject( new Error("Video metaData load timeout"))
@@ -394,8 +399,24 @@ export function useVideoEditor() {
     }
    },[result?.blobUrl])
 
+  // ADD THIS INSTEAD:
   const resetSettings = useCallback(() => {
+    setPreviousRecipe({ ...recipe });
     setRecipe(DEFAULT_RECIPE);
+    setShowUndoToast(true);
+  }, [recipe]);
+
+  const handleUndo = useCallback(() => {
+    if (previousRecipe) {
+      setRecipe(previousRecipe);
+      setPreviousRecipe(null);
+    }
+    setShowUndoToast(false);
+  }, [previousRecipe]);
+
+  const handleToastDismiss = useCallback(() => {
+    setShowUndoToast(false);
+    setPreviousRecipe(null);
   }, []);
 
   const cancelExport = useCallback(() => {
@@ -445,6 +466,12 @@ export function useVideoEditor() {
   }, []);
 
   return {
+    return {
+  // ...all existing returns...
+    resetSettings,       // already there — now updated
+    showUndoToast,       // ADD
+    handleUndo,          // ADD
+    handleToastDismiss,  // ADD
     file,
     duration,
     recipe,
