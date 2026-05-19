@@ -67,9 +67,8 @@ export async function loadFFmpeg(
     const isSimdSupported = await simd();
 
     // Select core file dynamically
-    const coreName = isSimdSupported
-      ? "ffmpeg-core-simd"
-      : "ffmpeg-core";
+    
+    const coreName = "ffmpeg-core";
 
     // Try CDN list
     let loaded = false;
