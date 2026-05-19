@@ -44,7 +44,7 @@ const abortCheck = (signal?: AbortSignal) => {
   }
 };
 
-export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
+export async function loadFFmpeg(onProgress?: (percent: number) => void,signal?: AbortSignal): Promise<FFmpeg> {
   if (ffmpegInstance?.loaded) return ffmpegInstance;
 
   const ffmpeg = ffmpegInstance ?? new FFmpeg();

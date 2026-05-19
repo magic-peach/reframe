@@ -277,7 +277,7 @@ export function useVideoEditor() {
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
-      const ffmpeg = await loadFFmpeg(abortController.signal);
+      const ffmpeg = await loadFFmpeg(undefined, abortController.signal);
       if (exportCancelledRef.current) return;
 
       setStatus("exporting");
@@ -325,7 +325,7 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration]);
+  }, [ file,status,recipe,duration,result,musicFile,musicVolume,originalAudioVolume,loopMusic,overlayFile,overlayPosition,overlaySize,overlayOpacity,]);
 
 
   useEffect(() => {

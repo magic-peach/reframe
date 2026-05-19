@@ -136,8 +136,9 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
                   Press Escape to cancel
                 </p>
               </div>
-            </div>
-          )}
+                )}
+          </div>
+           )}
         </div>
       </div>
     </FocusTrap>

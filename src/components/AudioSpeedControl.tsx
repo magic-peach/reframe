@@ -2,13 +2,8 @@
 import { useEffect } from "react";
 
 import { EditRecipe } from "@/lib/types"
-<<<<<<< HEAD
-import { SPEED_STEPS } from "@/lib/constants"
-import { Volume2, VolumeX, Gauge, AlertTriangle, Music2 } from "lucide-react";
-=======
 import { SPEED_STEPS } from "@/lib/constants";
-import { Volume2, VolumeX, Gauge, AlertTriangle } from "lucide-react";
->>>>>>> origin/main
+import { Volume2, VolumeX, Gauge, AlertTriangle,Music2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
