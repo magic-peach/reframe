@@ -21,6 +21,7 @@ import {
   Layers, Crop, Scissors, RotateCw, Volume2,
   SlidersHorizontal, Zap, AlertTriangle, Github
 } from "lucide-react";
+import OnboardingTour from "./OnboardingTour";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -58,6 +59,7 @@ export default function VideoEditor() {
     overlayPosition, setOverlayPosition,
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
+    recommendedPreset,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
@@ -88,6 +90,7 @@ export default function VideoEditor() {
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
       <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
+      <OnboardingTour />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {status === "exporting" && `Exporting video: ${progress}%`}
@@ -114,9 +117,9 @@ export default function VideoEditor() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} />
+              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
               <div className="text-center text-[var(--muted)] py-6">
@@ -315,6 +318,13 @@ export default function VideoEditor() {
           )}>
             <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
               <Section icon={<Layers size={12} />} title="Output size">
+                {recommendedPreset && (
+                  <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
+                    <p>
+                      We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {recommendedPreset.platform.split("·")[0].trim()} ({recommendedPreset.label.replace(/\s/g, "")})
+                    </p>
+                  </div>
+                )}
                 <PresetSelector recipe={recipe} onChange={updateRecipe} />
               </Section>
 
@@ -334,6 +344,7 @@ export default function VideoEditor() {
             </div>
 
             <button
+              id="export-button"
               type="button"
               onClick={handleExport}
               disabled={!file || isProcessing}

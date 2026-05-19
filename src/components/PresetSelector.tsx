@@ -82,7 +82,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
   );
 
   return (
-    <div className="space-y-3">
+    <div id="preset-selector" className="space-y-3">
       <div className="relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
           <Search size={14} className="text-[var(--muted)]" />
