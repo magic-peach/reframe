@@ -9,7 +9,7 @@ export interface EditRecipe {
   keepAudio: boolean;
   speed: number;
   quality: number;
-  format: "mp4" | "webm" | "mkv";
+  format: "mp4" | "webm" | "mkv" | "gif";
   stabilization: boolean;
   brightness: number;
   contrast: number;
@@ -42,7 +42,7 @@ export interface ExportResult {
   size: number;
   width: number;
   height: number;
-  format: "mp4" | "webm" | "mkv";
+  format: "mp4" | "webm" | "mkv" | "gif";
 }
 
 export type ExportStatus =
