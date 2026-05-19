@@ -466,9 +466,9 @@ export function useVideoEditor() {
   }, []);
 
   return {
-    return {
-  // ...all existing returns...
-    resetSettings,       // already there — now updated
+    
+  
+    resetSettings,       
     showUndoToast,       // ADD
     handleUndo,          // ADD
     handleToastDismiss,  // ADD
