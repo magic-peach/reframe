@@ -180,10 +180,11 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     }
   };
 
+  // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions,jsx-a11y/no-noninteractive-tabindex
   return (
     <>
       <div
-        role="group"
+        role="application"
         className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
         tabIndex={0}
         onKeyDown={handleKeyDown}
