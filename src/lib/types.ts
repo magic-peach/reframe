@@ -14,6 +14,12 @@ export interface EditRecipe {
   brightness: number;
   contrast: number;
   saturation: number;
+
+  // New properties for Background Music feature
+  bgMusicFile: File | null;
+  videoVolume: number;
+  bgMusicVolume: number;
+  loopBgMusic: boolean;
 }
 
 export interface ExportResult {
@@ -48,6 +54,12 @@ export const DEFAULT_RECIPE: EditRecipe = {
   brightness: 0,
   contrast: 0,
   saturation: 0,
+
+  // Default values for Background Music feature
+  bgMusicFile: null,
+  videoVolume: 1.0,      // 1.0 means 100% full volume by default
+  bgMusicVolume: 0.5,    // 0.5 means 50% volume by default
+  loopBgMusic: false,
 };
 
 export const MAX_FILE_SIZE =

@@ -8,6 +8,7 @@ import FramingControl from "./FramingControl";
 import TrimControl from "./TrimControl";
 import RotateControl from "./RotateControl";
 import AudioSpeedControl from "./AudioSpeedControl";
+import BackgroundMusicControl from "./BackgroundMusicControl"; // Imported our new component
 import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
@@ -15,7 +16,7 @@ import DownloadResult from "./DownloadResult";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github
+  SlidersHorizontal, Zap, AlertTriangle
 } from "lucide-react";
 
 interface SectionProps {
@@ -51,7 +52,6 @@ export default function VideoEditor() {
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
 
-  
   const isProcessing = status === "loading-engine" || status === "exporting";
 
   return (
@@ -88,10 +88,10 @@ export default function VideoEditor() {
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} />
 
               {!file && (
-              <div className="text-center text-gray-500 py-6">
-                <p>Upload a video to get started</p>
-                <p className="text-sm">Supports MP4, MOV, WebM and more</p>
-              </div>
+                <div className="text-center text-gray-500 py-6">
+                  <p>Upload a video to get started</p>
+                  <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+                </div>
               )}
 
               {file && (
@@ -106,6 +106,7 @@ export default function VideoEditor() {
                 ⚠️ Large file — processing may take several minutes
               </p>
             )}      
+            
             {file && (
               <div className={cn(
                 "grid grid-cols-1 sm:grid-cols-2 gap-4",
@@ -118,107 +119,93 @@ export default function VideoEditor() {
                   <Section icon={<RotateCw size={12} />} title="Rotate" delay={100}>
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
+                  
+                  {/* Embedded Color Adjustments Container Panel */}
+                  <Section icon={<SlidersHorizontal size={12} />} title="Adjustments" delay={125}>
+                    <div className="space-y-5">
+                      {/* Brightness */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>Brightness</span>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ brightness: 0 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          type="range"
+                          min="-1"
+                          max="1"
+                          step="0.1"
+                          value={recipe.brightness}
+                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
+                          className="w-full"
+                        />
+                      </div>
+
+                      {/* Contrast */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>Contrast</span>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ contrast: 1 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="2"
+                          step="0.1"
+                          value={recipe.contrast}
+                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
+                          className="w-full"
+                        />
+                      </div>
+
+                      {/* Saturation */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span>Saturation</span>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ saturation: 1 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="3"
+                          step="0.1"
+                          value={recipe.saturation}
+                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  </Section>
                 </div>
+
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                  {/* Native Video Speed Controls */}
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
-                  <Section
-  icon={<SlidersHorizontal size={12} />}
-  title="Adjustments"
-  delay={175}
->
-  <div className="space-y-5">
-
-    {/* Brightness */}
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <span>Brightness</span>
-
-        <button
-          type="button"
-          onClick={() => updateRecipe({ brightness: 0 })}
-          className="text-film-500 hover:underline"
-        >
-          Reset
-        </button>
-      </div>
-
-      <input
-        type="range"
-        min="-1"
-        max="1"
-        step="0.1"
-        value={recipe.brightness}
-        onChange={(e) =>
-          updateRecipe({
-            brightness: Number(e.target.value),
-          })
-        }
-        className="w-full"
-      />
-    </div>
-
-    {/* Contrast */}
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <span>Contrast</span>
-
-        <button
-          type="button"
-          onClick={() => updateRecipe({ contrast: 1 })}
-          className="text-film-500 hover:underline"
-        >
-          Reset
-        </button>
-      </div>
-
-      <input
-        type="range"
-        min="0"
-        max="2"
-        step="0.1"
-        value={recipe.contrast}
-        onChange={(e) =>
-          updateRecipe({
-            contrast: Number(e.target.value),
-          })
-        }
-        className="w-full"
-      />
-    </div>
-
-    {/* Saturation */}
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <span>Saturation</span>
-
-        <button
-          type="button"
-          onClick={() => updateRecipe({ saturation: 1 })}
-          className="text-film-500 hover:underline"
-        >
-          Reset
-        </button>
-      </div>
-
-      <input
-        type="range"
-        min="0"
-        max="3"
-        step="0.1"
-        value={recipe.saturation}
-        onChange={(e) =>
-          updateRecipe({
-            saturation: Number(e.target.value),
-          })
-        }
-        className="w-full"
-      />
-    </div>
-
-  </div>
-</Section>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
+
+                  {/* New Background Music Control Section Module */}
+                  <Section icon={<Volume2 size={12} />} title="Background Music" delay={175}>
+                    <BackgroundMusicControl recipe={recipe} onChange={updateRecipe} />
+                  </Section>
+
                   <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
                   </Section>
@@ -230,10 +217,10 @@ export default function VideoEditor() {
             )}
 
             {status === "error" && error && (
-                 <div
-                    role="status"
-                    className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
-                  >
+              <div
+                role="status"
+                className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
+              >
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
                 <div className="flex-1">
                   <p className="font-heading font-bold text-sm">Error</p>
