@@ -1,13 +1,11 @@
 "use client";
 
-import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import { EditRecipe } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 
 interface Props {
-  file: File | null;
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
   duration: number;
@@ -72,7 +70,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
   const handleEnd = (val: string) => {
     if (val === "") {
       onChange({ trimEnd: null });
-      setInvalidEnd(false);
+      setEnd(false);
       return;
     }
 

@@ -159,7 +159,6 @@ export default function VideoEditor() {
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <Section icon={<Scissors size={12} />} title="Trim" delay={50}>
                     <TrimControl
-                      file={file}
                       recipe={recipe}
                       onChange={updateRecipe}
                       duration={duration}
