@@ -1,5 +1,6 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import type { ProgressEventCallback } from "@ffmpeg/ffmpeg";
 import { EditRecipe, ExportResult } from "./types";
 import { getPresetById } from "./presets";
 
@@ -8,14 +9,36 @@ const CORE_BASE_URL =
 
 let ffmpegInstance: FFmpeg | null = null;
 
-export async function loadFFmpeg(): Promise<FFmpeg> {
+export function terminateFFmpegEngine(): void {
+  if (!ffmpegInstance) return;
+  try {
+    ffmpegInstance.terminate();
+  } catch {
+    /* worker may already be gone */
+  }
+  ffmpegInstance = null;
+}
+
+export async function loadFFmpeg(signal?: AbortSignal): Promise<FFmpeg> {
   if (ffmpegInstance) return ffmpegInstance;
 
   const ffmpeg = new FFmpeg();
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-    wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
-  });
+  try {
+    await ffmpeg.load(
+      {
+        coreURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await toBlobURL(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
+      },
+      { signal }
+    );
+  } catch (err) {
+    try {
+      ffmpeg.terminate();
+    } catch {
+      /* noop */
+    }
+    throw err;
+  }
 
   ffmpegInstance = ffmpeg;
   return ffmpeg;
@@ -71,12 +94,36 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
   return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
 }
 
+export type ExportVideoOptions = {
+  signal?: AbortSignal;
+};
+
+export function buildExportFilename(
+  presetId: string,
+  _width: number,
+  _height: number,
+  format: "mp4" | "webm"
+): string {
+  return `${presetId}.${format}`;
+}
+
+async function safeDeleteFile(ffmpeg: FFmpeg, path: string): Promise<void> {
+  try {
+    await ffmpeg.deleteFile(path);
+  } catch {
+    /* file may not exist if export failed mid-flight */
+  }
+}
+
 export async function exportVideo(
   ffmpeg: FFmpeg,
   file: File,
   recipe: EditRecipe,
-  onProgress: (percent: number) => void
+  onProgressPercent: (percent: number) => void,
+  options?: ExportVideoOptions
 ): Promise<ExportResult> {
+  const { signal } = options ?? {};
+
   let targetW: number, targetH: number;
   if (recipe.preset === "custom") {
     targetW = recipe.customWidth;
@@ -87,94 +134,115 @@ export async function exportVideo(
     targetH = preset?.height ?? 1080;
   }
 
-  // dimensions must be even for libx264
   targetW = Math.round(targetW / 2) * 2;
   targetH = Math.round(targetH / 2) * 2;
 
   const ext = file.name.split(".").pop() ?? "mp4";
-  const inputName = `input.${ext}`;
-  const outputName = "output.mp4";
+  const jobId = crypto.randomUUID().slice(0, 10);
+  const inputName = `in_${jobId}.${ext}`;
+  const outputName = `out_${jobId}.mp4`;
+  const webmOutput = `out_${jobId}.webm`;
 
-  await ffmpeg.writeFile(inputName, await fetchFile(file));
+  const onProgress: ProgressEventCallback = ({ progress }) => {
+    onProgressPercent(Math.min(99, Math.round(progress * 100)));
+  };
 
-  ffmpeg.on("progress", ({ progress }) => {
-    onProgress(Math.min(99, Math.round(progress * 100)));
-  });
+  ffmpeg.on("progress", onProgress);
 
-  const vf = buildVideoFilter(recipe, targetW, targetH);
-  const audioTrim = buildAudioTrimFilter(recipe);
-  const audioSpeed = buildAudioFilter(recipe.speed);
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
-  const af = afParts.join(",");
+  try {
+    await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
-  const args = ["-i", inputName];
-  if (vf) args.push("-vf", vf);
+    const vf = buildVideoFilter(recipe, targetW, targetH);
+    const audioTrim = buildAudioTrimFilter(recipe);
+    const audioSpeed = buildAudioFilter(recipe.speed);
+    const afParts = [audioTrim, audioSpeed].filter(Boolean);
+    const af = afParts.join(",");
 
-  if (!recipe.keepAudio) {
-    args.push("-an");
-  } else if (af) {
-    args.push("-af", af);
-  }
+    const args = ["-i", inputName];
+    if (vf) args.push("-vf", vf);
 
-  args.push(
-    "-c:v", "libx264",
-    "-crf", String(recipe.quality),
-    "-preset", "medium",
-    "-movflags", "+faststart"
-  );
+    if (!recipe.keepAudio) {
+      args.push("-an");
+    } else if (af) {
+      args.push("-af", af);
+    }
 
-  if (recipe.keepAudio) {
-    args.push("-c:a", "aac", "-b:a", "128k");
-  }
+    args.push(
+      "-c:v",
+      "libx264",
+      "-crf",
+      String(recipe.quality),
+      "-preset",
+      "medium",
+      "-movflags",
+      "+faststart"
+    );
 
-  args.push(outputName);
+    if (recipe.keepAudio) {
+      args.push("-c:a", "aac", "-b:a", "128k");
+    }
 
-  const exitCode = await ffmpeg.exec(args);
+    args.push(outputName);
 
-  // fall back to webm if libx264 isnt available
-  if (exitCode !== 0) {
-    const webmOutput = "output.webm";
-    const fallbackArgs = [
-      "-i", inputName,
-      ...(vf ? ["-vf", vf] : []),
-      ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
-      "-c:v", "libvpx-vp9",
-      "-crf", String(recipe.quality),
-      ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
-      webmOutput,
-    ];
+    const exitCode = await ffmpeg.exec(args, undefined, { signal });
 
-    const fallbackCode = await ffmpeg.exec(fallbackArgs);
-    if (fallbackCode !== 0) throw new Error("Export failed");
+    if (exitCode !== 0) {
+      const fallbackArgs = [
+        "-i",
+        inputName,
+        ...(vf ? ["-vf", vf] : []),
+        ...(recipe.keepAudio ? (af ? ["-af", af] : []) : ["-an"]),
+        "-c:v",
+        "libvpx-vp9",
+        "-crf",
+        String(recipe.quality),
+        ...(recipe.keepAudio ? ["-c:a", "libopus"] : []),
+        webmOutput,
+      ];
 
-    const data = await ffmpeg.readFile(webmOutput);
-    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
-    await ffmpeg.deleteFile(inputName);
-    await ffmpeg.deleteFile(webmOutput);
+      const fallbackCode = await ffmpeg.exec(fallbackArgs, undefined, { signal });
+      if (fallbackCode !== 0) throw new Error("Export failed");
 
-    onProgress(100);
+      const data = await ffmpeg.readFile(webmOutput, undefined, { signal });
+      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
+      await safeDeleteFile(ffmpeg, inputName);
+      await safeDeleteFile(ffmpeg, webmOutput);
+
+      onProgressPercent(100);
+      return {
+        blobUrl: URL.createObjectURL(blob),
+        size: blob.size,
+        width: targetW,
+        height: targetH,
+        format: "webm",
+      };
+    }
+
+    const data = await ffmpeg.readFile(outputName, undefined, { signal });
+    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
+    await safeDeleteFile(ffmpeg, inputName);
+    await safeDeleteFile(ffmpeg, outputName);
+
+    onProgressPercent(100);
     return {
       blobUrl: URL.createObjectURL(blob),
       size: blob.size,
       width: targetW,
       height: targetH,
-      format: "webm",
+      format: "mp4",
     };
+  } catch (err) {
+    await safeDeleteFile(ffmpeg, inputName);
+    await safeDeleteFile(ffmpeg, outputName);
+    await safeDeleteFile(ffmpeg, webmOutput);
+    throw err;
+  } finally {
+    try {
+      ffmpeg.off("progress", onProgress);
+    } catch {
+      /* noop */
+    }
   }
-
-  const data = await ffmpeg.readFile(outputName);
-  const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/mp4" });
-  await ffmpeg.deleteFile(inputName);
-  await ffmpeg.deleteFile(outputName);
-
-  onProgress(100);
-  return {
-    blobUrl: URL.createObjectURL(blob),
-    size: blob.size,
-    width: targetW,
-    height: targetH,
-    format: "mp4",
-  };
 }
 
 export function formatBytes(bytes: number): string {

@@ -3,7 +3,7 @@
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
-import PresetSelector from "./PresetSelector";
+import BatchExportPanel from "./BatchExportPanel";
 import FramingControl from "./FramingControl";
 import TrimControl from "./TrimControl";
 import RotateControl from "./RotateControl";
@@ -12,7 +12,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import {
-  Layers, Crop, Scissors, RotateCw, Volume2,
+  Crop, Scissors, RotateCw, Volume2,
   SlidersHorizontal, Zap, AlertTriangle, Github
 } from "lucide-react";
 
@@ -44,15 +44,25 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
 export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
-    result, error, updateRecipe,
-    handleFileSelect, handleExport, reset,
+    result, batchResults, error, updateRecipe,
+    batchMode, batchPresetIds, batchProgress,
+    setBatchMode, toggleBatchPreset,
+    handleFileSelect, handleExport, cancelExport, reset,
+    acknowledgeCancelled,
   } = useVideoEditor();
 
   const isProcessing = status === "loading-engine" || status === "exporting";
+  const exportBlocked =
+    !file || isProcessing || (batchMode && batchPresetIds.length < 2);
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
-      <ExportOverlay status={status} progress={progress} />
+      <ExportOverlay
+        status={status}
+        progress={progress}
+        batchProgress={batchProgress}
+        onCancel={isProcessing ? cancelExport : undefined}
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
 
@@ -114,18 +124,40 @@ export default function VideoEditor() {
               </div>
             )}
 
-            {status === "done" && result && (
+            {status === "done" && (result || (batchResults && batchResults.length > 0)) && (
               <div className="animate-fade-in">
-                <DownloadResult result={result} onReset={reset} />
+                <DownloadResult result={result} batchResults={batchResults} onReset={reset} />
+              </div>
+            )}
+
+            {status === "cancelled" && (
+              <div className="flex items-start gap-3 p-4 bg-[var(--surface)] border border-[var(--border)] rounded-xl text-sm animate-fade-in">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5 text-[var(--muted)]" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-heading font-bold text-[var(--text)]">Export cancelled</p>
+                  <p className="text-xs text-[var(--muted)] mt-1">No files were exported.</p>
+                  <button
+                    type="button"
+                    onClick={acknowledgeCancelled}
+                    className="mt-3 text-xs font-heading font-bold uppercase tracking-wide text-film-600 hover:text-film-700"
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
             )}
           </div>
 
           <div className={`space-y-5 ${isProcessing ? "pointer-events-none opacity-50" : ""}`}>
             <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
-              <Section icon={<Layers size={12} />} title="Output size">
-                <PresetSelector recipe={recipe} onChange={updateRecipe} />
-              </Section>
+              <BatchExportPanel
+                recipe={recipe}
+                onRecipeChange={updateRecipe}
+                batchMode={batchMode}
+                onBatchModeChange={setBatchMode}
+                batchPresetIds={batchPresetIds}
+                onToggleBatchPreset={toggleBatchPreset}
+              />
 
               <Section icon={<Crop size={12} />} title="Framing" delay={100}>
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
@@ -134,18 +166,18 @@ export default function VideoEditor() {
 
             <button
               onClick={handleExport}
-              disabled={!file || isProcessing}
+              disabled={exportBlocked}
               className={`
                 w-full flex items-center justify-center gap-3 py-5 rounded-xl
                 font-display text-2xl tracking-widest transition-all duration-200
-                ${file && !isProcessing
+                ${!exportBlocked
                   ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
                 }
               `}
             >
-              <Zap size={20} className={file && !isProcessing ? "animate-pulse" : ""} />
-              {isProcessing ? "PROCESSING" : "EXPORT"}
+              <Zap size={20} className={!exportBlocked ? "animate-pulse" : ""} />
+              {isProcessing ? "PROCESSING" : batchMode ? "BATCH EXPORT" : "EXPORT"}
             </button>
           </div>
         </div>
