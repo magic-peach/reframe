@@ -428,8 +428,7 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, loopMusic, musicFile, musicVolume, originalAudioVolume]);
-
+}, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, musicFile, musicVolume, originalAudioVolume, loopMusic]);
 
   useEffect(() => {
     if (status === "exporting") {
@@ -560,6 +559,7 @@ export function useVideoEditor() {
   useEffect(() => {
     localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
   }, [recipe.soundOnCompletion]);
+
   const seekTo = useCallback((time: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
