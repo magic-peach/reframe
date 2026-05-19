@@ -53,8 +53,6 @@ export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
   const [recipe, setRecipe] = useState<EditRecipe>(DEFAULT_RECIPE);
-<<<<<<< Updated upstream
-=======
   
   // New state for persisting settings
   const [rememberSettings, setRememberSettings] = useState<boolean>(false);
@@ -62,13 +60,45 @@ export function useVideoEditor() {
   // NEW: State for tracking the session's export history
   const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
   
->>>>>>> Stashed changes
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
+
+  // --- LocalStorage Persistence Logic ---
+  
+  // 1. Load saved settings on mount (Client-side only)
+  useEffect(() => {
+    const savedToggle = localStorage.getItem('rememberSettings') === 'true';
+    setRememberSettings(savedToggle);
+
+    if (savedToggle) {
+      const savedRecipe = localStorage.getItem('videoEditorRecipe');
+      if (savedRecipe) {
+        try {
+          const parsedRecipe = JSON.parse(savedRecipe);
+          setRecipe(parsedRecipe);
+        } catch (error) {
+          console.error("Failed to parse saved video recipe", error);
+        }
+      }
+    }
+  }, []);
+
+  // 2. Save settings when recipe or toggle changes
+  useEffect(() => {
+    localStorage.setItem('rememberSettings', String(rememberSettings));
+
+    if (rememberSettings) {
+      localStorage.setItem('videoEditorRecipe', JSON.stringify(recipe));
+    } else {
+      localStorage.removeItem('videoEditorRecipe');
+    }
+  }, [rememberSettings, recipe]);
+
+  // --- End LocalStorage Logic ---
 
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => ({ ...prev, ...patch }));
@@ -109,6 +139,7 @@ export function useVideoEditor() {
       const dur = await getVideoDuration(selectedFile);
       setDuration(dur);
       setFile(selectedFile);
+      // Keep existing settings if rememberSettings is active, but always reset trim boundaries for a new file
       setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
     } catch (err) {
       setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
@@ -262,12 +293,9 @@ export function useVideoEditor() {
     progress,
     result,
     error,
-<<<<<<< Updated upstream
-=======
     rememberSettings,
     exportHistory, // NEW: Expose history to the UI
     setRememberSettings,
->>>>>>> Stashed changes
     updateRecipe,
     handleFileSelect,
     handleExport,
