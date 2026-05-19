@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, DEFAULT_RECIPE, ExportHistoryItem } from "@/lib/types";
 import { loadFFmpeg, exportVideo, terminateFFmpeg } from "@/lib/ffmpeg";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
@@ -35,11 +35,8 @@ function verifyMagicBytes(file: File): Promise<boolean> {
       const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
       const ascii = String.fromCharCode(...arr);
 
-      // WebM / MKV
       if (hex.startsWith('1A45DFA3')) resolve(true);
-      // AVI
       else if (hex.startsWith('52494646')) resolve(true);
-      // MP4 / MOV (checks for 'ftyp' in first 12 bytes)
       else if (ascii.substring(0, 12).includes('ftyp')) resolve(true);
       else resolve(false);
     };
@@ -52,12 +49,80 @@ export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
   const [recipe, setRecipe] = useState<EditRecipe>(DEFAULT_RECIPE);
+  
+  const [rememberSettings, setRememberSettings] = useState<boolean>(false);
+  const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
+  
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
+
+  // --- Initialization (Hash & LocalStorage) ---
+  useEffect(() => {
+    const savedToggle = localStorage.getItem('rememberSettings') === 'true';
+    setRememberSettings(savedToggle);
+
+    // 1. Check URL Hash First (Highest Priority)
+    if (window.location.hash && window.location.hash.length > 1) {
+      try {
+        const hashParams = new URLSearchParams(window.location.hash.slice(1));
+        const parsedRecipe: Partial<EditRecipe> = {};
+
+        // Carefully cast strings back to proper types
+        if (hashParams.has("preset")) parsedRecipe.preset = hashParams.get("preset")!;
+        if (hashParams.has("customWidth")) parsedRecipe.customWidth = Number(hashParams.get("customWidth"));
+        if (hashParams.has("customHeight")) parsedRecipe.customHeight = Number(hashParams.get("customHeight"));
+        if (hashParams.has("framing")) parsedRecipe.framing = hashParams.get("framing") as "fit" | "fill";
+        if (hashParams.has("trimStart")) parsedRecipe.trimStart = Number(hashParams.get("trimStart"));
+        if (hashParams.has("trimEnd")) parsedRecipe.trimEnd = hashParams.get("trimEnd") === "null" ? null : Number(hashParams.get("trimEnd"));
+        if (hashParams.has("rotate")) parsedRecipe.rotate = Number(hashParams.get("rotate")) as 0 | 90 | 180 | 270;
+        if (hashParams.has("keepAudio")) parsedRecipe.keepAudio = hashParams.get("keepAudio") === "true";
+        if (hashParams.has("speed")) parsedRecipe.speed = Number(hashParams.get("speed"));
+        if (hashParams.has("quality")) parsedRecipe.quality = Number(hashParams.get("quality"));
+
+        setRecipe((prev) => ({ ...prev, ...parsedRecipe }));
+        return; // Skip localStorage if hash exists
+      } catch (e) {
+        console.error("Failed to parse URL hash settings", e);
+      }
+    }
+
+    // 2. Fallback to LocalStorage
+    if (savedToggle) {
+      const savedRecipe = localStorage.getItem('videoEditorRecipe');
+      if (savedRecipe) {
+        try {
+          setRecipe(JSON.parse(savedRecipe));
+        } catch (error) {
+          console.error("Failed to parse saved video recipe", error);
+        }
+      }
+    }
+  }, []);
+
+  // --- Save to LocalStorage ---
+  useEffect(() => {
+    localStorage.setItem('rememberSettings', String(rememberSettings));
+    if (rememberSettings) {
+      localStorage.setItem('videoEditorRecipe', JSON.stringify(recipe));
+    } else {
+      localStorage.removeItem('videoEditorRecipe');
+    }
+  }, [rememberSettings, recipe]);
+
+  // --- NEW: Sync state to URL Hash ---
+  useEffect(() => {
+    const params = new URLSearchParams();
+    Object.entries(recipe).forEach(([key, value]) => {
+      params.set(key, String(value));
+    });
+    
+    // replaceState prevents creating a massive browser history
+    window.history.replaceState(null, '', `#${params.toString()}`);
+  }, [recipe]);
 
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => ({ ...prev, ...patch }));
@@ -69,7 +134,6 @@ export function useVideoEditor() {
     setError(null);
     setFile(null);
 
-    // LAYER 1: Extension check
     const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
     const name = selectedFile.name.toLowerCase();
     const hasValidExtension = validExtensions.some(ext => name.endsWith(ext));
@@ -79,14 +143,12 @@ export function useVideoEditor() {
       return;
     }
 
-    // LAYER 2: MIME type check
     if (!selectedFile.type.startsWith("video/")) {
       setError(`Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || 'unknown'}`);
       setStatus("error");
       return;
     }
 
-    // LAYER 3: Magic Bytes Verification
     const isVideo = await verifyMagicBytes(selectedFile);
     if (!isVideo) {
       setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
@@ -133,6 +195,24 @@ export function useVideoEditor() {
       if (exportCancelledRef.current) return;
 
       setResult(exportResult);
+      
+      setExportHistory((prevHistory) => {
+        const newItem: ExportHistoryItem = {
+          id: Date.now().toString(),
+          timestamp: Date.now(),
+          result: exportResult,
+          recipe: recipe, 
+        };
+
+        const updatedHistory = [newItem, ...prevHistory];
+
+        if (updatedHistory.length > 5) {
+          URL.revokeObjectURL(updatedHistory[5].result.blobUrl);
+        }
+
+        return updatedHistory.slice(0, 5); 
+      });
+
       setStatus("done");
     } catch (err) {
       if (exportCancelledRef.current) return;
@@ -160,21 +240,13 @@ export function useVideoEditor() {
 
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key === "Enter" &&
-        file &&
-        status === "idle"
-      ) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && file && status === "idle") {
         handleExport();
       }
     };
 
     document.addEventListener("keydown", handleKeydown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeydown);
-    };
+    return () => document.removeEventListener("keydown", handleKeydown);
   }, [file, status, handleExport]);
 
   const cancelExport = useCallback(() => {
@@ -197,7 +269,6 @@ export function useVideoEditor() {
     setError(null);
   }, []);
 
-  // Development-only memory monitoring during export
   useEffect(() => {
     if (process.env.NODE_ENV !== "development") return;
     if (status !== "exporting") return;
@@ -212,6 +283,14 @@ export function useVideoEditor() {
     return () => clearInterval(interval);
   }, [status]);
 
+  useEffect(() => {
+    return () => {
+      exportHistory.forEach((item) => {
+        URL.revokeObjectURL(item.result.blobUrl);
+      });
+    };
+  }, [exportHistory]);
+
   return {
     file,
     duration,
@@ -220,6 +299,9 @@ export function useVideoEditor() {
     progress,
     result,
     error,
+    rememberSettings,
+    exportHistory,
+    setRememberSettings,
     updateRecipe,
     handleFileSelect,
     handleExport,

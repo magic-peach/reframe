@@ -47,6 +47,7 @@ export default function VideoEditor() {
     file, duration, recipe, status, progress,
     result, error, updateRecipe,
     handleFileSelect, handleExport, cancelExport, reset,
+    exportHistory // FIXED: Grab exportHistory from the hook
   } = useVideoEditor();
 
   
@@ -190,10 +191,10 @@ export default function VideoEditor() {
                   </Section>
 
                   <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
+                    {/* The new copy link button lives inside this component! */}
                     <ExportSettings 
                       recipe={recipe} 
                       onChange={updateRecipe} 
-                      onExport={handleExport} 
                     />
                   </Section>
                 </div>
@@ -223,7 +224,8 @@ export default function VideoEditor() {
 
             {status === "done" && result && (
               <div role="status" className="animate-fade-in">
-                <DownloadResult result={result} onReset={reset} />
+                {/* FIXED: Passed exportHistory into DownloadResult */}
+                <DownloadResult result={result} exportHistory={exportHistory} onReset={reset} />
               </div>
             )}
           </div>
