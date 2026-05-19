@@ -37,3 +37,6 @@ next-env.d.ts
 
 # bun
 bun.lockb
+
+# npm lockfile (project uses bun)
+package-lock.json
