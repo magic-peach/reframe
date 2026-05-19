@@ -4,11 +4,11 @@
 
 /* ── Light mode tokens ── */
 :root {
-  --bg: #F7F4F0;
-  --surface: #ffffff;
-  --border: #E8E3DC;
-  --text: #181412;
-  --muted: #5C5550;
+  --bg: #F7F4F0;         /* Soft light background */
+  --surface: #ffffff;    /* Pure white for cards/buttons */
+  --border: #E8E3DC;     /* Muted light border */
+  --text: #181412;       /* Near-black text */
+  --muted: #5C5550;      /* Secondary dark gray text */
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --film-600: #e63946;
@@ -22,11 +22,11 @@
 
 /* ── Dark mode tokens ── */
 .dark {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --border: #334155;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
+  --bg: #0f172a;         /* Deep slate-blue background */
+  --surface: #1e293b;    /* Slate container background */
+  --border: #334155;     /* Dark accent border */
+  --text: #f1f5f9;       /* Crisp white/light text */
+  --muted: #94a3b8;      /* Secondary light gray text */
   --accent: #3b82f6;
   --accent-hover: #2563eb;
   --warning: #fbbf24;
@@ -41,16 +41,12 @@
   --bg: #000000;
   --surface: #000000;
   --border: #FFFFFF;
-
   --text: #FFFFFF;
   --muted: #FFFFFF;
-
   --accent: #FFFF00;
   --accent-hover: #FFFF00;
-
   --error: #FF6666;
   --success: #66FF66;
-
   --film-600: #FF6666;
   --film-400: #66FF66;
 }
@@ -69,10 +65,4 @@ body {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: ease;
   transition-duration: 200ms;
-}
-
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 4px;
 }

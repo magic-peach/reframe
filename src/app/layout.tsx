@@ -3,7 +3,7 @@ import { Bebas_Neue, Syne, DM_Sans } from "next/font/google";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import Navbar from "@/components/Navbar"; 
 import ScrollToTop from "@/components/ScrollToTop";
 
 export const metadata: Metadata = {
@@ -46,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-<html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
         <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
@@ -77,22 +77,22 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
-        
-      <a href="#main-content"
+      {/* Added suppressHydrationWarning here to stop extension injection warnings */}
+      <body 
+        className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased"
+        suppressHydrationWarning
+      >
+        <a 
+          href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-black"
         >
           Skip to main content
         </a>
         <ThemeProvider>
           <ErrorBoundary>
-            <header
-              role="banner"
-              className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]"
-            >
-              <h1 className="text-lg font-semibold">Reframe</h1>
-              <ThemeToggle />
-            </header>
+            
+            <Navbar />
+
             <main id="main-content" tabIndex={-1}>
               {children}
             </main>
