@@ -7,6 +7,8 @@ import { formatDuration } from "@/lib/utils";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import WaveformCanvas from "@/components/WaveformCanvas";
 
+const MIN_CLIP_DURATION = 0.1;
+
 interface Props {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
@@ -61,7 +63,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
       return;
     }
 
-    if (recipe.trimEnd !== null && n >= recipe.trimEnd) {
+    if (recipe.trimEnd !== null && n >= recipe.trimEnd - MIN_CLIP_DURATION) {
       setStart(true);
       setStartErrorMsg("Start time must be less than the end time.");
       return;
@@ -69,7 +71,6 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
     setStart(false);
     setStartErrorMsg("");
-
     onChange({ trimStart: n });
   };
 
@@ -81,8 +82,6 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
     }
 
     const n = parseFloat(val);
-
-    onChange({ trimEnd: n });
 
     if (isNaN(n)) {
       setEnd(true);
@@ -96,7 +95,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
       return;
     }
 
-    if (n <= recipe.trimStart) {
+    if (n <= recipe.trimStart + MIN_CLIP_DURATION) {
       setEnd(true);
       setEndErrorMsg("End time must be greater than start time.");
       return;
@@ -112,6 +111,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
     setEnd(false);
     setEndErrorMsg("");
+    onChange({ trimEnd: n });
   };
 
   const inputClass =
@@ -207,6 +207,12 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
         <p className="text-sm text-[var(--muted)] font-heading mt-1">
           Clip: {formatDuration(clipLength)} of {formatDuration(duration)}
         </p>
+      )}
+      {recipe.trimEnd !== null &&
+        recipe.trimEnd - recipe.trimStart < MIN_CLIP_DURATION && (
+          <p className="text-[10px] text-red-500 font-heading">
+            Clip must be at least 0.1 seconds long.
+          </p>
       )}
     </div>
   );
