@@ -137,6 +137,7 @@ export default function ExportSettings({
             aria-label="Play sound when export completes"
             className="accent-film-600 cursor-pointer"
           />
+
         </div>
         )}
       </div>
