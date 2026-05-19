@@ -12,6 +12,7 @@ interface Props {
   currentFile: File | null;
   fileError: string;
   duration: number;
+  heroFileInputId?: string;
 }
 
 export default function FileUpload({
@@ -19,6 +20,7 @@ export default function FileUpload({
   currentFile,
   fileError,
   duration,
+  heroFileInputId,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -140,6 +142,7 @@ export default function FileUpload({
         type="file"
         accept="video/*"
         className="hidden"
+        id={heroFileInputId}
         onChange={(e) => {
           const f = e.target.files?.[0];
           if (f) handleFile(f);
@@ -160,6 +163,7 @@ export default function FileUpload({
       type="file"
       accept="video/*"
       className="hidden"
+      id={heroFileInputId}
       onChange={(e) => {
         const f = e.target.files?.[0];
         if (f) handleFile(f);
@@ -240,6 +244,7 @@ export default function FileUpload({
           type="file"
           accept="video/*"
           className="hidden"
+          id={heroFileInputId}
           onChange={(e) => {
             const f = e.target.files?.[0];
 

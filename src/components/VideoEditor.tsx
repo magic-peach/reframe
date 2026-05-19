@@ -3,6 +3,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
+import Hero from "./Hero";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
@@ -119,8 +120,10 @@ export default function VideoEditor() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
+            {!file && <Hero onUploadClick={() => document.getElementById("hero-file-input")?.click()} />}
+            
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
+              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} heroFileInputId="hero-file-input" />
 
               {!file && (
               <div className="text-center text-[var(--muted)] py-6">
