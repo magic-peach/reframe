@@ -132,7 +132,7 @@ export default function ExportSettings({
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1">
           <label
             htmlFor="stabilization-toggle"
             className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
@@ -148,8 +148,7 @@ export default function ExportSettings({
               checked={recipe.stabilization}
               onChange={(e) =>
                 onChange({
-                  stabilization:
-                    e.target.checked,
+                  stabilization: e.target.checked,
                 })
               }
               aria-label="Enable video stabilization"
@@ -159,12 +158,17 @@ export default function ExportSettings({
           </span>
         </div>
 
+        {/* Short descriptive label explaining what the setting does */}
+        <p className="text-xs text-[var(--muted)] mb-1">
+          Reduce camera shake
+        </p>
+
         <div className="flex justify-end">
           <span
             className={cn(
-              "text-sm",
+              "text-xs",
               recipe.stabilization
-                ? "text-red-700"
+                ? "text-red-700 font-medium"
                 : "text-[var(--muted)]"
             )}
           >

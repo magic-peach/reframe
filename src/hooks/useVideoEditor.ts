@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
+import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
+import { suggestPreset } from "@/lib/presetSuggestion";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
 
@@ -115,6 +117,11 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
+  const [videoMetadata, setVideoMetadata] = useState<{
+    width: number;
+    height: number;
+    duration: number;
+  } | null>(null);
   const [recipe, setRecipe] = useState({
     ...DEFAULT_RECIPE,
     soundOnCompletion:
@@ -177,17 +184,23 @@ export function useVideoEditor() {
     }
   }, [recipe.preset, recipe.quality, recipe.speed, recipe.customWidth, recipe.customHeight]);
 
+  const recommendedPreset = useMemo(() => {
+    if (!videoMetadata) return null;
+    return getPresetById(suggestPreset(videoMetadata.width, videoMetadata.height)) ?? null;
+  }, [videoMetadata]);
+
   const handleFileSelect = useCallback(async (selectedFile: File) => {
     setResult(null);
     setStatus("idle");
     setError(null);
     setFile(null);
+    setVideoMetadata(null);
     if (!selectedFile.type.startsWith("video/")) {
-    setFileError("Please upload a video file only.");
-    return;
-  }
+      setFileError("Please upload a video file only.");
+      return;
+    }
 
-  setFileError("");
+    setFileError("");
 
     // LAYER 0: Size check
     if (selectedFile.size > MAX_FILE_SIZE) {
@@ -219,10 +232,21 @@ export function useVideoEditor() {
     }
 
     try {
-      const { duration: dur } = await extractMetadata(selectedFile);
+      const { width, height, duration: dur } = await extractMetadata(selectedFile);
       setDuration(dur);
+      setVideoMetadata({ width, height, duration: dur });
       setFile(selectedFile);
-      setRecipe((prev) => ({ ...prev, trimStart: 0, trimEnd: null }));
+      setRecipe((prev) => {
+        const suggestedPreset = suggestPreset(width, height);
+        const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
+
+        return {
+          ...prev,
+          trimStart: 0,
+          trimEnd: null,
+          ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
+        };
+      });
     } catch (err) {
       setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
       setStatus("error");
@@ -382,6 +406,7 @@ export function useVideoEditor() {
   const reset = useCallback(() => {
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setFile(null);
+    setVideoMetadata(null);
     setDuration(0);
     setRecipe(DEFAULT_RECIPE);
     setStatus("idle");
@@ -446,5 +471,6 @@ export function useVideoEditor() {
     setOverlaySize,
     overlayOpacity,
     setOverlayOpacity,
+    recommendedPreset,
   };
 }
