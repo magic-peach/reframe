@@ -24,7 +24,7 @@ export default function LottiePlayer({
   useEffect(() => {
     if (!containerRef.current) return;
     let cancelled = false;
-    let anim: { destroy: () => void } | null = null;
+    let anim: any = null;
 
     import("lottie-web").then((mod) => {
       if (cancelled || !containerRef.current) return;
@@ -36,6 +36,11 @@ export default function LottiePlayer({
         autoplay,
         animationData,
       });
+      const prefersReducedMotion =
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReducedMotion && anim) {
+        anim.goToAndStop(1, true);
+      }
     });
 
     return () => {
