@@ -160,7 +160,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
     <div id="trim-control" className="space-y-3">
       {duration > 0 && (
         <div
-          role="group"
+          role="toolbar"
           aria-label="Trim timeline"
           ref={trackRef}
           className="relative h-6 flex items-center cursor-pointer select-none"
