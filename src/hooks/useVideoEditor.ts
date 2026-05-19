@@ -15,8 +15,8 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
     const video = document.createElement("video");
     const timeout = setTimeout(() => {
       URL.revokeObjectURL(url);
-      reject( new Error("Video metaData load timeout"))
-    }, 500);
+      reject( new Error("Video metaData load timeout — the file may be too large or the device too slow. Please try again.") );
+    }, 5000);
 
     video.preload = "metadata";
     video.onloadedmetadata = () => {
