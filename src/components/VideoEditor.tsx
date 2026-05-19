@@ -47,6 +47,7 @@ export default function VideoEditor() {
     file, duration, recipe, status, progress,
     result, error, updateRecipe,
     handleFileSelect, handleExport, cancelExport, reset,
+    rememberSettings, setRememberSettings, // <-- Added these two
   } = useVideoEditor();
 
   const isProcessing = status === "loading-engine" || status === "exporting";
@@ -110,7 +111,13 @@ export default function VideoEditor() {
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
-                    <ExportSettings recipe={recipe} onChange={updateRecipe} />
+                    {/* Added the props here to pass down to ExportSettings */}
+                    <ExportSettings 
+                      recipe={recipe} 
+                      onChange={updateRecipe} 
+                      rememberSettings={rememberSettings} 
+                      onRememberChange={setRememberSettings} 
+                    />
                   </Section>
                 </div>
               </div>
@@ -174,9 +181,9 @@ export default function VideoEditor() {
           <p className="text-[11px] font-heading text-[var(--muted)] tracking-wide">
             2026 Reframe. Free, open source, no login required.
           </p>
-<p className="text-[10px] text-[var(--muted)]">
-  All video processing happens locally in your browser using FFmpeg.wasm.
-</p>
+          <p className="text-[10px] text-[var(--muted)]">
+            All video processing happens locally in your browser using FFmpeg.wasm.
+          </p>
           <a
             href="https://github.com/magic-peach/reframe"
             target="_blank"
