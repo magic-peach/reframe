@@ -96,17 +96,17 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     filters.push("setpts=PTS-STARTPTS");
   }
 
+ 
+  if (recipe.stabilization) {
+    filters.push("deshake");
+  }
+
   if (recipe.rotate === 90) {
     filters.push("transpose=1");
   } else if (recipe.rotate === 180) {
     filters.push("transpose=1,transpose=1");
   } else if (recipe.rotate === 270) {
     filters.push("transpose=2");
-  }
-
-  // Integrated from main branch layout enhancements
-  if ((recipe as any).stabilization) {
-    filters.push("deshake=x=-1:y=-1:w=-1:h=-1:rx=16:ry=16");
   }
 
   if (recipe.framing === "fit") {
