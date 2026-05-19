@@ -62,6 +62,7 @@ export default function VideoEditor() {
     recommendedPreset,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
+  const [isDraggingGlobally, setIsDraggingGlobally] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,7 +89,39 @@ export default function VideoEditor() {
   }, [videoSrc]);
 
   return (
-    <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
+    <div
+      className="min-h-screen relative flex flex-col"
+      style={{ background: "var(--bg)" }}
+      onDragEnter={(e) => {
+        if (e.dataTransfer?.types.includes("Files")) {
+          e.preventDefault();
+          setIsDraggingGlobally(true);
+        }
+      }}
+    >
+      {isDraggingGlobally && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center m-4 border-4 border-film-500 border-dashed rounded-3xl"
+          onDragOver={(e) => e.preventDefault()}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            setIsDraggingGlobally(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDraggingGlobally(false);
+            const droppedFile = e.dataTransfer.files?.[0];
+            if (droppedFile) {
+              handleFileSelect(droppedFile);
+            }
+          }}
+        >
+          <div className="bg-[var(--surface)] p-10 rounded-2xl shadow-2xl flex flex-col items-center gap-4 animate-bounce pointer-events-none">
+            <Layers size={48} className="text-film-500" />
+            <h2 className="font-display text-3xl tracking-widest text-[var(--text)] text-center">Drop video here to begin</h2>
+          </div>
+        </div>
+      )}
       <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
       <OnboardingTour />
 
