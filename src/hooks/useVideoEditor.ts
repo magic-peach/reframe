@@ -438,6 +438,10 @@ export function useVideoEditor() {
     }
   }, []);
 
+  const toggleSound = useCallback(() => {
+  updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
+}, [recipe.soundOnCompletion, updateRecipe]);
+
   return {
     file,
     duration,
@@ -472,5 +476,6 @@ export function useVideoEditor() {
     overlayOpacity,
     setOverlayOpacity,
     recommendedPreset,
+    toggleSound,
   };
 }
