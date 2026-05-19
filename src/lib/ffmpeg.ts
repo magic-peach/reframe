@@ -38,14 +38,14 @@ export class FFmpegLoadError extends Error {
   }
 }
 
-export async function loadFFmpeg(
-  signal?: AbortSignal, 
-  onProgress?: (percent: number) => void
-): Promise<FFmpeg> {
-  if (ffmpegInstance?.loaded) {
-    onProgress?.(100);
-    return ffmpegInstance;
+const abortCheck = (signal?: AbortSignal) => {
+  if (signal?.aborted) {
+    throw new DOMException("Export cancelled", "AbortError");
   }
+};
+
+export async function loadFFmpeg(onProgress?: (percent: number) => void,signal?: AbortSignal): Promise<FFmpeg> {
+  if (ffmpegInstance?.loaded) return ffmpegInstance;
 
   const ffmpeg = ffmpegInstance ?? new FFmpeg();
   ffmpegInstance = ffmpeg;
@@ -96,17 +96,17 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     filters.push("setpts=PTS-STARTPTS");
   }
 
- 
-  if (recipe.stabilization) {
-    filters.push("deshake");
-  }
-
   if (recipe.rotate === 90) {
     filters.push("transpose=1");
   } else if (recipe.rotate === 180) {
     filters.push("transpose=1,transpose=1");
   } else if (recipe.rotate === 270) {
     filters.push("transpose=2");
+  }
+
+  // Integrated from main branch layout enhancements
+  if ((recipe as any).stabilization) {
+    filters.push("deshake=x=-1:y=-1:w=-1:h=-1:rx=16:ry=16");
   }
 
   if (recipe.framing === "fit") {
@@ -420,11 +420,13 @@ export async function exportVideo(
     for (const path of cleanupFiles) {
       try {
         await ffmpeg.deleteFile(path);
-      } catch {}
+      } catch {
+      }
     }
   }
 }
 
+/** Formats a byte count as a human-readable string (KB or MB). */
 export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;

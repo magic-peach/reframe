@@ -3,7 +3,7 @@ import { useEffect } from "react";
 
 import { EditRecipe } from "@/lib/types"
 import { SPEED_STEPS } from "@/lib/constants";
-import { Volume2, VolumeX, Gauge, AlertTriangle } from "lucide-react";
+import { Volume2, VolumeX, Gauge, AlertTriangle,Music2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -56,6 +56,102 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
 
   return (
     <div className="space-y-4">
+    <div className="space-y-3 border-b border-[var(--border)] pb-4">
+
+  <div className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-1">
+    <Music2 size={10} />
+    Background Music
+  </div>
+
+  <input
+    type="file"
+    accept=".mp3,.wav,.m4a,audio/*"
+    onChange={(e) =>
+      onChange({
+        backgroundMusic: e.target.files?.[0] || null,
+      })
+    }
+    className="block w-full text-xs"
+  />
+
+  {recipe.backgroundMusic && (
+    <p className="text-[10px] text-film-600 break-all">
+      {recipe.backgroundMusic.name}
+    </p>
+  )}
+
+  {/* Music Volume */}
+  <div>
+    <div className="flex items-center justify-between mb-2">
+      <label htmlFor="bg-music-volume" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+        Music Volume
+      </label>
+
+      <span className="text-xs text-film-600">
+        {Math.round(recipe.backgroundMusicVolume * 100)}%
+      </span>
+    </div>
+
+    <input
+      id="bg-music-volume"
+      type="range"
+      min="0"
+      max="1"
+      step="0.1"
+      value={recipe.backgroundMusicVolume ?? 0.3}
+      onChange={(e) =>
+        onChange({
+          backgroundMusicVolume: Number(e.target.value),
+        })
+      }
+      className="w-full"
+    />
+  </div>
+
+  {/* Original Audio Volume */}
+  <div>
+    <div className="flex items-center justify-between mb-2">
+      <label htmlFor="original-audio-volume" className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+        Original Audio Volume
+      </label>
+
+      <span className="text-xs text-film-600">
+        {Math.round(recipe.originalAudioVolume * 100)}%
+      </span>
+    </div>
+
+    <input
+      id="original-audio-volume"
+      type="range"
+      min="0"
+      max="1"
+      step="0.1"
+      value={recipe.originalAudioVolume ?? 1}
+      onChange={(e) =>
+        onChange({
+          originalAudioVolume: Number(e.target.value),
+        })
+      }
+      className="w-full"
+    />
+  </div>
+
+  {/* Loop Music */}
+  <label className="flex items-center gap-2 text-sm text-film-700">
+    <input
+      type="checkbox"
+      checked={recipe.loopBackgroundMusic ?? false}
+      onChange={(e) =>
+        onChange({
+          loopBackgroundMusic: e.target.checked,
+        })
+      }
+    />
+
+    Loop background music
+  </label>
+
+</div>
       {isModified && (
         <div className="flex justify-end animate-fade-in">
           <button

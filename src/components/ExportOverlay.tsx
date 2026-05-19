@@ -94,7 +94,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
             </h2>
             <p className="text-sm text-[var(--muted)] mt-1">
               {isLoading
-                ? "Downloading the video engine. This only happens once."
+                ? "Setting up the video engine. This only happens once."
                 : "Processing your video locally."}
             </p>
             <p className="text-xs font-heading font-semibold text-film-600 mt-2 uppercase tracking-wide">
@@ -103,9 +103,10 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
           </div>
           <span className="sr-only">
             {status === "loading-engine"
-              ? `Loading video engine: ${progress}%`
+              ? "Loading video engine..."
               : `Exporting: ${progress}%`}
           </span>
+          {(status === "exporting" || status === "loading-engine") && (
             <div className="w-full space-y-2">
               <div className="h-1 w-full bg-film-100 rounded-full overflow-hidden">
                 <div
@@ -113,7 +114,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
                   aria-valuenow={progress}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={isLoading? "Engine download progress": "Export progress"}
+                  aria-label="Export progress"
                   className="h-full bg-film-600 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
@@ -135,8 +136,9 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
                   Press Escape to cancel
                 </p>
               </div>
-              )}
-            </div>
+                )}
+          </div>
+           )}
         </div>
       </div>
     </FocusTrap>
