@@ -246,6 +246,30 @@ export default function VideoEditor() {
                           className="w-full"
                         />
                       </div>
+                      {/* Sharpness */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <label htmlFor="sharpness-slider">Sharpness</label>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ sharpness: 0 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          id="sharpness-slider"
+                          type="range"
+                          min="0"
+                          max="3"
+                          step="1"
+                          value={recipe.sharpness}
+                          onChange={(e) => updateRecipe({ sharpness: Number(e.target.value) })}
+                          aria-label="Adjust sharpness"
+                          className="w-full"
+                        />
+                      </div>
                     </div>
                   </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>

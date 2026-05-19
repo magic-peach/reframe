@@ -106,6 +106,10 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       recipe.saturation < 0 || recipe.saturation > 3,
       "Saturation must be between 0 and 3.",
     ],
+    [
+      recipe.sharpness < 0 || recipe.sharpness > 3,
+      "Sharpness must be between 0 and 3.",
+    ],
   ];
 
   return (

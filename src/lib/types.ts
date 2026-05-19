@@ -15,6 +15,7 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  sharpness: number;
 }
 
 export type OverlayPosition =
@@ -80,6 +81,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   contrast: 0,
   saturation: 0,
   soundOnCompletion: false,
+  sharpness: 1,
 };
 
 export const MAX_FILE_SIZE =
