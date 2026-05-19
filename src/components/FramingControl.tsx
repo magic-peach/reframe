@@ -2,6 +2,7 @@
 
 import { EditRecipe } from "@/lib/types";
 import { Maximize2, Crop } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   recipe: EditRecipe;
@@ -16,18 +17,18 @@ export default function FramingControl({ recipe, onChange }: Props) {
         const active = recipe.framing === mode;
         return (
           <button
+            type="button"
             key={mode}
+            title={mode === "fit" ? "Fit: Adds black bars (letterbox) to fill empty space" : "Fill: Crops the video to fill the entire frame"}
             onClick={() => onChange({ framing: mode })}
-            className={`
-              flex-1 flex flex-col items-center gap-2 py-4 rounded-lg border transition-all duration-150
-              hover:scale-[1.02] active:scale-[0.98]
-              ${active
+            className={cn(
+              "flex-1 min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-2 py-4 rounded-lg border transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]",
+              active
                 ? "border-film-500 bg-film-50 text-film-700"
                 : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
-              }
-            `}
+            )}
           >
-            <Icon size={18} />
+            <Icon size={18} aria-hidden="true"/>
             <span className="sr-only">
               Set framing to {mode === "fit" ? "fit within frame" : "fill frame by cropping"}
             </span>
