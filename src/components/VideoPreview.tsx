@@ -19,6 +19,11 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
   const onLoadedRef = useRef<(() => void) | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const frameCountRef = useRef(0);
+
+
 
   /** Capture the current video frame and download it as a PNG. */
   const handleGrabFrame = useCallback(() => {
@@ -101,6 +106,101 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     };
   }, [file, videoRef]);
 
+
+  useEffect(() => {
+
+    const canvas = canvasRef.current;
+    if (!canvas){
+      return;
+    } 
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+
+      return;
+    }
+
+    const draw = () => {
+      frameCountRef.current++;
+    
+      const video = videoRef.current;
+      if (!video || video.readyState < 2) {
+        rafRef.current = requestAnimationFrame(draw);
+        return;
+      }
+
+      const vw = video.videoWidth, vh = video.videoHeight;
+      if (!vw || !vh) { 
+        rafRef.current = requestAnimationFrame(draw); 
+        return; 
+      }
+
+      const isRotated = recipe?.rotate === 90 || recipe?.rotate === 270;
+      const cw = isRotated ? vh : vw;
+      const ch = isRotated ? vw : vh;
+      if (canvas.width !== cw || canvas.height !== ch) { 
+        canvas.width = cw; 
+        canvas.height = ch; 
+      }
+
+      // Apply color filters EVERY FRAME
+      const bri = recipe ? 1 + recipe.brightness : 1;
+      const con = recipe ? recipe.contrast : 1;
+      const sat = recipe ? recipe.saturation : 1;
+
+      ctx.filter = `brightness(${bri}) contrast(${con}) saturate(${sat})`;
+      ctx.clearRect(0, 0, cw, ch);
+
+      let sx = 0, sy = 0, sw = vw, sh = vh, dx = 0, dy = 0, dw = cw, dh = ch;
+      
+      if (recipe && recipe.preset !== "custom") {
+        const preset = getPresetById(recipe.preset);
+        if (preset) {
+          const outRatio = preset.width / preset.height;
+          const vidRatio = vw / vh;
+          if (recipe.framing === "fill") {
+            if (vidRatio > outRatio) { 
+              sw = vh * outRatio; 
+              sx = (vw - sw) / 2; 
+            }
+            else { 
+              sh = vw / outRatio; 
+              sy = (vh - sh) / 2; 
+            }
+          } else {
+            const scale = Math.min(cw / vw, ch / vh);
+            dw = vw * scale; 
+            dh = vh * scale;
+            dx = (cw - dw) / 2; 
+            dy = (ch - dh) / 2;
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, cw, ch);
+          }
+        }
+      }
+
+      const rot = recipe?.rotate ?? 0;
+      if (rot !== 0) {
+        ctx.save();
+        ctx.translate(cw / 2, ch / 2);
+        ctx.rotate((rot * Math.PI) / 180);
+        ctx.drawImage(video, sx, sy, sw, sh, -dw / 2, -dh / 2, dw, dh);
+        ctx.restore();
+      } else {
+        ctx.drawImage(video, sx, sy, sw, sh, dx, dy, dw, dh);
+      }
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+
+
+    rafRef.current = requestAnimationFrame(draw);
+    return () => { 
+      if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [videoRef, recipe]); // ← Keep recipe in deps to restart on changes
+
+
+
   /**
    * Compute the overlay geometry for the selected preset + framing mode.
    * The preview container always uses a 16:9 aspect-video box.
@@ -150,7 +250,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     }
   })();
 
-  if (!file) return null;
+ 
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.code === "Space") {
@@ -175,6 +275,8 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     }
   };
 
+  if (!file) return null;
+
   return (
     <div
       role="group"
@@ -193,9 +295,13 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       <video
         ref={videoRef}
         controls
-        className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+        style={{ position: "absolute", left: "-9999px", width: "640px", height: "360px" }}
         onLoadedData={() => setIsLoading(false)}
         playsInline
+      />
+      <canvas
+        ref={canvasRef}
+        className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
       />
 
       {/* Letterbox / Crop overlay */}

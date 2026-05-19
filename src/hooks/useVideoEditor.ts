@@ -182,7 +182,7 @@ export function useVideoEditor() {
     } catch (e) {
       // ignore
     }
-  }, [recipe.preset, recipe.quality, recipe.speed, recipe.customWidth, recipe.customHeight]);
+  }, [recipe]);
 
   const recommendedPreset = useMemo(() => {
     if (!videoMetadata) return null;
