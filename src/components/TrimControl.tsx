@@ -2,8 +2,9 @@
 
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import { EditRecipe } from "@/lib/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
+import { formatDuration } from "@/lib/utils";
 
 interface Props {
   file: File | null;
@@ -12,79 +13,59 @@ interface Props {
   duration: number;
 }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
+export default function TrimControl({ recipe, onChange, duration }: Props) {
+  const [invalidStart, setStart] = useState(false);
+  const [invalidEnd, setEnd] = useState(false);
+  const [startErrorMsg, setStartErrorMsg] = useState("");
+  const [endErrorMsg, setEndErrorMsg] = useState("");
+  const [startInput, setStartInput] = useState(recipe.trimStart.toString());
 
-function formatTime(seconds: number) {
-  if (!Number.isFinite(seconds) || seconds < 0) return "0:00.0";
+  useEffect(() => {
+    setStartInput(recipe.trimStart.toString());
+  }, [recipe.trimStart]);
 
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds - minutes * 60;
-  const wholeSeconds = Math.floor(remainder);
-  const tenths = Math.floor((remainder - wholeSeconds) * 10);
-  const paddedSeconds = String(wholeSeconds).padStart(2, "0");
-
-  return `${minutes}:${paddedSeconds}.${tenths}`;
-}
-
-export default function TrimControl({
-  file,
-  recipe,
-  onChange,
-  duration,
-}: Props) {
-  const { waveform, isLoading } = useAudioWaveform(file, 48);
-  const [invalidStart, setInvalidStart] = useState(false);
-  const [invalidEnd, setInvalidEnd] = useState(false);
-
-  const trimEnd =
-    recipe.trimEnd ?? (duration > 0 ? duration : recipe.trimStart);
-  const hasTimeline = duration > 0;
-
-  const startErrorMsg =
-    duration > 0
-      ? `Start must be between 0 and ${Math.max(0, Math.min(trimEnd, duration)).toFixed(1)}.`
-      : "Start must be 0 or greater, and before End.";
-
-  const endErrorMsg =
-    duration > 0
-      ? `End must be after Start and up to ${duration.toFixed(1)}.`
-      : "End must be after Start.";
-
-  const startPercent =
-    duration > 0 ? clamp((recipe.trimStart / duration) * 100, 0, 100) : 0;
-
-  const endPercent =
-    duration > 0 ? clamp((trimEnd / duration) * 100, 0, 100) : 100;
-
-  const selectionWidth = Math.max(0, endPercent - startPercent);
+  const clipLength = (recipe.trimEnd ?? duration) - recipe.trimStart;
 
   const handleStart = (val: string) => {
+    setStartInput(val);
+
     if (val === "") {
-      setInvalidStart(false);
-      onChange({ trimStart: 0 });
+      setStart(false);
+      setStartErrorMsg("");
       return;
     }
 
     const n = parseFloat(val);
 
-    if (isNaN(n) || n < 0) {
-      setInvalidStart(true);
+    if (isNaN(n)) {
+      setStart(true);
+      setStartErrorMsg("Enter a valid number.");
+      return;
+    }
+
+    if (n < 0) {
+      setStart(true);
+      setStartErrorMsg("Start time must be 0 or greater.");
       return;
     }
 
     if (duration > 0 && n >= duration) {
-      setInvalidStart(true);
+      setStart(true);
+      setStartErrorMsg(
+        `Start time must be less than duration (${duration.toFixed(1)}s).`,
+      );
       return;
     }
 
     if (recipe.trimEnd !== null && n >= recipe.trimEnd) {
-      setInvalidStart(true);
+      setStart(true);
+      setStartErrorMsg("Start time must be less than the end time.");
       return;
     }
 
-    setInvalidStart(false);
+    setStart(false);
+    setStartErrorMsg("");
+
     onChange({ trimStart: n });
   };
 
@@ -97,84 +78,43 @@ export default function TrimControl({
 
     const n = parseFloat(val);
 
-    if (isNaN(n) || n <= 0 || n <= recipe.trimStart) {
-      setInvalidEnd(true);
-      return;
-    }
-
-    if (duration > 0 && n > duration) {
-      setInvalidEnd(true);
-      return;
-    }
-
-    setInvalidEnd(false);
     onChange({ trimEnd: n });
+
+    if (isNaN(n)) {
+      setEnd(true);
+      setEndErrorMsg("Enter a valid number.");
+      return;
+    }
+
+    if (n <= 0) {
+      setEnd(true);
+      setEndErrorMsg("End time must be greater than 0.");
+      return;
+    }
+
+    if (n <= recipe.trimStart) {
+      setEnd(true);
+      setEndErrorMsg("End time must be greater than start time.");
+      return;
+    }
+
+    if (duration > 0 && n > duration + 0.01) {
+      setEnd(true);
+      setEndErrorMsg(
+        `End time cannot exceed duration (${duration.toFixed(1)}s).`,
+      );
+      return;
+    }
+
+    setEnd(false);
+    setEndErrorMsg("");
   };
 
   const inputClass =
     "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
 
   return (
-    <div className="space-y-2">
-      {hasTimeline && (
-        <div className="space-y-1.5">
-          <div className="relative h-20 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--bg)]">
-            <svg
-              viewBox="0 0 100 48"
-              preserveAspectRatio="none"
-              className="absolute inset-0 h-full w-full"
-              aria-hidden="true"
-            >
-              {(waveform.length > 0
-                ? waveform
-                : Array.from({ length: 48 }, (_, index) =>
-                    isLoading ? 0.25 + (index % 5) * 0.1 : 0.14,
-                  )
-              ).map((peak: number, index: number, bars: number[]) => {
-                const barWidth = 100 / bars.length;
-                const height = Math.max(4, peak * 40);
-                const y = (48 - height) / 2;
-
-                return (
-                  <rect
-                    key={index}
-                    x={index * barWidth}
-                    y={y}
-                    width={Math.max(0.4, barWidth * 0.62)}
-                    height={height}
-                    rx="0.4"
-                    className="fill-film-500/45"
-                  />
-                );
-              })}
-            </svg>
-
-            <div
-              className="border-film-600/80 absolute inset-y-0 border-x bg-film-500/15"
-              style={{
-                left: `${startPercent}%`,
-                width: `${selectionWidth}%`,
-              }}
-            />
-
-            <div
-              className="absolute inset-y-2 w-1 rounded-full bg-film-700 shadow-sm"
-              style={{ left: `${startPercent}%` }}
-            />
-
-            <div
-              className="absolute inset-y-2 w-1 rounded-full bg-film-700 shadow-sm"
-              style={{ left: `${endPercent}%` }}
-            />
-          </div>
-
-          <div className="font-heading flex items-center justify-between text-[10px] text-[var(--muted)]">
-            <span>{formatTime(recipe.trimStart)}</span>
-            <span>{formatTime(trimEnd)}</span>
-          </div>
-        </div>
-      )}
-
+    <div id="trim-control" className="space-y-3">
       <div className="flex gap-3">
         <div className="flex-1">
           <label
@@ -190,7 +130,7 @@ export default function TrimControl({
             min={0}
             max={duration > 0 ? duration : undefined}
             step={0.1}
-            value={recipe.trimStart}
+            value={startInput}
             spellCheck={false}
             onChange={(e) => handleStart(e.target.value)}
             aria-label="Trim start time in seconds"
@@ -249,8 +189,8 @@ export default function TrimControl({
       </div>
 
       {duration > 0 && (
-        <p className="font-heading text-[10px] text-[var(--muted)]">
-          Duration: {duration.toFixed(1)}s
+        <p className="text-sm text-[var(--muted)] font-heading mt-1">
+          Clip: {formatDuration(clipLength)} of {formatDuration(duration)}
         </p>
       )}
     </div>
