@@ -130,6 +130,9 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
       `crop=${targetW}:${targetH}`
     );
   }
+  if (recipe.sharpness !== 0) {
+    filters.push(`unsharp=5:5:${recipe.sharpness}:5:5:0.0`);
+  }
 
   if (recipe.speed !== 1) {
   const pts = (1 / recipe.speed).toFixed(4);
