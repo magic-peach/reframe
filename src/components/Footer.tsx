@@ -14,11 +14,23 @@ import {
 
 export default function Footer() {
   const [isExpanded, setIsExpanded] = useState(false);
+  const handleNewsletterSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const formData = new FormData(event.currentTarget);
+    const emailValue = formData.get("email");
+    const email = typeof emailValue === "string" ? emailValue.trim() : "";
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    if (isValidEmail) {
+      setIsExpanded(false);
+      event.currentTarget.reset();
+    }
+  };
 
   return (
     <footer className="w-full border-t border-[var(--border)] bg-[var(--bg)] text-[var(--text)] px-6 py-16 mt-20 transition-colors duration-300">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
-        {/* Brand Section */}
         <div className="md:col-span-5 space-y-6">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight">Reframe</h2>
@@ -29,7 +41,7 @@ export default function Footer() {
 
           <p className="text-sm opacity-70 leading-relaxed max-w-sm">
             Professional video processing directly in your browser using
-            <span className="font-medium opacity-100"> FFmpeg.wasm</span> —
+            <span className="font-medium opacity-100"> FFmpeg.wasm</span> -
             fast, private, and open source.
           </p>
 
@@ -41,7 +53,7 @@ export default function Footer() {
             ].map((tag) => (
               <span
                 key={tag.label}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[10px] font-semibold tracking-wide uppercase transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:border-[var(--accent)] hover:shadow-[0_0_10px_rgba(255,255,255,0.08)] cursor-pointer select-none"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[10px] font-semibold tracking-wide uppercase transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:border-[var(--accent)] hover:shadow-[0_0_10px_rgba(255,255,255,0.08)] select-none"
               >
                 {tag.icon} {tag.label}
               </span>
@@ -49,7 +61,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Links Section */}
         <div className="md:col-span-3 space-y-5">
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">
             Navigation
@@ -78,9 +89,7 @@ export default function Footer() {
           </nav>
         </div>
 
-        {/* Right Section: Newsletter & Community */}
         <div className="md:col-span-4 flex flex-col items-start md:items-end space-y-8">
-          {/* Newsletter - Logic updated to pass Lint/Build checks */}
           <div className="w-full flex flex-col items-start md:items-end gap-3">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">
               Updates
@@ -106,23 +115,23 @@ export default function Footer() {
               >
                 <form
                   aria-label="Updates signup form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    setIsExpanded(false);
-                  }}
+                  onSubmit={handleNewsletterSubmit}
                   className="flex w-full items-center animate-in slide-in-from-right-2 duration-500"
                 >
+                  <label htmlFor="newsletter-email" className="sr-only">Enter your email to stay tuned</label>
                   <input
+                    id="newsletter-email"
+                    name="email"
                     type="email"
                     placeholder="ENTER EMAIL"
                     className="bg-transparent border-none text-[10px] font-bold tracking-widest text-[var(--text)] focus:outline-none w-full py-3 placeholder:opacity-30"
-                    aria-label="Email address for updates"
                     onBlur={() => setIsExpanded(false)}
+                    aria-label="Email address for newsletter"
                   />
                   <button
-                    aria-label="Submit email for updates"
                     type="submit"
                     className="text-blue-500 hover:text-blue-400 p-1"
+                    aria-label="Submit email"
                   >
                     <ArrowRight size={16} aria-hidden="true" />
                   </button>
@@ -131,8 +140,6 @@ export default function Footer() {
             )}
           </div>
 
-          {/* Community Section */}
-          {/* Community Section */}
           <div className="flex flex-col items-start md:items-end gap-3">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">
               Community
@@ -185,7 +192,6 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom Bar */}
       <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-4 text-[9px] font-bold uppercase tracking-[0.3em] opacity-40">
         <p>© {new Date().getFullYear()} Reframe · MIT License</p>
         <div className="flex items-center gap-2">

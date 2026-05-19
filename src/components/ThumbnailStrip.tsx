@@ -54,16 +54,25 @@ export default function ThumbnailStrip({
 
     const video = document.createElement("video");
     offscreenVideoRef.current = video;
+    video.src = videoSrc;
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.preload = "auto";
 
     try {
-      video.src = videoSrc;
-      video.crossOrigin = "anonymous";
-      video.muted = true;
-      video.preload = "auto";
-
       await new Promise<void>((resolve, reject) => {
-        video.onloadedmetadata = () => resolve();
-        video.onerror = () => reject(new Error("Video load failed"));
+        const cleanup = () => {
+          video.onloadedmetadata = null;
+          video.onerror = null;
+        };
+        video.onloadedmetadata = () => {
+          cleanup();
+          resolve();
+        };
+        video.onerror = () => {
+          cleanup();
+          reject(new Error("Video load failed"));
+        };
         video.load();
       });
 
@@ -95,18 +104,16 @@ export default function ThumbnailStrip({
         await new Promise<void>((resolve) => {
           const onSeeked = async () => {
             video.removeEventListener("seeked", onSeeked);
-
             if (lastRunIdRef.current !== runId) {
               resolve();
               return;
             }
 
-            ctx.drawImage(video, 0, 0, thumbW, thumbH);
-
             try {
-              const blob = await new Promise<Blob | null>((blobResolve) => {
-                canvas.toBlob((b) => blobResolve(b), "image/jpeg", 0.7);
-              });
+              ctx.drawImage(video, 0, 0, thumbW, thumbH);
+              const blob = await new Promise<Blob | null>((blobResolve) =>
+                canvas.toBlob((b) => blobResolve(b), "image/jpeg", 0.7)
+              );
               if (blob && lastRunIdRef.current === runId) {
                 const url = URL.createObjectURL(blob);
                 objectUrlsRef.current.push(url);
@@ -127,11 +134,11 @@ export default function ThumbnailStrip({
           video.currentTime = time;
         });
       }
-
       if (lastRunIdRef.current === runId) {
         setIsGenerating(false);
       }
     } finally {
+      video.pause();
       video.src = "";
       if (offscreenVideoRef.current === video) {
         offscreenVideoRef.current = null;

@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
@@ -72,7 +71,9 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
 
     const handleLoaded = () => {
       if (lastId.current !== id) return;
-      video.play().catch(() => {});
+      video.play().catch((error) => {
+        console.error("Failed to autoplay video:", error);
+      });
     };
 
     onLoadedRef.current = handleLoaded;
@@ -169,7 +170,9 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       if (video) {
         e.preventDefault(); // Prevent default page scroll
         if (video.paused) {
-          video.play().catch(() => {});
+          video.play().catch((error) => {
+            console.error("Failed to play video on Space key:", error);
+          });
         } else {
           video.pause();
         }

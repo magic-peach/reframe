@@ -283,6 +283,9 @@ useEffect(() => {
         dismiss();
       }
     }
+  }).catch((error) => {
+    console.error("Failed to measure tour target:", error);
+    dismiss();
   });
   }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
 
@@ -290,7 +293,9 @@ useEffect(() => {
   useEffect(() => {
   if (!visible) return;
   const onResize = () => {
-    measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(setTargetRect);
+    measureTarget(TOUR_STEPS[stepIndex].targetId).then(setTargetRect).catch((error) => {
+      console.error("Failed to re-measure tour target on resize:", error);
+    });
   };
   window.addEventListener("resize", onResize);
   return () => window.removeEventListener("resize", onResize);

@@ -515,6 +515,8 @@ export default function VideoEditor() {
                     navigator.clipboard.writeText(error).then(() => {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
+                    }).catch((err) => {
+                      console.error("Failed to copy error to clipboard:", err);
                     });
                   }}
                   className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-sm font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"

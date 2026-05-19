@@ -65,7 +65,7 @@ export default function ImageOverlayPanel({
       <div className="flex gap-2.5 items-center w-full">
         
         {/* Left Side: Dynamic Upload / Preview Square */}
-        <label className={`w-14 h-11 shrink-0 rounded-lg overflow-hidden flex flex-col items-center justify-center transition border ${
+        <label htmlFor="overlay-file-input" className={`w-14 h-11 shrink-0 rounded-lg overflow-hidden flex flex-col items-center justify-center transition border ${
           overlayFile 
             ? "border-[var(--border)] bg-black/40 pointer-events-none" 
             : "border-dashed border-[#2d4266] hover:bg-white/5 text-[#c7d8f7] hover:text-white cursor-pointer"
@@ -86,12 +86,14 @@ export default function ImageOverlayPanel({
             </>
           )}
           <input
+            id="overlay-file-input"
             ref={inputRef}
             type="file"
             accept="image/png,image/jpeg,image/webp"
             onChange={handleUpload}
             className="hidden"
             disabled={!!overlayFile}
+            aria-label="Upload overlay image"
           />
         </label>
 

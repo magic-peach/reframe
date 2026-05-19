@@ -356,16 +356,16 @@ export async function exportVideo(
   const af = afParts.join(",");
     const hasMusicTrack = !!(musicOptions?.file && recipe.keepAudio);
     const musicInputName = `music_input_${sessionId}.mp3`;
-    if (hasMusicTrack) {
-      await ffmpeg.writeFile(musicInputName, await fetchFile(musicOptions!.file!), { signal });
+    if (hasMusicTrack && musicOptions?.file) {
+      await ffmpeg.writeFile(musicInputName, await fetchFile(musicOptions.file), { signal });
       cleanupFiles.add(musicInputName);
     }
 
     const hasOverlay = !!(overlayOptions?.file);
-    const overlayExt = overlayOptions?.file?.name.split(".").pop() ?? "png";
+    const overlayExt = overlayOptions?.file?.name?.split(".").pop() ?? "png";
     const overlayInputName = `overlay_${sessionId}.${overlayExt}`;
-    if (hasOverlay) {
-      await ffmpeg.writeFile(overlayInputName, await fetchFile(overlayOptions!.file!), { signal });
+    if (hasOverlay && overlayOptions?.file) {
+      await ffmpeg.writeFile(overlayInputName, await fetchFile(overlayOptions.file), { signal });
       cleanupFiles.add(overlayInputName);
     }
 
