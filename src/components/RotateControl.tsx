@@ -21,6 +21,8 @@ export default function RotateControl({ recipe, onChange }: Props) {
             type="button"
             key={deg}
             onClick={() => onChange({ rotate: deg })}
+            aria-label={`Rotate video to ${deg} degrees`}
+            aria-pressed={active}
             className={cn(
               "flex-1 min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border text-xs transition-all duration-150 cursor-pointer hover:scale-[1.03] active:scale-[0.97]",
               active
@@ -28,7 +30,7 @@ export default function RotateControl({ recipe, onChange }: Props) {
                 : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
             )}
           >
-            <RotateCw size={15} style={{ transform: `rotate(${deg}deg)` }} className="transition-transform" />
+            <RotateCw size={15} style={{ transform: `rotate(${deg}deg)`, transformOrigin: 'center' }} className="transition-transform" />
             <span className="sr-only">Rotate video to {deg} degrees</span>
             {deg}
           </button>
