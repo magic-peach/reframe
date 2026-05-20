@@ -4,8 +4,9 @@
     "": {
       "name": "reframe",
       "dependencies": {
-        "@ffmpeg/ffmpeg": "^0.12.10",
-        "@ffmpeg/util": "^0.12.2",
+        "@ffmpeg/core": "^0.12.10",
+        "@ffmpeg/ffmpeg": "0.12.10",
+        "@ffmpeg/util": "0.12.1",
         "clsx": "^2.1.1",
         "focus-trap-react": "^12.0.1",
         "jszip": "^3.10.1",
@@ -32,6 +33,9 @@
         "vitest": "^4.1.6",
       },
     },
+  },
+  "overrides": {
+    "postcss": "^8.5.3",
   },
   "packages": {
     "@alloc/quick-lru": [

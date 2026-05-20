@@ -38,8 +38,14 @@ export class FFmpegLoadError extends Error {
   }
 }
 
+const abortCheck = (signal?: AbortSignal) => {
+  if (signal?.aborted) {
+    throw new DOMException("Export cancelled", "AbortError");
+  }
+};
+
 export async function loadFFmpeg(
-  signal?: AbortSignal, 
+  signal?: AbortSignal,
   onProgress?: (percent: number) => void
 ): Promise<FFmpeg> {
   if (ffmpegInstance?.loaded) {
@@ -57,11 +63,42 @@ export async function loadFFmpeg(
   try {
     ffmpeg.on("progress", handleProgress);
 
-    // Secure engine load using verified runtime checksum hashes from main
-    await ffmpeg.load({
-      coreURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
-    }, { signal });
+    // Check if browser supports SIMD
+    const isSimdSupported = await simd();
+
+    // Select core file dynamically
+    
+    const coreName = "ffmpeg-core";
+
+    // Try CDN list
+    let loaded = false;
+
+    for (const baseURL of CDN_LIST) {
+      try {
+        await ffmpeg.load(
+          {
+            coreURL: await toBlobURL(
+              `${baseURL}/${coreName}.js`,
+              "text/javascript"
+            ),
+            wasmURL: await toBlobURL(
+              `${baseURL}/${coreName}.wasm`,
+              "application/wasm"
+            ),
+          },
+          { signal }
+        );
+
+        loaded = true;
+        break;
+      } catch {
+        console.warn(`Failed loading from ${baseURL}`);
+      }
+    }
+
+    if (!loaded) {
+      throw new Error("All CDN sources failed");
+    }
 
     onProgress?.(100);
     return ffmpeg;

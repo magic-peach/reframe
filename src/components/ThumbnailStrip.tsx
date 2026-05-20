@@ -106,7 +106,7 @@ export default function ThumbnailStrip({
     return () => {
       abortRef.current = true;
     };
-  }, [generateThumbnails]);
+  }, [generateThumbnails, videoSrc, duration]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -177,6 +177,7 @@ export default function ThumbnailStrip({
                   onMouseLeave={() => setHoveredIndex(null)}
                   title={`Seek to ${formatTime(thumb.time)}`}
                 >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={thumb.dataUrl}
                     alt={`Frame at ${formatTime(thumb.time)}`}

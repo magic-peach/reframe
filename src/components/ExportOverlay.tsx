@@ -106,6 +106,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
               ? `Loading video engine: ${progress}%`
               : `Exporting: ${progress}%`}
           </span>
+
             <div className="w-full space-y-2">
               <div className="h-1 w-full bg-film-100 rounded-full overflow-hidden">
                 <div

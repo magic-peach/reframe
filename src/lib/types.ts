@@ -51,7 +51,8 @@ export type ExportStatus =
   | "loading-engine"
   | "exporting"
   | "done"
-  | "error";
+  | "error"
+  | "cancelled";;
 
 export const SPEED_STEPS = [
   0.25,
