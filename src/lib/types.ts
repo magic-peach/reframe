@@ -12,6 +12,7 @@ export interface EditRecipe {
   quality: number;
   format: "mp4" | "webm" | "mkv" | "gif";
   stabilization: boolean;
+  noiseReduction: 'off' | 'light' | 'medium' | 'heavy';
   brightness: number;
   contrast: number;
   saturation: number;
@@ -78,6 +79,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   quality: 23,
   format: "mp4",
   stabilization: false,
+  noiseReduction: 'off',
   brightness: 0,
   contrast: 0,
   saturation: 0,
