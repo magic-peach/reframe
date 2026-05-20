@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ScrollToTop from "@/components/ScrollToTop";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
@@ -86,6 +87,7 @@ export default function RootLayout({
         </a>
         <ThemeProvider>
           <ErrorBoundary>
+            <ServiceWorkerRegister />
             <header
               role="banner"
               className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]"
