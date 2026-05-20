@@ -348,13 +348,13 @@ export function useVideoEditor() {
   useEffect(() => {
     const shouldWarn =
       status === "exporting" ||
-      status === "loading-engine" ||
-      status === "done";
+      status === "loading-engine";
 
     if (!shouldWarn) return;
 
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
+      e.returnValue = "";
     };
 
     window.addEventListener("beforeunload", handler);

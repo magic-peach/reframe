@@ -79,6 +79,8 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         target &&
         (target.tagName === "INPUT" ||
           target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.tagName === "BUTTON" ||
           target.isContentEditable)
       ) {
         return;
@@ -87,12 +89,22 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       if (e.code === "KeyT") {
         e.preventDefault();
         void handleGrabFrame();
+      } else if (e.code === "Space") {
+        const video = videoRef.current;
+        if (video) {
+          e.preventDefault(); // Prevent default page scroll
+          if (video.paused) {
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        }
       }
     };
 
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
-  }, [handleGrabFrame]);
+  }, [handleGrabFrame, videoRef]);
   useEffect(() => {
     if (!file) return;
 
@@ -196,35 +208,11 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
 
   if (!file) return null;
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.code === "Space") {
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      const video = videoRef.current;
-      if (video) {
-        e.preventDefault(); // Prevent default page scroll
-        if (video.paused) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-      }
-    }
-  };
-
   return (
     <div
       role="group"
       className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
       tabIndex={0}
-      onKeyDown={handleKeyDown}
       aria-label="Video preview (press Space to play/pause, T to export the current frame)"
     >
       {frameNotice && (
