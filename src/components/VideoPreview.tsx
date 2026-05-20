@@ -1,33 +1,16 @@
-/* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
-import { useEffect, useRef, useState, useCallback, RefObject } from "react";
+import { useEffect, useRef, RefObject } from "react";
 import { EditRecipe } from "@/lib/types";
-import { getPresetById } from "@/lib/presets";
-import { cn } from "@/lib/utils";
-import { Camera } from "lucide-react";
-import { captureFrameAsPng } from "@/lib/frame-export";
-import { DEFAULT_RECIPE } from "@/lib/constants";
 
 interface Props {
   file: File | null;
-  recipe?: EditRecipe;
   videoRef: RefObject<HTMLVideoElement | null>;
+  recipe: EditRecipe;
 }
 
-export default function VideoPreview({ file, recipe, videoRef }: Props) {
-  const lastId = useRef(0);
+export default function VideoPreview({ file, videoRef ,recipe }: Props) {
   const urlRef = useRef<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showOverlay, setShowOverlay] = useState(false);
-  const [frameNotice, setFrameNotice] = useState<{
-    kind: "success" | "error";
-    message: string;
-  } | null>(null);
-  const [isExportingFrame, setIsExportingFrame] = useState(false);
-  const isExportingFrameRef = useRef(false);
-  const onLoadedRef = useRef<(() => void) | null>(null);
-  const activeRecipe = recipe ?? DEFAULT_RECIPE;
 
   useEffect(() => {
     if (!frameNotice) return;
@@ -109,51 +92,12 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     if (!file) return;
 
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-    setIsLoading(true);
-    const id = ++lastId.current;
     const url = URL.createObjectURL(file);
-
-    // cleanup previous object URL safely
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
-    }
     urlRef.current = url;
-
-    const video = videoRef.current;
-    if (!video) return;
-
-    video.src = url;
-    video.load();
-
-    // define handler once per effect run
-    const handleLoaded = () => {
-      if (lastId.current !== id) return;
-      video.play().catch(() => {});
-    };
-
-    onLoadedRef.current = handleLoaded;
-
-    video.addEventListener("loadeddata", handleLoaded);
+    if (videoRef.current) videoRef.current.src = url;
 
     return () => {
-      // cleanup event listener safely
-      if (onLoadedRef.current) {
-        video.removeEventListener("loadeddata", onLoadedRef.current);
-        onLoadedRef.current = null;
-      }
-
-      // stop playback safely
-      if (video) {
-        video.pause();
-        video.removeAttribute("src");
-        video.load();
-      }
-
-      // revoke only if still current
-      if (urlRef.current === url) {
-        URL.revokeObjectURL(urlRef.current);
-        urlRef.current = null;
-      }
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     };
   }, [file, videoRef]);
 
@@ -323,6 +267,26 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
           {isExportingFrame ? "Exporting" : "Export frame"}
         </button>
       )}
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.muted = !recipe.keepAudio;
+  }, [recipe, videoRef]);
+
+  useEffect(() => {
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.playbackRate = recipe.speed;
+  }, [recipe, videoRef]);
+  return (
+    <div className="w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video">
+     
+      <video
+  ref={videoRef}
+  controls
+  className="w-full h-full object-contain"
+  playsInline
+  muted={!recipe?.keepAudio}
+>
+  <track kind="captions" />
+</video>
     </div>
   );
 }
