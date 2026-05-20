@@ -1,5 +1,4 @@
 "use client";
-import { useEffect } from "react";
 
 import { EditRecipe } from "@/lib/types"
 import { SPEED_STEPS } from "@/lib/constants";
@@ -12,36 +11,6 @@ interface Props {
 }
 
 export default function AudioSpeedControl({ recipe, onChange }: Props) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      if (
-        e.key.toLowerCase() === "m" &&
-        !e.ctrlKey &&
-        !e.metaKey
-      ) {
-        onChange({
-          keepAudio: !recipe.keepAudio,
-        });
-      }
-    };
-
-    document.addEventListener("keydown", handler);
-
-    return () => {
-      document.removeEventListener("keydown", handler);
-    };
-  }, [recipe.keepAudio, onChange]);
-
   const speedIndex = SPEED_STEPS.indexOf(recipe.speed as (typeof SPEED_STEPS)[number]);
   
   const getSpeedDescription = (speed: number) => {
@@ -72,7 +41,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       <button
         type="button"
         onClick={() => onChange({ keepAudio: !recipe.keepAudio })}
-        aria-label={recipe.keepAudio ? "Mute video audio" : "Unmute video audio"}
+        aria-label={recipe.keepAudio ? "Mute video audio (M)" : "Unmute video audio (M)"}
         aria-pressed={recipe.keepAudio}
         className={cn(
           "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
@@ -90,9 +59,15 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
         <span className="sr-only">
           {recipe.keepAudio ? "Turn audio off" : "Turn audio on"}
         </span>
-        <span className="text-sm font-heading font-semibold">
+        <span className="text-sm font-heading font-semibold flex-1 text-left">
           {recipe.keepAudio ? "Audio on" : "Muted"}
         </span>
+        <kbd
+          aria-hidden="true"
+          className="ml-auto text-[10px] font-mono px-1.5 py-0.5 rounded border border-current opacity-40"
+        >
+          M
+        </kbd>
       </button>
 
       <div>

@@ -49,6 +49,66 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
   );
 }
 
+/** Inline keyboard hint badge. */
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[10px] font-mono text-[var(--muted)] leading-none">
+      {children}
+    </kbd>
+  );
+}
+
+/** Collapsible panel that lists all keyboard shortcuts. */
+function KeyboardShortcutsPanel() {
+  const [open, setOpen] = useState(false);
+
+  const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
+    { keys: [<Kbd key="m">M</Kbd>], label: "Toggle audio mute" },
+    { keys: [<Kbd key="ctrl">Ctrl</Kbd>, <span key="plus" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="enter">↵</Kbd>], label: "Export video" },
+  ];
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="keyboard-shortcuts-list"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[var(--border)] transition-colors duration-150"
+      >
+        <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] flex items-center gap-2">
+          <Kbd>⌨</Kbd>
+          Keyboard Shortcuts
+        </span>
+        <svg
+          aria-hidden="true"
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          className={cn("text-[var(--muted)] transition-transform duration-200", open && "rotate-180")}
+        >
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <ul
+          id="keyboard-shortcuts-list"
+          className="px-4 pb-3 space-y-2 border-t border-[var(--border)]"
+        >
+          {shortcuts.map(({ keys, label }) => (
+            <li key={label} className="flex items-center justify-between gap-3 pt-2">
+              <span className="text-xs text-[var(--muted)]">{label}</span>
+              <span className="flex items-center gap-1 shrink-0">{keys}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
@@ -378,6 +438,8 @@ export default function VideoEditor() {
                 </button>
               </div>
             </div>
+
+            <KeyboardShortcutsPanel />
 
             <button
               id="export-button"
