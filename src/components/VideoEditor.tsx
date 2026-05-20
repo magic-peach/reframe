@@ -51,7 +51,7 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
 
 export default function VideoEditor() {
   const {
-   file, duration, recipe, status, progress,
+    file, duration, recipe, status, progress,
     result, error, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
     videoRef,
@@ -132,10 +132,10 @@ export default function VideoEditor() {
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
-              <div className="text-center text-[var(--muted)] py-6">
-                <p>Upload a video to get started</p>
-                <p className="text-sm">Supports MP4, MOV, WebM and more</p>
-              </div>
+                <div className="text-center text-[var(--muted)] py-6">
+                  <p>Upload a video to get started</p>
+                  <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+                </div>
               )}
 
               {file && (
@@ -172,6 +172,7 @@ export default function VideoEditor() {
                       recipe={recipe}
                       onChange={updateRecipe}
                       duration={duration}
+                      file={file} 
                     />
                   </Section>
                   <Section icon={<RotateCw size={12} />} title="Rotate" delay={100}>
