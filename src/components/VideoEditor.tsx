@@ -124,7 +124,7 @@ export default function VideoEditor() {
               {!file && (
               <div className="text-center text-[var(--muted)] py-6">
                 <p>Upload a video to get started</p>
-                <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+              
               </div>
               )}
 
