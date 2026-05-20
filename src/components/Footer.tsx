@@ -48,19 +48,19 @@ export default function Footer() {
               href="https://github.com/magic-peach/reframe" 
               target="_blank" 
               rel="noopener" 
-              className="opacity-60 hover:opacity-100 hover:text-blue-500 hover:translate-x-1.5 transition-all duration-300 ease-out w-fit flex items-center gap-2 group"
+              className="opacity-70 hover:opacity-100 hover:text-red-400 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
             >
               GitHub
             </a>
             <Link 
               href="/contact" 
-              className="opacity-60 hover:opacity-100 hover:text-blue-500 hover:translate-x-1.5 transition-all duration-300 ease-out w-fit flex items-center gap-2 group"
+              className="opacity-70 hover:opacity-100 hover:text-red-400 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
             >
               Contact
             </Link>
             <Link 
               href="/privacy" 
-              className="opacity-60 hover:opacity-100 hover:text-blue-500 hover:translate-x-1.5 transition-all duration-300 ease-out w-fit flex items-center gap-2 group"
+              className="opacity-70 hover:opacity-100 hover:text-red-400 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
             >
               Privacy Policy
             </Link>
