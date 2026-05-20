@@ -196,10 +196,19 @@ export default function ExportSettings({
             <span
               className="cursor-help"
               title="Reduces video noise. May slow down export slightly."
+            htmlFor="noise-reduction-toggle"
+            className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
+          >
+            <SlidersHorizontal size={10} />
+            Noise Reduction
+            <span
+              className="cursor-help"
+              title="Reduces grain in low-light videos using FFmpeg hqdn3d filter."
             >
               <InfoIcon size={14} />
             </span>
           </label>
+<<<<<<< HEAD
 
           <span className="flex text-sm font-heading font-bold text-film-600">
             <input
@@ -234,6 +243,38 @@ export default function ExportSettings({
             May slightly increase export time.
           </span>
         </div>
+=======
+        </div>
+
+        <p className="text-xs text-[var(--muted)] mb-2">
+          Reduce grain in low-light footage
+        </p>
+
+        <div className="flex gap-2">
+          {(['off', 'light', 'medium', 'heavy'] as const).map((level) => (
+            <button
+              key={level}
+              onClick={() => onChange({ noiseReduction: level })}
+              className={cn(
+                "flex-1 py-1 text-xs font-heading font-semibold uppercase rounded border transition-colors",
+                recipe.noiseReduction === level
+                  ? "bg-film-600 text-white border-film-600"
+                  : "text-[var(--muted)] border-[var(--muted)] hover:border-film-600 hover:text-film-600"
+              )}
+            >
+              {level}
+            </button>
+          ))}
+        </div>
+
+        {recipe.noiseReduction !== 'off' && (
+          <div className="flex justify-end mt-2">
+            <span className="text-xs text-red-700 font-medium">
+              ⚠ Note: significantly increases processing time.
+            </span>
+          </div>
+        )}
+>>>>>>> 92b9083 (feat: add noise reduction filter with Light/Medium/Heavy presets (closes #129))
       </div>
     </>
   );
