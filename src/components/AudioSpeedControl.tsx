@@ -60,6 +60,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
         <div className="flex justify-end animate-fade-in">
           <button
             type="button"
+            aria-label="Reset audio settings to default"
             onClick={() => onChange({ speed: 1, keepAudio: true })}
             className="text-sm font-heading font-semibold uppercase tracking-wider text-film-600 hover:text-film-700 hover:underline transition-all duration-150"
           >
@@ -80,8 +81,12 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             ? "border-film-300 bg-film-50 text-film-700"
             : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
         )}
-      >
-        {recipe.keepAudio ? <Volume2 size={16} /> : <VolumeX size={16} />}
+        >
+        {recipe.keepAudio ? (
+        <Volume2 size={16} aria-hidden="true" />
+      ) : (
+        <VolumeX size={16} aria-hidden="true" />
+            )}
         <span className="sr-only">
           {recipe.keepAudio ? "Turn audio off" : "Turn audio on"}
         </span>
@@ -97,7 +102,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             htmlFor="speed-control"
             className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
           >
-            <Gauge size={10} /> Speed
+            <Gauge size={10} aria-hidden="true"  /> Speed
           </label>
 
           <div className="text-right">
@@ -119,7 +124,6 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
           aria-labelledby="speed-label"
           aria-describedby="speed-description"
-          aria-label="Video playback speed"
           aria-valuetext={`${recipe.speed}x speed, ${getSpeedDescription(recipe.speed)}`}
           className="w-full h-11 accent-film-600 cursor-pointer"
         />
@@ -139,6 +143,13 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange({ normalizeAudio: !recipe.normalizeAudio })}
+          aria-label={
+            recipe.normalizeAudio
+            ? "Turn off audio normalization"
+            : "Turn on audio normalization"
+          }
+          aria-pressed={recipe.normalizeAudio}
+          aria-describedby="normalize-audio-description"
           className={cn(
             "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
             "hover:scale-[1.01] active:scale-[0.99]",
@@ -147,12 +158,12 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
               : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
           )}
         >
-          <Gauge size={16} />
+          <Gauge size={16} aria-hidden="true" />
           <div className="flex-1 text-left">
             <span className="text-sm font-heading font-semibold block">
               Normalize Audio
             </span>
-            <span className="text-[10px] text-[var(--muted)]">
+            <span id="normalize-audio-description" className="text-[10px] text-[var(--muted)]">
               {recipe.normalizeAudio ? "–14 LUFS (streaming standard)" : "Off"}
             </span>
           </div>
@@ -160,8 +171,8 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       )}
 
       {recipe.keepAudio && (recipe.trimStart !== 0 || recipe.trimEnd !== null) && (
-        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-700 leading-relaxed flex items-start gap-2 animate-fade-in">
-          <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+        <div role="note" className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-700 leading-relaxed flex items-start gap-2 animate-fade-in">
+          <AlertTriangle size={12} aria-hidden="true" className="shrink-0 mt-0.5" />
           <p>
             Note: If audio doesn&apos;t start within the selected range, the output will be silent.
           </p>
