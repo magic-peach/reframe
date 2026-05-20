@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { buildAudioFilter } from "../ffmpeg";
+import { buildAudioFilter, buildVideoFilter } from "../ffmpeg";
+import { DEFAULT_RECIPE } from "../types";
 
 describe("buildAudioFilter", () => {
   it("should return an empty string for 1.0x speed", () => {
@@ -41,3 +42,40 @@ describe("buildAudioFilter", () => {
     expect(buildAudioFilter(10)).toBe("atempo=2.0,atempo=2.0,atempo=2.0,atempo=1.25");
   });
 });
+
+describe("buildVideoFilter", () => {
+  it("should generate standard letterbox filters when blurBackground is false", () => {
+    const recipe = {
+      ...DEFAULT_RECIPE,
+      framing: "fit" as const,
+      blurBackground: false,
+    };
+    const filter = buildVideoFilter(recipe, 1080, 1920);
+    expect(filter).toContain("scale=1080:1920:force_original_aspect_ratio=decrease");
+    expect(filter).toContain("pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black");
+  });
+
+  it("should generate complex split and blur filters when blurBackground is true", () => {
+    const recipe = {
+      ...DEFAULT_RECIPE,
+      framing: "fit" as const,
+      blurBackground: true,
+    };
+    const filter = buildVideoFilter(recipe, 1080, 1920);
+    expect(filter).toContain("split=2[blur][main]");
+    expect(filter).toContain("scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:20[bg]");
+    expect(filter).toContain("scale=1080:1920:force_original_aspect_ratio=decrease[fg]");
+    expect(filter).toContain("[bg][fg]overlay=(W-w)/2:(H-h)/2");
+  });
+
+  it("should generate crop filters when framing is fill", () => {
+    const recipe = {
+      ...DEFAULT_RECIPE,
+      framing: "fill" as const,
+    };
+    const filter = buildVideoFilter(recipe, 1080, 1920);
+    expect(filter).toContain("scale=1080:1920:force_original_aspect_ratio=increase");
+    expect(filter).toContain("crop=1080:1920");
+  });
+});
+

@@ -87,7 +87,7 @@ function buildSessionId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
+export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
 
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
