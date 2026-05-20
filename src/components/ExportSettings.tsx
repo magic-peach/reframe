@@ -32,6 +32,8 @@ export default function ExportSettings({
       ? "Balanced"
       : "Small file";
 
+  const isGif = recipe.format === "gif";
+
   const estimatedSize =
     formatEstimatedSize(
       estimateExportSize(
@@ -108,8 +110,15 @@ export default function ExportSettings({
               {estimatedSize}
             </span>
           </p>
+
+          {isGif && (
+            <p className="text-xs text-amber-600 font-medium">
+              ⚠ GIF files can be very large. Keep clips under 10 s for best results.
+            </p>
+          )}
         </div>
 
+        {!isGif && (
         <div className="flex items-center justify-between mt-4">
           <label
             htmlFor="sound-on-completion"
@@ -129,10 +138,11 @@ export default function ExportSettings({
             className="accent-film-600 cursor-pointer"
           />
         </div>
+        )}
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-1">
           <label
             htmlFor="stabilization-toggle"
             className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
@@ -148,8 +158,7 @@ export default function ExportSettings({
               checked={recipe.stabilization}
               onChange={(e) =>
                 onChange({
-                  stabilization:
-                    e.target.checked,
+                  stabilization: e.target.checked,
                 })
               }
               aria-label="Enable video stabilization"
@@ -159,12 +168,17 @@ export default function ExportSettings({
           </span>
         </div>
 
+        {/* Short descriptive label explaining what the setting does */}
+        <p className="text-xs text-[var(--muted)] mb-1">
+          Reduce camera shake
+        </p>
+
         <div className="flex justify-end">
           <span
             className={cn(
-              "text-sm",
+              "text-xs",
               recipe.stabilization
-                ? "text-red-700"
+                ? "text-red-700 font-medium"
                 : "text-[var(--muted)]"
             )}
           >

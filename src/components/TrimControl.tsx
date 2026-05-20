@@ -111,11 +111,9 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
   };
 
   const handleEnd = (val: string) => {
-
     if (val === "") {
-      setEnd(false);
-      setEndErrorMsg("");
       onChange({ trimEnd: null });
+      setEnd(false);
       return;
     }
 
@@ -144,7 +142,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
     if (duration > 0 && n > duration + 0.01) {
       setEnd(true);
       setEndErrorMsg(
-        `End time cannot exceed duration (${duration.toFixed(1)}s).`
+        `End time cannot exceed duration (${duration.toFixed(1)}s).`,
       );
       return;
     }
@@ -218,9 +216,13 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
       )}
       <div className="flex gap-3">
         <div className="flex-1">
-          <label htmlFor="trim-start" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
+          <label
+            htmlFor="trim-start"
+            className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
+          >
             Start (sec)
           </label>
+
           <input
             id="trim-start"
             type="number"
@@ -237,16 +239,24 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             placeholder="0"
           />
           {invalidStart && (
-            <p id="trim-start-error" className="text-[10px] text-red-500 font-heading flex items-center gap-1 mt-1.5 animate-fade-in">
+            <p
+              id="trim-start-error"
+              className="font-heading animate-fade-in mt-1.5 flex items-center gap-1 text-[10px] text-red-500"
+            >
               <AlertCircle size={10} className="shrink-0" />
               {startErrorMsg}
             </p>
           )}
         </div>
+
         <div className="flex-1">
-          <label htmlFor="trim-end" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
+          <label
+            htmlFor="trim-end"
+            className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
+          >
             End (sec)
           </label>
+
           <input
             id="trim-end"
             type="number"
@@ -263,13 +273,17 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             placeholder={duration > 0 ? `${duration.toFixed(1)}` : "full length"}
           />
           {invalidEnd && (
-            <p id="trim-end-error" className="text-[10px] text-red-500 font-heading flex items-center gap-1 mt-1.5 animate-fade-in">
+            <p
+              id="trim-end-error"
+              className="font-heading animate-fade-in mt-1.5 flex items-center gap-1 text-[10px] text-red-500"
+            >
               <AlertCircle size={10} className="shrink-0" />
               {endErrorMsg}
             </p>
           )}
         </div>
       </div>
+
       {duration > 0 && (
         <p className="text-sm text-[var(--muted)] font-heading mt-1">
           Clip: {formatDuration(clipLength)} of{" "}

@@ -13,6 +13,7 @@ const FORMAT_OPTIONS = [
   { id: "mp4", label: "MP4", description: "Best compatibility, smaller file size" },
   { id: "webm", label: "WebM", description: "Open format, optimized for web" },
   { id: "mkv", label: "MKV", description: "Container, maximum quality" },
+  { id: "gif", label: "GIF", description: "Animated image — keep clips under 10 s" },
 ] as const;
 
 export default function FormatSelector({ recipe, onChange }: Props) {
@@ -24,12 +25,12 @@ export default function FormatSelector({ recipe, onChange }: Props) {
           Output Format
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         {FORMAT_OPTIONS.map((option) => (
           <button
             key={option.id}
             type="button"
-            onClick={() => onChange({ format: option.id as "mp4" | "webm" | "mkv" })}
+            onClick={() => onChange({ format: option.id as "mp4" | "webm" | "mkv" | "gif" })}
             aria-label={`Select ${option.label} format`}
             aria-pressed={recipe.format === option.id}
             className={cn(
