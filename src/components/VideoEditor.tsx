@@ -204,6 +204,7 @@ export default function VideoEditor() {
                             type="button"
                             onClick={() => updateRecipe({ brightness: 0 })}
                             className="text-film-500 hover:underline"
+                            aria-label="reset brightness"
                           >
                             Reset
                           </button>
@@ -228,6 +229,7 @@ export default function VideoEditor() {
                             type="button"
                             onClick={() => updateRecipe({ contrast: 1 })}
                             className="text-film-500 hover:underline"
+                            aria-label="reset-contrast"
                           >
                             Reset
                           </button>
@@ -252,6 +254,7 @@ export default function VideoEditor() {
                             type="button"
                             onClick={() => updateRecipe({ saturation: 1 })}
                             className="text-film-500 hover:underline"
+                            aria-label="reset-saturation"
                           >
                             Reset
                           </button>

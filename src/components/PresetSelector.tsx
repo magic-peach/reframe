@@ -144,7 +144,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             <button
               key={`${preset}-${label}`}
               type="button"
-              aria-label={`${platform} ${label}`}
+              aria-label={`${label.replaceAll(":", " is to ")} output ratio`}
               aria-pressed={isActive}
               onClick={() => onChange({ preset })}
               className={cn(
@@ -194,7 +194,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
                 type="button"
                 onClick={() => handlePresetSelect(preset.id)}
                 title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
-                aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
+                aria-label={`${preset.label.replaceAll(":", " is to ")} output ratio`}
                 aria-pressed={active}
                 className={cn(
                   "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
