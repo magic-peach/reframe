@@ -7,9 +7,10 @@ export interface EditRecipe {
   trimEnd: number | null;
   rotate: 0 | 90 | 180 | 270;
   keepAudio: boolean;
+  normalizeAudio: boolean;
   speed: number;
   quality: number;
-  format: "mp4" | "webm" | "mkv";
+  format: "mp4" | "webm" | "mkv" | "gif";
   stabilization: boolean;
   brightness: number;
   contrast: number;
@@ -42,7 +43,7 @@ export interface ExportResult {
   size: number;
   width: number;
   height: number;
-  format: "mp4" | "webm" | "mkv";
+  format: "mp4" | "webm" | "mkv" | "gif"; // merged: gif from main + filename/presetId from feat/batch-export
   filename?: string;
   presetId?: string;
 }
@@ -81,6 +82,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   trimEnd: null,
   rotate: 0,
   keepAudio: true,
+  normalizeAudio: false,
   speed: 1,
   quality: 23,
   format: "mp4",
@@ -91,8 +93,5 @@ export const DEFAULT_RECIPE: EditRecipe = {
   soundOnCompletion: false,
 };
 
-export const MAX_FILE_SIZE =
-  2 * 1024 * 1024 * 1024;
-
-export const WARNING_FILE_SIZE =
-  500 * 1024 * 1024; // 500MB
+export const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
+export const WARNING_FILE_SIZE = 500 * 1024 * 1024; // 500MB

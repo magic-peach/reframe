@@ -62,12 +62,12 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
     const video = document.createElement("video");
     const timeout = setTimeout(() => {
       URL.revokeObjectURL(url);
-      reject( new Error("Video metaData load timeout"))
+      reject(new Error("Video metaData load timeout"));
     }, 500);
 
     video.preload = "metadata";
     video.onloadedmetadata = () => {
-      clearTimeout(timeout)
+      clearTimeout(timeout);
       resolve({
         width: video.videoWidth,
         height: video.videoHeight,
@@ -76,7 +76,7 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
       URL.revokeObjectURL(url);
     };
     video.onerror = () => {
-      clearTimeout(timeout)
+      clearTimeout(timeout);
       URL.revokeObjectURL(url);
       reject(new Error("Failed to load video metadata"));
     };
@@ -109,7 +109,7 @@ function verifyMagicBytes(file: File): Promise<boolean> {
   });
 }
 
-function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
+function validateRecipe(recipe: EditRecipe, duration: number): string | null {
   const validations: Array<[boolean, string]> = [
     [
       recipe.trimStart < 0,
@@ -143,12 +143,10 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       recipe.brightness < -1 || recipe.brightness > 1,
       "Brightness must be between -1 and 1.",
     ],
-
     [
       recipe.contrast < 0 || recipe.contrast > 2,
       "Contrast must be between 0 and 2.",
     ],
-
     [
       recipe.saturation < 0 || recipe.saturation > 3,
       "Saturation must be between 0 and 3.",
@@ -200,8 +198,16 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
 
+  // Merged: GIF audio fix from main + batch preset logic from feat/batch-export
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-    setRecipe((prev) => ({ ...prev, ...patch }));
+    setRecipe((prev) => {
+      const next = { ...prev, ...patch };
+      // GIF has no audio — force keepAudio off
+      if (next.format === "gif") {
+        next.keepAudio = false;
+      }
+      return next;
+    });
   }, []);
 
   const setBatchModeWrapped = useCallback((enabled: boolean) => {
@@ -500,15 +506,13 @@ export function useVideoEditor() {
         setError('Export failed. Please try again or use a different video.');
       }
       setStatus("error");
-    }
-    finally {
+    } finally {
       setBatchProgress(null);
       if (exportAbortControllerRef.current === abortController) {
         exportAbortControllerRef.current = null;
       }
     }
   }, [file, recipe, result, batchResults, batchMode, batchPresetIds, status, musicFile, musicVolume, originalAudioVolume, loopMusic, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration]);
-
 
   useEffect(() => {
     if (status === "exporting") {
@@ -542,7 +546,7 @@ export function useVideoEditor() {
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [status]);
-  
+
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
       if (
@@ -562,13 +566,13 @@ export function useVideoEditor() {
     };
   }, [file, status, handleExport]);
 
-  useEffect(()=>{
-    return ()=>{
-      if(result?.blobUrl){
+  useEffect(() => {
+    return () => {
+      if (result?.blobUrl) {
         URL.revokeObjectURL(result.blobUrl);
       }
-    }
-   },[result?.blobUrl])
+    };
+  }, [result?.blobUrl]);
 
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
@@ -583,7 +587,6 @@ export function useVideoEditor() {
     setProgress(0);
     setError(null);
   }, []);
-
 
   const acknowledgeCancelled = useCallback(() => {
     setStatus("idle");
@@ -623,6 +626,7 @@ export function useVideoEditor() {
   useEffect(() => {
     localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
   }, [recipe.soundOnCompletion]);
+
   const seekTo = useCallback((time: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
