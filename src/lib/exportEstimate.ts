@@ -24,25 +24,25 @@ export function estimateExportSize(
     trimEnd - recipe.trimStart,
     1
   );
+  const width = recipe.customWidth || 1920;
+  const height = recipe.customHeight || 1080;
+
 
   if (recipe.format === "gif") {
     const GIF_FPS = 15;
     
     const BASE_COMPRESSION = 0.85;
-    
+
     const qualityLossModifier = (recipe.quality - 18) * 0.035;
     const effectiveCompression = Math.max(BASE_COMPRESSION - qualityLossModifier, 0.35);
 
     const frames = (effectiveDuration / Math.max(recipe.speed, 0.25)) * GIF_FPS;
-    return (recipe.customWidth * recipe.customHeight * frames * effectiveCompression) / (1024 * 1024);
+    return (width * height * frames * effectiveCompression) / (1024 * 1024);
   }
 
   const baseBitrate = getBaseBitrate(recipe.quality);
 
-  const resolutionMultiplier = getResolutionMultiplier(
-    recipe.customWidth,
-    recipe.customHeight
-  );
+  const resolutionMultiplier = getResolutionMultiplier(width, height);
 
   const adjustedBitrate =
     (baseBitrate * resolutionMultiplier) /
