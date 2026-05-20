@@ -49,6 +49,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       URL.revokeObjectURL(url);
     }, "image/png");
   }, [videoRef]);
+
   useEffect(() => {
     if (!file) return;
 
@@ -100,6 +101,17 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       }
     };
   }, [file, videoRef]);
+
+  // sync mute state to video element
+  useEffect(() => {
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.muted = !recipe.keepAudio;
+  }, [recipe, videoRef]);
+
+  useEffect(() => {
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.playbackRate = recipe.speed;
+  }, [recipe, videoRef]);
 
   /**
    * Compute the overlay geometry for the selected preset + framing mode.
@@ -196,7 +208,10 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
         onLoadedData={() => setIsLoading(false)}
         playsInline
-      />
+        muted={!recipe?.keepAudio}
+      >
+        <track kind="captions" />
+      </video>
 
       {/* Letterbox / Crop overlay */}
       {overlay && (
