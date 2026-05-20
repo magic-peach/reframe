@@ -80,6 +80,40 @@ export default function VideoEditor() {
     () => (file ? URL.createObjectURL(file) : null),
     [file]
   );
+const applySmartOptimization = () => {
+  if (!file) return;
+
+  const videoWidth = videoRef.current?.videoWidth || 1920;
+  const videoHeight = videoRef.current?.videoHeight || 1080;
+
+  let newSettings: any = {};
+
+  if (videoHeight > videoWidth) {
+    newSettings = {
+      width: 1080,
+      height: 1920,
+      crf: 23,
+      format: "mp4",
+    };
+  } else {
+    newSettings = {
+      width: 1920,
+      height: 1080,
+      crf: 20,
+      format: "mp4",
+    };
+  }
+
+  updateRecipe({
+    ...recipe,
+    ...newSettings,
+    brightness: 0.2,   
+    contrast: 1.2,
+  });
+
+  alert("⚡ Smart Optimization Applied!");
+};
+  
 
   useEffect(() => {
     return () => {
@@ -336,15 +370,35 @@ export default function VideoEditor() {
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
 
-              <div className="pt-2 flex justify-end">
-                <button
-                  type="button"
-                  onClick={resetSettings}
-                  className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
-                >
-                  Reset all settings
-                </button>
-              </div>
+              <div className="pt-2 flex flex-col gap-3">
+
+  {/* ⚡ SMART OPTIMIZE BUTTON */}
+  <button
+    type="button"
+    onClick={applySmartOptimization}
+    disabled={!file || isProcessing}
+    className={cn(
+      "w-full py-3 rounded-xl font-heading font-bold uppercase tracking-widest text-sm",
+      file && !isProcessing
+        ? "bg-green-600 hover:bg-green-700 text-white"
+        : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
+    )}
+  >
+    ⚡ Smart Optimize
+  </button>
+
+  {/* RESET BUTTON */}
+  <div className="flex justify-end">
+    <button
+      type="button"
+      onClick={resetSettings}
+      className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+    >
+      Reset all settings
+    </button>
+  </div>
+
+</div>
             </div>
 
             <button
