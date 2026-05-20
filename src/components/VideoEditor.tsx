@@ -111,7 +111,10 @@ export default function VideoEditor() {
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
 
         <header className="mb-10 flex items-end justify-between animate-fade-in">
-          <div>
+          <div
+            className="inline-block px-5 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600"
+            aria-label="Reframe — video editor"
+          >
             <h1 className="font-display text-6xl leading-none tracking-widest2 text-[var(--text)]">
               REFRAME
             </h1>
