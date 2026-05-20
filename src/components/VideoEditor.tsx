@@ -94,7 +94,6 @@ function KeyboardShortcutsPanel() {
       {open && (
         <ul
           id="keyboard-shortcuts-list"
-          role="list"
           className="px-4 pb-3 space-y-2 border-t border-[var(--border)]"
         >
           {shortcuts.map(({ keys, label }) => (
