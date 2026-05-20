@@ -20,7 +20,7 @@ import ColorGradePresets from "./ColorGradePresets";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github
+  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 
@@ -63,7 +63,16 @@ export default function VideoEditor() {
     recommendedPreset,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
+
+  const handleCopyLink = () => {
+    if (typeof window === "undefined") return;
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    });
+  };
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
@@ -344,7 +353,15 @@ export default function VideoEditor() {
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
 
-              <div className="pt-2 flex justify-end">
+              <div className="pt-2 flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer"
+                >
+                  <Copy size={12} />
+                  {shareCopied ? "Copied!" : "Copy Link"}
+                </button>
                 <button
                   type="button"
                   onClick={resetSettings}
