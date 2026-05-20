@@ -131,12 +131,10 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
   return filters.join(",");
 }
 
-export function buildAudioFilter(speed: number): string {
-  if (speed === 1) return "";
-
+ export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
   const filters: string[] = [];
-  let remaining = speed;
 
+  let remaining = speed;
   while (remaining < 0.5) {
     filters.push("atempo=0.5");
     remaining /= 0.5;
@@ -147,9 +145,11 @@ export function buildAudioFilter(speed: number): string {
     remaining /= 2.0;
   }
 
-  if (Math.abs(remaining - 1.0) > 0.001) {
+ if (Math.abs(remaining - 1.0) > 0.001) {
     filters.push(`atempo=${Number(remaining.toFixed(4))}`);
   }
+
+  if (normalizeAudio) filters.push("loudnorm=I=-14:TP=-1.5:LRA=11");
 
   return filters.join(",");
 }
@@ -177,7 +177,7 @@ function buildArguments(
 ): string[] {
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed) : "";
+const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
@@ -328,9 +328,16 @@ export async function exportVideo(
     onProgress(Math.min(99, Math.round(progress * 100)));
   };
 
+  
   try {
     await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
+    const vf = buildVideoFilter(recipe, targetW, targetH);
+  const audioTrim = buildAudioTrimFilter(recipe);
+  const audioSpeed = buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false);
+
+  const afParts = [audioTrim, audioSpeed].filter(Boolean);
+  const af = afParts.join(",");
     const hasMusicTrack = !!(musicOptions?.file && recipe.keepAudio);
     const musicInputName = `music_input_${sessionId}.mp3`;
     if (hasMusicTrack) {

@@ -94,6 +94,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [handleGrabFrame]);
+
   useEffect(() => {
     if (!file) return;
 
@@ -146,6 +147,17 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     };
   }, [file, videoRef]);
 
+  // sync mute state to video element (audio normalization)
+  useEffect(() => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !activeRecipe.keepAudio;
+  }, [activeRecipe.keepAudio, videoRef]);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    videoRef.current.playbackRate = activeRecipe.speed;
+  }, [activeRecipe.speed, videoRef]);
+
   /**
    * Compute the overlay geometry for the selected preset + framing mode.
    * The preview container always uses a 16:9 aspect-video box.
@@ -197,7 +209,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
 
   if (!file) return null;
 
-  const colorFilter = recipe ? buildColorGradeCssFilter(recipe) : undefined;
+  const colorFilter = buildColorGradeCssFilter(activeRecipe);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.code === "Space") {
@@ -255,10 +267,13 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         ref={videoRef}
         controls
         className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
-        style={colorFilter ? { filter: colorFilter } : undefined}
+        style={{ filter: colorFilter }}
         onLoadedData={() => setIsLoading(false)}
         playsInline
-      />
+        muted={!activeRecipe.keepAudio}
+      >
+        <track kind="captions" />
+      </video>
 
       {/* Letterbox / Crop overlay */}
       {overlay && (
