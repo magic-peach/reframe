@@ -355,7 +355,7 @@ export default function VideoEditor() {
               aria-label='Export video'
               aria-disabled={!file || isProcessing ? "true" : undefined}
               className={cn(
-                "w-full flex items-center justify-center gap-3 py-5 rounded-xl",
+                "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
