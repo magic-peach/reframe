@@ -76,3 +76,17 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* ── High Contrast Mode Accessibility Fixes ── */
+/* When outline buttons with `hover:bg-[var(--border)]` are hovered in High Contrast Mode,
+   their background becomes white. We force all text, icons, and child elements to black
+   to maintain readable contrast (21:1 ratio). */
+[data-theme="high-contrast"] [class*="hover:bg-[var(--border)]"]:hover {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+}
+
+[data-theme="high-contrast"] [class*="hover:bg-[var(--border)]"]:hover * {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
