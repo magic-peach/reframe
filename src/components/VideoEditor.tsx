@@ -336,7 +336,7 @@ export default function VideoEditor() {
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
 
-              <div className="pt-2 flex justify-end">
+              <div className="pt-2 flex justify-center">
                 <button
                   type="button"
                   onClick={resetSettings}
