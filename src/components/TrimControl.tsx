@@ -4,19 +4,25 @@ import { EditRecipe } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
+import { useAudioWaveform } from "@/hooks/useAudioWaveform";
+import WaveformCanvas from "@/components/WaveformCanvas";
 
 interface Props {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
   duration: number;
+  file: File | null;
 }
 
-export default function TrimControl({ recipe, onChange, duration }: Props) {
+export default function TrimControl({ recipe, onChange, duration, file }: Props) {
   const [invalidStart, setStart] = useState(false);
   const [invalidEnd, setEnd] = useState(false);
   const [startErrorMsg, setStartErrorMsg] = useState("");
   const [endErrorMsg, setEndErrorMsg] = useState("");
   const [startInput, setStartInput] = useState(recipe.trimStart.toString());
+
+  const { waveform, isLoading: waveformLoading } = useAudioWaveform(file);
+  const hasAudio = waveform.length > 0;
 
   useEffect(() => {
     setStartInput(recipe.trimStart.toString());
@@ -113,6 +119,17 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
 
   return (
     <div id="trim-control" className="space-y-3">
+      {/* Waveform — shown while loading or when file is present */}
+      {(file && (waveformLoading || hasAudio)) && (
+        <div className="relative w-full rounded-md overflow-hidden bg-[var(--surface)]">
+          <WaveformCanvas
+            samples={waveform}
+            loading={waveformLoading}
+            hasAudio={hasAudio}
+          />
+        </div>
+      )}
+
       <div className="flex gap-3">
         <div className="flex-1">
           <label
