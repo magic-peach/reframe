@@ -24,15 +24,16 @@ export function estimateExportSize(
     trimEnd - recipe.trimStart,
     1
   );
+
+  // Fallback to standard 1080p dimensions if custom properties aren't explicitly loaded in a test scenario
   const width = recipe.customWidth || 1920;
   const height = recipe.customHeight || 1080;
-
 
   if (recipe.format === "gif") {
     const GIF_FPS = 15;
     
     const BASE_COMPRESSION = 0.85;
-
+    
     const qualityLossModifier = (recipe.quality - 18) * 0.035;
     const effectiveCompression = Math.max(BASE_COMPRESSION - qualityLossModifier, 0.35);
 
