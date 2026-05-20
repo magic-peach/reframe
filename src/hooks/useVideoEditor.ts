@@ -470,18 +470,7 @@ export function useVideoEditor() {
         recipe,
         setProgress,
         abortController.signal,
-        {
-          file: musicFile,
-          musicVolume,
-          originalAudioVolume,
-          loopMusic,
-        },
-        {
-          file: overlayFile,
-          position: overlayPosition,
-          size: overlaySize,
-          opacity: overlayOpacity,
-        }
+        
       );
       if (exportCancelledRef.current) return;
 
