@@ -284,7 +284,7 @@ export async function exportVideo(
   ffmpeg: FFmpeg,
   file: File,
   recipe: EditRecipe,
-  onProgress: (percent: number) => void,
+  onProgress: (percent: number, etaSeconds?: number) => void,
   signal?: AbortSignal,
   musicOptions?: BackgroundMusicOptions,
   overlayOptions?: ImageOverlayOptions
@@ -322,11 +322,28 @@ export async function exportVideo(
   const { filename: outputName, mimeType } = getOutputConfig(recipe.format);
   const fallbackOutputName = `fallback_${sessionId}.webm`;
   const paletteName = `palette_${sessionId}.png`;
+  const exportStartTime = Date.now(); 
   const cleanupFiles = new Set<string>([inputName, outputName, fallbackOutputName, paletteName]);
 
   const handleProgress = ({ progress }: { progress: number }) => {
-    onProgress(Math.min(99, Math.round(progress * 100)));
-  };
+  const percent = Math.min(99, Math.round(progress * 100));
+
+  if (progress < 0.02) {
+    onProgress(percent);
+    return;
+  }
+
+  const elapsedSeconds = (Date.now() - exportStartTime) / 1000;
+
+  const estimatedTotalSeconds = elapsedSeconds / progress;
+
+  const etaSeconds = Math.max(
+    0,
+    Math.round(estimatedTotalSeconds - elapsedSeconds)
+  );
+
+  onProgress(percent, etaSeconds);
+};
 
   
   try {

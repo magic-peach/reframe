@@ -10,10 +10,16 @@ import TipCarousel from "./TipCarousel";
 interface Props {
   status: ExportStatus;
   progress: number;
+  etaSeconds?: number | null;
   onCancel?: () => void;
 }
 
-export default function ExportOverlay({ status, progress, onCancel }: Props) {
+ export default function ExportOverlay({
+  status,
+  progress,
+  etaSeconds,
+  onCancel,
+  }: Props){
   const visible = status === "loading-engine" || status === "exporting";
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -119,11 +125,21 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
                 />
               </div>
               <p className="text-xs font-heading font-semibold text-[var(--muted)]">
-                {progress}%
-              </p>
-              <TipCarousel />
-              {!isLoading && (
-              <div className="flex flex-col items-center gap-3 mt-4">
+               {progress}%
+               </p>
+
+               {!isLoading &&  
+               etaSeconds !== null &&
+               progress > 2 &&
+               progress < 100 && (
+               <p className="text-sm text-[var(--muted)]">
+               ⏱ ~{etaSeconds} seconds remaining
+               </p>
+               )}
+
+                <TipCarousel />
+               {!isLoading && (
+               <div className="flex flex-col items-center gap-3 mt-4">
                 <button
                   type="button"
                   onClick={() => onCancel?.()}

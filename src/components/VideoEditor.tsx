@@ -110,7 +110,7 @@ function KeyboardShortcutsPanel() {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
+    file, duration, recipe, status, progress, etaSeconds,
     result, error, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
     videoRef,
@@ -158,7 +158,12 @@ export default function VideoEditor() {
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
-      <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
+     <ExportOverlay
+        status={status}
+        progress={progress}
+        etaSeconds={etaSeconds}
+        onCancel={cancelExport}
+       />
       <OnboardingTour />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
