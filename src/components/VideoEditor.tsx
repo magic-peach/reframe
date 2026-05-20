@@ -122,9 +122,23 @@ export default function VideoEditor() {
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
-              <div className="text-center text-[var(--muted)] py-6">
-                <p>Upload a video to get started</p>
-                <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-[var(--muted)]">
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-1.5 py-0.5 bg-[var(--surface)] border border-[var(--border)] rounded text-[10px] font-mono text-[var(--text)]">Ctrl+O</kbd>
+                  <span>Open</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-1.5 py-0.5 bg-[var(--surface)] border border-[var(--border)] rounded text-[10px] font-mono text-[var(--text)]">Space</kbd>
+                  <span>Play</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-1.5 py-0.5 bg-[var(--surface)] border border-[var(--border)] rounded text-[10px] font-mono text-[var(--text)]">M</kbd>
+                  <span>Mute</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <kbd className="px-1.5 py-0.5 bg-[var(--surface)] border border-[var(--border)] rounded text-[10px] font-mono text-[var(--text)]">Esc</kbd>
+                  <span>Cancel</span>
+                </span>
               </div>
               )}
 
