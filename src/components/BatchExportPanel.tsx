@@ -76,6 +76,7 @@ export default function BatchExportPanel({
               const checked = batchPresetIds.includes(preset.id);
               return (
                 <label
+                  aria-label={preset.label}
                   key={preset.id}
                   className={`
                     flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all duration-150
@@ -104,6 +105,7 @@ export default function BatchExportPanel({
             })}
 
             <label
+              aria-label="Custom preset"
               className={`
                 flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all duration-150
                 ${batchPresetIds.includes("custom")
@@ -132,10 +134,13 @@ export default function BatchExportPanel({
           {batchPresetIds.includes("custom") && (
             <div className="flex gap-3 items-center p-3 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
               <div className="flex-1">
-                <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+                <label 
+                htmlFor="custom-width"
+                className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
                   Width px
                 </label>
                 <input
+                  id="custom-width"
                   type="number"
                   min={16}
                   max={7680}
@@ -147,10 +152,13 @@ export default function BatchExportPanel({
               </div>
               <span className="text-[var(--muted)] mt-5 font-heading text-sm">x</span>
               <div className="flex-1">
-                <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
+                <label 
+                htmlFor="custom-height"
+                className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
                   Height px
                 </label>
                 <input
+                  id="custom-height"
                   type="number"
                   min={16}
                   max={7680}

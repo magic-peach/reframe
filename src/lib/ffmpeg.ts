@@ -86,7 +86,7 @@ export function buildExportFilename(
   presetId: string,
   _width: number,
   _height: number,
-  format: "mp4" | "webm" | "mkv"
+  format: "mp4" | "webm" | "mkv" | "gif"
 ): string {
   return `${presetId}.${format}`;
 }
@@ -473,7 +473,7 @@ export async function exportVideo(
       size: blob.size,
       width: targetW,
       height: targetH,
-      format: recipe.format as "mp4" | "webm" | "mkv",
+      format: recipe.format as "mp4" | "webm" | "mkv" | "gif",
     };
   } finally {
     ffmpeg.off("progress", handleProgress);
