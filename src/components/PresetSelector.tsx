@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useState } from "react";
 
@@ -114,10 +114,19 @@ export default function PresetSelector({ recipe, onChange }: Props) {
 
   const handlePresetSelect = useCallback(
     (presetId: string) => {
-      onChange({ preset: presetId });
-      setSearch("");
+      if (recipe.isBatchExport) {
+        if (presetId === "custom") return;
+        const currentBatch = recipe.batchPresets || [];
+        const newBatch = currentBatch.includes(presetId)
+          ? currentBatch.filter((id) => id !== presetId)
+          : [...currentBatch, presetId];
+        onChange({ batchPresets: newBatch });
+      } else {
+        onChange({ preset: presetId });
+        setSearch("");
+      }
     },
-    [onChange],
+    [onChange, recipe.isBatchExport, recipe.batchPresets],
   );
 
   const handleWidthChange = useCallback(
@@ -135,18 +144,20 @@ export default function PresetSelector({ recipe, onChange }: Props) {
   );
 
   return (
-    <div className="space-y-3">
+    <div id="preset-selector" className="space-y-3">
       {/* Quick-action row */}
-      <div className="grid grid-cols-5 gap-1.5">
+      <div className="grid grid-cols-5 gap-1.5 mb-3">
         {QUICK_ACTIONS.map(({ preset, label, platform, icon }) => {
-          const isActive = recipe.preset === preset;
+          const isActive = recipe.isBatchExport 
+            ? (recipe.batchPresets || []).includes(preset)
+            : recipe.preset === preset;
           return (
             <button
               key={`${preset}-${label}`}
               type="button"
               aria-label={`${platform} ${label}`}
               aria-pressed={isActive}
-              onClick={() => onChange({ preset })}
+              onClick={() => handlePresetSelect(preset)}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.04] active:scale-[0.97]",
                 isActive
@@ -166,17 +177,35 @@ export default function PresetSelector({ recipe, onChange }: Props) {
         })}
       </div>
 
-      <div className="relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-          <Search size={14} className="text-[var(--muted)]" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <Search size={14} className="text-[var(--muted)]" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search formats..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] py-2 pl-9 pr-3 text-sm font-heading text-[var(--text)] transition-shadow focus:outline-none focus:ring-2 focus:ring-film-400"
+          />
         </div>
-        <input
-          type="text"
-          placeholder="Search formats..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] py-2 pl-9 pr-3 text-sm font-heading text-[var(--text)] transition-shadow focus:outline-none focus:ring-2 focus:ring-film-400"
-        />
+        <label className="flex items-center gap-2 cursor-pointer select-none whitespace-nowrap">
+          <input 
+            type="checkbox"
+            checked={recipe.isBatchExport || false}
+            onChange={(e) => {
+              const isBatchExport = e.target.checked;
+              const currentBatch = recipe.batchPresets || [];
+              const batchPresets = isBatchExport && currentBatch.length === 0 && recipe.preset !== "custom" 
+                ? [recipe.preset] 
+                : currentBatch;
+              onChange({ isBatchExport, batchPresets });
+            }}
+            className="w-4 h-4 rounded border-gray-300 text-film-600 focus:ring-film-500"
+          />
+          <span className="text-sm font-semibold text-[var(--text)]">Batch mode</span>
+        </label>
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -186,23 +215,33 @@ export default function PresetSelector({ recipe, onChange }: Props) {
           </div>
         ) : (
           filteredPresets.map((preset) => {
-            const active = recipe.preset === preset.id;
+            const active = recipe.isBatchExport 
+              ? (recipe.batchPresets || []).includes(preset.id)
+              : recipe.preset === preset.id;
 
             return (
               <button
                 key={preset.id}
                 type="button"
                 onClick={() => handlePresetSelect(preset.id)}
-                title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
+                title={`${preset.label} ΓÇö ${preset.width}├ù${preset.height} ΓÇö ${getOrientationLabel(preset.width, preset.height)}`}
                 aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
                 aria-pressed={active}
                 className={cn(
-                  "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+                  "relative min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
                   active
                     ? "border-film-500 bg-film-50"
                     : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
                 )}
               >
+                {recipe.isBatchExport && (
+                  <div className={cn(
+                    "absolute top-2 right-2 w-4 h-4 rounded-sm border flex items-center justify-center",
+                    active ? "bg-film-500 border-film-500" : "border-[var(--muted)] bg-transparent"
+                  )}>
+                    {active && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                )}
                 <RatioBox
                   width={preset.width}
                   height={preset.height}
@@ -230,15 +269,20 @@ export default function PresetSelector({ recipe, onChange }: Props) {
 
         <button
           type="button"
-          title="Custom — Set your own dimensions"
+          title="Custom ΓÇö Set your own dimensions"
           aria-label="Select custom dimensions preset"
           aria-pressed={recipe.preset === "custom"}
-          onClick={() => handlePresetSelect("custom")}
+          onClick={() => {
+            if (!recipe.isBatchExport) {
+              handlePresetSelect("custom")
+            }
+          }}
           className={cn(
-            "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
-            recipe.preset === "custom"
+            "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150",
+            recipe.isBatchExport ? "opacity-50 cursor-not-allowed bg-[var(--surface)] border-[var(--border)]" : "cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+            !recipe.isBatchExport && recipe.preset === "custom"
               ? "border-film-500 bg-film-50"
-              : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
+              : (!recipe.isBatchExport ? "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30" : ""),
           )}
         >
           <Settings2
@@ -268,7 +312,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
         </button>
       </div>
 
-      {recipe.preset === "custom" && (
+      {recipe.preset === "custom" && !recipe.isBatchExport && (
         <div className="mt-2 flex items-center gap-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm animate-fade-in">
           <div className="flex-1">
             <label
@@ -291,7 +335,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
 
           <div className="mt-5 flex flex-col items-center justify-center">
             <span className="font-heading text-sm font-medium text-[var(--muted)]">
-              ×
+              ├ù
             </span>
           </div>
 
@@ -330,3 +374,4 @@ export default function PresetSelector({ recipe, onChange }: Props) {
     </div>
   );
 }
+
