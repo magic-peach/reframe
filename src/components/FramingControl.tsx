@@ -47,16 +47,25 @@ export default function FramingControl({ recipe, onChange }: Props) {
       </div>
 
       {recipe.framing === "fit" && (
-        <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:border-film-300 transition-colors">
+        <label
+          htmlFor="blurBackground-toggle"
+          className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:border-film-300 transition-colors"
+        >
           <input
+            id="blurBackground-toggle"
             type="checkbox"
             checked={recipe.blurBackground || false}
             onChange={(e) => onChange({ blurBackground: e.target.checked })}
             className="w-4 h-4 rounded border-gray-300 text-film-600 focus:ring-film-500 bg-white"
           />
+          <span className="sr-only">Pillarbox Blur</span>
           <div className="flex flex-col">
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Pillarbox Blur</span>
-            <span className="text-xs text-[var(--muted)] mt-0.5">Fill empty space with blurred video</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100" aria-hidden="true">
+              Pillarbox Blur
+            </span>
+            <span className="text-xs text-[var(--muted)] mt-0.5">
+              Fill empty space with blurred video
+            </span>
           </div>
         </label>
       )}
