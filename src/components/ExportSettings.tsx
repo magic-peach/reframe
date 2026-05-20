@@ -32,6 +32,8 @@ export default function ExportSettings({
       ? "Balanced"
       : "Small file";
 
+  const isGif = recipe.format === "gif";
+
   const estimatedSize =
     formatEstimatedSize(
       estimateExportSize(
@@ -108,8 +110,15 @@ export default function ExportSettings({
               {estimatedSize}
             </span>
           </p>
+
+          {isGif && (
+            <p className="text-xs text-amber-600 font-medium">
+              ⚠ GIF files can be very large. Keep clips under 10 s for best results.
+            </p>
+          )}
         </div>
 
+        {!isGif && (
         <div className="flex items-center justify-between mt-4">
           <label
             htmlFor="sound-on-completion"
@@ -129,6 +138,7 @@ export default function ExportSettings({
             className="accent-film-600 cursor-pointer"
           />
         </div>
+        )}
       </div>
 
       <div>

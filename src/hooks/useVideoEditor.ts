@@ -147,10 +147,16 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
 
-  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-    setRecipe((prev) => ({ ...prev, ...patch }));
-  }, []);
-
+ const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+  setRecipe((prev) => {
+    const next = { ...prev, ...patch };
+    // GIF has no audio — force keepAudio off
+    if (next.format === "gif") {
+      next.keepAudio = false;
+    }
+    return next;
+  });
+}, []);
   useEffect(() => {
     try {
       const saved = localStorage.getItem("reframe-settings");
