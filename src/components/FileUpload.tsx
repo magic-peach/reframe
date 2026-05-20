@@ -4,34 +4,25 @@ import { useRef, useState, useEffect} from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
-import { cn, formatBytes } from "@/lib/utils";
+import { cn, formatBytes, formatDuration } from "@/lib/utils";
 import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
 
 interface Props {
   onFileSelect: (file: File) => void;
   currentFile: File | null;
   fileError: string;
-}
-
-function formatDuration(seconds: number) {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-
-  return `${mins.toString().padStart(2, "0")}:${secs
-    .toString()
-    .padStart(2, "0")}`;
+  duration: number;
 }
 
 export default function FileUpload({
   onFileSelect,
   currentFile,
   fileError,
+  duration,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [dragging, setDragging] = useState(false);
-  const [duration, setDuration] = useState<number | null>(null);
-
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
   
@@ -49,7 +40,6 @@ export default function FileUpload({
   const handleFile = (file: File) => {
     setError("");
     setWarning("");
-    setDuration(null);
 
     // Validate type
     if (!file.type.startsWith("video/")) {
@@ -81,18 +71,6 @@ export default function FileUpload({
         )}). Processing may take ~${estimatedMinutes} minutes and affect performance on low-memory devices.`
       );
     }
-
-    // Extract metadata safely
-    const video = document.createElement("video");
-    video.preload = "metadata";
-
-    const url = URL.createObjectURL(file);
-    video.src = url;
-
-    video.onloadedmetadata = () => {
-      URL.revokeObjectURL(url);
-      setDuration(video.duration);
-    };
 
     onFileSelect(file);
   };
@@ -130,12 +108,15 @@ export default function FileUpload({
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {formatBytes(currentFile?.size ?? 0)}
-            {duration !== null
-              ? ` • ${formatDuration(duration)}`
-              : " • Loading metadata..."}
-          </p>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+            <p>{formatBytes(currentFile?.size ?? 0)}</p>
+
+            <p>
+              {duration > 0
+                ? `Duration: ${formatDuration(duration)}`
+                : "Loading duration..."}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -188,6 +169,7 @@ export default function FileUpload({
 );
   const DropZone = () => (
     <div
+      id="upload-zone"
       role="button"
       tabIndex={0}
       onDragOver={(e) => {
