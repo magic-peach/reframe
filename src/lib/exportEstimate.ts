@@ -57,6 +57,8 @@ function resolutionMultiplier(width: number, height: number): number {
 
 // ---------------------------------------------------------------------------
 // Format overhead factor
+// MP4 and MKV are close; WebM (VP9) tends to produce slightly smaller files
+// at the same CRF, so we apply a small discount.
 // ---------------------------------------------------------------------------
 function formatFactor(format: string | undefined): number {
   switch (format) {
@@ -69,6 +71,7 @@ function formatFactor(format: string | undefined): number {
 
 // ---------------------------------------------------------------------------
 // Audio bitrate estimate (Mbps)
+// AAC 128 kbps for stereo — independent of video quality settings.
 // ---------------------------------------------------------------------------
 const AUDIO_BITRATE_MBPS = 0.128;
 
@@ -126,6 +129,7 @@ export function estimateExportSize(recipe: EditRecipe, duration: number): number
 
 /**
  * Format a megabyte value into a human-readable approximate string.
+ * Examples: "~320 KB", "~4.2 MB", "~1.3 GB"
  */
 export function formatEstimatedSize(sizeMb: number): string {
   if (sizeMb >= 1024) {
