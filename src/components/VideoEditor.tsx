@@ -63,6 +63,11 @@ function KeyboardShortcutsPanel() {
   const [open, setOpen] = useState(false);
 
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
+    { keys: [<Kbd key="space">Space</Kbd>], label: "Play / Pause" },
+    { keys: [<Kbd key="arrowleft">←</Kbd>], label: "Previous 1 frame" },
+    { keys: [<Kbd key="arrowright">→</Kbd>], label: "Next 1 frame" },
+    { keys: [<Kbd key="shift">Shift</Kbd>, <span key="plus" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="arrowleft">←</Kbd>], label: "Previous 5 frames" },
+    { keys: [<Kbd key="shift">Shift</Kbd>, <span key="plus2" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="arrowright">→</Kbd>], label: "Next 5 frames" },
     { keys: [<Kbd key="m">M</Kbd>], label: "Toggle audio mute" },
     { keys: [<Kbd key="ctrl">Ctrl</Kbd>, <span key="plus" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="enter">↵</Kbd>], label: "Export video" },
   ];
