@@ -90,3 +90,10 @@ body {
   color: #000000 !important;
   stroke: #000000 !important;
 }
+
+/* Ensure browser-native number input spinner arrows are always visible (not just on hover)
+   to improve discoverability, especially on touch/mobile devices. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1 !important;
+}
