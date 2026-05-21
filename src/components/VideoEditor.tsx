@@ -16,6 +16,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import ColorGradePresets from "./ColorGradePresets";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
@@ -130,7 +131,7 @@ export default function VideoEditor() {
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} videoRef={videoRef} />
+                  <VideoPreview file={file} recipe={recipe} videoRef={videoRef} />
 
                   <div className="mt-3">
                     <ThumbnailStrip
@@ -173,6 +174,13 @@ export default function VideoEditor() {
                     title="Adjustments"
                     delay={175}
                   >
+                    <ColorGradePresets
+                      brightness={recipe.brightness}
+                      contrast={recipe.contrast}
+                      saturation={recipe.saturation}
+                      onChange={updateRecipe}
+                    />
+
                     <div className="space-y-5">
                       {/* Brightness */}
                       <div className="space-y-2">

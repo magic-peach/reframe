@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
 import { EditRecipe } from "@/lib/types";
+import { buildColorGradeCssFilter } from "@/lib/colorGrade";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
@@ -152,6 +153,8 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
 
   if (!file) return null;
 
+  const colorFilter = recipe ? buildColorGradeCssFilter(recipe) : undefined;
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.code === "Space") {
       const target = e.target as HTMLElement;
@@ -194,6 +197,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         ref={videoRef}
         controls
         className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+        style={colorFilter ? { filter: colorFilter } : undefined}
         onLoadedData={() => setIsLoading(false)}
         playsInline
       />
