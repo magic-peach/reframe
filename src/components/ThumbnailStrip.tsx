@@ -33,14 +33,21 @@ export default function ThumbnailStrip({
   const stripRef = useRef<HTMLDivElement>(null);
   const offscreenVideoRef = useRef<HTMLVideoElement | null>(null);
   const abortRef = useRef(false);
+  const objectUrlsRef = useRef<string[]>([]);
 
   const effectiveTrimEnd = trimEnd ?? duration;
+
+  const revokeAllObjectUrls = useCallback(() => {
+    objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    objectUrlsRef.current = [];
+  }, []);
 
   const generateThumbnails = useCallback(async () => {
     if (!videoSrc || duration <= 0) return;
 
     abortRef.current = false;
     setIsGenerating(true);
+    revokeAllObjectUrls();
     setThumbnails([]);
     setProgress(0);
 
@@ -81,11 +88,27 @@ export default function ThumbnailStrip({
 
       const time = times[i] ?? 0;
       await new Promise<void>((resolve) => {
-        const onSeeked = () => {
+        const onSeeked = async () => {
           video.removeEventListener("seeked", onSeeked);
           ctx.drawImage(video, 0, 0, thumbW, thumbH);
-          captured.push({ time, dataUrl: canvas.toDataURL("image/jpeg", 0.7) });
-          setThumbnails([...captured]);
+
+          try {
+            const blob = await new Promise<Blob | null>((blobResolve) => {
+              canvas.toBlob((b) => blobResolve(b), "image/jpeg", 0.7);
+            });
+            if (blob && !abortRef.current) {
+              const url = URL.createObjectURL(blob);
+              objectUrlsRef.current.push(url);
+              captured.push({ time, dataUrl: url });
+
+              if (i === times.length - 1 || captured.length % 5 === 0) {
+                setThumbnails([...captured]);
+              }
+            }
+          } catch (err) {
+            console.error("Failed to generate thumbnail blob", err);
+          }
+
           setProgress(Math.round(((i + 1) / times.length) * 100));
           resolve();
         };
@@ -97,7 +120,7 @@ export default function ThumbnailStrip({
     video.src = "";
     offscreenVideoRef.current = null;
     setIsGenerating(false);
-  }, [videoSrc, duration, intervalSeconds]);
+  }, [videoSrc, duration, intervalSeconds, revokeAllObjectUrls]);
 
   useEffect(() => {
     if (videoSrc && duration > 0) {
@@ -105,8 +128,9 @@ export default function ThumbnailStrip({
     }
     return () => {
       abortRef.current = true;
+      revokeAllObjectUrls();
     };
-  }, [generateThumbnails]);
+  }, [generateThumbnails, revokeAllObjectUrls, videoSrc, duration]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
