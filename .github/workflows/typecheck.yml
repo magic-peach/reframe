@@ -7,10 +7,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: oven-sh/setup-bun@v1
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
-      - run: bun install
+      - name: Install Dependencies
+        run: bun install
 
-      - run: bunx tsc --noEmit
+      - name: Run Type Check
+        run: bun run typecheck
