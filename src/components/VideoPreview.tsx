@@ -4,8 +4,10 @@
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
 import { EditRecipe } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
+
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
+
 
 interface Props {
   file: File | null;
@@ -113,6 +115,40 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
+  const preset =
+    recipe.preset !== "custom"
+      ? getPresetById(recipe.preset)
+      : null;
+
+  const previewWidth =
+    recipe.preset === "custom"
+      ? recipe.customWidth || 1920
+      : preset?.width || 1920;
+
+  const previewHeight =
+    recipe.preset === "custom"
+      ? recipe.customHeight || 1080
+      : preset?.height || 1080;
+
+  const aspectRatio = `${previewWidth}/${previewHeight}`;
+  return (
+    <div
+      className="w-full rounded-lg overflow-hidden bg-[#0a0a0a]"
+      style={{
+        aspectRatio: `${previewWidth} / ${previewHeight}`,
+      }}
+    >
+     
+      <video
+        ref={videoRef}
+        controls
+        className={`w-full h-full ${
+          recipe.framing === "fill"
+            ? "object-cover"
+            : "object-contain"
+        }`}
+
+
   /**
    * Compute the overlay geometry for the selected preset + framing mode.
    * The preview container always uses a 16:9 aspect-video box.
@@ -207,6 +243,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         controls
         className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
         onLoadedData={() => setIsLoading(false)}
+
         playsInline
         muted={!recipe?.keepAudio}
       >
@@ -276,6 +313,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
           Grab frame
         </button>
       )}
+
     </div>
   );
 }
