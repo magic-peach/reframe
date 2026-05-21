@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition } from "@/lib/types";
+import { EditRecipe, ExportHistoryItem, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
@@ -131,6 +131,8 @@ export function useVideoEditor() {
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
+  const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
+  const exportHistoryRef = useRef<ExportHistoryItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
   const exportAbortControllerRef = useRef<AbortController | null>(null);
@@ -147,8 +149,85 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
 
+  const HISTORY_KEY = "reframe-export-history";
+  const MAX_HISTORY_ITEMS = 5;
+
+  const buildHistoryId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+  const loadExportHistory = useCallback(() => {
+    if (typeof window === "undefined") return [] as ExportHistoryItem[];
+    try {
+      const stored = sessionStorage.getItem(HISTORY_KEY);
+      if (!stored) return [];
+      return JSON.parse(stored) as Omit<ExportHistoryItem, "blobUrl">[];
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const persistExportHistory = useCallback((history: ExportHistoryItem[]) => {
+    if (typeof window === "undefined") return;
+    try {
+      const serialized = history.map(({ blobUrl, ...rest }) => rest);
+      sessionStorage.setItem(HISTORY_KEY, JSON.stringify(serialized));
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const addExportHistoryItem = useCallback((exportResult: ExportResult) => {
+    const item: ExportHistoryItem = {
+      id: buildHistoryId(),
+      createdAt: new Date().toISOString(),
+      format: exportResult.format,
+      size: exportResult.size,
+      width: exportResult.width,
+      height: exportResult.height,
+      usedFallback: exportResult.usedFallback,
+      warning: exportResult.warning,
+      blobUrl: exportResult.blobUrl,
+    };
+    setExportHistory((previous) => {
+      const next = [item, ...previous];
+      const droppedItems = next.slice(MAX_HISTORY_ITEMS);
+      droppedItems.forEach((dropped) => {
+        if (dropped.blobUrl) {
+          URL.revokeObjectURL(dropped.blobUrl);
+        }
+      });
+      const trimmed = next.slice(0, MAX_HISTORY_ITEMS);
+      persistExportHistory(trimmed);
+      return trimmed;
+    });
+  }, [persistExportHistory]);
+
+  useEffect(() => {
+    setExportHistory(loadExportHistory());
+  }, [loadExportHistory]);
+
+  useEffect(() => {
+    exportHistoryRef.current = exportHistory;
+  }, [exportHistory]);
+
+  useEffect(() => {
+    return () => {
+      exportHistoryRef.current.forEach((item) => {
+        if (item.blobUrl) {
+          URL.revokeObjectURL(item.blobUrl);
+        }
+      });
+    };
+  }, []);
+
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-    setRecipe((prev) => ({ ...prev, ...patch }));
+    setRecipe((prev) => {
+      const next = { ...prev, ...patch };
+      // GIF has no audio — force keepAudio off
+      if (next.format === "gif") {
+        next.keepAudio = false;
+      }
+      return next;
+    });
   }, []);
 
   useEffect(() => {
@@ -304,6 +383,7 @@ export function useVideoEditor() {
       if (exportCancelledRef.current) return;
 
       setResult(exportResult);
+      addExportHistoryItem(exportResult);
       setStatus("done");
      }  catch (err) {
       if (exportCancelledRef.current) return;
@@ -325,7 +405,7 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration]);
+  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, addExportHistoryItem, loopMusic, musicFile, musicVolume, originalAudioVolume]);
 
 
   useEffect(() => {
@@ -402,6 +482,16 @@ export function useVideoEditor() {
     setError(null);
   }, []);
 
+  const downloadHistoryItem = useCallback((item: ExportHistoryItem) => {
+    if (!item.blobUrl) return;
+    const anchor = document.createElement("a");
+    anchor.href = item.blobUrl;
+    anchor.download = `reframe_${item.width}x${item.height}.${item.format}`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }, []);
+
 
   const reset = useCallback(() => {
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
@@ -471,6 +561,8 @@ export function useVideoEditor() {
     setOverlaySize,
     overlayOpacity,
     setOverlayOpacity,
+    exportHistory,
+    downloadHistoryItem,
     recommendedPreset,
   };
 }

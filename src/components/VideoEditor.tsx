@@ -15,6 +15,7 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
+import ExportHistory from "./ExportHistory";
 import ImageOverlay from "./ImageOverlay"
 import { cn } from "@/lib/utils";
 import {
@@ -59,6 +60,8 @@ export default function VideoEditor() {
     overlayPosition, setOverlayPosition,
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
+    exportHistory,
+    downloadHistoryItem,
     recommendedPreset,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
@@ -361,6 +364,11 @@ export default function VideoEditor() {
               <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
+            {exportHistory.length > 0 && (
+              <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 animate-fade-in" style={{ animationDelay: "75ms" }}>
+                <ExportHistory history={exportHistory} onDownload={downloadHistoryItem} />
+              </div>
+            )}
           </div>
         </div>
       </div>

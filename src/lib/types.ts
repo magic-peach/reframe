@@ -45,6 +45,19 @@ export interface ExportResult {
   format: "mp4" | "webm" | "mkv";
 }
 
+export interface ExportHistoryItem {
+  id: string;
+  createdAt: string;
+  format: "mp4" | "webm" | "mkv" | "gif";
+  size: number;
+  width: number;
+  height: number;
+  usedFallback?: boolean;
+  warning?: string;
+  /** In-memory object URL for the current page session only */
+  blobUrl?: string;
+}
+
 export type ExportStatus =
   | "idle"
   | "loading-engine"
