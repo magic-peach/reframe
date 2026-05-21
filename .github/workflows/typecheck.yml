@@ -9,8 +9,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -19,4 +17,4 @@ jobs:
         run: bun install
 
       - name: Run Type Check
-        run: bun run typecheck
+        run: bunx tsc --noEmit
