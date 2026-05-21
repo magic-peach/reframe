@@ -4,6 +4,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import ScrollToTop from "@/components/ScrollToTop";
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
@@ -62,6 +63,14 @@ export default function RootLayout({
                   } else {
                     document.documentElement.classList.remove('dark');
                   }
+                  if (stored === 'high-contrast') {
+                    document.documentElement.setAttribute(
+                      'data-theme',
+                      'high-contrast'
+                    );
+                  } else {
+                    document.documentElement.removeAttribute('data-theme');
+                  }  
                 } catch (e) {}
               })();
             `,
@@ -87,7 +96,7 @@ export default function RootLayout({
             <main id="main-content" tabIndex={-1}>
               {children}
             </main>
-            
+            <ScrollToTop />
           </ErrorBoundary>
         </ThemeProvider>
       </body>
