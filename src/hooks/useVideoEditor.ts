@@ -77,11 +77,11 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       "Trim start time must be earlier than the end time.",
     ],
     [
-      recipe.preset === "custom" && (recipe.customWidth < 16 || recipe.customWidth > 7680),
+      recipe.preset === "custom" && (Number.isNaN(recipe.customWidth) || recipe.customWidth < 16 || recipe.customWidth > 7680),
       "Width must be between 16px and 7680px.",
     ],
     [
-      recipe.preset === "custom" && (recipe.customHeight < 16 || recipe.customHeight > 7680),
+      recipe.preset === "custom" && (Number.isNaN(recipe.customHeight) || recipe.customHeight < 16 || recipe.customHeight > 7680),
       "Height must be between 16px and 7680px.",
     ],
     [
@@ -229,14 +229,28 @@ export function useVideoEditor() {
         const saved = localStorage.getItem("reframe-settings");
         if (saved) {
           const parsed = JSON.parse(saved);
-          setRecipe(prev => ({
-            ...prev,
-            preset: parsed.preset ?? prev.preset,
-            quality: parsed.quality ?? prev.quality,
-            speed: parsed.speed ?? prev.speed,
-            customWidth: parsed.customWidth ?? prev.customWidth,
-            customHeight: parsed.customHeight ?? prev.customHeight
-          }));
+          setRecipe(prev => {
+            const sanitized: Partial<EditRecipe> = {};
+            if (typeof parsed.preset === "string") {
+              sanitized.preset = parsed.preset;
+            }
+            if (typeof parsed.quality === "number" && !Number.isNaN(parsed.quality) && parsed.quality >= 18 && parsed.quality <= 30) {
+              sanitized.quality = parsed.quality;
+            }
+            if (typeof parsed.speed === "number" && !Number.isNaN(parsed.speed) && [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4].includes(parsed.speed)) {
+              sanitized.speed = parsed.speed;
+            }
+            if (typeof parsed.customWidth === "number" && !Number.isNaN(parsed.customWidth) && parsed.customWidth >= 16 && parsed.customWidth <= 7680) {
+              sanitized.customWidth = parsed.customWidth;
+            }
+            if (typeof parsed.customHeight === "number" && !Number.isNaN(parsed.customHeight) && parsed.customHeight >= 16 && parsed.customHeight <= 7680) {
+              sanitized.customHeight = parsed.customHeight;
+            }
+            return {
+              ...prev,
+              ...sanitized
+            };
+          });
         }
       }
     } catch (e) {
