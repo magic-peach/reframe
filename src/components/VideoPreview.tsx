@@ -1,19 +1,20 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, RefObject } from "react";
+import { EditRecipe } from "@/lib/types";
 
 interface Props {
   file: File | null;
+  videoRef: RefObject<HTMLVideoElement | null>;
+  recipe: EditRecipe;
 }
 
-export default function VideoPreview({ file }: Props) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+export default function VideoPreview({ file, videoRef ,recipe }: Props) {
   const urlRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!file) return;
 
-    // revoke previous object url to avoid memory leaks
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     const url = URL.createObjectURL(file);
     urlRef.current = url;
@@ -22,18 +23,30 @@ export default function VideoPreview({ file }: Props) {
     return () => {
       if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     };
-  }, [file]);
+  }, [file, videoRef]);
 
-  if (!file) return null;
+  // sync mute state to video element
+  useEffect(() => {
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.muted = !recipe.keepAudio;
+  }, [recipe, videoRef]);
 
+  useEffect(() => {
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.playbackRate = recipe.speed;
+  }, [recipe, videoRef]);
   return (
     <div className="w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video">
+     
       <video
-        ref={videoRef}
-        controls
-        className="w-full h-full object-contain"
-        playsInline
-      />
+  ref={videoRef}
+  controls
+  className="w-full h-full object-contain"
+  playsInline
+  muted={!recipe?.keepAudio}
+>
+  <track kind="captions" />
+</video>
     </div>
   );
 }
