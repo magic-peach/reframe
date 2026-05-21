@@ -10,7 +10,7 @@ import { suggestPreset } from "@/lib/presetSuggestion";
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
 
-export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
+export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number; bitrate?: number; codec?: string }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
@@ -22,10 +22,15 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
     video.preload = "metadata";
     video.onloadedmetadata = () => {
       clearTimeout(timeout)
+      const duration = isFinite(video.duration) ? video.duration : 0;
+      const bitrate = duration > 0 ? Math.round((file.size * 8) / duration / 1000) : undefined;
+      
       resolve({
         width: video.videoWidth,
         height: video.videoHeight,
-        duration: isFinite(video.duration) ? video.duration : 0,
+        duration,
+        bitrate,
+        codec: file.type || "unknown"
       });
       URL.revokeObjectURL(url);
     };
@@ -122,6 +127,8 @@ export function useVideoEditor() {
     width: number;
     height: number;
     duration: number;
+    bitrate?: number;
+    codec?: string;
   } | null>(null);
   const [recipe, setRecipe] = useState({
     ...DEFAULT_RECIPE,
@@ -368,12 +375,12 @@ export function useVideoEditor() {
     }
 
     try {
-      const { width, height, duration: dur } = await extractMetadata(selectedFile);
-      setDuration(dur);
-      setVideoMetadata({ width, height, duration: dur });
+      const metadata = await extractMetadata(selectedFile);
+      setDuration(metadata.duration);
+      setVideoMetadata(metadata);
       setFile(selectedFile);
       setRecipe((prev) => {
-        const suggestedPreset = suggestPreset(width, height);
+        const suggestedPreset = suggestPreset(metadata.width, metadata.height);
         const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
 
         return {
@@ -631,6 +638,7 @@ export function useVideoEditor() {
     cancelExport,
     reset,
     resetSettings,
+    videoMetadata,
     musicFile,
     setMusicFile,
     musicVolume,
