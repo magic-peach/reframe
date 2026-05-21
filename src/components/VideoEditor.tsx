@@ -121,6 +121,7 @@ export default function VideoEditor() {
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
     recommendedPreset,
+    toggleSound,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
   const [isDraggingGlobally, setIsDraggingGlobally] = useState(false);
@@ -422,7 +423,7 @@ export default function VideoEditor() {
 
             {status === "done" && result && (
               <div role="status" className="animate-fade-in" ref={downloadRef}>
-                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} />
+                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
               </div>
             )}
           </div>
