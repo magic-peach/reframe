@@ -269,6 +269,8 @@ export function useVideoEditor() {
 
         // Legacy partial settings (keep for backward compatibility)
         const saved = localStorage.getItem("reframe-settings");
+        const savedPreset = localStorage.getItem("reframe:lastPreset") ?? DEFAULT_RECIPE.preset;
+
         if (saved) {
           const parsed = JSON.parse(saved);
           const sanitizeDimension = (val: unknown, fallback: number): number => {
@@ -277,12 +279,14 @@ export function useVideoEditor() {
           };
           setRecipe(prev => ({
             ...prev,
-            preset: parsed.preset ?? prev.preset,
+            preset: savedPreset !== DEFAULT_RECIPE.preset ? savedPreset : (parsed.preset ?? prev.preset),
             quality: parsed.quality ?? prev.quality,
             speed: parsed.speed ?? prev.speed,
             customWidth: sanitizeDimension(parsed.customWidth, prev.customWidth),
             customHeight: sanitizeDimension(parsed.customHeight, prev.customHeight),
           }));
+        } else {
+          setRecipe(prev => ({ ...prev, preset: savedPreset }));
         }
       }
     } catch (e) {
@@ -661,6 +665,14 @@ export function useVideoEditor() {
   useEffect(() => {
     localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
   }, [recipe.soundOnCompletion]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("reframe:lastPreset", recipe.preset);
+    } catch (e) {
+      // ignore
+    }
+  }, [recipe.preset]);
   const seekTo = useCallback((time: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
