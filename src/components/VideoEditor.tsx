@@ -483,7 +483,8 @@ return () => {
                       recipe={recipe}
                       onChange={updateRecipe}
                       duration={duration}
-                      file={file}
+                      file={file} 
+                      seekTo={seekTo}
                     />
                   </AccordionSection>
 

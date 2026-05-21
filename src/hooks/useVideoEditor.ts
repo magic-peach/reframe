@@ -304,33 +304,40 @@ export function useVideoEditor() {
     }
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const params = new URLSearchParams();
-      const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
 
-      recipeKeys.forEach((key) => {
-        const currentVal = recipe[key];
-        const defaultVal = DEFAULT_RECIPE[key];
+    // Debounce the URL update to prevent history.replaceState security errors
+    // when dragging sliders rapidly (max 100 calls per 10s browser limit)
+    const timeoutId = setTimeout(() => {
+      try {
+        const params = new URLSearchParams();
+        const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
 
-        if (currentVal !== defaultVal) {
-          params.set(key, currentVal === null ? "null" : String(currentVal));
+        recipeKeys.forEach((key) => {
+          const currentVal = recipe[key];
+          const defaultVal = DEFAULT_RECIPE[key];
+
+          if (currentVal !== defaultVal) {
+            params.set(key, currentVal === null ? "null" : String(currentVal));
+          }
+        });
+
+        const newQuery = params.toString();
+        const currentQuery = window.location.search.replace(/^\?/, "");
+
+        if (newQuery !== currentQuery) {
+          const newUrl = newQuery
+            ? `${window.location.pathname}?${newQuery}`
+            : window.location.pathname;
+          window.history.replaceState(null, "", newUrl);
         }
-      });
-
-      const newQuery = params.toString();
-      const currentQuery = window.location.search.replace(/^\?/, "");
-
-      if (newQuery !== currentQuery) {
-        const newUrl = newQuery
-          ? `${window.location.pathname}?${newQuery}`
-          : window.location.pathname;
-        window.history.replaceState(null, "", newUrl);
+      } catch (e) {
+        // ignore
       }
-    } catch (e) {
-      // ignore
-    }
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timeoutId);
   }, [recipe]);
 
   useEffect(() => {

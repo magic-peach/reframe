@@ -1,7 +1,7 @@
 "use client";
 
 import { EditRecipe } from "@/lib/types";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type PointerEvent } from "react";
 import { AlertCircle } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
@@ -14,16 +14,16 @@ interface Props {
   onChange: (patch: Partial<EditRecipe>) => void;
   duration: number;
   file: File | null;
+  seekTo?: (time: number) => void;
 }
 
-export default function TrimControl({ recipe, onChange, duration, file }: Props) {
+export default function TrimControl({ recipe, onChange, duration, file, seekTo}: Props) {
   const [invalidStart, setStart] = useState(false);
   const [invalidEnd, setEnd] = useState(false);
   const [startErrorMsg, setStartErrorMsg] = useState("");
   const [endErrorMsg, setEndErrorMsg] = useState("");
-  const [startInput, setStartInput] = useState(
-    recipe.trimStart.toString()
-  );
+  const [startInput, setStartInput] = useState(recipe.trimStart.toString());
+  const [draggingThumb, setDraggingThumb] = useState<"start" | "end" | null>(null);
 
   const { waveform, isLoading: waveformLoading } = useAudioWaveform(file);
   const hasAudio = waveform.length > 0;
@@ -32,8 +32,60 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
     setStartInput(recipe.trimStart.toString());
   }, [recipe.trimStart]);
 
-  const clipLength =
-    (recipe.trimEnd ?? duration) - recipe.trimStart;
+  const clipLength = (recipe.trimEnd ?? duration) - recipe.trimStart;
+  const trimEndValue = recipe.trimEnd ?? duration;
+  const startPercent = duration > 0 ? Math.min(100, Math.max(0, (recipe.trimStart / duration) * 100)) : 0;
+  const endPercent = duration > 0 ? Math.min(100, Math.max(0, (trimEndValue / duration) * 100)) : 100;
+
+  const updateTrimFromPointer = (
+    event: PointerEvent<HTMLDivElement>,
+    thumb: "start" | "end",
+  ) => {
+    if (duration <= 0) {
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const percent = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    const newValue = percent * duration;
+
+    if (thumb === "start") {
+      handleStart(newValue.toString());
+      seekTo?.(newValue);
+    } else {
+      handleEnd(newValue.toString());
+      seekTo?.(newValue);
+    }
+  };
+
+  const handleTrackPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    const thumb = (event.target as HTMLElement).closest("[data-thumb]")?.getAttribute("data-thumb");
+
+    if (thumb !== "start" && thumb !== "end") {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDraggingThumb(thumb);
+    updateTrimFromPointer(event, thumb);
+  };
+
+  const handleTrackPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!draggingThumb) {
+      return;
+    }
+
+    updateTrimFromPointer(event, draggingThumb);
+  };
+
+  const handleTrackPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    setDraggingThumb(null);
+  };
 
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef<"start" | "end" | null>(null);
@@ -57,39 +109,38 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
     }
   }, [xToSeconds, duration, recipe.trimStart, recipe.trimEnd, onChange]);
 
- useEffect(() => {
-  const onMove = (e: MouseEvent | TouchEvent) => {
-    let clientX: number;
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      let clientX: number;
 
-    if ("touches" in e) {
-      const touch = e.touches[0];
+      if ("touches" in e) {
+        const touch = e.touches[0];
+        if (!touch) return;
+        clientX = touch.clientX;
+      } else {
+        clientX = e.clientX;
+      }
 
-      if (!touch) return;
+      applyDrag(clientX);
+    };
 
-      clientX = touch.clientX;
-    } else {
-      clientX = e.clientX;
-    }
+    const onUp = () => {
+      dragging.current = null;
+    };
 
-    applyDrag(clientX);
-  };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    document.addEventListener("touchmove", onMove);
+    document.addEventListener("touchend", onUp);
 
-  const onUp = () => {
-    dragging.current = null;
-  };
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onUp);
+    };
+  }, [applyDrag]);
 
-  document.addEventListener("mousemove", onMove);
-  document.addEventListener("mouseup", onUp);
-  document.addEventListener("touchmove", onMove);
-  document.addEventListener("touchend", onUp);
-
-  return () => {
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onUp);
-    document.removeEventListener("touchmove", onMove);
-    document.removeEventListener("touchend", onUp);
-  };
-}, [applyDrag]);
   const handleStart = (val: string) => {
     setStartInput(val);
 
@@ -177,62 +228,43 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
   return (
     <div id="trim-control" className="space-y-3">
-      {duration > 0 && (
+      {/* Waveform — shown while loading or when file is present */}
+      {(file && (waveformLoading || hasAudio)) && (
         <div
-          role="toolbar"
-          aria-label="Trim timeline"
-          ref={trackRef}
-          className="relative h-6 flex items-center cursor-pointer select-none"
-          onClick={(e) => {
-            if (dragging.current) return;
-            const s = xToSeconds(e.clientX);
-            onChange({ trimStart: s });
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowLeft") onChange({ trimStart: Math.max(0, recipe.trimStart - 0.1) });
-            if (e.key === "ArrowRight") onChange({ trimStart: Math.min((recipe.trimEnd ?? duration) - 0.1, recipe.trimStart + 0.1) });
-          }}
+          className="relative w-full rounded-md overflow-hidden bg-[var(--surface)] touch-none"
+          onPointerDown={handleTrackPointerDown}
+          onPointerMove={handleTrackPointerMove}
+          onPointerUp={handleTrackPointerUp}
+          onPointerCancel={handleTrackPointerUp}
         >
-          <div className="absolute inset-x-0 h-1.5 rounded-full bg-[var(--border)]" />
-          <div
-            className="absolute h-1.5 rounded-full bg-film-400 opacity-60"
-            style={{
-              left: `${(recipe.trimStart / duration) * 100}%`,
-              right: `${((duration - (recipe.trimEnd ?? duration)) / duration) * 100}%`,
-            }}
+          <WaveformCanvas
+            samples={waveform}
+            loading={waveformLoading}
+            hasAudio={hasAudio}
           />
-          <div
-            role="slider"
-            aria-label="Trim start"
-            aria-valuenow={recipe.trimStart}
-            aria-valuemin={0}
-            aria-valuemax={duration}
-            tabIndex={0}
-            className="absolute w-4 h-4 rounded-full bg-white border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
-            style={{ left: `${(recipe.trimStart / duration) * 100}%` }}
-            onMouseDown={() => { dragging.current = "start"; }}
-            onTouchStart={() => { dragging.current = "start"; }}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowLeft") onChange({ trimStart: Math.max(0, recipe.trimStart - 0.1) });
-              if (e.key === "ArrowRight") onChange({ trimStart: Math.min((recipe.trimEnd ?? duration) - 0.1, recipe.trimStart + 0.1) });
-            }}
-          />
-          <div
-            role="slider"
-            aria-label="Trim end"
-            aria-valuenow={recipe.trimEnd ?? duration}
-            aria-valuemin={0}
-            aria-valuemax={duration}
-            tabIndex={0}
-            className="absolute w-4 h-4 rounded-full bg-white border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
-            style={{ left: `${((recipe.trimEnd ?? duration) / duration) * 100}%` }}
-            onMouseDown={() => { dragging.current = "end"; }}
-            onTouchStart={() => { dragging.current = "end"; }}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowLeft") onChange({ trimEnd: Math.max(recipe.trimStart + 0.1, (recipe.trimEnd ?? duration) - 0.1) });
-              if (e.key === "ArrowRight") onChange({ trimEnd: Math.min(duration, (recipe.trimEnd ?? duration) + 0.1) });
-            }}
-          />
+          {duration > 0 && (
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-[var(--border)]/45" />
+              <div
+                className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-film-400/15 transition-all duration-200 ease-in-out"
+                style={{ left: `${startPercent}%`, width: `${Math.max(0, endPercent - startPercent)}%` }}
+              />
+              <button
+                type="button"
+                data-thumb="start"
+                aria-label="Drag trim start handle"
+                className={`pointer-events-auto absolute top-1/2 h-6 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-white/20 dark:bg-black/20 border-white/30 dark:border-white/10 shadow-md backdrop-blur-sm transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 ${draggingThumb === "start" ? "shadow-[0_0_0_4px_rgba(255,191,87,0.14)]" : ""}`}
+                style={{ left: `${startPercent}%` }}
+              />
+              <button
+                type="button"
+                data-thumb="end"
+                aria-label="Drag trim end handle"
+                className={`pointer-events-auto absolute top-1/2 h-6 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-white/20 dark:bg-black/20 border-white/30 dark:border-white/10 shadow-md backdrop-blur-sm transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 ${draggingThumb === "end" ? "shadow-[0_0_0_4px_rgba(255,191,87,0.14)]" : ""}`}
+                style={{ left: `${endPercent}%` }}
+              />
+            </div>
+          )}
         </div>
       )}
       <div className="flex gap-3">
@@ -326,5 +358,3 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
     </div>
   );
 }
-
-
