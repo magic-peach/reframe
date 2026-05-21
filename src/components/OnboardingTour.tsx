@@ -36,7 +36,7 @@ const TOUR_STEPS: TourStep[] = [
     targetId: "export-button",
     title: "Export your video",
     description: "Click Export (or press ⌘↵) to process your video locally — nothing ever leaves your device.",
-    position: "top",  
+    position: "top",
   },
 ];
 
@@ -218,7 +218,7 @@ export default function OnboardingTour() {
   const [visible, setVisible] = useState(false);
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const isFirstRender = useRef(true);  
+  const isFirstRender = useRef(true);
 
   const dismiss = useCallback(() => {
     localStorage.setItem(TOUR_KEY, "1");
@@ -305,7 +305,7 @@ useEffect(() => {
     return () => window.removeEventListener("keydown", onKey);
   }, [visible, stepIndex, dismiss]);
 
-  if (!visible || !targetRect) return null;
+  if (!visible || !targetRect || !TOUR_STEPS[stepIndex]) return null;
 
   return createPortal(
     <>
