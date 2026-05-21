@@ -1,5 +1,8 @@
 import Link from "next/link";
-
+export const metadata = {
+  title: "Contact | Reframe",
+  description: "Get in touch with the Reframe team.",
+};
 export default function ContactPage() {
   return (
     <main className="min-h-screen bg-black text-white p-8">
