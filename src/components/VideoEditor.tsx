@@ -1,8 +1,8 @@
 "use client";
 
-
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
+
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
@@ -15,6 +15,7 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
+
 import ImageOverlay from "./ImageOverlay"
 
 import { cn } from "@/lib/utils";
@@ -22,8 +23,25 @@ import {
   Layers, Crop, Scissors, RotateCw, Volume2,
   SlidersHorizontal, Zap, AlertTriangle, Github, Copy
 } from "lucide-react";
+
+import ImageOverlay from "./ImageOverlay";
+
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+
+import { cn } from "@/lib/utils";
+
+import {
+  Layers,
+  Crop,
+  Scissors,
+  RotateCw,
+  Volume2,
+  SlidersHorizontal,
+  Zap,
+  AlertTriangle,
+  Copy,
+} from "lucide-react";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -32,26 +50,39 @@ interface SectionProps {
   delay?: number;
 }
 
-function Section({ icon, title, children, delay = 0 }: SectionProps) {
+function Section({
+  icon,
+  title,
+  children,
+  delay = 0,
+}: SectionProps) {
   return (
     <div
       className="space-y-3 animate-fade-in"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-center gap-2">
-        <span className="text-film-500 opacity-80">{icon}</span>
+        <span className="text-film-500 opacity-80">
+          {icon}
+        </span>
+
         <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
           {title}
         </h3>
+
         <div className="flex-1 h-px bg-[var(--border)]" />
       </div>
+
       {children}
     </div>
   );
 }
 
-/** Inline keyboard hint badge. */
-function Kbd({ children }: { children: React.ReactNode }) {
+function Kbd({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <kbd className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[10px] font-mono text-[var(--muted)] leading-none">
       {children}
@@ -59,9 +90,29 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Collapsible panel that lists all keyboard shortcuts. */
 function KeyboardShortcutsPanel() {
   const [open, setOpen] = useState(false);
+
+
+  const shortcuts = [
+    {
+      keys: [<Kbd key="m">M</Kbd>],
+      label: "Toggle audio mute",
+    },
+    {
+      keys: [
+        <Kbd key="ctrl">Ctrl</Kbd>,
+        <span
+          key="plus"
+          className="text-[var(--muted)] text-xs"
+        >
+          +
+        </span>,
+        <Kbd key="enter">↵</Kbd>,
+      ],
+      label: "Export video",
+    },
+  ];
 
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
   {
@@ -96,6 +147,7 @@ function KeyboardShortcutsPanel() {
   },
 ];
 
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
       <button
@@ -109,15 +161,25 @@ function KeyboardShortcutsPanel() {
           <Kbd>⌨</Kbd>
           Keyboard Shortcuts
         </span>
+
         <svg
           aria-hidden="true"
           width="12"
           height="12"
           viewBox="0 0 12 12"
           fill="none"
-          className={cn("text-[var(--muted)] transition-transform duration-200", open && "rotate-180")}
+          className={cn(
+            "text-[var(--muted)] transition-transform duration-200",
+            open && "rotate-180",
+          )}
         >
-          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M2 4l4 4 4-4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
 
@@ -127,9 +189,17 @@ function KeyboardShortcutsPanel() {
           className="px-4 pb-3 space-y-2 border-t border-[var(--border)]"
         >
           {shortcuts.map(({ keys, label }) => (
-            <li key={label} className="flex items-center justify-between gap-3 pt-2">
-              <span className="text-xs text-[var(--muted)]">{label}</span>
-              <span className="flex items-center gap-1 shrink-0">{keys}</span>
+            <li
+              key={label}
+              className="flex items-center justify-between gap-3 pt-2"
+            >
+              <span className="text-xs text-[var(--muted)]">
+                {label}
+              </span>
+
+              <span className="flex items-center gap-1 shrink-0">
+                {keys}
+              </span>
             </li>
           ))}
         </ul>
@@ -140,18 +210,46 @@ function KeyboardShortcutsPanel() {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
-    result, error, updateRecipe,
-    handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
+    file,
+    duration,
+    recipe,
+    status,
+    progress,
+    result,
+    error,
+
+    updateRecipe,
+    handleFileSelect,
+    fileError,
+    handleExport,
+    cancelExport,
+    reset,
+    resetSettings,
+
     videoRef,
     seekTo,
-    overlayFile, setOverlayFile,
-    overlayPosition, setOverlayPosition,
-    overlaySize, setOverlaySize,
-    overlayOpacity, setOverlayOpacity,
+
+    overlayFile,
+    setOverlayFile,
+    overlayPosition,
+    setOverlayPosition,
+    overlaySize,
+    setOverlaySize,
+    overlayOpacity,
+    setOverlayOpacity,
+
     recommendedPreset,
+
     toggleSound,
+
+
+    customPresets,
+    savePreset,
+    deletePreset,
+    applyPreset,
+
   } = useVideoEditor();
+
 
   useKeyboardShortcuts({
     file,
@@ -164,103 +262,158 @@ export default function VideoEditor() {
     onToggleShortcutsModal: () => {},
   });
 
+
   const [copied, setCopied] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
-  const downloadRef = useRef<HTMLDivElement>(null);
+
+  const [shareCopied, setShareCopied] =
+    useState(false);
+
+  const downloadRef =
+    useRef<HTMLDivElement>(null);
 
   const handleCopyLink = () => {
-    if (typeof window === "undefined") return;
-    navigator.clipboard.writeText(window.location.href).then(() => {
-      setShareCopied(true);
-      setTimeout(() => setShareCopied(false), 2000);
-    });
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    navigator.clipboard
+      .writeText(window.location.href)
+      .then(() => {
+        setShareCopied(true);
+
+        setTimeout(() => {
+          setShareCopied(false);
+        }, 2000);
+      });
   };
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
-      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       downloadRef.current.scrollIntoView({
-        behavior: prefersReducedMotion ? "instant" : "smooth",
+        behavior: "smooth",
         block: "center",
       });
     }
   }, [status]);
 
+
   const isProcessing = status === "loading-engine" || status === "exporting";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
+  const isProcessing =
+    status === "loading-engine" ||
+    status === "exporting";
+
+
   const videoSrc = useMemo(
-    () => (file ? URL.createObjectURL(file) : null),
-    [file]
+    () =>
+      file
+        ? URL.createObjectURL(file)
+        : null,
+    [file],
   );
 
   useEffect(() => {
     return () => {
-      if (videoSrc) URL.revokeObjectURL(videoSrc);
+      if (videoSrc) {
+        URL.revokeObjectURL(videoSrc);
+      }
     };
   }, [videoSrc]);
 
   return (
-    <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
-      <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
+    <div
+      className="min-h-screen relative flex flex-col"
+      style={{ background: "var(--bg)" }}
+    >
+      <ExportOverlay
+        status={status}
+        progress={progress}
+        onCancel={cancelExport}
+      />
+
       <OnboardingTour />
 
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {status === "exporting" && `Exporting video: ${progress}%`}
-        {status === "done" && "Export complete! Video ready to download."}
-        {status === "error" && `Export failed: ${error}`}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {status === "exporting" &&
+          `Exporting video: ${progress}%`}
+
+        {status === "done" &&
+          "Export complete! Video ready to download."}
+
+        {status === "error" &&
+          `Export failed: ${error}`}
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
-
         <header className="mb-10 flex items-end justify-between animate-fade-in">
-          <div
-            className="inline-block px-5 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600"
-            aria-label="Reframe — video editor"
-          >
+          <div className="inline-block px-5 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600">
             <h1 className="font-display text-6xl leading-none tracking-widest2 text-[var(--text)]">
               REFRAME
             </h1>
+
             <p className="font-heading text-sm text-[var(--muted)] mt-1 uppercase tracking-widest">
               Your video, any format
             </p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
-            No login. No ads. 100% private - your video never leaves your device.
-          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
-
           <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                currentFile={file}
+                fileError={fileError}
+                duration={duration}
+              />
 
               {!file && (
                 <div className="text-center text-[var(--muted)] py-6">
+
                   <p>Upload a video to get started</p>
                   <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+
+                  <p>
+                    Upload a video to get started
+                  </p>
                 </div>
               )}
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} recipe={recipe} videoRef={videoRef} />
+                  <VideoPreview
+                    file={file}
+                    recipe={recipe}
+                    videoRef={videoRef}
+                  />
 
                   <div className="mt-3">
                     <ThumbnailStrip
                       videoSrc={videoSrc}
                       duration={duration}
-                      currentTime={videoRef.current?.currentTime ?? 0}
-                      trimStart={recipe.trimStart ?? 0}
-                      trimEnd={recipe.trimEnd ?? duration}
+                      currentTime={
+                        videoRef.current
+                          ?.currentTime ?? 0
+                      }
+                      trimStart={
+                        recipe.trimStart ?? 0
+                      }
+                      trimEnd={
+                        recipe.trimEnd ??
+                        duration
+                      }
                       onSeek={seekTo}
                     />
                   </div>
                 </div>
               )}
             </div>
+
 
             {file && file.size > 100 * 1024 * 1024 && (
               <p className="text-[var(--warning)] text-sm">
@@ -396,10 +549,15 @@ export default function VideoEditor() {
             )}
 
             {status === "error" && error && (
+
+            {status === "done" && result && (
+
               <div
                 role="status"
-                className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
+                className="animate-fade-in"
+                ref={downloadRef}
               >
+
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
                 <div className="flex-1">
                   <p className="font-heading font-bold text-sm">Error</p>
@@ -433,43 +591,81 @@ export default function VideoEditor() {
             {status === "done" && result && (
               <div role="status" className="animate-fade-in" ref={downloadRef}>
                 <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
+
+                <DownloadResult
+                  result={result}
+                  onReset={reset}
+                  soundOnCompletion={
+                    recipe.soundOnCompletion
+                  }
+                />
+
               </div>
             )}
           </div>
 
-          <div className={cn(
-            "space-y-5",
-            isProcessing && "pointer-events-none opacity-50"
-          )}>
-            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
-              <Section icon={<Layers size={12} />} title="Output size">
+          <div className="space-y-5">
+            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in">
+              <Section
+                icon={<Layers size={12} />}
+                title="Output size"
+              >
                 {recommendedPreset && (
                   <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
                     <p>
+
                       We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()} ({recommendedPreset.label.replace(/\s/g, "")})
+
+                      Recommended:{" "}
+                      {
+                        recommendedPreset.platform
+                      }
+
                     </p>
                   </div>
                 )}
-                <PresetSelector recipe={recipe} onChange={updateRecipe} />
+
+                <PresetSelector
+                  recipe={recipe}
+                  onChange={updateRecipe}
+                  customPresets={
+                    customPresets
+                  }
+                  savePreset={savePreset}
+                  deletePreset={
+                    deletePreset
+                  }
+                  applyPreset={applyPreset}
+                />
               </Section>
 
-              <Section icon={<Crop size={12} />} title="Framing" delay={100}>
-                <FramingControl recipe={recipe} onChange={updateRecipe} />
+              <Section
+                icon={<Crop size={12} />}
+                title="Framing"
+              >
+                <FramingControl
+                  recipe={recipe}
+                  onChange={updateRecipe}
+                />
               </Section>
 
               <div className="pt-2 flex justify-between items-center">
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600"
                 >
                   <Copy size={12} />
-                  {shareCopied ? "Copied!" : "Copy Link"}
+
+                  {shareCopied
+                    ? "Copied!"
+                    : "Copy Link"}
                 </button>
+
                 <button
                   type="button"
                   onClick={resetSettings}
-                  className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+                  className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600"
                 >
                   Reset all settings
                 </button>
@@ -482,19 +678,31 @@ export default function VideoEditor() {
               id="export-button"
               type="button"
               onClick={handleExport}
-              disabled={!file || isProcessing}
-              aria-label='Export video'
-              aria-disabled={!file || isProcessing ? "true" : undefined}
+              disabled={
+                !file || isProcessing
+              }
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
+
                 file && !isProcessing
+
                   ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >
              <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
               {isProcessing ? "PROCESSING" : "EXPORT"}
+
+                  ? "bg-film-600 hover:bg-film-700 text-white"
+                  : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed",
+              )}
+            >
+              <Zap size={20} />
+
+              {isProcessing
+                ? "PROCESSING"
+                : "EXPORT"}
             </button>
 
             {file && !isProcessing && (
