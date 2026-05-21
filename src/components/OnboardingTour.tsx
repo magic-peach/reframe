@@ -293,7 +293,8 @@ useEffect(() => {
   useEffect(() => {
   if (!visible) return;
   const onResize = () => {
-    measureTarget(TOUR_STEPS[stepIndex].targetId).then(setTargetRect).catch((error) => {
+    const id = TOUR_STEPS[stepIndex]?.targetId ?? "";
+    measureTarget(id).then(setTargetRect).catch((error) => {
       console.error("Failed to re-measure tour target on resize:", error);
     });
   };
