@@ -23,6 +23,7 @@ import {
   SlidersHorizontal, Zap, AlertTriangle, Github, Copy
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -128,6 +129,18 @@ export default function VideoEditor() {
     recommendedPreset,
     toggleSound,
   } = useVideoEditor();
+
+  useKeyboardShortcuts({
+    file,
+    recipe,
+    resetSettings,
+    updateRecipe,
+    handleExport,
+    status,
+    cancelExport,
+    onToggleShortcutsModal: () => {},
+  });
+
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
@@ -151,6 +164,7 @@ export default function VideoEditor() {
   }, [status]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
+  const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const videoSrc = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
@@ -456,9 +470,15 @@ export default function VideoEditor() {
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >
-              <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
+             <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
+
+            {file && !isProcessing && (
+              <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
+                {isMac ? "⌘" : "Ctrl"} + Enter to export
+              </p>
+            )}
           </div>
         </div>
       </div>
