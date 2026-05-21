@@ -1,17 +1,11 @@
 "use client";
 
 import { EditRecipe } from "@/lib/types";
-import { useState, useEffect } from "react";
-import { AlertCircle } from "lucide-react";
-import { formatDuration } from "@/lib/utils";
-import { useAudioWaveform } from "@/hooks/useAudioWaveform";
-import WaveformCanvas from "@/components/WaveformCanvas";
 
 interface Props {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
   duration: number;
-  file: File | null;
 }
 
 function formatTime(seconds: number): string {
@@ -22,126 +16,39 @@ function formatTime(seconds: number): string {
 
 export default function TrimControl({ recipe, onChange, duration }: Props) {
   const handleStart = (val: string) => {
-    setStartInput(val);
-
-    if (val === "") {
-      setStart(false);
-      setStartErrorMsg("");
-      return;
-    }
-
     const n = parseFloat(val);
-
-    if (isNaN(n)) {
-      setStart(true);
-      setStartErrorMsg("Enter a valid number.");
-      return;
-    }
-
-    if (n < 0) {
-      setStart(true);
-      setStartErrorMsg("Start time must be 0 or greater.");
-      return;
-    }
-
-    if (duration > 0 && n >= duration) {
-      setStart(true);
-      setStartErrorMsg(
-        `Start time must be less than duration (${duration.toFixed(1)}s).`,
-      );
-      return;
-    }
-
-    if (recipe.trimEnd !== null && n >= recipe.trimEnd) {
-      setStart(true);
-      setStartErrorMsg("Start time must be less than the end time.");
-      return;
-    }
-
-    setStart(false);
-    setStartErrorMsg("");
-
+    if (isNaN(n) || n < 0) return;
+    if (duration > 0 && n >= duration) return;
+    if (recipe.trimEnd !== null && n >= recipe.trimEnd) return;
     onChange({ trimStart: n });
   };
 
   const handleEnd = (val: string) => {
-    if (val === "") {
-      onChange({ trimEnd: null });
-      setEnd(false);
-      return;
-    }
-
+    if (val === "") { onChange({ trimEnd: null }); return; }
     const n = parseFloat(val);
-
+    if (isNaN(n) || n <= 0 || n <= recipe.trimStart) return;
+    if (duration > 0 && n > duration) return;
     onChange({ trimEnd: n });
-
-    if (isNaN(n)) {
-      setEnd(true);
-      setEndErrorMsg("Enter a valid number.");
-      return;
-    }
-
-    if (n <= 0) {
-      setEnd(true);
-      setEndErrorMsg("End time must be greater than 0.");
-      return;
-    }
-
-    if (n <= recipe.trimStart) {
-      setEnd(true);
-      setEndErrorMsg("End time must be greater than start time.");
-      return;
-    }
-
-    if (duration > 0 && n > duration + 0.01) {
-      setEnd(true);
-      setEndErrorMsg(
-        `End time cannot exceed duration (${duration.toFixed(1)}s).`,
-      );
-      return;
-    }
-
-    setEnd(false);
-    setEndErrorMsg("");
   };
 
   const inputClass =
-    "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+    "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
 
   return (
-    <div id="trim-control" className="space-y-3">
-      {/* Waveform — shown while loading or when file is present */}
-      {(file && (waveformLoading || hasAudio)) && (
-        <div className="relative w-full rounded-md overflow-hidden bg-[var(--surface)]">
-          <WaveformCanvas
-            samples={waveform}
-            loading={waveformLoading}
-            hasAudio={hasAudio}
-          />
-        </div>
-      )}
-
+    <div className="space-y-2">
       <div className="flex gap-3">
         <div className="flex-1">
           <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
             Start (MM:SS)
           </label>
-
           <input
-            id="trim-start"
             type="number"
             min={0}
             max={duration > 0 ? duration : undefined}
             step={0.1}
-            value={startInput}
-            spellCheck={false}
+            value={recipe.trimStart}
             onChange={(e) => handleStart(e.target.value)}
-            aria-label="Trim start time in seconds"
-            aria-invalid={invalidStart}
-            aria-describedby={invalidStart ? "trim-start-error" : undefined}
-            className={`${inputClass} ${
-              invalidStart ? "border-red-500" : "border-[var(--border)]"
-            }`}
+            className={inputClass}
             placeholder="0"
           />
 {typeof recipe.trimStart === "number" && (
@@ -151,27 +58,19 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
 )}
 
         </div>
-
         <div className="flex-1">
           <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
             End (MM:SS)
           </label>
-
           <input
-            id="trim-end"
             type="number"
             min={0}
             max={duration > 0 ? duration : undefined}
             step={0.1}
             value={recipe.trimEnd ?? ""}
-            spellCheck={false}
             onChange={(e) => handleEnd(e.target.value)}
-            aria-label="Trim end time in seconds"
-            aria-invalid={invalidEnd}
-            className={`${inputClass} ${invalidEnd ? "border-red-500" : "border-[var(--border)]"}`}
-            placeholder={
-              duration > 0 ? `${duration.toFixed(1)}` : "full length"
-            }
+            className={inputClass}
+            placeholder={duration > 0 ? `${duration.toFixed(1)}` : "full length"}
           />
           {typeof recipe.trimEnd === "number" && (
   <p className="text-[10px] text-[var(--muted)] mt-1">
@@ -180,7 +79,6 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
 )}
         </div>
       </div>
-
       {duration > 0 && (
         <p className="text-[10px] text-[var(--muted)] font-heading">
           Duration: {formatTime(duration)}
@@ -190,4 +88,4 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
   );
 }
 
-
+//oi
