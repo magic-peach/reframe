@@ -23,6 +23,7 @@ import {
   SlidersHorizontal, Zap, AlertTriangle, Github, Copy
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -63,9 +64,37 @@ function KeyboardShortcutsPanel() {
   const [open, setOpen] = useState(false);
 
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
-    { keys: [<Kbd key="m">M</Kbd>], label: "Toggle audio mute" },
-    { keys: [<Kbd key="ctrl">Ctrl</Kbd>, <span key="plus" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="enter">↵</Kbd>], label: "Export video" },
-  ];
+  {
+    keys: [
+      <Kbd key="ctrl">Ctrl</Kbd>,
+      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
+      <Kbd key="shift">Shift</Kbd>,
+      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
+      <Kbd key="e">E</Kbd>
+    ],
+    label: "Export video",
+  },
+  {
+    keys: [<Kbd key="m">M</Kbd>],
+    label: "Toggle audio mute",
+  },
+  {
+    keys: [<Kbd key="r">R</Kbd>],
+    label: "Reset all settings",
+  },
+  {
+    keys: [<Kbd key="esc">Esc</Kbd>],
+    label: "Cancel export",
+  },
+  {
+    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
+    label: "Switch preset by index",
+  },
+  {
+    keys: [<Kbd key="question">?</Kbd>],
+    label: "Toggle this panel",
+  },
+];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
@@ -123,6 +152,18 @@ export default function VideoEditor() {
     recommendedPreset,
     toggleSound,
   } = useVideoEditor();
+
+  useKeyboardShortcuts({
+    file,
+    recipe,
+    resetSettings,
+    updateRecipe,
+    handleExport,
+    status,
+    cancelExport,
+    onToggleShortcutsModal: () => {},
+  });
+
   const [copied, setCopied] = useState(false);
   const [isDraggingGlobally, setIsDraggingGlobally] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
