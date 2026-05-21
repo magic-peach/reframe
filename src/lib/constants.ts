@@ -19,4 +19,5 @@ export const DEFAULT_RECIPE: EditRecipe = {
   saturation: 1,
   stabilization: false,
   soundOnCompletion: false,
+  normalizeAudio: false,
 };
