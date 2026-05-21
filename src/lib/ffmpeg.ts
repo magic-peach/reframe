@@ -249,14 +249,7 @@ export async function exportVideo(
         throw new Error("Export failed");
       }
 
-     const data = await ffmpeg.readFile(fallbackOutputName, undefined, { signal });
-
-if (!(data instanceof Uint8Array)) {
-  throw new Error("Failed to read fallback export output");
-}
-
-const blob = new Blob([data], { type: "video/webm" });
-
+ const blob = new Blob([data.buffer], { type: "video/webm" });
       onProgress(100);
       return {
         blobUrl: URL.createObjectURL(blob),
@@ -267,14 +260,8 @@ const blob = new Blob([data], { type: "video/webm" });
       };
     }
 
-    const data = await ffmpeg.readFile(outputName, undefined, { signal });
-
-       if (!(data instanceof Uint8Array)) {
-           throw new Error("Failed to read export output");
-         }
-
-const blob = new Blob([data], { type: mimeType });
-
+  
+const blob = new Blob([data.buffer], { type: mimeType });
     onProgress(100);
     return {
       blobUrl: URL.createObjectURL(blob),
