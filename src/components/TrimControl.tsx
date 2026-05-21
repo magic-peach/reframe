@@ -8,6 +8,12 @@ interface Props {
   duration: number;
 }
 
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = (seconds % 60).toFixed(1);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(4, '0')}`;
+}
+
 export default function TrimControl({ recipe, onChange, duration }: Props) {
   const handleStart = (val: string) => {
     const n = parseFloat(val);
@@ -33,7 +39,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
       <div className="flex gap-3">
         <div className="flex-1">
           <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
-            Start (sec)
+            Start (MM:SS)
           </label>
           <input
             type="number"
@@ -45,10 +51,16 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             className={inputClass}
             placeholder="0"
           />
+{typeof recipe.trimStart === "number" && (
+  <p className="text-[10px] text-[var(--muted)] mt-1">
+    {formatTime(recipe.trimStart)}
+  </p>
+)}
+
         </div>
         <div className="flex-1">
           <label className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-1.5">
-            End (sec)
+            End (MM:SS)
           </label>
           <input
             type="number"
@@ -60,13 +72,20 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
             className={inputClass}
             placeholder={duration > 0 ? `${duration.toFixed(1)}` : "full length"}
           />
+          {typeof recipe.trimEnd === "number" && (
+  <p className="text-[10px] text-[var(--muted)] mt-1">
+    {formatTime(recipe.trimEnd)}
+  </p>
+)}
         </div>
       </div>
       {duration > 0 && (
         <p className="text-[10px] text-[var(--muted)] font-heading">
-          Duration: {duration.toFixed(1)}s
+          Duration: {formatTime(duration)}
         </p>
       )}
     </div>
   );
 }
+
+
