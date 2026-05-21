@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
+  const STORAGE_KEY = "reframe:recipe";
 
 export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
@@ -15,8 +16,8 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
     const video = document.createElement("video");
     const timeout = setTimeout(() => {
       URL.revokeObjectURL(url);
-      reject( new Error("Video metaData load timeout"))
-    }, 500);
+      reject( new Error("Video metaData load timeout — the file may be too large or the device too slow. Please try again.") );
+    }, 5000);
 
     video.preload = "metadata";
     video.onloadedmetadata = () => {
@@ -226,6 +227,21 @@ export function useVideoEditor() {
           }));
         }
       } else {
+        // Try full recipe restore first (new key)
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (isValidRecipe(parsed)) {
+              setRecipe(parsed);
+              return;
+            }
+          }
+        } catch {
+          // ignore parse/validation errors and fall back to legacy
+        }
+
+        // Legacy partial settings (keep for backward compatibility)
         const saved = localStorage.getItem("reframe-settings");
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -286,6 +302,19 @@ export function useVideoEditor() {
       // ignore
     }
   }, [recipe.preset, recipe.quality, recipe.speed, recipe.customWidth, recipe.customHeight]);
+
+  // Persist the full recipe (debounced)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(recipe));
+      } catch {
+        // ignore
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [recipe]);
 
   const recommendedPreset = useMemo(() => {
     if (!videoMetadata) return null;
@@ -516,8 +545,19 @@ export function useVideoEditor() {
     }
    },[result?.blobUrl])
 
+  useEffect(() => {
+    return () => {
+      terminateFFmpeg();
+    };
+  }, []);
+
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   }, []);
 
   const cancelExport = useCallback(() => {
@@ -541,21 +581,13 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   }, [result]);
 
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
-    if (status !== "exporting") return;
-
-    const interval = setInterval(() => {
-      const mem = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
-      if (mem) {
-        console.log("[Reframe Memory]", Math.round(mem.usedJSHeapSize / 1e6), "MB used");
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [status]);
 
   useEffect(() => {
     localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
@@ -565,6 +597,10 @@ export function useVideoEditor() {
       videoRef.current.currentTime = time;
     }
   }, []);
+
+  const toggleSound = useCallback(() => {
+  updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
+}, [recipe.soundOnCompletion, updateRecipe]);
 
   return {
     file,
@@ -600,5 +636,6 @@ export function useVideoEditor() {
     overlayOpacity,
     setOverlayOpacity,
     recommendedPreset,
+    toggleSound,
   };
 }
