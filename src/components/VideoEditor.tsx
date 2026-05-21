@@ -434,7 +434,7 @@ export default function VideoEditor() {
                 {recommendedPreset && (
                   <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
                     <p>
-                      We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {recommendedPreset.platform.split("·")[0].trim()} ({recommendedPreset.label.replace(/\s/g, "")})
+                      We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()} ({recommendedPreset.label.replace(/\s/g, "")})
                     </p>
                   </div>
                 )}

@@ -80,7 +80,8 @@ export default function TipCarousel() {
   };
 
   const activeTip = TIPS[activeIdx];
-  const IconComponent = activeTip.icon;
+  if (!activeTip) return null;
+  const IconComponent = activeTip.icon; 
 
   return (
     <div 
