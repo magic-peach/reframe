@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import FileUpload from "./FileUpload";
@@ -245,7 +244,6 @@ export default function VideoEditor() {
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
-
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <Section
@@ -258,14 +256,19 @@ export default function VideoEditor() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <label htmlFor="brightness-slider">Brightness</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ brightness: 0 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset brightness"
-                          >
-                            Reset
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[var(--muted)] font-mono text-xs">
+                              {Math.round(recipe.brightness * 100)}%
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateRecipe({ brightness: 0 })}
+                              className="text-film-500 hover:underline text-xs"
+                              aria-label="reset brightness"
+                            >
+                              Reset
+                            </button>
+                          </div>
                         </div>
                         <input
                           id="brightness-slider"
@@ -274,23 +277,29 @@ export default function VideoEditor() {
                           max="1"
                           step="0.1"
                           value={recipe.brightness}
-                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
+                          onChange={(e) => updateRecipe({ brightness: parseFloat(e.target.value) })}
                           aria-label="Adjust brightness"
                           className="w-full accent-film-600"
                         />
                       </div>
+                      
                       {/* Contrast */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <label htmlFor="contrast-slider">Contrast</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ contrast: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-contrast"
-                          >
-                            Reset
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[var(--muted)] font-mono text-xs">
+                              {Math.round((recipe.contrast - 1) * 100)}%
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateRecipe({ contrast: 1 })}
+                              className="text-film-500 hover:underline text-xs"
+                              aria-label="reset-contrast"
+                            >
+                              Reset
+                            </button>
+                          </div>
                         </div>
                         <input
                           id="contrast-slider"
@@ -299,23 +308,29 @@ export default function VideoEditor() {
                           max="2"
                           step="0.1"
                           value={recipe.contrast}
-                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
+                          onChange={(e) => updateRecipe({ contrast: parseFloat(e.target.value) })}
                           aria-label="Adjust contrast"
                           className="w-full accent-film-600"
                         />
                       </div>
-                      {/* Saturation */}
+                      
+                      {/* Saturation - FIXED: caps at 100% */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <label htmlFor="saturation-slider">Saturation</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ saturation: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-saturation"
-                          >
-                            Reset
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[var(--muted)] font-mono text-xs">
+                              {Math.min(100, Math.round((recipe.saturation - 1) * 100))}%
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateRecipe({ saturation: 1 })}
+                              className="text-film-500 hover:underline text-xs"
+                              aria-label="reset-saturation"
+                            >
+                              Reset
+                            </button>
+                          </div>
                         </div>
                         <input
                           id="saturation-slider"
@@ -324,7 +339,7 @@ export default function VideoEditor() {
                           max="3"
                           step="0.1"
                           value={recipe.saturation}
-                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
+                          onChange={(e) => updateRecipe({ saturation: parseFloat(e.target.value) })}
                           aria-label="Adjust saturation"
                           className="w-full accent-film-600"
                         />
