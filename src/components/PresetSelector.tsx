@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 
-import { Search, Settings2 } from "lucide-react";
+import { Search, Settings2, Star, Trash2, Save } from "lucide-react";
 
 import { PRESETS } from "@/lib/presets";
-import { EditRecipe } from "@/lib/types";
+import { EditRecipe, CustomProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -104,20 +104,85 @@ const QUICK_ACTIONS = [
 
 export default function PresetSelector({ recipe, onChange }: Props) {
   const [search, setSearch] = useState("");
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [customProfiles, setCustomProfiles] = useState<CustomProfile[]>([]);
 
-  const filteredPresets = PRESETS.filter(
-    (preset) =>
-      preset.id !== "custom" &&
-      (preset.label.toLowerCase().includes(search.toLowerCase()) ||
-        preset.platform.toLowerCase().includes(search.toLowerCase())),
-  );
+  useEffect(() => {
+    try {
+      const savedFavs = localStorage.getItem("reframe:favorites");
+      if (savedFavs) setFavorites(JSON.parse(savedFavs));
+      const savedProfiles = localStorage.getItem("reframe:customProfiles");
+      if (savedProfiles) setCustomProfiles(JSON.parse(savedProfiles));
+    } catch {}
+  }, []);
+
+  const toggleFavorite = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const newFavs = favorites.includes(id) 
+      ? favorites.filter(f => f !== id)
+      : [...favorites, id];
+    setFavorites(newFavs);
+    try { localStorage.setItem("reframe:favorites", JSON.stringify(newFavs)); } catch {}
+  };
+
+  const handleSaveProfile = () => {
+    const name = window.prompt("Enter a name for this custom profile:");
+    if (!name?.trim()) return;
+    const newProfile: CustomProfile = {
+      id: `custom-profile-${Date.now()}`,
+      label: name.trim(),
+      recipe: { ...recipe }
+    };
+    const updated = [...customProfiles, newProfile];
+    setCustomProfiles(updated);
+    try { localStorage.setItem("reframe:customProfiles", JSON.stringify(updated)); } catch {}
+    onChange({ preset: newProfile.id });
+  };
+
+  const deleteCustomProfile = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!window.confirm("Delete this custom profile?")) return;
+    const updated = customProfiles.filter(p => p.id !== id);
+    setCustomProfiles(updated);
+    try { localStorage.setItem("reframe:customProfiles", JSON.stringify(updated)); } catch {}
+    if (recipe.preset === id) onChange({ preset: "custom" });
+  };
+
+  const allPresets = [
+    ...PRESETS.filter(p => p.id !== "custom"),
+    ...customProfiles.map(p => ({
+      id: p.id,
+      label: p.label,
+      platform: "Custom Profile",
+      width: p.recipe.customWidth ?? 1920,
+      height: p.recipe.customHeight ?? 1080,
+      isCustom: true
+    }))
+  ];
+
+  const filteredPresets = allPresets
+    .filter((preset) =>
+      preset.label.toLowerCase().includes(search.toLowerCase()) ||
+      preset.platform.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      const aFav = favorites.includes(a.id) ? 1 : 0;
+      const bFav = favorites.includes(b.id) ? 1 : 0;
+      if (aFav !== bFav) return bFav - aFav;
+      return 0;
+    });
 
   const handlePresetSelect = useCallback(
     (presetId: string) => {
-      onChange({ preset: presetId });
+      const customProfile = customProfiles.find(p => p.id === presetId);
+      if (customProfile) {
+        onChange({ ...customProfile.recipe, preset: presetId });
+      } else {
+        onChange({ preset: presetId });
+      }
       setSearch("");
     },
-    [onChange],
+    [onChange, customProfiles],
   );
 
   const handleWidthChange = useCallback(
@@ -193,20 +258,47 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             const active = recipe.preset === preset.id;
 
             return (
-              <button
+              <div
                 key={preset.id}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => handlePresetSelect(preset.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handlePresetSelect(preset.id);
+                  }
+                }}
                 title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
                 aria-label={`${preset.label.replaceAll(":", " is to ")} output ratio`}
                 aria-pressed={active}
                 className={cn(
-                  "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+                  "relative min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
                   active
                     ? "border-film-500 bg-film-50"
                     : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
                 )}
               >
+                <button
+                  type="button"
+                  onClick={(e) => toggleFavorite(e, preset.id)}
+                  className="absolute top-1.5 right-1.5 p-1 text-[var(--muted)] hover:text-yellow-500 transition-colors z-10"
+                  title={favorites.includes(preset.id) ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Star size={14} className={favorites.includes(preset.id) ? "fill-yellow-400 text-yellow-400" : ""} />
+                </button>
+                
+                {(preset as any).isCustom && (
+                  <button
+                    type="button"
+                    onClick={(e) => deleteCustomProfile(e, preset.id)}
+                    className="absolute top-1.5 left-1.5 p-1 text-[var(--muted)] hover:text-red-500 transition-colors z-10"
+                    title="Delete profile"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+
                 <RatioBox
                   width={preset.width}
                   height={preset.height}
@@ -227,7 +319,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
                     {preset.platform}
                   </p>
                 </div>
-              </button>
+              </div>
             );
           })
         )}
@@ -273,65 +365,78 @@ export default function PresetSelector({ recipe, onChange }: Props) {
       </div>
 
       {recipe.preset === "custom" && (
-        <div className="mt-2 flex items-center gap-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm animate-fade-in">
-          <div className="flex-1">
-            <label
-              htmlFor="custom-width"
-              className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
-            >
-              Width (px)
-            </label>
-            <input
-              id="custom-width"
-              type="number"
-              autoComplete="off" 
-              min={16}
-              max={7680}
-              step={2}
-              value={recipe.customWidth}
-              onChange={(e) => handleWidthChange(Number(e.target.value))}
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
-          </div>
+        <>
+          <div className="mt-2 flex items-center gap-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm animate-fade-in">
+            <div className="flex-1">
+              <label
+                htmlFor="custom-width"
+                className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
+              >
+                Width (px)
+              </label>
+              <input
+                id="custom-width"
+                type="number"
+                autoComplete="off" 
+                min={16}
+                max={7680}
+                step={2}
+                value={recipe.customWidth}
+                onChange={(e) => handleWidthChange(Number(e.target.value))}
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
 
-          <div className="mt-5 flex flex-col items-center justify-center">
-            <span className="font-heading text-sm font-medium text-[var(--muted)]">
-              ×
-            </span>
-          </div>
+            <div className="mt-5 flex flex-col items-center justify-center">
+              <span className="font-heading text-sm font-medium text-[var(--muted)]">
+                ×
+              </span>
+            </div>
 
-          <div className="flex-1">
-            <label
-              htmlFor="custom-height"
-              className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
-            >
-              Height (px)
-            </label>
-            <input
-              id="custom-height"
-              type="number"
-              autoComplete="off"
-              min={16}
-              max={7680}
-              step={2}
-              value={recipe.customHeight}
-              onChange={(e) => handleHeightChange(Number(e.target.value))}
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
-          </div>
+            <div className="flex-1">
+              <label
+                htmlFor="custom-height"
+                className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
+              >
+                Height (px)
+              </label>
+              <input
+                id="custom-height"
+                type="number"
+                autoComplete="off"
+                min={16}
+                max={7680}
+                step={2}
+                value={recipe.customHeight}
+                onChange={(e) => handleHeightChange(Number(e.target.value))}
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
 
-          <div className="hidden h-full flex-col justify-end sm:flex">
-            <span className="mb-1.5 block text-center text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
-              Ratio
-            </span>
-            <div className="flex h-[38px] items-center rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 text-xs font-medium text-film-700">
-              {getOrientationLabel(
-                recipe.customWidth || 0,
-                recipe.customHeight || 0,
-              )}
+            <div className="hidden h-full flex-col justify-end sm:flex">
+              <span className="mb-1.5 block text-center text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+                Ratio
+              </span>
+              <div className="flex h-[38px] items-center rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 text-xs font-medium text-film-700">
+                {getOrientationLabel(
+                  recipe.customWidth || 0,
+                  recipe.customHeight || 0,
+                )}
+              </div>
             </div>
           </div>
-        </div>
+          
+          <div className="flex justify-end animate-fade-in mt-2">
+            <button
+              type="button"
+              onClick={handleSaveProfile}
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-600 border border-film-200 bg-film-50 rounded-lg hover:bg-film-100 transition-colors"
+            >
+              <Save size={12} />
+              Save as Profile
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
