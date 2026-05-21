@@ -743,7 +743,11 @@ return () => {
             )}
 
             {status === "done" && result && (
-              <div role="status" className="animate-fade-in" ref={downloadRef}>
+              <div
+                role="status"
+                className="animate-fade-in"
+                ref={downloadRef}
+              >
                 <DownloadResult
                   result={result}
                   onReset={reset}
