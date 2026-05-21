@@ -46,8 +46,8 @@ const TIPS: Tip[] = [
 export default function TipCarousel() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [isFading, setIsFading] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const rotateTip = () => {
     setIsFading(true);
