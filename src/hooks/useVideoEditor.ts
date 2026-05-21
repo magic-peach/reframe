@@ -136,6 +136,7 @@ export function useVideoEditor() {
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  
 
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [musicVolume, setMusicVolume] = useState(70);
@@ -259,80 +260,93 @@ export function useVideoEditor() {
     }
   }, []);
 
-  const handleExport = useCallback(async () => {
-    if (!file) return;
-    if (status === "loading-engine" || status === "exporting") {
-      return;
-    }
+const workerRef = useRef<Worker | null>(null);
 
-    const validationError = validateRecipe(recipe, duration);
-    if (validationError) {
-      setError(validationError);
-      setStatus("error");
-      return;
-    }
+const handleExport = useCallback(async () => {
+  if (!file) return;
+  if (status === "loading-engine" || status === "exporting") return;
 
-    const abortController = new AbortController();
-    exportAbortControllerRef.current = abortController;
-    exportCancelledRef.current = false;
+  const validationError = validateRecipe(recipe, duration);
+  if (validationError) {
+    setError(validationError);
+    setStatus("error");
+    return;
+  }
 
-    try {
-      setStatus("loading-engine");
-      setProgress(0);
-      setError(null);
-      if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
-      setResult(null);
+  try {
+    setStatus("loading-engine");
+    setProgress(0);
+    setError(null);
 
-      const ffmpeg = await loadFFmpeg(abortController.signal);
-      if (exportCancelledRef.current) return;
+    if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
+    setResult(null);
 
-      setStatus("exporting");
+    const worker = new Worker(
+      new URL("../utils/ffmpegWorker.js", import.meta.url)
+    );
 
-      const exportResult = await exportVideo(
-        ffmpeg,
+    workerRef.current = worker;
+
+    worker.postMessage({
+      type: "START",
+      payload: {
         file,
         recipe,
-        setProgress,
-        abortController.signal,
-        {
+        musicOptions: {
           file: musicFile,
           musicVolume,
           originalAudioVolume,
           loopMusic,
         },
-        {
+        overlayOptions: {
           file: overlayFile,
           position: overlayPosition,
           size: overlaySize,
           opacity: overlayOpacity,
-        }
-      );
-      if (exportCancelledRef.current) return;
+        },
+      },
+    });
 
-      setResult(exportResult);
-      setStatus("done");
-     }  catch (err) {
-      if (exportCancelledRef.current) return;
+    worker.onmessage = (e) => {
+      const { type, progress: prog, result: res, error: err } = e.data;
 
-      console.error("export failed:", err);
-      if (err instanceof FFmpegLoadError) {
-        setError(err.message);
-      } else if (err instanceof Error && err.message.includes('network')) {
-        setError('Network error. Check your internet connection and try again.');
-      } else if (err instanceof Error && err.message.includes('codec')) {
-        setError('This video format is not supported. Try converting to MP4 first.');
-      } else {
-        setError('Export failed. Please try again or use a different video.');
+      if (type === "PROGRESS") {
+        setStatus("exporting");
+        setProgress(prog);
       }
-      setStatus("error");
-    }
-    finally {
-      if (exportAbortControllerRef.current === abortController) {
-        exportAbortControllerRef.current = null;
-      }
-    }
-  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration]);
 
+      if (type === "DONE") {
+        setResult(res);
+        setStatus("done");
+        worker.terminate();
+      }
+
+      if (type === "ERROR") {
+        setError(err);
+        setStatus("error");
+        worker.terminate();
+      }
+    };
+
+  } catch (err: any) {
+    setError(err.message);
+    setStatus("error");
+  }
+}, [
+  file,
+  recipe,
+  duration,
+  result,
+  status,
+  musicFile,
+  musicVolume,
+  originalAudioVolume,
+  loopMusic,
+  overlayFile,
+  overlayPosition,
+  overlaySize,
+  overlayOpacity
+]);
 
   useEffect(() => {
     if (status === "exporting") {
@@ -399,13 +413,14 @@ export function useVideoEditor() {
   }, []);
 
   const cancelExport = useCallback(() => {
-    exportCancelledRef.current = true;
-    exportAbortControllerRef.current?.abort();
-    exportAbortControllerRef.current = null;
-    terminateFFmpeg();
-    setStatus("idle");
-    setProgress(0);
-    setError(null);
+  if (workerRef.current) {
+    workerRef.current.terminate();
+    workerRef.current = null;
+  }
+
+  setStatus("idle");
+  setProgress(0);
+  setError(null);
   }, []);
 
 
