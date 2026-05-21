@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Navbar from "@/components/Navbar"; 
 import ScrollToTop from "@/components/ScrollToTop";
+import BrandLogo from "@/components/BrandLogo";
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
@@ -90,9 +91,16 @@ export default function RootLayout({
         </a>
         <ThemeProvider>
           <ErrorBoundary>
-            
-            <Navbar />
-
+            <header
+              role="banner"
+              className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]"
+            >
+              <div className="flex items-center gap-2">
+                <BrandLogo size={24} />
+                <h1 className="text-lg font-semibold">Reframe</h1>
+              </div>
+              <ThemeToggle />
+            </header>
             <main id="main-content" tabIndex={-1}>
               {children}
             </main>
