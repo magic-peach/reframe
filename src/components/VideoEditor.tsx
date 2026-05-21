@@ -265,7 +265,7 @@ export default function VideoEditor() {
                       recipe={recipe}
                       onChange={updateRecipe}
                       duration={duration}
-                      file={file} 
+                      file={file}
                     />
                   </Section>
                   <Section icon={<RotateCw size={12} />} title="Rotate" delay={100}>
