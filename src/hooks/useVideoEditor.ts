@@ -1,12 +1,10 @@
 "use client";
-
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
-import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
@@ -168,6 +166,7 @@ export function useVideoEditor() {
   const [musicVolume, setMusicVolume] = useState(70);
   const [originalAudioVolume, setOriginalAudioVolume] = useState(40);
   const [loopMusic, setLoopMusic] = useState(false);
+  const [muteOriginalAudio, setMuteOriginalAudio] = useState(false);
 
   const [overlayFile, setOverlayFile] = useState<File | null>(null);
   const [overlayPosition, setOverlayPosition] = useState<OverlayPosition>("bottom-right");
@@ -475,6 +474,7 @@ export function useVideoEditor() {
           musicVolume,
           originalAudioVolume,
           loopMusic,
+          muteOriginalAudio,
         },
         {
           file: overlayFile,
@@ -511,21 +511,7 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [
-    duration,
-    file,
-    loopMusic,
-    musicFile,
-    musicVolume,
-    originalAudioVolume,
-    overlayFile,
-    overlayOpacity,
-    overlayPosition,
-    overlaySize,
-    recipe,
-    result,
-    status,
-  ]);
+  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, loopMusic, musicFile, musicVolume, originalAudioVolume]);
 
 
   useEffect(() => {
@@ -650,12 +636,6 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
-    setExportStartedAt(null);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
   }, [result]);
 
 
@@ -705,6 +685,8 @@ export function useVideoEditor() {
     setOriginalAudioVolume,
     loopMusic,
     setLoopMusic,
+    muteOriginalAudio,
+    setMuteOriginalAudio,
     overlayFile,
     setOverlayFile,
     overlayPosition,

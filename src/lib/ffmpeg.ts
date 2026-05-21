@@ -261,7 +261,8 @@ function buildArguments(
     if (shouldKeepAudio) {
       if (hasMusicTrack) {
         const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
-        if (hasOriginalAudio) {
+        const useOriginalAudio = hasOriginalAudio && !musicOptions?.muteOriginalAudio;
+        if (useOriginalAudio) {
           const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
           const origChain = afParts.length > 0
             ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
@@ -399,6 +400,12 @@ export async function exportVideo(
   try {
     await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
+    const vf = buildVideoFilter(recipe, targetW, targetH);
+  const audioTrim = buildAudioTrimFilter(recipe);
+  const audioSpeed = buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false);
+
+  const afParts = [audioTrim, audioSpeed].filter(Boolean);
+  const af = afParts.join(",");
     const hasMusicTrack = !!(musicOptions?.file && recipe.keepAudio);
     const musicInputName = `music_input_${sessionId}.mp3`;
     if (hasMusicTrack) {

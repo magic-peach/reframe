@@ -12,6 +12,7 @@ import TrimControl from "./TrimControl";
 import RotateControl from "./RotateControl";
 import TextControls from "./TextControls";
 import AudioSpeedControl from "./AudioSpeedControl";
+import BackgroundMusic from "./BackgroundMusic";
 import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
