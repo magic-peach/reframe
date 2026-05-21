@@ -321,12 +321,18 @@ export function useVideoEditor() {
     return getPresetById(suggestPreset(videoMetadata.width, videoMetadata.height)) ?? null;
   }, [videoMetadata]);
 
-  const handleFileSelect = useCallback(async (selectedFile: File) => {
+  const handleFileSelect = useCallback((selectedFile: File | null) => {
     setResult(null);
     setStatus("idle");
     setError(null);
     setFile(null);
     setVideoMetadata(null);
+    
+    if (!selectedFile) {
+      setFileError("");
+      return;
+    }
+
     if (!selectedFile.type.startsWith("video/")) {
       setFileError("Please upload a video file only.");
       return;
@@ -356,33 +362,36 @@ export function useVideoEditor() {
       return;
     }
 
-    const isVideo = await verifyMagicBytes(selectedFile);
-    if (!isVideo) {
-      setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
-      setStatus("error");
-      return;
-    }
+    // Run validation and metadata extraction in background
+    (async () => {
+      try {
+        const isVideo = await verifyMagicBytes(selectedFile);
+        if (!isVideo) {
+          setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
+          setStatus("error");
+          return;
+        }
 
-    try {
-      const { width, height, duration: dur } = await extractMetadata(selectedFile);
-      setDuration(dur);
-      setVideoMetadata({ width, height, duration: dur });
-      setFile(selectedFile);
-      setRecipe((prev) => {
-        const suggestedPreset = suggestPreset(width, height);
-        const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
+        const { width, height, duration: dur } = await extractMetadata(selectedFile);
+        setDuration(dur);
+        setVideoMetadata({ width, height, duration: dur });
+        setFile(selectedFile);
+        setRecipe((prev) => {
+          const suggestedPreset = suggestPreset(width, height);
+          const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
 
-        return {
-          ...prev,
-          trimStart: 0,
-          trimEnd: null,
-          ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
-        };
-      });
-    } catch (err) {
-      setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-      setStatus("error");
-    }
+          return {
+            ...prev,
+            trimStart: 0,
+            trimEnd: null,
+            ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
+          };
+        });
+      } catch (err) {
+        setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+        setStatus("error");
+      }
+    })();
   }, []);
 
   const handleExport = useCallback(async () => {
