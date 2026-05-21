@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
-import { Download, RotateCcw, Share2, AlertCircle, Archive } from "lucide-react";
+import { Download, RotateCcw, Share2, AlertCircle, Archive, Volume2, VolumeX } from "lucide-react";
 import JSZip from "jszip";
 import LottiePlayer from "./LottiePlayer";
 import successAnim from "@/lib/lottie/success.json";
@@ -17,6 +17,7 @@ interface Props {
   batchResults?: ExportResult[] | null;
   onReset: () => void;
   soundOnCompletion: boolean;
+  onToggleSound: () => void;
 }
 
 export default function DownloadResult({
@@ -24,6 +25,7 @@ export default function DownloadResult({
   batchResults,
   onReset,
   soundOnCompletion,
+  onToggleSound,
 }: Props) {
   const isBatch = Boolean(batchResults && batchResults.length > 0);
   const [zipBusy, setZipBusy] = useState(false);
@@ -142,15 +144,26 @@ export default function DownloadResult({
 
   return (
     <div className="p-5 bg-[var(--surface)] border border-[var(--border)] rounded-xl space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 shrink-0">
-          <LottiePlayer animationData={successAnim} loop={false} autoplay />
-        </div>
-        <div>
-          <p className="font-heading font-bold text-base text-[var(--text)]">Export complete</p>
-          <p className="text-xs text-[var(--muted)] mt-0.5">Ready to download</p>
-        </div>
-      </div>
+      <div className="flex items-center justify-between">
+  <div className="flex items-center gap-4">
+    <div className="w-12 h-12 shrink-0">
+      <LottiePlayer animationData={successAnim} loop={false} autoplay />
+    </div>
+    <div>
+      <p className="font-heading font-bold text-base text-[var(--text)]">Export complete</p>
+      <p className="text-xs text-[var(--muted)] mt-0.5">Ready to download</p>
+    </div>
+  </div>
+  <button
+    type="button"
+    onClick={onToggleSound}
+    aria-label={soundOnCompletion ? "Mute completion sound" : "Unmute completion sound"}
+    className="p-2 rounded-lg border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--bg)] transition-colors"
+    title={soundOnCompletion ? "Sound on" : "Sound off"}
+  >
+    {soundOnCompletion ? <Volume2 size={14} /> : <VolumeX size={14} />}
+  </button>
+</div>
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
@@ -202,10 +215,10 @@ export default function DownloadResult({
           href={isValid ? result.blobUrl : undefined}
           download={isValid ? filename : undefined}
           className={cn(
-            "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
-            isValid
-              ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-              : "bg-film-600/50 cursor-not-allowed"
+            "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
+            isValid 
+              ? "bg-film-600 text-white hover:bg-film-700 hover:scale-[1.01] active:scale-[0.99] cursor-pointer" 
+              : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
           )}
           onClick={(e) => {
             if (!isValid) e.preventDefault();

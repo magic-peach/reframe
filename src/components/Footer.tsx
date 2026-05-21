@@ -33,7 +33,7 @@ export default function Footer() {
               { icon: <Zap size={12}/>, label: "Fast" },
               { icon: <Globe size={12}/>, label: "Open Source" }
             ].map((tag) => (
-              <span key={tag.label} className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[10px] font-semibold tracking-wide uppercase">
+              <span key={tag.label} className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[10px] font-semibold tracking-wide uppercase transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:border-[var(--accent)] hover:shadow-[0_0_10px_rgba(255,255,255,0.08)] cursor-pointer select-none">
                 {tag.icon} {tag.label}
               </span>
             ))}
