@@ -16,6 +16,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
@@ -276,6 +277,7 @@ export default function VideoEditor() {
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
+
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <Section
@@ -306,7 +308,7 @@ export default function VideoEditor() {
                           value={recipe.brightness}
                           onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
                           aria-label="Adjust brightness"
-                          className="w-full"
+                          className="w-full accent-film-600"
                         />
                       </div>
                       {/* Contrast */}
@@ -331,7 +333,7 @@ export default function VideoEditor() {
                           value={recipe.contrast}
                           onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
                           aria-label="Adjust contrast"
-                          className="w-full"
+                          className="w-full accent-film-600"
                         />
                       </div>
                       {/* Saturation */}
@@ -356,7 +358,7 @@ export default function VideoEditor() {
                           value={recipe.saturation}
                           onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
                           aria-label="Adjust saturation"
-                          className="w-full"
+                          className="w-full accent-film-600"
                         />
                       </div>
                     </div>
@@ -478,7 +480,7 @@ export default function VideoEditor() {
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
+                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >
               <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />

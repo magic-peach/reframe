@@ -101,10 +101,10 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
           href={isValid ? result.blobUrl : undefined}
           download={isValid ? filename : undefined}
           className={cn(
-            "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
-            isValid
-              ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-              : "bg-film-600/50 cursor-not-allowed"
+            "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
+            isValid 
+              ? "bg-film-600 text-white hover:bg-film-700 hover:scale-[1.01] active:scale-[0.99] cursor-pointer" 
+              : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
           )}
           onClick={(e) => {
             if (!isValid) e.preventDefault();
