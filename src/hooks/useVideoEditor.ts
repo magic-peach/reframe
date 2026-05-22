@@ -457,7 +457,21 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, loopMusic, musicFile, musicVolume, originalAudioVolume]);
+  }, [
+    duration,
+    file,
+    loopMusic,
+    musicFile,
+    musicVolume,
+    originalAudioVolume,
+    overlayFile,
+    overlayOpacity,
+    overlayPosition,
+    overlaySize,
+    recipe,
+    result,
+    status,
+  ]);
 
 
   useEffect(() => {
