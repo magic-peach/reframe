@@ -55,6 +55,12 @@
   --film-400: #66FF66;
 }
 
+/* Ensure export overlay text is readable in high-contrast by forcing dark text */
+[data-theme="high-contrast"] .export-text,
+[data-theme="high-contrast"] .export-text * {
+  color: #000000 !important;
+}
+
 /* ── Base styles ── */
 body {
   background-color: var(--bg);
