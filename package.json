@@ -14,6 +14,7 @@
     "@ffmpeg/util": "^0.12.2",
     "clsx": "^2.1.1",
     "focus-trap-react": "^12.0.1",
+    "framer-motion": "^12.40.0",
     "jszip": "^3.10.1",
     "lottie-web": "^5.12.2",
     "lucide-react": "^0.469.0",
