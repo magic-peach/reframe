@@ -49,6 +49,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       URL.revokeObjectURL(url);
     }, "image/png");
   }, [videoRef]);
+
   useEffect(() => {
     if (!file) return;
 
@@ -100,6 +101,17 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       }
     };
   }, [file, videoRef]);
+
+  // sync mute state to video element
+  useEffect(() => {
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.muted = !recipe.keepAudio;
+  }, [recipe, videoRef]);
+
+  useEffect(() => {
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.playbackRate = recipe.speed;
+  }, [recipe, videoRef]);
 
   /**
    * Compute the overlay geometry for the selected preset + framing mode.
@@ -196,7 +208,10 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
         onLoadedData={() => setIsLoading(false)}
         playsInline
-      />
+        muted={!recipe?.keepAudio}
+      >
+        <track kind="captions" />
+      </video>
 
       {/* Letterbox / Crop overlay */}
       {overlay && (
@@ -235,7 +250,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         <button
           type="button"
           onClick={() => setShowOverlay((v) => !v)}
-          className={`absolute bottom-10 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+          className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
             showOverlay
               ? "bg-film-600 text-white"
               : "bg-black/60 text-white/70 hover:bg-black/80"
