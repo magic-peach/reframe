@@ -1,4 +1,6 @@
 import React from 'react'
+import { describe, beforeEach, it, expect } from 'vitest'
+import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '../ThemeProvider'
@@ -18,7 +20,7 @@ describe('ThemeToggle', () => {
     )
 
     const btn = screen.getByRole('button')
-    expect(btn).toBeInTheDocument()
+    expect(btn).toBeTruthy()
 
     await userEvent.click(btn)
 

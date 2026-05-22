@@ -1,2 +1,2 @@
 // Vitest setup: polyfills and global mocks
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom/vitest'
