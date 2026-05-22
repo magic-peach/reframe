@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { EditRecipe, SPEED_STEPS } from "@/lib/types";
-import { Volume2, VolumeX, Gauge } from "lucide-react";
+import { Volume2, VolumeX, Gauge, RotateCcw } from "lucide-react";
 
 interface Props {
   recipe: EditRecipe;
@@ -9,7 +10,16 @@ interface Props {
 }
 
 export default function AudioSpeedControl({ recipe, onChange }: Props) {
-  const speedIndex = SPEED_STEPS.indexOf(recipe.speed as (typeof SPEED_STEPS)[number]);
+  const parentSpeedIndex = SPEED_STEPS.indexOf(recipe.speed as (typeof SPEED_STEPS)[number]);
+  const safeParentIndex = parentSpeedIndex === -1 ? 3 : parentSpeedIndex;
+
+  const [localSpeedIndex, setLocalSpeedIndex] = useState(safeParentIndex);
+
+  useEffect(() => {
+    setLocalSpeedIndex(safeParentIndex);
+  }, [safeParentIndex]);
+
+  const isSpeedChanged = recipe.speed !== 1;
 
   return (
     <div className="space-y-4">
@@ -40,7 +50,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             <Gauge size={10} /> Speed
           </label>
           <span className="text-sm font-heading font-bold text-film-600">
-            {recipe.speed}x
+            {SPEED_STEPS[localSpeedIndex]}x
           </span>
         </div>
         <input
@@ -48,15 +58,43 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           min={0}
           max={SPEED_STEPS.length - 1}
           step={1}
-          value={speedIndex === -1 ? 3 : speedIndex}
-          onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
-          className="w-full accent-film-600"
+          value={localSpeedIndex}
+          onChange={(e) => {
+            setLocalSpeedIndex(Number(e.target.value));
+          }}
+          onPointerUp={(e) => {
+            onChange({ speed: SPEED_STEPS[Number(e.currentTarget.value)] });
+          }}
+          onKeyUp={(e) => {
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+              onChange({ speed: SPEED_STEPS[Number(e.currentTarget.value)] });
+            }
+          }}
+          className="w-full accent-film-600 cursor-pointer"
         />
         <div className="flex justify-between mt-1">
           {SPEED_STEPS.map((s) => (
             <span key={s} className="text-[9px] text-[var(--muted)]">{s}x</span>
           ))}
         </div>
+      </div>
+
+      <div className="h-10 flex items-center justify-center">
+        <button
+          type="button"
+          onClick={() => onChange({ speed: 1 })}
+          className={`
+            flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-film-600 hover:text-film-700
+            transition-all duration-300 ease-in-out
+            ${isSpeedChanged 
+              ? "opacity-100 translate-y-0 scale-100 pointer-events-auto delay-200" 
+              : "opacity-0 -translate-y-1 scale-95 pointer-events-none"
+            }
+          `}
+        >
+          <RotateCcw size={12} />
+          Reset to default
+        </button>
       </div>
     </div>
   );
