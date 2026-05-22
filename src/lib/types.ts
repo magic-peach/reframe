@@ -1,3 +1,5 @@
+export const RECIPE_VERSION = 1;
+
 export interface EditRecipe {
   preset: string;
   customWidth: number;
@@ -16,6 +18,7 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  version: number;
 }
 
 export type OverlayPosition =
@@ -82,6 +85,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   contrast: 0,
   saturation: 0,
   soundOnCompletion: false,
+  version: RECIPE_VERSION,
 };
 
 export const MAX_FILE_SIZE =
@@ -89,3 +93,29 @@ export const MAX_FILE_SIZE =
 
 export const WARNING_FILE_SIZE =
   500 * 1024 * 1024; // 500MB
+
+export function isValidRecipe(value: unknown): value is EditRecipe {
+  if (!value || typeof value !== "object") return false;
+  const v = value as any;
+
+  if (typeof v.version !== "number" || v.version !== RECIPE_VERSION) return false;
+  if (typeof v.preset !== "string") return false;
+  if (typeof v.customWidth !== "number" || !isFinite(v.customWidth)) return false;
+  if (typeof v.customHeight !== "number" || !isFinite(v.customHeight)) return false;
+  if (v.framing !== "fit" && v.framing !== "fill") return false;
+  if (typeof v.trimStart !== "number" || !isFinite(v.trimStart)) return false;
+  if (!(v.trimEnd === null || (typeof v.trimEnd === "number" && isFinite(v.trimEnd)))) return false;
+  if (![0, 90, 180, 270].includes(v.rotate)) return false;
+  if (typeof v.keepAudio !== "boolean") return false;
+  if (typeof v.normalizeAudio !== "boolean") return false;
+  if (typeof v.speed !== "number" || !isFinite(v.speed)) return false;
+  if (typeof v.quality !== "number" || !isFinite(v.quality)) return false;
+  if (!["mp4", "webm", "mkv", "gif"].includes(v.format)) return false;
+  if (typeof v.stabilization !== "boolean") return false;
+  if (typeof v.brightness !== "number" || !isFinite(v.brightness)) return false;
+  if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
+  if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
+  if (typeof v.soundOnCompletion !== "boolean") return false;
+
+  return true;
+}

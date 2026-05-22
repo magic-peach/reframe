@@ -5,12 +5,12 @@ import { EditRecipe } from "./types";
 // Keep in sync with src/lib/presets.ts. Width × height for every named preset.
 // ---------------------------------------------------------------------------
 const PRESET_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  "1080p":   { width: 1920, height: 1080 },
-  "720p":    { width: 1280, height: 720  },
-  "480p":    { width: 854,  height: 480  },
-  "360p":    { width: 640,  height: 360  },
-  "4k":      { width: 3840, height: 2160 },
-  "2k":      { width: 2560, height: 1440 },
+  "1080p":       { width: 1920, height: 1080 },
+  "720p":        { width: 1280, height: 720  },
+  "480p":        { width: 854,  height: 480  },
+  "360p":        { width: 640,  height: 360  },
+  "4k":          { width: 3840, height: 2160 },
+  "2k":          { width: 2560, height: 1440 },
   // Square / portrait presets
   "square-1080": { width: 1080, height: 1080 },
   "square-720":  { width: 720,  height: 720  },
@@ -29,21 +29,14 @@ function getOutputDimensions(recipe: EditRecipe): { width: number; height: numbe
     const dims = PRESET_DIMENSIONS[recipe.preset];
     if (dims) return dims;
   }
-  return { width: recipe.customWidth, height: recipe.customHeight };
+  return { 
+    width: recipe.customWidth || 1920, 
+    height: recipe.customHeight || 1080 
+  };
 }
 
 // ---------------------------------------------------------------------------
 // CRF → video bitrate (Mbps) — exponential fit to real-world H.264 data
-//
-// Reference points (1080p30, typical live-action content):
-//   CRF 18 ≈ 8 Mbps   (visually lossless)
-//   CRF 23 ≈ 3 Mbps   (default, good quality)
-//   CRF 28 ≈ 1 Mbps   (acceptable)
-//   CRF 30 ≈ 0.6 Mbps (small file)
-//
-// We model this as: bitrate = A * e^(-k * crf)
-//   A = 8 * e^(k*18), k chosen so CRF 30 → 0.6 Mbps
-//   k = ln(8/0.6) / (30-18) ≈ 0.2185
 // ---------------------------------------------------------------------------
 const CRF_A = 8 * Math.exp(0.2185 * 18); // ≈ 383
 const CRF_K = 0.2185;
@@ -54,16 +47,11 @@ function videoBitrateFromCrf(crf: number): number {
 
 // ---------------------------------------------------------------------------
 // Resolution multiplier relative to 1080p (pixel-count ratio, sqrt-damped)
-//
-// Pure pixel-count scaling over-estimates for high-res footage because
-// encoders are more efficient at higher resolutions. A square-root damping
-// gives a better empirical fit.
 // ---------------------------------------------------------------------------
 function resolutionMultiplier(width: number, height: number): number {
   const pixels = width * height;
   const refPixels = 1920 * 1080;
   const ratio = pixels / refPixels;
-  // sqrt damping: 4K (4×pixels) → ~2× bitrate, not 4×
   return Math.max(Math.sqrt(ratio), 0.1);
 }
 
@@ -103,27 +91,40 @@ export function estimateExportSize(recipe: EditRecipe, duration: number): number
   const trimEnd = recipe.trimEnd ?? duration;
   const trimmedDuration = Math.max(trimEnd - recipe.trimStart, 1); // seconds
 
-  // 2. Speed affects wall-clock output length but NOT the encoded content —
-  //    a 2× speed export of a 60 s clip produces a 30 s file at the *same*
-  //    bitrate. So we scale duration, not bitrate.
+  // 2. Speed affects wall-clock output length
   const outputDuration = trimmedDuration / Math.max(recipe.speed, 0.25);
 
-  // 3. Resolve pixel dimensions from preset or custom fields
+  // 3. Resolve pixel dimensions from preset or custom fields safely
   const { width, height } = getOutputDimensions(recipe);
 
-  // 4. Video bitrate at the target resolution (Mbps)
+  // 4. Handle high-quality adaptive GIF estimation separately
+  if (recipe.format === "gif") {
+    const GIF_FPS = 15;
+    
+    // Set base compression scaling factor for maximum quality (CRF 18)
+    const BASE_COMPRESSION = 0.85;
+    
+    // Linearly reduce compression ratio as CRF slider increases toward 30
+    const qualityLossModifier = (recipe.quality - 18) * 0.035;
+    const effectiveCompression = Math.max(BASE_COMPRESSION - qualityLossModifier, 0.35);
+
+    const frames = outputDuration * GIF_FPS;
+    
+    // Uncompressed raw/palette-mapped payload calculation (size in MB)
+    return (width * height * frames * effectiveCompression) / (1024 * 1024);
+  }
+
+  // 5. Standard Video bitrate at the target resolution (Mbps)
   const videoBitrate =
     videoBitrateFromCrf(recipe.quality) *
     resolutionMultiplier(width, height) *
     formatFactor(recipe.format);
 
-  // 5. Total bitrate = video + audio
-  const totalBitrate = videoBitrate + AUDIO_BITRATE_MBPS;
+  // 6. Total bitrate = video + audio (only if keepAudio is checked)
+  const totalBitrate = videoBitrate + (recipe.keepAudio ? AUDIO_BITRATE_MBPS : 0);
 
-  // 6. Size in megabytes  (Mbps × seconds / 8 = megabytes)
-  const sizeMb = (totalBitrate * outputDuration) / 8;
-
-  return sizeMb;
+  // 7. Size in megabytes (Mbps × seconds / 8 = megabytes)
+  return (totalBitrate * outputDuration) / 8;
 }
 
 /**
