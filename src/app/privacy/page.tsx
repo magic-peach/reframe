@@ -1,5 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-
+export const metadata: Metadata = {
+  title: "Privacy Policy — Reframe",
+  description: "Privacy policy for Reframe — your videos never leave your device.",
+};
 export default function PrivacyPage() {
   return (
     <>
