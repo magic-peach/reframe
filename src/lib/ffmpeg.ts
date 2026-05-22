@@ -249,7 +249,9 @@ export async function exportVideo(
         throw new Error("Export failed");
       }
 
- const blob = new Blob([data.buffer], { type: "video/webm" });
+  // const blob = new Blob([data.buffer], { type: "video/webm" });
+
+const blob = new Blob([new Uint8Array(data.buffer)], { type: "video/webm" });
       onProgress(100);
       return {
         blobUrl: URL.createObjectURL(blob),
@@ -261,7 +263,8 @@ export async function exportVideo(
     }
 
   
-const blob = new Blob([data.buffer], { type: mimeType });
+// Before: const blob = new Blob([data.buffer], { type: mimeType });
+const blob = new Blob([new Uint8Array(data.buffer)], { type: mimeType });
     onProgress(100);
     return {
       blobUrl: URL.createObjectURL(blob),
