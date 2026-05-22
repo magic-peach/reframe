@@ -4,14 +4,17 @@ import { EditRecipe } from "@/lib/types";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AlertCircle } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
+import { useAudioWaveform } from "@/hooks/useAudioWaveform";
+import WaveformCanvas from "@/components/WaveformCanvas";
 
 interface Props {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
   duration: number;
+  file: File | null;
 }
 
-export default function TrimControl({ recipe, onChange, duration }: Props) {
+export default function TrimControl({ recipe, onChange, duration, file }: Props) {
   const [invalidStart, setStart] = useState(false);
   const [invalidEnd, setEnd] = useState(false);
   const [startErrorMsg, setStartErrorMsg] = useState("");
@@ -19,6 +22,9 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
   const [startInput, setStartInput] = useState(
     recipe.trimStart.toString()
   );
+
+  const { waveform, isLoading: waveformLoading } = useAudioWaveform(file);
+  const hasAudio = waveform.length > 0;
 
   useEffect(() => {
     setStartInput(recipe.trimStart.toString());
@@ -167,7 +173,7 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
   };
 
   const inputClass =
-    "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow";
+    "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
   return (
     <div id="trim-control" className="space-y-3">
