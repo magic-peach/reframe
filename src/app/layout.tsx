@@ -47,6 +47,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
+<<<<<<< HEAD
+    <html lang="en" className={`${bebasNeue.variable} ${syne.variable} ${dmSans.variable}`}>
+      <body>
+        {/* <header>
+          <h1>Reframe</h1>
+        </header> */}
+        {children}
+        <footer>
+          <p>© 2026 Reframe</p>
+        </footer>
+=======
 <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
@@ -103,6 +114,7 @@ export default function RootLayout({
             <ScrollToTop />
           </ErrorBoundary>
         </ThemeProvider>
+>>>>>>> 0a35a14242c4970ac3d540eafee932bf159b88ba
       </body>
     </html>
   );

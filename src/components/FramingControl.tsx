@@ -11,7 +11,7 @@ interface Props {
 
 export default function FramingControl({ recipe, onChange }: Props) {
   return (
-    <div className="flex gap-2">
+    <div className="  flex gap-2 xs:flex-row flex-col col-span-2 ">
       {(["fit", "fill"] as const).map((mode) => {
         const Icon = mode === "fit" ? Maximize2 : Crop;
         const active = recipe.framing === mode;

@@ -36,6 +36,10 @@
   --error-hover: #991b1b;
 }
 
+@theme{
+  --breakpoint-xs: 30rem;
+}
+
 /* ── High contrast mode tokens ── */
 [data-theme="high-contrast"] {
   --bg: #000000;
