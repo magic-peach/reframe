@@ -154,6 +154,7 @@ export default function FileUpload({
     <div
       id="upload-zone"
       role="button"
+      aria-label="Upload video — drag and drop or click to browse"
       tabIndex={0}
       onDragOver={(e) => {
         e.preventDefault();
