@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatBytes } from "../utils";
+import { formatBytes, formatDuration  } from "../utils";
 
 describe("formatBytes", () => {
   it("returns '0 Bytes' for zero input", () => {
@@ -37,5 +37,35 @@ describe("formatBytes", () => {
 
   it("clamps negative decimals to zero", () => {
     expect(formatBytes(1536, -1)).toBe("2 KB");
+  });
+});
+
+describe("formatDuration", () => {
+  it("formats zero seconds", () => {
+    expect(formatDuration(0)).toBe("0:00");
+  });
+
+  it("formats seconds under one minute", () => {
+    expect(formatDuration(5)).toBe("0:05");
+  });
+
+  it("formats minutes and seconds", () => {
+    expect(formatDuration(65)).toBe("1:05");
+  });
+
+  it("formats hours correctly", () => {
+    expect(formatDuration(3605)).toBe("1:00:05");
+  });
+
+  it("handles NaN values", () => {
+    expect(formatDuration(NaN)).toBe("0:00");
+  });
+
+  it("handles Infinity values", () => {
+    expect(formatDuration(Infinity)).toBe("0:00");
+  });
+
+  it("handles negative values", () => {
+    expect(formatDuration(-1)).toBe("0:00");
   });
 });

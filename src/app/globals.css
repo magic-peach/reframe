@@ -55,6 +55,29 @@
   --film-400: #66FF66;
 }
 
+/* Ensure export overlay text is readable in high-contrast by forcing dark text */
+[data-theme="high-contrast"] .export-text,
+[data-theme="high-contrast"] .export-text * {
+  color: #000000 !important;
+}
+
+/* Make the main export button readable in high-contrast mode */
+[data-theme="high-contrast"] #export-button {
+  background: #7ee081 !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+[data-theme="high-contrast"] #export-button:hover,
+[data-theme="high-contrast"] #export-button:focus-visible {
+  background: #69d66d !important;
+  color: #000000 !important;
+}
+
+[data-theme="high-contrast"] #export-button svg {
+  color: #000000 !important;
+}
+
 /* ── Base styles ── */
 body {
   background-color: var(--bg);

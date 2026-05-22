@@ -19,11 +19,14 @@ import DownloadResult from "./DownloadResult";
 import ResetSettingsButton from "./ResetSettingsButton";
 
 import ImageOverlay from "./ImageOverlay"
+
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github
+  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
 } from "lucide-react";
+import OnboardingTour from "./OnboardingTour";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -50,9 +53,97 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
   );
 }
 
+/** Inline keyboard hint badge. */
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[10px] font-mono text-[var(--muted)] leading-none">
+      {children}
+    </kbd>
+  );
+}
+
+/** Collapsible panel that lists all keyboard shortcuts. */
+function KeyboardShortcutsPanel() {
+  const [open, setOpen] = useState(false);
+
+  const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
+  {
+    keys: [
+      <Kbd key="ctrl">Ctrl</Kbd>,
+      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
+      <Kbd key="shift">Shift</Kbd>,
+      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
+      <Kbd key="e">E</Kbd>
+    ],
+    label: "Export video",
+  },
+  {
+    keys: [<Kbd key="m">M</Kbd>],
+    label: "Toggle audio mute",
+  },
+  {
+    keys: [<Kbd key="r">R</Kbd>],
+    label: "Reset all settings",
+  },
+  {
+    keys: [<Kbd key="esc">Esc</Kbd>],
+    label: "Cancel export",
+  },
+  {
+    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
+    label: "Switch preset by index",
+  },
+  {
+    keys: [<Kbd key="question">?</Kbd>],
+    label: "Toggle this panel",
+  },
+];
+
+  return (
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="keyboard-shortcuts-list"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[var(--border)] transition-colors duration-150"
+      >
+        <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] flex items-center gap-2">
+          <Kbd>⌨</Kbd>
+          Keyboard Shortcuts
+        </span>
+        <svg
+          aria-hidden="true"
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          className={cn("text-[var(--muted)] transition-transform duration-200", open && "rotate-180")}
+        >
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <ul
+          id="keyboard-shortcuts-list"
+          className="px-4 pb-3 space-y-2 border-t border-[var(--border)]"
+        >
+          {shortcuts.map(({ keys, label }) => (
+            <li key={label} className="flex items-center justify-between gap-3 pt-2">
+              <span className="text-xs text-[var(--muted)]">{label}</span>
+              <span className="flex items-center gap-1 shrink-0">{keys}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function VideoEditor() {
   const {
-   file, duration, recipe, status, progress,
+    file, duration, recipe, status, progress,
     result, error, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
     videoRef,
@@ -62,9 +153,32 @@ export default function VideoEditor() {
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
     recommendedPreset,
+    currentTime,
+    toggleSound,
   } = useVideoEditor();
+
+  useKeyboardShortcuts({
+    file,
+    recipe,
+    resetSettings,
+    updateRecipe,
+    handleExport,
+    status,
+    cancelExport,
+    onToggleShortcutsModal: () => {},
+  });
+
   const [copied, setCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
+
+  const handleCopyLink = () => {
+    if (typeof window === "undefined") return;
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    });
+  };
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
@@ -77,6 +191,7 @@ export default function VideoEditor() {
   }, [status]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
+  const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const videoSrc = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
@@ -92,6 +207,7 @@ export default function VideoEditor() {
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
       <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
+      <OnboardingTour />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {status === "exporting" && `Exporting video: ${progress}%`}
@@ -102,7 +218,10 @@ export default function VideoEditor() {
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
 
         <header className="mb-10 flex items-end justify-between animate-fade-in">
-          <div>
+          <div
+            className="inline-block px-5 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600"
+            aria-label="Reframe — video editor"
+          >
             <h1 className="font-display text-6xl leading-none tracking-widest2 text-[var(--text)]">
               REFRAME
             </h1>
@@ -118,26 +237,26 @@ export default function VideoEditor() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} />
+              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
-              <div className="text-center text-[var(--muted)] py-6">
-                <p>Upload a video to get started</p>
-                <p className="text-sm">Supports MP4, MOV, WebM and more</p>
-              </div>
+                <div className="text-center text-[var(--muted)] py-6">
+                  <p>Upload a video to get started</p>
+                  <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+                </div>
               )}
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} videoRef={videoRef} />
+                  <VideoPreview file={file} recipe={recipe} videoRef={videoRef} />
 
                   <div className="mt-3">
                     <ThumbnailStrip
                       videoSrc={videoSrc}
                       duration={duration}
-                      currentTime={videoRef.current?.currentTime ?? 0}
+                      currentTime={currentTime}
                       trimStart={recipe.trimStart ?? 0}
                       trimEnd={recipe.trimEnd ?? duration}
                       onSeek={seekTo}
@@ -159,7 +278,12 @@ export default function VideoEditor() {
               )}>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <Section icon={<Scissors size={12} />} title="Trim" delay={50}>
-                    <TrimControl recipe={recipe} onChange={updateRecipe} duration={duration} />
+                    <TrimControl
+                      recipe={recipe}
+                      onChange={updateRecipe}
+                      duration={duration}
+                      file={file} 
+                    />
                   </Section>
                   <Section icon={<RotateCw size={12} />} title="Rotate" delay={100}>
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
@@ -167,6 +291,7 @@ export default function VideoEditor() {
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
+
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <Section
@@ -183,6 +308,7 @@ export default function VideoEditor() {
                             type="button"
                             onClick={() => updateRecipe({ brightness: 0 })}
                             className="text-film-500 hover:underline"
+                            aria-label="reset brightness"
                           >
                             Reset
                           </button>
@@ -196,7 +322,7 @@ export default function VideoEditor() {
                           value={recipe.brightness}
                           onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
                           aria-label="Adjust brightness"
-                          className="w-full"
+                          className="w-full accent-film-600"
                         />
                       </div>
                       {/* Contrast */}
@@ -207,6 +333,7 @@ export default function VideoEditor() {
                             type="button"
                             onClick={() => updateRecipe({ contrast: 1 })}
                             className="text-film-500 hover:underline"
+                            aria-label="reset-contrast"
                           >
                             Reset
                           </button>
@@ -220,7 +347,7 @@ export default function VideoEditor() {
                           value={recipe.contrast}
                           onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
                           aria-label="Adjust contrast"
-                          className="w-full"
+                          className="w-full accent-film-600"
                         />
                       </div>
                       {/* Saturation */}
@@ -231,6 +358,7 @@ export default function VideoEditor() {
                             type="button"
                             onClick={() => updateRecipe({ saturation: 1 })}
                             className="text-film-500 hover:underline"
+                            aria-label="reset-saturation"
                           >
                             Reset
                           </button>
@@ -244,7 +372,7 @@ export default function VideoEditor() {
                           value={recipe.saturation}
                           onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
                           aria-label="Adjust saturation"
-                          className="w-full"
+                          className="w-full accent-film-600"
                         />
                       </div>
                     </div>
@@ -308,7 +436,7 @@ export default function VideoEditor() {
 
             {status === "done" && result && (
               <div role="status" className="animate-fade-in" ref={downloadRef}>
-                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} />
+                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
               </div>
             )}
           </div>
@@ -322,7 +450,7 @@ export default function VideoEditor() {
                 {recommendedPreset && (
                   <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
                     <p>
-                      We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {recommendedPreset.platform.split("·")[0].trim()} ({recommendedPreset.label.replace(/\s/g, "")})
+                      We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()} ({recommendedPreset.label.replace(/\s/g, "")})
                     </p>
                   </div>
                 )}
@@ -332,10 +460,21 @@ export default function VideoEditor() {
               <Section icon={<Crop size={12} />} title="Framing" delay={100}>
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
-
+ improve-reset-settings-ui
               <div className="pt-2 flex justify-end">
 
                 <ResetSettingsButton onReset={resetSettings} />
+
+              <div className="pt-2 flex justify-between items-center">
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer"
+                >
+                  <Copy size={12} />
+                  {shareCopied ? "Copied!" : "Copy Link"}
+                </button>
+
                 <button
                   type="button"
                   onClick={resetSettings}
@@ -347,23 +486,32 @@ export default function VideoEditor() {
               </div>
             </div>
 
+            <KeyboardShortcutsPanel />
+
             <button
+              id="export-button"
               type="button"
               onClick={handleExport}
               disabled={!file || isProcessing}
               aria-label='Export video'
               aria-disabled={!file || isProcessing ? "true" : undefined}
               className={cn(
-                "w-full flex items-center justify-center gap-3 py-5 rounded-xl",
+                "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
+                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >
-              <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
+             <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
+
+            {file && !isProcessing && (
+              <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
+                {isMac ? "⌘" : "Ctrl"} + Enter to export
+              </p>
+            )}
           </div>
         </div>
       </div>

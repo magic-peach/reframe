@@ -1,10 +1,11 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
-import { useEffect, useRef, useState, RefObject } from "react";
+import { useEffect, useRef, useState, useCallback, RefObject } from "react";
 import { EditRecipe } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
+import { Camera } from "lucide-react";
 
 interface Props {
   file: File | null;
@@ -18,6 +19,37 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
   const onLoadedRef = useRef<(() => void) | null>(null);
+
+  /** Capture the current video frame and download it as a PNG. */
+  const handleGrabFrame = useCallback(() => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+
+      const totalSec = Math.floor(video.currentTime);
+      const mins = String(Math.floor(totalSec / 60)).padStart(2, "0");
+      const secs = String(totalSec % 60).padStart(2, "0");
+      const filename = `frame-${mins}m${secs}s.png`;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  }, [videoRef]);
+
   useEffect(() => {
     if (!file) return;
 
@@ -69,6 +101,17 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       }
     };
   }, [file, videoRef]);
+
+  // sync mute state to video element
+  useEffect(() => {
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.muted = !recipe.keepAudio;
+  }, [recipe, videoRef]);
+
+  useEffect(() => {
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.playbackRate = recipe.speed;
+  }, [recipe, videoRef]);
 
   /**
    * Compute the overlay geometry for the selected preset + framing mode.
@@ -165,7 +208,10 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
         onLoadedData={() => setIsLoading(false)}
         playsInline
-      />
+        muted={!recipe?.keepAudio}
+      >
+        <track kind="captions" />
+      </video>
 
       {/* Letterbox / Crop overlay */}
       {overlay && (
@@ -204,7 +250,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         <button
           type="button"
           onClick={() => setShowOverlay((v) => !v)}
-          className={`absolute bottom-10 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+          className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
             showOverlay
               ? "bg-film-600 text-white"
               : "bg-black/60 text-white/70 hover:bg-black/80"
@@ -214,6 +260,20 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
           title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
         >
           {showOverlay ? "Hide overlay" : "Show overlay"}
+        </button>
+      )}
+
+      {/* Grab frame button */}
+      {!isLoading && (
+        <button
+          type="button"
+          onClick={handleGrabFrame}
+          className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-black/60 text-white/70 hover:bg-black/80 flex items-center gap-1"
+          aria-label="Grab frame as PNG"
+          title="Download current frame as PNG"
+        >
+          <Camera className="w-3 h-3" />
+          Grab frame
         </button>
       )}
     </div>
