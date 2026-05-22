@@ -3,7 +3,8 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
-import FileUpload from "./FileUpload";
+import FileUpload, { type FileUploadHandle } from "./FileUpload";
+import HeroSection from "./HeroSection";
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
 import PresetSelector from "./PresetSelector";
@@ -63,6 +64,8 @@ export default function VideoEditor() {
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
+  const fileUploadRef = useRef<FileUploadHandle>(null);
+  const hasFile = Boolean(file);
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
@@ -119,14 +122,19 @@ export default function VideoEditor() {
 
           <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
-
-              {!file && (
-              <div className="text-center text-[var(--muted)] py-6">
-                <p>Upload a video to get started</p>
-                <p className="text-sm">Supports MP4, MOV, WebM and more</p>
-              </div>
+              {!hasFile && (
+                <HeroSection
+                  onChooseVideo={() => fileUploadRef.current?.openFilePicker()}
+                />
               )}
+
+              <FileUpload
+                ref={fileUploadRef}
+                onFileSelect={handleFileSelect}
+                currentFile={file}
+                fileError={fileError}
+                duration={duration}
+              />
 
               {file && (
                 <div className="mt-4 animate-fade-in">

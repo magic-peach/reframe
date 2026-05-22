@@ -1,11 +1,15 @@
 "use client";
 
-import { useRef, useState, useEffect} from "react";
+import { forwardRef, useImperativeHandle, useRef, useState, useEffect } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
 import { cn, formatBytes, formatDuration } from "@/lib/utils";
 import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
+
+export interface FileUploadHandle {
+  openFilePicker: () => void;
+}
 
 interface Props {
   onFileSelect: (file: File) => void;
@@ -14,13 +18,15 @@ interface Props {
   duration: number;
 }
 
-export default function FileUpload({
-  onFileSelect,
-  currentFile,
-  fileError,
-  duration,
-}: Props) {
+const FileUpload = forwardRef<FileUploadHandle, Props>(function FileUpload(
+  { onFileSelect, currentFile, fileError, duration },
+  ref
+) {
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    openFilePicker: () => inputRef.current?.click(),
+  }));
 
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
@@ -135,16 +141,6 @@ export default function FileUpload({
           {fileError}
         </p>
       )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
     </div>
 
     <p className="text-xs text-gray-500 mt-3 break-words">
@@ -154,17 +150,6 @@ export default function FileUpload({
     {fileError && (
       <p className="text-xs text-red-500 mt-2 font-medium">{fileError}</p>
     )}
-
-    <input
-      ref={inputRef}
-      type="file"
-      accept="video/*"
-      className="hidden"
-      onChange={(e) => {
-        const f = e.target.files?.[0];
-        if (f) handleFile(f);
-      }}
-    />
   </div>
 );
   const DropZone = () => (
@@ -229,23 +214,6 @@ export default function FileUpload({
         <p className="text-sm text-red-500 text-center">{fileError}</p>
       )}
 
-      {currentFile && (
-        <p className="text-xs text-[var(--muted)] mt-2">
-          Selected: {formatBytes(currentFile.size)}
-        </p>
-      )}
-
-        <input
-          ref={inputRef}
-          type="file"
-          accept="video/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-
-            if (f) handleFile(f);
-          }}
-        />
       </div>
   );
 
@@ -256,6 +224,21 @@ export default function FileUpload({
       {warning && <p className="text-sm text-yellow-500">{warning}</p>}
 
       {currentFile ? <FileInfo /> : <DropZone />}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        aria-hidden="true"
+        tabIndex={-1}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleFile(f);
+        }}
+      />
     </div>
   );
-}
+});
+
+export default FileUpload;
