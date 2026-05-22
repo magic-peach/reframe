@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
@@ -188,6 +187,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex
     <div
       role="group"
       className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
