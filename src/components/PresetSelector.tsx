@@ -7,6 +7,7 @@ import { Search, Settings2 } from "lucide-react";
 import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface Props {
   recipe: EditRecipe;
@@ -87,13 +88,19 @@ export default function PresetSelector({ recipe, onChange }: Props) {
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
           <Search size={14} className="text-[var(--muted)]" />
         </div>
-        <input
-          type="text"
-          placeholder="Search formats..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] py-2 pl-9 pr-3 text-sm font-heading text-[var(--text)] transition-shadow focus:outline-none focus:ring-2 focus:ring-film-400"
-        />
+        <Tooltip
+          block
+          content="Search presets by platform or format name."
+        >
+          <input
+            type="text"
+            placeholder="Search formats..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label="Search output size presets"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] py-2 pl-9 pr-3 text-sm font-heading text-[var(--text)] transition-shadow focus:outline-none focus:ring-2 focus:ring-film-400"
+          />
+        </Tooltip>
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -106,83 +113,88 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             const active = recipe.preset === preset.id;
 
             return (
-              <button
+              <Tooltip
                 key={preset.id}
-                type="button"
-                onClick={() => handlePresetSelect(preset.id)}
-                title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
-                aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
-                aria-pressed={active}
-                className={cn(
-                  "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
-                  active
-                    ? "border-film-500 bg-film-50"
-                    : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
-                )}
+                block
+                content={`${preset.label}: ${preset.width}×${preset.height} for ${preset.platform}.`}
               >
-                <RatioBox
-                  width={preset.width}
-                  height={preset.height}
-                  active={active}
-                />
+                <button
+                  type="button"
+                  onClick={() => handlePresetSelect(preset.id)}
+                  aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
+                  aria-pressed={active}
+                  className={cn(
+                    "min-h-[44px] min-w-[44px] w-full flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+                    active
+                      ? "border-film-500 bg-film-50"
+                      : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
+                  )}
+                >
+                  <RatioBox
+                    width={preset.width}
+                    height={preset.height}
+                    active={active}
+                  />
 
-                <div className="min-w-0 w-full">
-                  <p
-                    className={cn(
-                      "text-sm font-heading font-bold leading-tight",
-                      active ? "text-film-700" : "text-[var(--text)]",
-                    )}
-                  >
-                    {preset.label}
-                  </p>
+                  <div className="min-w-0 w-full">
+                    <p
+                      className={cn(
+                        "text-sm font-heading font-bold leading-tight",
+                        active ? "text-film-700" : "text-[var(--text)]",
+                      )}
+                    >
+                      {preset.label}
+                    </p>
 
-                  <p className="mt-0.5 text-[11px] leading-tight text-[var(--muted)]">
-                    {preset.platform}
-                  </p>
-                </div>
-              </button>
+                    <p className="mt-0.5 text-[11px] leading-tight text-[var(--muted)]">
+                      {preset.platform}
+                    </p>
+                  </div>
+                </button>
+              </Tooltip>
             );
           })
         )}
 
-        <button
-          type="button"
-          title="Custom — Set your own dimensions"
-          aria-label="Select custom dimensions preset"
-          aria-pressed={recipe.preset === "custom"}
-          onClick={() => handlePresetSelect("custom")}
-          className={cn(
-            "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
-            recipe.preset === "custom"
-              ? "border-film-500 bg-film-50"
-              : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
-          )}
-        >
-          <Settings2
-            size={20}
+        <Tooltip block content="Set your own output width and height in pixels.">
+          <button
+            type="button"
+            aria-label="Select custom dimensions preset"
+            aria-pressed={recipe.preset === "custom"}
+            onClick={() => handlePresetSelect("custom")}
             className={cn(
-              "shrink-0",
+              "min-h-[44px] min-w-[44px] w-full flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
               recipe.preset === "custom"
-                ? "text-film-600"
-                : "text-[var(--muted)]",
+                ? "border-film-500 bg-film-50"
+                : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
             )}
-          />
-          <div className="min-w-0 w-full">
-            <p
+          >
+            <Settings2
+              size={20}
               className={cn(
-                "text-sm font-heading font-bold",
+                "shrink-0",
                 recipe.preset === "custom"
-                  ? "text-film-700"
-                  : "text-[var(--text)]",
+                  ? "text-film-600"
+                  : "text-[var(--muted)]",
               )}
-            >
-              Custom
-            </p>
-            <p className="mt-0.5 text-[11px] leading-tight text-[var(--muted)]">
-              Set your own
-            </p>
-          </div>
-        </button>
+            />
+            <div className="min-w-0 w-full">
+              <p
+                className={cn(
+                  "text-sm font-heading font-bold",
+                  recipe.preset === "custom"
+                    ? "text-film-700"
+                    : "text-[var(--text)]",
+                )}
+              >
+                Custom
+              </p>
+              <p className="mt-0.5 text-[11px] leading-tight text-[var(--muted)]">
+                Set your own
+              </p>
+            </div>
+          </button>
+        </Tooltip>
       </div>
 
       {recipe.preset === "custom" && (
@@ -194,16 +206,21 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             >
               Width (px)
             </label>
-            <input
-              id="custom-width"
-              type="number"
-              min={16}
-              max={7680}
-              step={2}
-              value={recipe.customWidth}
-              onChange={(e) => handleWidthChange(Number(e.target.value))}
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400"
-            />
+            <Tooltip
+              block
+              content="Output width in pixels. Must be between 16 and 7680."
+            >
+              <input
+                id="custom-width"
+                type="number"
+                min={16}
+                max={7680}
+                step={2}
+                value={recipe.customWidth}
+                onChange={(e) => handleWidthChange(Number(e.target.value))}
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400"
+              />
+            </Tooltip>
           </div>
 
           <div className="mt-5 flex flex-col items-center justify-center">
@@ -219,16 +236,21 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             >
               Height (px)
             </label>
-            <input
-              id="custom-height"
-              type="number"
-              min={16}
-              max={7680}
-              step={2}
-              value={recipe.customHeight}
-              onChange={(e) => handleHeightChange(Number(e.target.value))}
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400"
-            />
+            <Tooltip
+              block
+              content="Output height in pixels. Must be between 16 and 7680."
+            >
+              <input
+                id="custom-height"
+                type="number"
+                min={16}
+                max={7680}
+                step={2}
+                value={recipe.customHeight}
+                onChange={(e) => handleHeightChange(Number(e.target.value))}
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400"
+              />
+            </Tooltip>
           </div>
 
           <div className="hidden h-full flex-col justify-end sm:flex">

@@ -22,6 +22,7 @@ import {
   SlidersHorizontal, Zap, AlertTriangle, Github
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -186,17 +187,22 @@ export default function VideoEditor() {
                             Reset
                           </button>
                         </div>
-                        <input
-                          id="brightness-slider"
-                          type="range"
-                          min="-1"
-                          max="1"
-                          step="0.1"
-                          value={recipe.brightness}
-                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
-                          aria-label="Adjust brightness"
-                          className="w-full"
-                        />
+                        <Tooltip
+                          block
+                          content="Adjust overall lightness. 0 is neutral; negative darkens, positive brightens."
+                        >
+                          <input
+                            id="brightness-slider"
+                            type="range"
+                            min="-1"
+                            max="1"
+                            step="0.1"
+                            value={recipe.brightness}
+                            onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
+                            aria-label="Adjust brightness"
+                            className="w-full accent-film-600 cursor-pointer"
+                          />
+                        </Tooltip>
                       </div>
                       {/* Contrast */}
                       <div className="space-y-2">
@@ -210,17 +216,22 @@ export default function VideoEditor() {
                             Reset
                           </button>
                         </div>
-                        <input
-                          id="contrast-slider"
-                          type="range"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={recipe.contrast}
-                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
-                          aria-label="Adjust contrast"
-                          className="w-full"
-                        />
+                        <Tooltip
+                          block
+                          content="Adjust difference between light and dark areas. 1 is neutral."
+                        >
+                          <input
+                            id="contrast-slider"
+                            type="range"
+                            min="0"
+                            max="2"
+                            step="0.1"
+                            value={recipe.contrast}
+                            onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
+                            aria-label="Adjust contrast"
+                            className="w-full accent-film-600 cursor-pointer"
+                          />
+                        </Tooltip>
                       </div>
                       {/* Saturation */}
                       <div className="space-y-2">
@@ -234,17 +245,22 @@ export default function VideoEditor() {
                             Reset
                           </button>
                         </div>
-                        <input
-                          id="saturation-slider"
-                          type="range"
-                          min="0"
-                          max="3"
-                          step="0.1"
-                          value={recipe.saturation}
-                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
-                          aria-label="Adjust saturation"
-                          className="w-full"
-                        />
+                        <Tooltip
+                          block
+                          content="Adjust color intensity. 1 is natural; 0 is grayscale; above 1 boosts colors."
+                        >
+                          <input
+                            id="saturation-slider"
+                            type="range"
+                            min="0"
+                            max="3"
+                            step="0.1"
+                            value={recipe.saturation}
+                            onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
+                            aria-label="Adjust saturation"
+                            className="w-full accent-film-600 cursor-pointer"
+                          />
+                        </Tooltip>
                       </div>
                     </div>
                   </Section>

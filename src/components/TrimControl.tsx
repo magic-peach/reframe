@@ -4,6 +4,7 @@ import { EditRecipe } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { AlertCircle } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface Props {
   recipe: EditRecipe;
@@ -123,22 +124,27 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
           <label htmlFor="trim-start" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
             Start (sec)
           </label>
-          <input
-            id="trim-start"
-            type="number"
-            min={0}
-            max={duration > 0 ? duration : undefined}
-            step={0.1}
-            value={startInput}
-            spellCheck={false}
-            onChange={(e) => handleStart(e.target.value)}
-            aria-label="Trim start time in seconds"
-            aria-invalid={invalidStart}
-            aria-describedby={invalidStart ? "trim-start-error" : undefined}
-            className={`${inputClass} ${
-              invalidStart ? "border-red-500 focus:ring-red-400" : "border-[var(--border)]"}`}
-            placeholder="0"
-          />
+          <Tooltip
+            block
+            content="Where the exported clip begins, in seconds from the start of the video."
+          >
+            <input
+              id="trim-start"
+              type="number"
+              min={0}
+              max={duration > 0 ? duration : undefined}
+              step={0.1}
+              value={startInput}
+              spellCheck={false}
+              onChange={(e) => handleStart(e.target.value)}
+              aria-label="Trim start time in seconds"
+              aria-invalid={invalidStart}
+              aria-describedby={invalidStart ? "trim-start-error" : undefined}
+              className={`${inputClass} ${
+                invalidStart ? "border-red-500 focus:ring-red-400" : "border-[var(--border)]"}`}
+              placeholder="0"
+            />
+          </Tooltip>
           {invalidStart && (
             <p id="trim-start-error" className="text-[10px] text-red-500 font-heading flex items-center gap-1 mt-1.5 animate-fade-in">
               <AlertCircle size={10} className="shrink-0" />
@@ -150,22 +156,27 @@ export default function TrimControl({ recipe, onChange, duration }: Props) {
           <label htmlFor="trim-end" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] block mb-2">
             End (sec)
           </label>
-          <input
-            id="trim-end"
-            type="number"
-            min={0}
-            max={duration > 0 ? duration : undefined}
-            step={0.1}
-            value={recipe.trimEnd ?? ""}
-            spellCheck={false}
-            onChange={(e) => handleEnd(e.target.value)}
-            aria-label="Trim end time in seconds"
-            aria-invalid={invalidEnd}
-            aria-describedby={invalidEnd ? "trim-end-error" : undefined}
-            className={`${inputClass} ${
-              invalidEnd ? "border-red-500 focus:ring-red-400" : "border-[var(--border)]"}`}
-            placeholder={duration > 0 ? `${duration.toFixed(1)}` : "full length"}
-          />
+          <Tooltip
+            block
+            content="Where the clip ends. Leave empty for full length. Trim end must be after trim start."
+          >
+            <input
+              id="trim-end"
+              type="number"
+              min={0}
+              max={duration > 0 ? duration : undefined}
+              step={0.1}
+              value={recipe.trimEnd ?? ""}
+              spellCheck={false}
+              onChange={(e) => handleEnd(e.target.value)}
+              aria-label="Trim end time in seconds"
+              aria-invalid={invalidEnd}
+              aria-describedby={invalidEnd ? "trim-end-error" : undefined}
+              className={`${inputClass} ${
+                invalidEnd ? "border-red-500 focus:ring-red-400" : "border-[var(--border)]"}`}
+              placeholder={duration > 0 ? `${duration.toFixed(1)}` : "full length"}
+            />
+          </Tooltip>
           {invalidEnd && (
             <p id="trim-end-error" className="text-[10px] text-red-500 font-heading flex items-center gap-1 mt-1.5 animate-fade-in">
               <AlertCircle size={10} className="shrink-0" />

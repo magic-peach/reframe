@@ -3,6 +3,7 @@
 import { EditRecipe } from "@/lib/types";
 import { Film } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface Props {
   recipe: EditRecipe;
@@ -15,6 +16,12 @@ const FORMAT_OPTIONS = [
   { id: "mkv", label: "MKV", description: "Container, maximum quality" },
 ] as const;
 
+const FORMAT_TOOLTIPS: Record<(typeof FORMAT_OPTIONS)[number]["id"], string> = {
+  mp4: "MP4 (H.264): Best compatibility across devices and social platforms.",
+  webm: "WebM: Optimized for web playback with efficient compression.",
+  mkv: "MKV: Flexible container format, good for archival quality.",
+};
+
 export default function FormatSelector({ recipe, onChange }: Props) {
   return (
     <div>
@@ -26,22 +33,27 @@ export default function FormatSelector({ recipe, onChange }: Props) {
       </div>
       <div className="grid grid-cols-3 gap-2">
         {FORMAT_OPTIONS.map((option) => (
-          <button
+          <Tooltip
             key={option.id}
-            type="button"
-            onClick={() => onChange({ format: option.id as "mp4" | "webm" | "mkv" })}
-            aria-label={`Select ${option.label} format`}
-            aria-pressed={recipe.format === option.id}
-            className={cn(
-              "relative px-3 py-2.5 rounded-lg border-2 transition-all",
-              "text-xs font-heading font-semibold uppercase tracking-wider",
-              recipe.format === option.id
-                ? "border-film-600 bg-film-50 text-film-600"
-                : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-400 hover:text-film-600"
-            )}
+            block
+            content={FORMAT_TOOLTIPS[option.id]}
           >
-            {option.label}
-          </button>
+            <button
+              type="button"
+              onClick={() => onChange({ format: option.id as "mp4" | "webm" | "mkv" })}
+              aria-label={`Select ${option.label} format`}
+              aria-pressed={recipe.format === option.id}
+              className={cn(
+                "relative w-full px-3 py-2.5 rounded-lg border-2 transition-all",
+                "text-xs font-heading font-semibold uppercase tracking-wider",
+                recipe.format === option.id
+                  ? "border-film-600 bg-film-50 text-film-600"
+                  : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-400 hover:text-film-600"
+              )}
+            >
+              {option.label}
+            </button>
+          </Tooltip>
         ))}
       </div>
       <p className="text-[10px] text-[var(--muted)] mt-2">

@@ -3,6 +3,7 @@
 import { EditRecipe } from "@/lib/types";
 import { RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface Props {
   recipe: EditRecipe;
@@ -17,23 +18,33 @@ export default function RotateControl({ recipe, onChange }: Props) {
       {ROTATIONS.map((deg) => {
         const active = recipe.rotate === deg;
         return (
-          <button
-            type="button"
+          <Tooltip
             key={deg}
-            onClick={() => onChange({ rotate: deg })}
-            aria-label={`Rotate video to ${deg} degrees`}
-            aria-pressed={active}
-            className={cn(
-              "flex-1 min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border text-xs transition-all duration-150 cursor-pointer hover:scale-[1.03] active:scale-[0.97]",
-              active
-                ? "border-film-500 bg-film-50 text-film-700 font-heading font-semibold"
-                : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
-            )}
+            block
+            wrapperClassName="flex-1 min-w-0"
+            content={`Rotate the video ${deg}° clockwise before export.`}
           >
-            <RotateCw size={15} style={{ transform: `rotate(${deg}deg)`, transformOrigin: 'center' }} className="transition-transform" />
-            <span className="sr-only">Rotate video to {deg} degrees</span>
-            {deg}
-          </button>
+            <button
+              type="button"
+              onClick={() => onChange({ rotate: deg })}
+              aria-label={`Rotate video to ${deg} degrees`}
+              aria-pressed={active}
+              className={cn(
+                "flex-1 min-h-[44px] min-w-[44px] w-full flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border text-xs transition-all duration-150 cursor-pointer hover:scale-[1.03] active:scale-[0.97]",
+                active
+                  ? "border-film-500 bg-film-50 text-film-700 font-heading font-semibold"
+                  : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
+              )}
+            >
+              <RotateCw
+                size={15}
+                style={{ transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
+                className="transition-transform"
+                aria-hidden="true"
+              />
+              {deg}
+            </button>
+          </Tooltip>
         );
       })}
     </div>

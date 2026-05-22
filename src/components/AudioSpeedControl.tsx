@@ -5,6 +5,7 @@ import { EditRecipe } from "@/lib/types"
 import { SPEED_STEPS } from "@/lib/constants";
 import { Volume2, VolumeX, Gauge, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 interface Props {
   recipe: EditRecipe;
@@ -68,27 +69,29 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => onChange({ keepAudio: !recipe.keepAudio })}
-        aria-label={recipe.keepAudio ? "Mute video audio" : "Unmute video audio"}
-        aria-pressed={recipe.keepAudio}
-        className={cn(
-          "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
-          "hover:scale-[1.01] active:scale-[0.99]",
-          recipe.keepAudio
-            ? "border-film-300 bg-film-50 text-film-700"
-            : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
-        )}
+      <Tooltip
+        block
+        content="Include the original audio track in the exported video. Press M to toggle."
       >
-        {recipe.keepAudio ? <Volume2 size={16} /> : <VolumeX size={16} />}
-        <span className="sr-only">
-          {recipe.keepAudio ? "Turn audio off" : "Turn audio on"}
-        </span>
-        <span className="text-sm font-heading font-semibold">
-          {recipe.keepAudio ? "Audio on" : "Muted"}
-        </span>
-      </button>
+        <button
+          type="button"
+          onClick={() => onChange({ keepAudio: !recipe.keepAudio })}
+          aria-label={recipe.keepAudio ? "Mute video audio" : "Unmute video audio"}
+          aria-pressed={recipe.keepAudio}
+          className={cn(
+            "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
+            "hover:scale-[1.01] active:scale-[0.99]",
+            recipe.keepAudio
+              ? "border-film-300 bg-film-50 text-film-700"
+              : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
+          )}
+        >
+          {recipe.keepAudio ? <Volume2 size={16} aria-hidden="true" /> : <VolumeX size={16} aria-hidden="true" />}
+          <span className="text-sm font-heading font-semibold">
+            {recipe.keepAudio ? "Audio on" : "Muted"}
+          </span>
+        </button>
+      </Tooltip>
 
       <div>
         <div className="flex items-center justify-between mb-2">
@@ -109,20 +112,25 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             </span>
           </div>
         </div>
-        <input
-          id="speed-control"
-          type="range"
-          min={0}
-          max={SPEED_STEPS.length - 1}
-          step={1}
-          value={speedIndex === -1 ? 3 : speedIndex}
-          onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
-          aria-labelledby="speed-label"
-          aria-describedby="speed-description"
-          aria-label="Video playback speed"
-          aria-valuetext={`${recipe.speed}x speed, ${getSpeedDescription(recipe.speed)}`}
-          className="w-full h-11 accent-film-600 cursor-pointer"
-        />
+        <Tooltip
+          block
+          content="Change playback speed. Below 1x slows down; above 1x speeds up the video and audio."
+        >
+          <input
+            id="speed-control"
+            type="range"
+            min={0}
+            max={SPEED_STEPS.length - 1}
+            step={1}
+            value={speedIndex === -1 ? 3 : speedIndex}
+            onChange={(e) => onChange({ speed: SPEED_STEPS[Number(e.target.value)] })}
+            aria-labelledby="speed-label"
+            aria-describedby="speed-description"
+            aria-label="Video playback speed"
+            aria-valuetext={`${recipe.speed}x speed, ${getSpeedDescription(recipe.speed)}`}
+            className="w-full h-11 accent-film-600 cursor-pointer"
+          />
+        </Tooltip>
         <div className="flex justify-between mt-1 overflow-hidden">
           {SPEED_STEPS.map((s) => (
             <span

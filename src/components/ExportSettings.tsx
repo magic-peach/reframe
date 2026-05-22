@@ -2,10 +2,8 @@
 
 import { EditRecipe } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import {
-  SlidersHorizontal,
-  Info as InfoIcon,
-} from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
+import { Tooltip } from "@/components/ui/Tooltip";
 
 import {
   estimateExportSize,
@@ -48,15 +46,8 @@ export default function ExportSettings({
             htmlFor="quality-control"
             className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
           >
-            <SlidersHorizontal size={10} />
+            <SlidersHorizontal size={10} aria-hidden="true" />
             Quality
-
-            <span
-              className="cursor-help"
-              title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file."
-            >
-              <InfoIcon size={14} />
-            </span>
           </label>
 
           <span className="text-sm font-heading font-bold text-film-600">
@@ -68,25 +59,28 @@ export default function ExportSettings({
           </span>
         </div>
 
-        <input
-          id="quality-control"
-          type="range"
-          min={18}
-          max={30}
-          step={1}
-          value={recipe.quality}
-          onChange={(e) =>
-            onChange({
-              quality: Number(
-                e.target.value
-              ),
-            })
-          }
-          aria-describedby="quality-description"
-          aria-label="Video export quality (CRF)"
-          aria-valuetext={`${label} quality, CRF value ${recipe.quality}`}
-          className="w-full accent-film-600 cursor-pointer"
-        />
+        <Tooltip
+          block
+          content="Lower CRF = higher quality and larger file size. 18 is best quality; 30 is smallest."
+        >
+          <input
+            id="quality-control"
+            type="range"
+            min={18}
+            max={30}
+            step={1}
+            value={recipe.quality}
+            onChange={(e) =>
+              onChange({
+                quality: Number(e.target.value),
+              })
+            }
+            aria-describedby="quality-description"
+            aria-label="Video export quality (CRF)"
+            aria-valuetext={`${label} quality, CRF value ${recipe.quality}`}
+            className="w-full accent-film-600 cursor-pointer"
+          />
+        </Tooltip>
 
         <div
           id="quality-description"
