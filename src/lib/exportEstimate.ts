@@ -8,6 +8,8 @@ import { getPresetById } from "./presets";
  */
 function getOutputDimensions(recipe: EditRecipe): { width: number; height: number } {
   if (recipe.preset !== "custom") {
+    // FIX (#930): We now correctly look up dimensions using the actual preset ID (e.g. "vertical-9-16") 
+    // from the PRESETS array instead of relying on a mismatched hardcoded dimensions object.
     const preset = getPresetById(recipe.preset);
     if (preset) return { width: preset.width, height: preset.height };
   }

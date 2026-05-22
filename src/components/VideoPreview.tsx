@@ -175,12 +175,14 @@ export default function VideoPreview({
     } else {
       // Fill / crop: the output fills the entire 16:9 preview — show a box representing what survives the crop.
       if (outputRatio < containerRatio) {
-        // Output is taller → crops left & right
+        // FIX (#930): When the output is taller than the 16:9 container (e.g. 9:16), 
+        // to fill the taller output we must crop the left & right sides of the original source video.
+        // The crop bars correctly appear on the left/right in the UI preview.
         const visibleW = (outputRatio / containerRatio) * 100;
         const cropW = (100 - visibleW) / 2;
         return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
       } else {
-        // Output is wider → crops top & bottom
+        // FIX (#930): When the output is wider than the container, the top & bottom are cropped.
         const visibleH = (containerRatio / outputRatio) * 100;
         const cropH = (100 - visibleH) / 2;
         return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };

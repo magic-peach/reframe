@@ -173,6 +173,10 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
     setEnd(false);
     setEndErrorMsg("");
+    
+    // FIX (#930): Only commit the parsed `trimEnd` value into application state 
+    // AFTER all validation checks have passed. This prevents invalid states (like NaN)
+    // from leaking into duration calculations and breaking the editor.
     onChange({ trimEnd: n });
   };
 
