@@ -16,12 +16,14 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
   SlidersHorizontal, Zap, AlertTriangle, Github, Copy
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -62,9 +64,37 @@ function KeyboardShortcutsPanel() {
   const [open, setOpen] = useState(false);
 
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
-    { keys: [<Kbd key="m">M</Kbd>], label: "Toggle audio mute" },
-    { keys: [<Kbd key="ctrl">Ctrl</Kbd>, <span key="plus" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="enter">↵</Kbd>], label: "Export video" },
-  ];
+  {
+    keys: [
+      <Kbd key="ctrl">Ctrl</Kbd>,
+      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
+      <Kbd key="shift">Shift</Kbd>,
+      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
+      <Kbd key="e">E</Kbd>
+    ],
+    label: "Export video",
+  },
+  {
+    keys: [<Kbd key="m">M</Kbd>],
+    label: "Toggle audio mute",
+  },
+  {
+    keys: [<Kbd key="r">R</Kbd>],
+    label: "Reset all settings",
+  },
+  {
+    keys: [<Kbd key="esc">Esc</Kbd>],
+    label: "Cancel export",
+  },
+  {
+    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
+    label: "Switch preset by index",
+  },
+  {
+    keys: [<Kbd key="question">?</Kbd>],
+    label: "Toggle this panel",
+  },
+];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
@@ -120,7 +150,20 @@ export default function VideoEditor() {
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
     recommendedPreset,
+    toggleSound,
   } = useVideoEditor();
+
+  useKeyboardShortcuts({
+    file,
+    recipe,
+    resetSettings,
+    updateRecipe,
+    handleExport,
+    status,
+    cancelExport,
+    onToggleShortcutsModal: () => {},
+  });
+
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
@@ -144,6 +187,7 @@ export default function VideoEditor() {
   }, [status]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
+  const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const videoSrc = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
@@ -194,10 +238,10 @@ export default function VideoEditor() {
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
-              <div className="text-center text-[var(--muted)] py-6">
-                <p>Upload a video to get started</p>
-              
-              </div>
+                <div className="text-center text-[var(--muted)] py-6">
+                  <p>Upload a video to get started</p>
+                  <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+                </div>
               )}
 
               {file && (
@@ -243,6 +287,7 @@ export default function VideoEditor() {
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
+
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <Section
@@ -273,7 +318,7 @@ export default function VideoEditor() {
                           value={recipe.brightness}
                           onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
                           aria-label="Adjust brightness"
-                          className="w-full"
+                          className="w-full accent-film-600"
                         />
                       </div>
                       {/* Contrast */}
@@ -298,7 +343,7 @@ export default function VideoEditor() {
                           value={recipe.contrast}
                           onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
                           aria-label="Adjust contrast"
-                          className="w-full"
+                          className="w-full accent-film-600"
                         />
                       </div>
                       {/* Saturation */}
@@ -323,7 +368,7 @@ export default function VideoEditor() {
                           value={recipe.saturation}
                           onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
                           aria-label="Adjust saturation"
-                          className="w-full"
+                          className="w-full accent-film-600"
                         />
                       </div>
                     </div>
@@ -387,7 +432,7 @@ export default function VideoEditor() {
 
             {status === "done" && result && (
               <div role="status" className="animate-fade-in" ref={downloadRef}>
-                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} />
+                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
               </div>
             )}
           </div>
@@ -401,7 +446,7 @@ export default function VideoEditor() {
                 {recommendedPreset && (
                   <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
                     <p>
-                      We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {recommendedPreset.platform.split("·")[0].trim()} ({recommendedPreset.label.replace(/\s/g, "")})
+                      We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()} ({recommendedPreset.label.replace(/\s/g, "")})
                     </p>
                   </div>
                 )}
@@ -445,12 +490,18 @@ export default function VideoEditor() {
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
+                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >
-              <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
+             <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
+
+            {file && !isProcessing && (
+              <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
+                {isMac ? "⌘" : "Ctrl"} + Enter to export
+              </p>
+            )}
           </div>
         </div>
       </div>
