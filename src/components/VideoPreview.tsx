@@ -6,8 +6,6 @@ import { EditRecipe } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
-import { captureFrameAsPng } from "@/lib/frame-export";
-import { DEFAULT_RECIPE } from "@/lib/constants";
 
 interface Props {
   file: File | null;
@@ -20,59 +18,23 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
-  const [frameNotice, setFrameNotice] = useState<{
-    kind: "success" | "error";
-    message: string;
-  } | null>(null);
-  const [isExportingFrame, setIsExportingFrame] = useState(false);
-  const isExportingFrameRef = useRef(false);
   const onLoadedRef = useRef<(() => void) | null>(null);
-  const activeRecipe = recipe ?? DEFAULT_RECIPE;
-
-  useEffect(() => {
-    if (!frameNotice) return;
-
-    const timeoutId = window.setTimeout(() => setFrameNotice(null), 2500);
-    return () => window.clearTimeout(timeoutId);
-  }, [frameNotice]);
 
   /** Capture the current video frame and download it as a PNG. */
-  const handleGrabFrame = useCallback(async () => {
-    if (isExportingFrameRef.current) return;
-
+  const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
-    if (!video) {
-      setFrameNotice({ kind: "error", message: "No video frame is available yet." });
-      return;
-    }
+    if (!video || video.readyState < 2) return;
 
-    isExportingFrameRef.current = true;
-    setIsExportingFrame(true);
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-    try {
-      const { blob, filename } = await captureFrameAsPng(video, activeRecipe);
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = filename;
-      anchor.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setFrameNotice({ kind: "success", message: `Saved ${filename}` });
-    } catch (error) {
-      console.error("frame export failed:", error);
-      setFrameNotice({
-        kind: "error",
-        message: error instanceof Error ? error.message : "Frame export failed.",
-      });
-    } finally {
-      isExportingFrameRef.current = false;
-      setIsExportingFrame(false);
-    }
-  }, [activeRecipe, videoRef]);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  useEffect(() => {
-    const handleShortcut = (e: KeyboardEvent) => {
-      if (e.repeat) return;
+    canvas.toBlob((blob) => {
+      if (!blob) return;
 
       const target = e.target as HTMLElement | null;
       if (
@@ -105,6 +67,20 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [handleGrabFrame, videoRef]);
+      const totalSec = Math.floor(video.currentTime);
+      const mins = String(Math.floor(totalSec / 60)).padStart(2, "0");
+      const secs = String(totalSec % 60).padStart(2, "0");
+      const filename = `frame-${mins}m${secs}s.png`;
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  }, [videoRef]);
+
   useEffect(() => {
     if (!file) return;
 
@@ -167,6 +143,14 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     if (!videoRef.current) return;
     videoRef.current.playbackRate = activeRecipe.speed;
   }, [activeRecipe.speed, videoRef]);
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.muted = !recipe.keepAudio;
+  }, [recipe, videoRef]);
+
+  useEffect(() => {
+    if (!videoRef.current || !recipe) return;
+    videoRef.current.playbackRate = recipe.speed;
+  }, [recipe, videoRef]);
 
   /**
    * Compute the overlay geometry for the selected preset + framing mode.
@@ -174,11 +158,11 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
    * We express widths/heights as percentage strings for CSS.
    */
   const overlay = (() => {
-    if (!activeRecipe || !showOverlay) return null;
+    if (!recipe || !showOverlay) return null;
 
-    const preset = activeRecipe.preset === "custom"
-      ? { width: activeRecipe.customWidth, height: activeRecipe.customHeight }
-      : getPresetById(activeRecipe.preset);
+    const preset = recipe.preset === "custom"
+      ? { width: recipe.customWidth, height: recipe.customHeight }
+      : getPresetById(recipe.preset);
 
     if (!preset) return null;
 
@@ -188,7 +172,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     const containerRatio = containerW / containerH;   // 1.777…
     const outputRatio = preset.width / preset.height;
 
-    if (activeRecipe.framing === "fit") {
+    if (recipe.framing === "fit") {
       // Letterbox: the output video fits entirely inside 16:9, padded with bars.
       if (outputRatio > containerRatio) {
         // Wider output → pillarbox bars on top & bottom
@@ -225,21 +209,9 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
       tabIndex={0}
       aria-label="Video preview (press Space to play/pause, T to export the current frame)"
+      onKeyDown={handleKeyDown}
+      aria-label="Video preview (press Space to play/pause)"
     >
-      {frameNotice && (
-        <div
-          className={cn(
-            "absolute top-2 left-2 z-20 max-w-[calc(100%-5rem)] rounded-lg border px-3 py-2 text-xs font-semibold shadow-lg backdrop-blur-sm animate-fade-in",
-            frameNotice.kind === "success"
-              ? "border-emerald-400/30 bg-emerald-950/85 text-emerald-100"
-              : "border-red-400/30 bg-red-950/85 text-red-100"
-          )}
-          role="status"
-          aria-live="polite"
-        >
-          {frameNotice.message}
-        </div>
-      )}
       {isLoading && (
         <div
           className="absolute inset-0 animate-pulse bg-gray-700 rounded-xl transition-opacity duration-300"
@@ -254,6 +226,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         onLoadedData={() => setIsLoading(false)}
         playsInline
         muted={!activeRecipe.keepAudio}
+        muted={!recipe?.keepAudio}
       >
         <track kind="captions" />
       </video>
@@ -291,11 +264,11 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       )}
 
       {/* Toggle button */}
-      {activeRecipe && !isLoading && (
+      {recipe && !isLoading && (
         <button
           type="button"
           onClick={() => setShowOverlay((v) => !v)}
-          className={`absolute bottom-10 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+          className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
             showOverlay
               ? "bg-film-600 text-white"
               : "bg-black/60 text-white/70 hover:bg-black/80"
@@ -312,15 +285,13 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
       {!isLoading && (
         <button
           type="button"
-          onClick={() => void handleGrabFrame()}
-          disabled={isExportingFrame}
-          className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-black/60 text-white/70 hover:bg-black/80 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-          aria-label="Export current frame as PNG"
-          aria-keyshortcuts="T"
-          title="Export current frame as PNG (T)"
+          onClick={handleGrabFrame}
+          className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-black/60 text-white/70 hover:bg-black/80 flex items-center gap-1"
+          aria-label="Grab frame as PNG"
+          title="Download current frame as PNG"
         >
           <Camera className="w-3 h-3" />
-          {isExportingFrame ? "Exporting" : "Export frame"}
+          Grab frame
         </button>
       )}
     </div>

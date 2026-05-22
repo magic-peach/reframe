@@ -33,7 +33,7 @@ export default function Footer() {
               { icon: <Zap size={12}/>, label: "Fast" },
               { icon: <Globe size={12}/>, label: "Open Source" }
             ].map((tag) => (
-              <span key={tag.label} className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[10px] font-semibold tracking-wide uppercase">
+              <span key={tag.label} className="flex items-center gap-1.5 px-3 py-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[10px] font-semibold tracking-wide uppercase transition-all duration-200 ease-in-out hover:-translate-y-0.5 hover:border-[var(--accent)] hover:shadow-[0_0_10px_rgba(255,255,255,0.08)] cursor-pointer select-none">
                 {tag.icon} {tag.label}
               </span>
             ))}
@@ -48,19 +48,19 @@ export default function Footer() {
               href="https://github.com/magic-peach/reframe" 
               target="_blank" 
               rel="noopener" 
-              className="opacity-60 hover:opacity-100 hover:text-blue-500 hover:translate-x-1.5 transition-all duration-300 ease-out w-fit flex items-center gap-2 group"
+              className="opacity-70 hover:opacity-100 hover:text-red-400 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
             >
               GitHub
             </a>
             <Link 
               href="/contact" 
-              className="opacity-60 hover:opacity-100 hover:text-blue-500 hover:translate-x-1.5 transition-all duration-300 ease-out w-fit flex items-center gap-2 group"
+              className="opacity-70 hover:opacity-100 hover:text-red-400 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
             >
               Contact
             </Link>
             <Link 
               href="/privacy" 
-              className="opacity-60 hover:opacity-100 hover:text-blue-500 hover:translate-x-1.5 transition-all duration-300 ease-out w-fit flex items-center gap-2 group"
+              className="opacity-70 hover:opacity-100 hover:text-red-400 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
             >
               Privacy Policy
             </Link>
@@ -78,6 +78,9 @@ export default function Footer() {
               <button 
                 type="button"
                 onClick={() => setIsExpanded(true)}
+                aria-label="Open updates signup form"
+                aria-expanded={isExpanded}
+                aria-controls="updates-signup-form"
                 className="w-40 px-3 flex items-center justify-center bg-[var(--surface)] border border-[var(--border)] rounded-lg py-3 hover:bg-[var(--border)] transition-all duration-500 ease-in-out group"
               >
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60 group-hover:opacity-100 transition-opacity">
@@ -85,8 +88,11 @@ export default function Footer() {
                 </span>
               </button>
             ) : (
-              <div className="w-full sm:w-72 px-4 flex items-center bg-[var(--surface)] border border-blue-500/50 rounded-lg transition-all duration-500 ease-in-out">
+              <div 
+                id="updates-signup-form"
+                className="w-full sm:w-72 px-4 flex items-center bg-[var(--surface)] border border-blue-500/50 rounded-lg transition-all duration-500 ease-in-out">
                 <form 
+                  aria-label="Updates signup form"
                   onSubmit={(e) => { e.preventDefault(); setIsExpanded(false); }} 
                   className="flex w-full items-center animate-in slide-in-from-right-2 duration-500"
                 >
@@ -94,10 +100,11 @@ export default function Footer() {
                     type="email" 
                     placeholder="ENTER EMAIL" 
                     className="bg-transparent border-none text-[10px] font-bold tracking-widest text-[var(--text)] focus:outline-none w-full py-3 placeholder:opacity-30"
+                    aria-label="Email address for updates"
                     onBlur={() => setIsExpanded(false)}
                   />
-                  <button type="submit" className="text-blue-500 hover:text-blue-400 p-1">
-                    <ArrowRight size={16} />
+                  <button aria-label="Submit email for updates" type="submit" className="text-blue-500 hover:text-blue-400 p-1">
+                    <ArrowRight size={16} aria-hidden="true"  />
                   </button>
                 </form>
               </div>
@@ -112,9 +119,9 @@ export default function Footer() {
               target="_blank"
               rel="noopener"
               className="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--border)] transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center group"
-              aria-label="GitHub"
+              aria-label="Open Reframe GitHub repository"
             >
-              <Github size={18} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+              <Github size={18} aria-hidden="true" className="opacity-70 group-hover:opacity-100 transition-opacity" />
             </a>
           </div>
 
