@@ -251,7 +251,7 @@ export default function OnboardingTour() {
   useEffect(() => {
   if (localStorage.getItem(TOUR_KEY)) return;
   const t = setTimeout(async () => {
-    const rect = await measureTarget(TOUR_STEPS[0].targetId);
+    const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
     if (rect) {
       setTargetRect(rect);
       setVisible(true);
@@ -267,7 +267,7 @@ useEffect(() => {
     isFirstRender.current = false;
     return;
   }
-  measureTarget(TOUR_STEPS[stepIndex].targetId).then((rect) => {
+  measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then((rect) => {
     if (rect) {
       setTargetRect(rect);
       setTimeout(() => tooltipRef.current?.focus(), 50);
@@ -285,7 +285,7 @@ useEffect(() => {
   useEffect(() => {
   if (!visible) return;
   const onResize = () => {
-    measureTarget(TOUR_STEPS[stepIndex].targetId).then(setTargetRect);
+    measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(setTargetRect);
   };
   window.addEventListener("resize", onResize);
   return () => window.removeEventListener("resize", onResize);
@@ -318,7 +318,7 @@ useEffect(() => {
       />
       <Spotlight rect={targetRect} />
       <Tooltip
-        step={TOUR_STEPS[stepIndex]}
+        step={TOUR_STEPS[stepIndex]!}
         stepIndex={stepIndex}
         totalSteps={TOUR_STEPS.length}
         rect={targetRect}
