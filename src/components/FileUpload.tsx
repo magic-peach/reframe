@@ -128,23 +128,6 @@ export default function FileUpload({
         Change
         <span className="text-[var(--muted)] ml-1">(Ctrl+O)</span>
       </button>
-
-
-      {fileError && (
-        <p className="text-xs text-red-500 mt-2 font-medium">
-          {fileError}
-        </p>
-      )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
     </div>
 
     <p className="text-xs text-gray-500 mt-3 break-words">
