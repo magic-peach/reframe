@@ -82,8 +82,8 @@ export const DEFAULT_RECIPE: EditRecipe = {
   format: "mp4",
   stabilization: false,
   brightness: 0,
-  contrast: 0,
-  saturation: 0,
+  contrast: 1,
+  saturation: 1,
   soundOnCompletion: false,
   version: RECIPE_VERSION,
 };
