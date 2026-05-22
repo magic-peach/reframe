@@ -132,6 +132,7 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
 }
 
  export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+  if (speed <= 0) return "";
   const filters: string[] = [];
 
   let remaining = speed;
