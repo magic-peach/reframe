@@ -8,10 +8,21 @@ import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Tooltip } from "@/components/ui/Tooltip";
+import AspectRatioThumbnail from "@/components/ui/AspectRatioThumbnail";
 
 interface Props {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
+}
+
+function presetButtonClass(active: boolean) {
+  return cn(
+    "min-h-[44px] min-w-[44px] w-full flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center",
+    "transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+    active
+      ? "border-film-500 bg-film-50"
+      : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
+  );
 }
 
 function getOrientationLabel(width: number, height: number): string {
@@ -21,33 +32,6 @@ function getOrientationLabel(width: number, height: number): string {
   const orientation =
     width === height ? "Square" : width > height ? "Landscape" : "Portrait";
   return `${orientation} (${ratio})`;
-}
-
-function RatioBox({
-  width,
-  height,
-  active,
-}: {
-  width: number;
-  height: number;
-  active: boolean;
-}) {
-  const MAX = 32;
-  const ratio = width / height;
-  const [w, h] =
-    ratio >= 1
-      ? [MAX, Math.max(4, Math.round(MAX / ratio))]
-      : [Math.max(4, Math.round(MAX * ratio)), MAX];
-
-  return (
-    <div
-      className={cn(
-        "border-2 flex-shrink-0 rounded-sm transition-colors",
-        active ? "border-film-600" : "border-[var(--muted)] opacity-60",
-      )}
-      style={{ width: w, height: h }}
-    />
-  );
 }
 
 export default function PresetSelector({ recipe, onChange }: Props) {
@@ -121,20 +105,17 @@ export default function PresetSelector({ recipe, onChange }: Props) {
                 <button
                   type="button"
                   onClick={() => handlePresetSelect(preset.id)}
-                  aria-label={`Select ${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
+                  aria-label={`${preset.label} preset, ${preset.width} by ${preset.height} pixels`}
                   aria-pressed={active}
-                  className={cn(
-                    "min-h-[44px] min-w-[44px] w-full flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
-                    active
-                      ? "border-film-500 bg-film-50"
-                      : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
-                  )}
+                  className={presetButtonClass(active)}
                 >
-                  <RatioBox
-                    width={preset.width}
-                    height={preset.height}
-                    active={active}
-                  />
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                    <AspectRatioThumbnail
+                      width={preset.width}
+                      height={preset.height}
+                      active={active}
+                    />
+                  </span>
 
                   <div className="min-w-0 w-full">
                     <p
@@ -146,7 +127,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
                       {preset.label}
                     </p>
 
-                    <p className="mt-0.5 text-[11px] leading-tight text-[var(--muted)]">
+                    <p className="mt-0.5 text-[11px] leading-tight text-[var(--muted)] line-clamp-2">
                       {preset.platform}
                     </p>
                   </div>
@@ -162,22 +143,20 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             aria-label="Select custom dimensions preset"
             aria-pressed={recipe.preset === "custom"}
             onClick={() => handlePresetSelect("custom")}
-            className={cn(
-              "min-h-[44px] min-w-[44px] w-full flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
-              recipe.preset === "custom"
-                ? "border-film-500 bg-film-50"
-                : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
-            )}
+            className={presetButtonClass(recipe.preset === "custom")}
           >
-            <Settings2
-              size={20}
-              className={cn(
-                "shrink-0",
-                recipe.preset === "custom"
-                  ? "text-film-600"
-                  : "text-[var(--muted)]",
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+              {recipe.preset === "custom" ? (
+                <AspectRatioThumbnail
+                  width={recipe.customWidth}
+                  height={recipe.customHeight}
+                  active
+                />
+              ) : (
+                <Settings2 size={18} className="text-[var(--muted)]" />
               )}
-            />
+            </span>
+
             <div className="min-w-0 w-full">
               <p
                 className={cn(
@@ -257,7 +236,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             <span className="mb-1.5 block text-center text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
               Ratio
             </span>
-            <div className="flex h-[38px] items-center rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 text-xs font-medium text-film-700">
+            <div className="flex h-[38px] items-center justify-center rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 text-xs font-medium text-film-700">
               {getOrientationLabel(
                 recipe.customWidth || 0,
                 recipe.customHeight || 0,
