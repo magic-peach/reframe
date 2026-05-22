@@ -175,15 +175,15 @@ export default function VideoPreview({
     } else {
       // Fill / crop: the output fills the entire 16:9 preview — show a box representing what survives the crop.
       if (outputRatio < containerRatio) {
-        // Output is taller → crops top & bottom
-        const visibleH = (outputRatio / containerRatio) * 100;
-        const cropH = (100 - visibleH) / 2;
-        return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };
-      } else {
-        // Output is wider → crops left & right
-        const visibleW = (containerRatio / outputRatio) * 100;
+        // Output is taller → crops left & right
+        const visibleW = (outputRatio / containerRatio) * 100;
         const cropW = (100 - visibleW) / 2;
         return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
+      } else {
+        // Output is wider → crops top & bottom
+        const visibleH = (containerRatio / outputRatio) * 100;
+        const cropH = (100 - visibleH) / 2;
+        return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };
       }
     }
   })();
