@@ -282,7 +282,35 @@ export default function VideoEditor() {
                     />
                   </Section>
                   <Section icon={<RotateCw size={12} />} title="Rotate" delay={100}>
-                    <RotateControl recipe={recipe} onChange={updateRecipe} />
+  <RotateControl recipe={recipe} onChange={updateRecipe} />
+  
+  {/* Reverse video toggle */}
+  <div className="flex items-center justify-between pt-2">
+    <label htmlFor="reverse-toggle" className="text-xs text-[var(--muted)] cursor-pointer">
+      Reverse video
+      {recipe.reverse && file && file.size > 100 * 1024 * 1024 && (
+        <span className="ml-2 text-[var(--warning)]">⚠️ Large file — may be slow</span>
+      )}
+    </label>
+    <button
+      id="reverse-toggle"
+      type="button"
+      role="switch"
+      aria-checked={recipe.reverse}
+      onClick={() => updateRecipe({ reverse: !recipe.reverse })}
+      className={cn(
+        "relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200",
+        recipe.reverse ? "bg-film-600" : "bg-[var(--border)]"
+      )}
+    >
+      <span
+        className={cn(
+          "inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200",
+          recipe.reverse ? "translate-x-4" : "translate-x-1"
+        )}
+      />
+    </button>
+  </div>
                   </Section>
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">

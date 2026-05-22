@@ -18,6 +18,7 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  reverse: boolean;
   version: number;
 }
 
@@ -81,6 +82,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   quality: 23,
   format: "mp4",
   stabilization: false,
+  reverse: false,
   brightness: 0,
   contrast: 0,
   saturation: 0,
@@ -116,6 +118,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
+  if (typeof v.reverse !== "boolean") return false;
 
   return true;
 }

@@ -397,6 +397,13 @@ export function useVideoEditor() {
       setStatus("error");
       return;
     }
+    const REVERSE_SIZE_LIMIT = 100 * 1024 * 1024; // 100MB
+    if (recipe.reverse && file.size > REVERSE_SIZE_LIMIT) {
+      const confirmed = window.confirm(
+        "⚠️ Warning: Reversing files larger than 100MB loads the entire video into memory and may be slow or crash your browser. Continue anyway?"
+      );
+    if (!confirmed) return;
+  }
 
     const abortController = new AbortController();
     exportAbortControllerRef.current = abortController;

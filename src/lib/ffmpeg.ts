@@ -128,11 +128,17 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
   filters.push(
     `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
   );
+  // ADD THIS before the return:
+  if (recipe.reverse) {
+    filters.push("reverse");
+  }
+
   return filters.join(",");
 }
 
- export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+ export function buildAudioFilter(speed: number, normalizeAudio: boolean, reverse = false): string {
   const filters: string[] = [];
+  if (reverse) filters.push("areverse");
 
   let remaining = speed;
   while (remaining < 0.5) {
@@ -177,7 +183,7 @@ function buildArguments(
 ): string[] {
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false, recipe.reverse) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
@@ -334,8 +340,7 @@ export async function exportVideo(
 
     const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = buildAudioTrimFilter(recipe);
-  const audioSpeed = buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false);
-
+  const audioSpeed = buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false, recipe.reverse);
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
     const hasMusicTrack = !!(musicOptions?.file && recipe.keepAudio);
