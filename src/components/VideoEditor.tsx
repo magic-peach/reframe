@@ -20,7 +20,7 @@ import ImageOverlay from "./ImageOverlay"
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  SlidersHorizontal, Zap, AlertTriangle, Github, Copy, Undo2, Redo2
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -60,41 +60,49 @@ function Kbd({ children }: { children: React.ReactNode }) {
 }
 
 /** Collapsible panel that lists all keyboard shortcuts. */
-function KeyboardShortcutsPanel() {
+function KeyboardShortcutsPanel({ onOpenHelpModal }: { onOpenHelpModal: () => void }) {
   const [open, setOpen] = useState(false);
 
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
-  {
-    keys: [
-      <Kbd key="ctrl">Ctrl</Kbd>,
-      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="shift">Shift</Kbd>,
-      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="e">E</Kbd>
-    ],
-    label: "Export video",
-  },
-  {
-    keys: [<Kbd key="m">M</Kbd>],
-    label: "Toggle audio mute",
-  },
-  {
-    keys: [<Kbd key="r">R</Kbd>],
-    label: "Reset all settings",
-  },
-  {
-    keys: [<Kbd key="esc">Esc</Kbd>],
-    label: "Cancel export",
-  },
-  {
-    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
-    label: "Switch preset by index",
-  },
-  {
-    keys: [<Kbd key="question">?</Kbd>],
-    label: "Toggle this panel",
-  },
-];
+    {
+      keys: [<Kbd key="space">Space</Kbd>],
+      label: "Play / Pause video",
+    },
+    {
+      keys: [<Kbd key="left">←</Kbd>, <span key="slash" className="text-[var(--muted)] text-[10px]">/</span>, <Kbd key="right">→</Kbd>],
+      label: "Seek backward / forward 5s",
+    },
+    {
+      keys: [<Kbd key="ctrl">Ctrl</Kbd>, <span key="plus1" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="z">Z</Kbd>],
+      label: "Undo last change",
+    },
+    {
+      keys: [<Kbd key="ctrl">Ctrl</Kbd>, <span key="plus1" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="y">Y</Kbd>],
+      label: "Redo change",
+    },
+    {
+      keys: [
+        <Kbd key="ctrl">Ctrl</Kbd>,
+        <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
+        <Kbd key="shift">Shift</Kbd>,
+        <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
+        <Kbd key="e">E</Kbd>
+      ],
+      label: "Export video",
+    },
+    {
+      keys: [<Kbd key="m">M</Kbd>],
+      label: "Toggle audio mute",
+    },
+    {
+      keys: [<Kbd key="del">Backspace</Kbd>, <span key="slash2" className="text-[var(--muted)] text-[10px]">/</span>, <Kbd key="backspace">Del</Kbd>],
+      label: "Delete selected overlay",
+    },
+    {
+      keys: [<Kbd key="question">?</Kbd>],
+      label: "Open full help menu",
+    },
+  ];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
@@ -122,23 +130,165 @@ function KeyboardShortcutsPanel() {
       </button>
 
       {open && (
-        <ul
-          id="keyboard-shortcuts-list"
-          className="px-4 pb-3 space-y-2 border-t border-[var(--border)]"
-        >
-          {shortcuts.map(({ keys, label }) => (
-            <li key={label} className="flex items-center justify-between gap-3 pt-2">
-              <span className="text-xs text-[var(--muted)]">{label}</span>
-              <span className="flex items-center gap-1 shrink-0">{keys}</span>
-            </li>
-          ))}
-        </ul>
+        <div className="border-t border-[var(--border)]">
+          <ul
+            id="keyboard-shortcuts-list"
+            className="px-4 pb-2 space-y-2"
+          >
+            {shortcuts.map(({ keys, label }) => (
+              <li key={label} className="flex items-center justify-between gap-3 pt-2">
+                <span className="text-[11px] text-[var(--muted)]">{label}</span>
+                <span className="flex items-center gap-1 shrink-0">{keys}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="px-4 pb-3 pt-1.5 text-center border-t border-[var(--border)] bg-[#121d30]/10">
+            <button
+              type="button"
+              onClick={onOpenHelpModal}
+              className="text-[10px] font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 transition-colors"
+            >
+              Show Full Help Menu (?)
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
 }
 
+interface ShortcutsHelpModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function ShortcutsHelpModal({ isOpen, onClose }: ShortcutsHelpModalProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const sections = [
+    {
+      title: "Playback Controls",
+      items: [
+        { keys: ["Spacebar"], desc: "Play or pause video playback" },
+        { keys: ["←"], desc: "Seek backward by 5 seconds" },
+        { keys: ["→"], desc: "Seek forward by 5 seconds" },
+      ],
+    },
+    {
+      title: "Editing Operations",
+      items: [
+        { keys: ["Ctrl", "Z"], desc: "Undo last setting or adjustment change" },
+        { keys: ["Ctrl", "Shift", "Z"], desc: "Redo last undone action" },
+        { keys: ["Ctrl", "Y"], desc: "Redo action (Windows alternative)" },
+        { keys: ["M"], desc: "Toggle audio mute (on/off)" },
+        { keys: ["Backspace"], desc: "Delete / remove selected image overlay" },
+        { keys: ["Delete"], desc: "Delete selected overlay (alternative)" },
+      ],
+    },
+    {
+      title: "System & Export",
+      items: [
+        { keys: ["Ctrl", "Enter"], desc: "Export trimmed & adjusted video" },
+        { keys: ["Ctrl", "Shift", "E"], desc: "Export video (alternative)" },
+        { keys: ["Escape"], desc: "Cancel active export process" },
+        { keys: ["R"], desc: "Reset all current editing settings" },
+        { keys: ["?"], desc: "Toggle this help menu overlay" },
+      ],
+    },
+    {
+      title: "Presets & Shortcuts",
+      items: [
+        { keys: ["1"], desc: "Apply preset 1: TikTok/Reels/Shorts Portrait" },
+        { keys: ["2"], desc: "Apply preset 2: YouTube Landscape" },
+        { keys: ["3"], desc: "Apply preset 3: Instagram Square" },
+        { keys: ["4", "–", "9"], desc: "Switch to other layout presets" },
+      ],
+    },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] bg-[#121d30]/20">
+          <h2 id="modal-title" className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--text)] flex items-center gap-2">
+            <kbd className="inline-flex items-center justify-center w-5 h-5 rounded border border-[var(--border)] bg-[var(--bg)] text-[10px] font-mono text-[var(--muted)]">⌨</kbd>
+            Keyboard Shortcuts Help
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--border)] transition-colors cursor-pointer"
+            aria-label="Close shortcuts help dialog"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Modal Content */}
+        <div className="p-6 space-y-6 overflow-y-auto max-h-[70vh]">
+          {sections.map((section) => (
+            <div key={section.title} className="space-y-2">
+              <h3 className="text-[10px] font-heading font-bold uppercase tracking-wider text-film-500">
+                {section.title}
+              </h3>
+              <div className="h-px bg-film-500/10 mb-2" />
+              <ul className="space-y-2.5">
+                {section.items.map((item, idx) => (
+                  <li key={idx} className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-[var(--muted)]">{item.desc}</span>
+                    <span className="flex items-center gap-1 shrink-0">
+                      {item.keys.map((k, kIdx) => (
+                        <span key={kIdx} className="flex items-center gap-1">
+                          {kIdx > 0 && <span className="text-[var(--muted)] text-[10px] font-light">+</span>}
+                          <kbd className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[9px] font-mono text-[var(--text)] leading-none font-bold uppercase">
+                            {k}
+                          </kbd>
+                        </span>
+                      ))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="px-6 py-3 border-t border-[var(--border)] bg-[#121d30]/10 text-center">
+          <p className="text-[10px] text-[var(--muted)]">
+            Press <kbd className="font-mono px-1 py-0.5 border rounded bg-[var(--bg)] text-[var(--text)] text-[9px] font-bold">?</kbd> at any time to toggle this helper menu.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function VideoEditor() {
+  const [isOverlaySelected, setIsOverlaySelected] = useState(false);
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+
   const {
     file, duration, recipe, status, progress,
     result, error, updateRecipe,
@@ -151,6 +301,10 @@ export default function VideoEditor() {
     overlayOpacity, setOverlayOpacity,
     recommendedPreset,
     toggleSound,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   } = useVideoEditor();
 
   useKeyboardShortcuts({
@@ -161,7 +315,16 @@ export default function VideoEditor() {
     handleExport,
     status,
     cancelExport,
-    onToggleShortcutsModal: () => {},
+    onToggleShortcutsModal: () => setIsShortcutsModalOpen((v) => !v),
+    videoRef,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    onDeleteSelected: isOverlaySelected && overlayFile ? () => {
+      setOverlayFile(null);
+      setIsOverlaySelected(false);
+    } : undefined,
   });
 
   const [copied, setCopied] = useState(false);
@@ -204,6 +367,7 @@ export default function VideoEditor() {
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
       <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
       <OnboardingTour />
+      <ShortcutsHelpModal isOpen={isShortcutsModalOpen} onClose={() => setIsShortcutsModalOpen(false)} />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {status === "exporting" && `Exporting video: ${progress}%`}
@@ -389,6 +553,8 @@ export default function VideoEditor() {
                       setOverlaySize={setOverlaySize}
                       overlayOpacity={overlayOpacity}
                       setOverlayOpacity={setOverlayOpacity}
+                      isSelected={isOverlaySelected}
+                      setIsSelected={setIsOverlaySelected}
                     />
                   </Section>
                 </div>
@@ -457,26 +623,68 @@ export default function VideoEditor() {
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
 
-              <div className="pt-2 flex justify-between items-center">
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer"
-                >
-                  <Copy size={12} />
-                  {shareCopied ? "Copied!" : "Copy Link"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetSettings}
-                  className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
-                >
-                  Reset all settings
-                </button>
+              <div className="pt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)]">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={undo}
+                    disabled={!canUndo}
+                    className={cn(
+                      "h-8 px-2.5 rounded-lg border flex items-center justify-center gap-1.5 text-[11px] font-heading font-bold uppercase tracking-wider transition-all duration-150 relative group",
+                      canUndo
+                        ? "border-[var(--border)] bg-[#121d30]/20 hover:bg-film-600/10 hover:border-film-500 text-white cursor-pointer"
+                        : "border-[var(--border)] bg-black/10 text-[var(--muted)] cursor-not-allowed opacity-40"
+                    )}
+                    aria-label="Undo"
+                  >
+                    <Undo2 size={12} />
+                    <span>Undo</span>
+                    <span className="hidden group-hover:block absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black text-white text-[9px] font-mono rounded whitespace-nowrap shadow-md z-20 border border-[var(--border)]">
+                      {isMac ? "⌘Z" : "Ctrl+Z"}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={redo}
+                    disabled={!canRedo}
+                    className={cn(
+                      "h-8 px-2.5 rounded-lg border flex items-center justify-center gap-1.5 text-[11px] font-heading font-bold uppercase tracking-wider transition-all duration-150 relative group",
+                      canRedo
+                        ? "border-[var(--border)] bg-[#121d30]/20 hover:bg-film-600/10 hover:border-film-500 text-white cursor-pointer"
+                        : "border-[var(--border)] bg-black/10 text-[var(--muted)] cursor-not-allowed opacity-40"
+                    )}
+                    aria-label="Redo"
+                  >
+                    <Redo2 size={12} />
+                    <span>Redo</span>
+                    <span className="hidden group-hover:block absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-black text-white text-[9px] font-mono rounded whitespace-nowrap shadow-md z-20 border border-[var(--border)]">
+                      {isMac ? "⌘⇧Z" : "Ctrl+Shift+Z"}
+                    </span>
+                  </button>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="flex items-center gap-1.5 text-[11px] font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 transition-all cursor-pointer"
+                  >
+                    <Copy size={11} />
+                    <span>{shareCopied ? "Copied!" : "Copy Link"}</span>
+                  </button>
+                  <span className="text-[var(--border)] text-xs">|</span>
+                  <button
+                    type="button"
+                    onClick={resetSettings}
+                    className="text-[11px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+                  >
+                    Reset settings
+                  </button>
+                </div>
               </div>
             </div>
 
-            <KeyboardShortcutsPanel />
+            <KeyboardShortcutsPanel onOpenHelpModal={() => setIsShortcutsModalOpen(true)} />
 
             <button
               id="export-button"

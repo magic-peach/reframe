@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { OverlayPosition } from "@/lib/types";
 import { ArrowUpLeft, ArrowUpRight, ArrowDownLeft, ArrowDownRight, Upload, Trash2, FileImage } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ImageOverlayPanelProps {
   overlayFile: File | null;
@@ -11,6 +12,8 @@ interface ImageOverlayPanelProps {
   setOverlaySize: (v: number) => void;
   overlayOpacity: number;
   setOverlayOpacity: (v: number) => void;
+  isSelected?: boolean;
+  setIsSelected?: (v: boolean) => void;
 }
 
 const POSITIONS: { value: OverlayPosition; icon: React.ReactNode; label: string }[] = [
@@ -29,6 +32,8 @@ export default function ImageOverlayPanel({
   setOverlaySize,
   overlayOpacity,
   setOverlayOpacity,
+  isSelected = false,
+  setIsSelected,
 }: ImageOverlayPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [thumbUrl, setThumbUrl] = useState<string>("");
@@ -42,6 +47,18 @@ export default function ImageOverlayPanel({
     setThumbUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [overlayFile]);
+
+  useEffect(() => {
+    return () => {
+      if (setIsSelected) setIsSelected(false);
+    };
+  }, [setIsSelected]);
+
+  useEffect(() => {
+    if (!overlayFile && setIsSelected) {
+      setIsSelected(false);
+    }
+  }, [overlayFile, setIsSelected]);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,7 +109,27 @@ export default function ImageOverlayPanel({
         </label>
 
         {/* Right Side: Horizontal Details Card */}
-        <div className="flex-1 min-w-0 h-11 rounded-lg border border-[var(--border)] bg-[#121d30]/20 flex items-center justify-between px-3 gap-2.5">
+        <div
+          onClick={() => {
+            if (overlayFile && setIsSelected) {
+              setIsSelected(!isSelected);
+            }
+          }}
+          onFocus={() => {
+            if (overlayFile && setIsSelected) {
+              setIsSelected(true);
+            }
+          }}
+          tabIndex={overlayFile ? 0 : -1}
+          className={cn(
+            "flex-1 min-w-0 h-11 rounded-lg border flex items-center justify-between px-3 gap-2.5 outline-none transition-all duration-200",
+            overlayFile ? "cursor-pointer" : "",
+            isSelected && overlayFile
+              ? "border-film-500 ring-2 ring-film-500/30 bg-film-500/10"
+              : "border-[var(--border)] bg-[#121d30]/20"
+          )}
+          aria-label={overlayFile ? `Image overlay: ${overlayFile.name}. Press Backspace or Delete to remove.` : "No image overlay selected"}
+        >
           {overlayFile ? (
             <>
               {/* File Info block */}
@@ -111,7 +148,10 @@ export default function ImageOverlayPanel({
               {/* Action Delete Button */}
               <button
                 type="button"
-                onClick={() => setOverlayFile(null)}
+                onClick={(e) => {
+                  e.stopPropagation(); // prevent triggering selection change
+                  setOverlayFile(null);
+                }}
                 className="w-6 h-6 rounded flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition shrink-0"
                 title="Remove image"
               >

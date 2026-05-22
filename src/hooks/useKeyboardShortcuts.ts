@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { EditRecipe, DEFAULT_RECIPE, ExportStatus } from "@/lib/types";
+import { EditRecipe, ExportStatus } from "@/lib/types";
 import { PRESETS } from "@/lib/presets";
 
 interface UseKeyboardShortcutsProps {
@@ -11,6 +11,12 @@ interface UseKeyboardShortcutsProps {
   status: ExportStatus;
   cancelExport: () => void;
   onToggleShortcutsModal: () => void;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onDeleteSelected?: () => void;
 }
 
 export function useKeyboardShortcuts({
@@ -22,27 +28,116 @@ export function useKeyboardShortcuts({
   status,
   cancelExport,
   onToggleShortcutsModal,
+  videoRef,
+  undo,
+  redo,
+  canUndo,
+  canRedo,
+  onDeleteSelected,
 }: UseKeyboardShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
+      
+      // Prevent triggering shortcuts when typing in inputs, textareas, selects, or editable fields
       if (
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
         target.isContentEditable
-      ) return;
+      ) {
+        return;
+      }
 
       const isMac = navigator.platform.toUpperCase().includes("MAC");
       const isCtrlOrCmd = isMac ? e.metaKey : e.ctrlKey;
 
-      if (isCtrlOrCmd && e.shiftKey && e.key === "E") {
+      // 1. Export Shortcut: Ctrl/Cmd + Shift + E OR Ctrl/Cmd + Enter
+      if (
+        (isCtrlOrCmd && e.shiftKey && e.key.toLowerCase() === "e") ||
+        (isCtrlOrCmd && e.key === "Enter")
+      ) {
         e.preventDefault();
-        e.stopPropagation();   // ← add this
-        if (file && status === "idle") handleExport();
+        e.stopPropagation();
+        if (file && status === "idle") {
+          handleExport();
+        }
         return;
-    }
+      }
+
+      // 2. Undo Shortcut: Ctrl/Cmd + Z
+      if (isCtrlOrCmd && !e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canUndo) {
+          undo();
+        }
+        return;
+      }
+
+      // 3. Redo Shortcut: Ctrl/Cmd + Shift + Z OR Ctrl/Cmd + Y
+      if (
+        (isCtrlOrCmd && e.shiftKey && e.key.toLowerCase() === "z") ||
+        (isCtrlOrCmd && e.key.toLowerCase() === "y")
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (canRedo) {
+          redo();
+        }
+        return;
+      }
+
+      // 4. Delete / Backspace Shortcut
+      if (e.key === "Delete" || e.key === "Backspace") {
+        if (onDeleteSelected) {
+          e.preventDefault();
+          e.stopPropagation();
+          onDeleteSelected();
+        }
+        return;
+      }
 
       if (!file) return;
+
+      // 5. Spacebar Shortcut (Play/Pause)
+      if (e.key === " " || e.code === "Space") {
+        const video = videoRef.current;
+        if (video) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (video.paused) {
+            video.play().catch(() => {});
+          } else {
+            video.pause();
+          }
+        }
+        return;
+      }
+
+      // 6. Arrow Left Shortcut (Seek backward by 5 seconds)
+      if (e.key === "ArrowLeft") {
+        const video = videoRef.current;
+        if (video) {
+          e.preventDefault();
+          e.stopPropagation();
+          const SEEK_INTERVAL = 5;
+          video.currentTime = Math.max(0, video.currentTime - SEEK_INTERVAL);
+        }
+        return;
+      }
+
+      // 7. Arrow Right Shortcut (Seek forward by 5 seconds)
+      if (e.key === "ArrowRight") {
+        const video = videoRef.current;
+        if (video) {
+          e.preventDefault();
+          e.stopPropagation();
+          const SEEK_INTERVAL = 5;
+          video.currentTime = Math.min(video.duration || 0, video.currentTime + SEEK_INTERVAL);
+        }
+        return;
+      }
 
       switch (e.key) {
         case "m":
@@ -75,5 +170,20 @@ export function useKeyboardShortcuts({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [file, recipe, updateRecipe, handleExport, status, cancelExport, onToggleShortcutsModal]);
+  }, [
+    file,
+    recipe,
+    resetSettings,
+    updateRecipe,
+    handleExport,
+    status,
+    cancelExport,
+    onToggleShortcutsModal,
+    videoRef,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    onDeleteSelected,
+  ]);
 }
