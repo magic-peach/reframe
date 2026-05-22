@@ -167,7 +167,6 @@ export default function ExportSettings({
           </span>
         </div>
 
-        {/* Short descriptive label explaining what the setting does */}
         <p className="text-xs text-[var(--muted)] mb-1">
           Reduce camera shake
         </p>
