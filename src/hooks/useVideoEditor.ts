@@ -70,11 +70,13 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       "Trim start time cannot be less than 0 seconds.",
     ],
     [
-      recipe.trimEnd !== null && recipe.trimEnd > duration,
+      recipe.trimEnd !== null && duration > 0 && recipe.trimEnd > duration,
       `Trim end time cannot exceed the video duration (${Math.floor(duration)}s).`,
     ],
     [
-      recipe.trimStart >= (recipe.trimEnd ?? duration),
+      recipe.trimEnd !== null 
+        ? recipe.trimStart >= recipe.trimEnd 
+        : (duration > 0 && recipe.trimStart >= duration),
       "Trim start time must be earlier than the end time.",
     ],
     [
