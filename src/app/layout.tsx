@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { InstallButton } from "@/components/InstallButton";
 import ScrollToTop from "@/components/ScrollToTop";
+import BrandLogo from "@/components/BrandLogo";
 
 export const viewport = {
   themeColor: "#e63946",
@@ -106,23 +107,29 @@ export default function RootLayout({
         <ThemeProvider>
           <ErrorBoundary>
             <header
-              role="banner"
-              className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]"
-            >
-              <h1 className="text-lg font-semibold">Reframe</h1>
-              <div className="flex items-center gap-3">
-                <InstallButton />
-                <a
-                  href="https://github.com/magic-peach/reframe"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hidden min-[400px]:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[10px] font-heading font-semibold uppercase tracking-wider hover:bg-[var(--border)] transition-all"
-                >
-                  ⭐ Star
-                </a>
-                <ThemeToggle />
-              </div>
-            </header>
+  role="banner"
+  className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]"
+>
+  <div className="flex items-center gap-2">
+    <BrandLogo size={24} />
+    <h1 className="text-lg font-semibold">Reframe</h1>
+  </div>
+
+  <div className="flex items-center gap-3">
+    <InstallButton />
+
+    <a
+      href="https://github.com/magic-peach/reframe"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="hidden min-[400px]:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[10px] font-heading font-semibold uppercase tracking-wider hover:bg-[var(--border)] transition-all"
+    >
+      ⭐ Star
+    </a>
+
+    <ThemeToggle />
+  </div>
+</header>
             <main id="main-content" tabIndex={-1}>
               {children}
             </main>

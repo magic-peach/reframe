@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
+  const STORAGE_KEY = "reframe:recipe";
 
 export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
@@ -15,8 +16,8 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
     const video = document.createElement("video");
     const timeout = setTimeout(() => {
       URL.revokeObjectURL(url);
-      reject( new Error("Video metaData load timeout"))
-    }, 500);
+      reject( new Error("Video metaData load timeout — the file may be too large or the device too slow. Please try again.") );
+    }, 5000);
 
     video.preload = "metadata";
     video.onloadedmetadata = () => {
@@ -157,24 +158,136 @@ export function useVideoEditor() {
     return next;
   });
 }, []);
+  const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
+    switch (key) {
+      case "preset":
+        return typeof val === "string";
+      case "customWidth":
+        return typeof val === "number" && !isNaN(val) && val >= 16 && val <= 7680;
+      case "customHeight":
+        return typeof val === "number" && !isNaN(val) && val >= 16 && val <= 7680;
+      case "framing":
+        return val === "fit" || val === "fill";
+      case "trimStart":
+        return typeof val === "number" && !isNaN(val) && val >= 0;
+      case "trimEnd":
+        return val === null || (typeof val === "number" && !isNaN(val) && val >= 0);
+      case "rotate":
+        return val === 0 || val === 90 || val === 180 || val === 270;
+      case "speed":
+        return typeof val === "number" && !isNaN(val) && [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4].includes(val);
+      case "quality":
+        return typeof val === "number" && !isNaN(val) && val >= 18 && val <= 30;
+      case "format":
+        return val === "mp4" || val === "webm" || val === "mkv" || val === "gif";
+      case "brightness":
+        return typeof val === "number" && !isNaN(val) && val >= -1 && val <= 1;
+      case "contrast":
+        return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 2;
+      case "saturation":
+        return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 3;
+      default:
+        return true;
+    }
+  };
+
   useEffect(() => {
+    if (typeof window === "undefined") return;
     try {
-      const saved = localStorage.getItem("reframe-settings");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setRecipe(prev => ({
-          ...prev,
-          preset: parsed.preset ?? prev.preset,
-          quality: parsed.quality ?? prev.quality,
-          speed: parsed.speed ?? prev.speed,
-          customWidth: parsed.customWidth ?? prev.customWidth,
-          customHeight: parsed.customHeight ?? prev.customHeight
-        }));
+      const params = new URLSearchParams(window.location.search);
+      const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
+      const hasRecipeParams = recipeKeys.some(key => params.has(key));
+
+      if (hasRecipeParams) {
+        const updatedPatch: Partial<EditRecipe> = {};
+        recipeKeys.forEach((key) => {
+          const paramVal = params.get(key);
+          if (paramVal !== null) {
+            const defaultType = typeof DEFAULT_RECIPE[key];
+            let parsedVal: any;
+
+            if (defaultType === "number") {
+              parsedVal = parseFloat(paramVal);
+            } else if (defaultType === "boolean") {
+              parsedVal = paramVal === "true";
+            } else {
+              parsedVal = paramVal === "null" ? null : paramVal;
+            }
+
+            if (isValidValue(key, parsedVal)) {
+              (updatedPatch as any)[key] = parsedVal;
+            }
+          }
+        });
+
+        if (Object.keys(updatedPatch).length > 0) {
+          setRecipe(prev => ({
+            ...prev,
+            ...updatedPatch
+          }));
+        }
+      } else {
+        // Try full recipe restore first (new key)
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (isValidRecipe(parsed)) {
+              setRecipe(parsed);
+              return;
+            }
+          }
+        } catch {
+          // ignore parse/validation errors and fall back to legacy
+        }
+
+        // Legacy partial settings (keep for backward compatibility)
+        const saved = localStorage.getItem("reframe-settings");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setRecipe(prev => ({
+            ...prev,
+            preset: parsed.preset ?? prev.preset,
+            quality: parsed.quality ?? prev.quality,
+            speed: parsed.speed ?? prev.speed,
+            customWidth: parsed.customWidth ?? prev.customWidth,
+            customHeight: parsed.customHeight ?? prev.customHeight
+          }));
+        }
       }
     } catch (e) {
       // ignore
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const params = new URLSearchParams();
+      const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
+
+      recipeKeys.forEach((key) => {
+        const currentVal = recipe[key];
+        const defaultVal = DEFAULT_RECIPE[key];
+
+        if (currentVal !== defaultVal) {
+          params.set(key, currentVal === null ? "null" : String(currentVal));
+        }
+      });
+
+      const newQuery = params.toString();
+      const currentQuery = window.location.search.replace(/^\?/, "");
+
+      if (newQuery !== currentQuery) {
+        const newUrl = newQuery
+          ? `${window.location.pathname}?${newQuery}`
+          : window.location.pathname;
+        window.history.replaceState(null, "", newUrl);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [recipe]);
 
   useEffect(() => {
     try {
@@ -189,6 +302,19 @@ export function useVideoEditor() {
       // ignore
     }
   }, [recipe.preset, recipe.quality, recipe.speed, recipe.customWidth, recipe.customHeight]);
+
+  // Persist the full recipe (debounced)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(recipe));
+      } catch {
+        // ignore
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [recipe]);
 
   const recommendedPreset = useMemo(() => {
     if (!videoMetadata) return null;
@@ -331,7 +457,7 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration]);
+  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, loopMusic, musicFile, musicVolume, originalAudioVolume]);
 
 
   useEffect(() => {
@@ -386,6 +512,31 @@ export function useVideoEditor() {
     };
   }, [file, status, handleExport]);
 
+  // M key: toggle audio mute — only when a file is loaded and focus isn't in a text field
+  useEffect(() => {
+    if (!file) return;
+
+    const handleMuteShortcut = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "m" || e.ctrlKey || e.metaKey || e.altKey) return;
+
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      setRecipe((prev) => ({ ...prev, keepAudio: !prev.keepAudio }));
+    };
+
+    document.addEventListener("keydown", handleMuteShortcut);
+    return () => {
+      document.removeEventListener("keydown", handleMuteShortcut);
+    };
+  }, [file]);
+
   useEffect(()=>{
     return ()=>{
       if(result?.blobUrl){
@@ -394,8 +545,19 @@ export function useVideoEditor() {
     }
    },[result?.blobUrl])
 
+  useEffect(() => {
+    return () => {
+      terminateFFmpeg();
+    };
+  }, []);
+
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   }, []);
 
   const cancelExport = useCallback(() => {
@@ -419,21 +581,13 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
   }, [result]);
 
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
-    if (status !== "exporting") return;
-
-    const interval = setInterval(() => {
-      const mem = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory;
-      if (mem) {
-        console.log("[Reframe Memory]", Math.round(mem.usedJSHeapSize / 1e6), "MB used");
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [status]);
 
   useEffect(() => {
     localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
@@ -443,6 +597,10 @@ export function useVideoEditor() {
       videoRef.current.currentTime = time;
     }
   }, []);
+
+  const toggleSound = useCallback(() => {
+  updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
+}, [recipe.soundOnCompletion, updateRecipe]);
 
   return {
     file,
@@ -478,5 +636,6 @@ export function useVideoEditor() {
     overlayOpacity,
     setOverlayOpacity,
     recommendedPreset,
+    toggleSound,
   };
 }
