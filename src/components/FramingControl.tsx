@@ -28,7 +28,7 @@ export default function FramingControl({ recipe, onChange }: Props) {
                 : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
             )}
           >
-            <Icon size={18} aria-hidden="true"/>
+            <Icon size={18} aria-hidden="true" />
             <span className="sr-only">
               Set framing to {mode === "fit" ? "fit within frame" : "fill frame by cropping"}
             </span>
