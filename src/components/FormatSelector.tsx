@@ -14,12 +14,14 @@ const FORMAT_OPTIONS = [
   { id: "mp4", label: "MP4", description: "Best compatibility, smaller file size" },
   { id: "webm", label: "WebM", description: "Open format, optimized for web" },
   { id: "mkv", label: "MKV", description: "Container, maximum quality" },
+  { id: "gif", label: "GIF", description: "Animated image — keep clips under 10 s" },
 ] as const;
 
 const FORMAT_TOOLTIPS: Record<(typeof FORMAT_OPTIONS)[number]["id"], string> = {
   mp4: "MP4 (H.264): Best compatibility across devices and social platforms.",
   webm: "WebM: Optimized for web playback with efficient compression.",
   mkv: "MKV: Flexible container format, good for archival quality.",
+  gif: "GIF: Animated image format. Keep clips under 10 seconds for best results.",
 };
 
 export default function FormatSelector({ recipe, onChange }: Props) {
@@ -31,7 +33,7 @@ export default function FormatSelector({ recipe, onChange }: Props) {
           Output Format
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         {FORMAT_OPTIONS.map((option) => (
           <Tooltip
             key={option.id}
@@ -40,7 +42,7 @@ export default function FormatSelector({ recipe, onChange }: Props) {
           >
             <button
               type="button"
-              onClick={() => onChange({ format: option.id as "mp4" | "webm" | "mkv" })}
+              onClick={() => onChange({ format: option.id as "mp4" | "webm" | "mkv" | "gif" })}
               aria-label={`Select ${option.label} format`}
               aria-pressed={recipe.format === option.id}
               className={cn(
