@@ -82,8 +82,6 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
     const n = parseFloat(val);
 
-    onChange({ trimEnd: n });
-
     if (isNaN(n)) {
       setEnd(true);
       setEndErrorMsg("Enter a valid number.");
@@ -112,6 +110,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
     setEnd(false);
     setEndErrorMsg("");
+    onChange({ trimEnd: n });
   };
 
   const inputClass =
