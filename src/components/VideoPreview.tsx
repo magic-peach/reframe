@@ -20,7 +20,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
   const [showOverlay, setShowOverlay] = useState(false);
   const onLoadedRef = useRef<(() => void) | null>(null);
 
-  /** Capture the current video frame and download it as a PNG. */
   const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
     if (!video || video.readyState < 2) return;
@@ -58,7 +57,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     const id = ++lastId.current;
     const url = URL.createObjectURL(file);
 
-    // cleanup previous object URL safely
     if (urlRef.current) {
       URL.revokeObjectURL(urlRef.current);
     }
@@ -70,7 +68,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     video.src = url;
     video.load();
 
-    // define handler once per effect run
     const handleLoaded = () => {
       if (lastId.current !== id) return;
       video.play().catch(() => {});
@@ -81,20 +78,17 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     video.addEventListener("loadeddata", handleLoaded);
 
     return () => {
-      // cleanup event listener safely
       if (onLoadedRef.current) {
         video.removeEventListener("loadeddata", onLoadedRef.current);
         onLoadedRef.current = null;
       }
 
-      // stop playback safely
       if (video) {
         video.pause();
         video.removeAttribute("src");
         video.load();
       }
 
-      // revoke only if still current
       if (urlRef.current === url) {
         URL.revokeObjectURL(urlRef.current);
         urlRef.current = null;
@@ -102,7 +96,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     };
   }, [file, videoRef]);
 
-  // sync mute state to video element
   useEffect(() => {
     if (!videoRef.current || !recipe) return;
     videoRef.current.muted = !recipe.keepAudio;
@@ -113,11 +106,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
-  /**
-   * Compute the overlay geometry for the selected preset + framing mode.
-   * The preview container always uses a 16:9 aspect-video box.
-   * We express widths/heights as percentage strings for CSS.
-   */
   const overlay = (() => {
     if (!recipe || !showOverlay) return null;
 

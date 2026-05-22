@@ -2,11 +2,6 @@
 
 import { useTheme } from "./ThemeProvider";
 
-/**
- * A toggle button that switches between light and dark mode.
- * Renders a sun icon in dark mode and a moon icon in light mode.
- * Fully accessible with aria-label and keyboard support.
- */
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
 
@@ -20,14 +15,7 @@ export function ThemeToggle() {
            : theme === "dark"
            ? "Switch to high contrast mode"
            : "Switch to light mode"
-      } 
-       title={
-         theme === "light"
-           ? "Switch to dark mode"
-           : theme === "dark"
-           ? "Switch to high contrast mode"
-           : "Switch to light mode"
-     }
+      }
       className="
         relative flex items-center justify-center
         w-9 h-9 rounded-full
@@ -40,7 +28,6 @@ export function ThemeToggle() {
         transition-colors duration-200
       "
     >
-      {/* Sun icon — shown in light mode */}
       {theme === "light" ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -57,7 +44,6 @@ export function ThemeToggle() {
           <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
         </svg>
       ) : (
-       /* Moon icon — shown in dark/high contrast mode */
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"

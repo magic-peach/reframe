@@ -30,8 +30,7 @@ export default function RotateControl({ recipe, onChange }: Props) {
                 : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
             )}
           >
-            <RotateCw size={15} style={{ transform: `rotate(${deg}deg)`, transformOrigin: 'center' }} className="transition-transform" />
-            <span className="sr-only">Rotate video to {deg} degrees</span>
+            <RotateCw size={15} aria-hidden="true" style={{ transform: `rotate(${deg}deg)`, transformOrigin: 'center' }} className="transition-transform" />
             {deg}
           </button>
         );
