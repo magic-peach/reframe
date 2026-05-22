@@ -154,6 +154,7 @@ interface TooltipProps {
 }
 
 function Tooltip({ step, stepIndex, totalSteps, rect, onNext, onSkip, tooltipRef }: TooltipProps) {
+  if (!step) return null;
   const style = getTooltipStyle(rect, step.position, tooltipRef);
   const isLast = stepIndex === totalSteps - 1;
 
@@ -267,7 +268,9 @@ useEffect(() => {
     isFirstRender.current = false;
     return;
   }
-  measureTarget(TOUR_STEPS[stepIndex].targetId).then((rect) => {
+  const step = TOUR_STEPS[stepIndex];
+  if (!step) return;
+  measureTarget(step.targetId).then((rect) => {
     if (rect) {
       setTargetRect(rect);
       setTimeout(() => tooltipRef.current?.focus(), 50);
@@ -283,13 +286,15 @@ useEffect(() => {
 
   // Re-measure on resize
   useEffect(() => {
-  if (!visible) return;
-  const onResize = () => {
-    measureTarget(TOUR_STEPS[stepIndex].targetId).then(setTargetRect);
-  };
-  window.addEventListener("resize", onResize);
-  return () => window.removeEventListener("resize", onResize);
-}, [visible, stepIndex, measureTarget]);
+    if (!visible) return;
+    const step = TOUR_STEPS[stepIndex];
+    if (!step) return;
+    const onResize = () => {
+      measureTarget(step.targetId).then(setTargetRect);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [visible, stepIndex, measureTarget]);
 
   // Keyboard support
   useEffect(() => {
@@ -305,7 +310,7 @@ useEffect(() => {
     return () => window.removeEventListener("keydown", onKey);
   }, [visible, stepIndex, dismiss]);
 
-  if (!visible || !targetRect) return null;
+  if (!visible || !targetRect || !TOUR_STEPS[stepIndex]) return null;
 
   return createPortal(
     <>
