@@ -319,7 +319,7 @@ useEffect(() => {
     return () => window.removeEventListener("keydown", onKey);
   }, [visible, stepIndex, dismiss]);
 
-  if (!visible || !targetRect || !TOUR_STEPS[stepIndex]) return null;
+  if (!visible || !targetRect || !currentStep) return null;
 
   return createPortal(
     <>
