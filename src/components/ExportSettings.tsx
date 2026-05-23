@@ -162,13 +162,11 @@ export default function ExportSettings({
                 })
               }
               aria-label="Enable video stabilization"
-              aria-checked={recipe.stabilization}
               className="w-full accent-film-600 cursor-pointer"
             />
           </span>
         </div>
 
-        {/* Short descriptive label explaining what the setting does */}
         <p className="text-xs text-[var(--muted)] mb-1">
           Reduce camera shake
         </p>

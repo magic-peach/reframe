@@ -150,6 +150,7 @@ export default function FileUpload({
     <div
       id="upload-zone"
       role="button"
+      aria-label="Upload video — drag and drop or click to browse"
       tabIndex={0}
       onDragOver={(e) => {
         e.preventDefault();
@@ -195,7 +196,7 @@ export default function FileUpload({
         MP4 / MOV / AVI / WebM
       </div>
 
-      <p className="text-xs text-gray-500 text-center">
+      <p className="text-xs text-[var(--muted)] text-center">
         Supports: MP4, MOV, AVI, MKV, WebM, and most video formats up to 2GB
       </p>
 
