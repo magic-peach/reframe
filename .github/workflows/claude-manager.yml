@@ -10,7 +10,11 @@ on:
 
 jobs:
   claude-pr-review:
-    if: github.event_name == 'pull_request'
+    if: |
+      github.event_name == 'pull_request' &&
+      (github.event.pull_request.author_association == 'OWNER' ||
+       github.event.pull_request.author_association == 'MEMBER' ||
+       github.event.pull_request.author_association == 'COLLABORATOR')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -19,7 +23,7 @@ jobs:
       statuses: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -63,7 +67,7 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Claude Issue Triage
         uses: anthropics/claude-code-action@beta
@@ -111,7 +115,7 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Claude Discussion Reply
         uses: anthropics/claude-code-action@beta

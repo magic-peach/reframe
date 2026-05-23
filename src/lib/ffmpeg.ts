@@ -100,6 +100,11 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     filters.push("deshake");
   }
 
+ 
+  if (recipe.stabilization) {
+    filters.push("deshake");
+  }
+
   if (recipe.rotate === 90) {
     filters.push("transpose=1");
   } else if (recipe.rotate === 180) {
