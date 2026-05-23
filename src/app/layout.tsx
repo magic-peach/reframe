@@ -1,11 +1,29 @@
 import type { Metadata } from "next";
 import { Bebas_Neue, Syne, DM_Sans } from "next/font/google";
+import { ColorSchemeScript, MantineProvider, createTheme } from "@mantine/core";
+import "@mantine/core/styles.css";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ScrollToTop from "@/components/ScrollToTop";
 import BrandLogo from "@/components/BrandLogo";
+
+const bebasNeue = Bebas_Neue({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-bebas",
+});
+
+const syne = Syne({
+  subsets: ["latin"],
+  variable: "--font-syne",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+});
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
@@ -41,14 +59,26 @@ export const metadata: Metadata = {
   },
 };
 
+const theme = createTheme({
+  fontFamily: "var(--font-dm-sans), sans-serif",
+  headings: {
+    fontFamily: "var(--font-syne), sans-serif",
+  },
+  colors: {
+    // Customizing Mantine colors to match Reframe's brand if needed
+    // For now, using default dark/light handling
+  },
+});
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-<html lang="en" suppressHydrationWarning>
+<html lang="en" suppressHydrationWarning className={`${bebasNeue.variable} ${syne.variable} ${dmSans.variable}`}>
       <head>
+        <ColorSchemeScript defaultColorScheme="dark" />
         <link rel="preconnect" href="https://cdn.jsdelivr.net" />
         <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
         <script
@@ -85,24 +115,26 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <ThemeProvider>
-          <ErrorBoundary>
-            <header
-              role="banner"
-              className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]"
-            >
-              <div className="flex items-center gap-2">
-                <BrandLogo size={24} />
-                <h1 className="text-lg font-semibold">Reframe</h1>
-              </div>
-              <ThemeToggle />
-            </header>
-            <main id="main-content" tabIndex={-1}>
-              {children}
-            </main>
-            <ScrollToTop />
-          </ErrorBoundary>
-        </ThemeProvider>
+        <MantineProvider theme={theme} defaultColorScheme="dark">
+          <ThemeProvider>
+            <ErrorBoundary>
+              <header
+                role="banner"
+                className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 border-b border-[var(--border)] bg-[var(--bg)]"
+              >
+                <div className="flex items-center gap-2">
+                  <BrandLogo size={24} />
+                  <h1 className="text-lg font-semibold">Reframe</h1>
+                </div>
+                <ThemeToggle />
+              </header>
+              <main id="main-content" tabIndex={-1}>
+                {children}
+              </main>
+              <ScrollToTop />
+            </ErrorBoundary>
+          </ThemeProvider>
+        </MantineProvider>
       </body>
     </html>
   );

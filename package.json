@@ -12,6 +12,8 @@
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.10",
     "@ffmpeg/util": "^0.12.2",
+    "@mantine/core": "7",
+    "@mantine/hooks": "7",
     "clsx": "^2.1.1",
     "focus-trap-react": "^12.0.1",
     "jszip": "^3.10.1",
