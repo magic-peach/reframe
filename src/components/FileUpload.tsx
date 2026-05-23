@@ -127,7 +127,7 @@ export default function FileUpload({
 
   // ── File info (shown after upload) ───────────────────
   const FileInfo = () => (
-    <div className="px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow)]">
+    <div className="px-4 py-3 bg-film-50 border border-film-200 rounded-lg">
       <div className="flex flex-col lg:flex-row lg:items-center gap-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className="hidden lg:flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--surface)] border border-[var(--border)] shrink-0">
@@ -136,18 +136,18 @@ export default function FileUpload({
           <Film size={18} className="lg:hidden text-film-600 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-0.5">
-              <p className="text-sm font-semibold text-[var(--text)] truncate max-w-[320px] xl:max-w-[420px]">
+              <p className="text-sm font-semibold text-film-700 truncate max-w-[320px] xl:max-w-[420px]">
                 {currentFile?.name}
               </p>
               {currentFile && (
-                <span className="px-2 py-0.5 bg-[var(--accent-muted)] text-[var(--text)] font-bold tracking-wider rounded text-[10px] uppercase shrink-0">
+                <span className="px-2 py-0.5 bg-gray-700 text-white font-bold tracking-wider rounded text-[10px] uppercase shrink-0">
                   {currentFile.name.includes(".")
                     ? currentFile.name.split(".").pop()
                     : "VIDEO"}
                 </span>
               )}
             </div>
-            <div className="text-xs text-[var(--muted)] mt-1 space-y-0.5">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
               <p>{formatBytes(currentFile?.size ?? 0)}</p>
               <p>
                 {duration > 0
@@ -168,12 +168,12 @@ export default function FileUpload({
         </button>
       </div>
 
-      <p className="text-xs text-[var(--muted)] mt-3 break-words">
+      <p className="text-xs text-gray-500 mt-3 break-words">
         Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
       </p>
 
       {fileError && (
-        <p className="text-xs text-[var(--error)] mt-2 font-medium">{fileError}</p>
+        <p className="text-xs text-red-500 mt-2 font-medium">{fileError}</p>
       )}
 
       <input
@@ -296,12 +296,12 @@ export default function FileUpload({
       {/* ── Normal upload UI ── */}
       <div className="space-y-2">
         {error && (
-          <p role="alert" className="text-sm text-[var(--error)]">
+          <p role="alert" className="text-sm text-red-500">
             {error}
           </p>
         )}
         {warning && (
-          <p role="alert" className="text-sm text-[var(--warning)]">
+          <p role="alert" className="text-sm text-yellow-500">
             {warning}
           </p>
         )}

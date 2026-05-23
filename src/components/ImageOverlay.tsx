@@ -118,7 +118,7 @@ export default function ImageOverlayPanel({
                 type="button"
                 onClick={() => setOverlayFile(null)}
                 aria-label="Remove overlay image"
-                className="w-6 h-6 rounded flex items-center justify-center bg-[var(--error-bg)] hover:bg-[var(--error-hover)] text-[var(--error)] border border-[var(--error-border)] transition shrink-0"
+                className="w-6 h-6 rounded flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition shrink-0"
               >
                 <Trash2 size={11} aria-hidden="true" />
               </button>

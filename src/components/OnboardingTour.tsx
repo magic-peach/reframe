@@ -232,7 +232,7 @@ export default function OnboardingTour() {
   const [visible, setVisible] = useState(false);
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const isFirstRender = useRef(true);
+  const isFirstRender = useRef(true);  
   const currentStep = TOUR_STEPS[stepIndex];
 
   const dismiss = useCallback(() => {
@@ -269,16 +269,41 @@ export default function OnboardingTour() {
 
   // Initialise on mount
   useEffect(() => {
-    if (localStorage.getItem(TOUR_KEY)) return;
-    const t = setTimeout(async () => {
-      const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
-      if (rect) {
-        setTargetRect(rect);
-        setVisible(true);
+  if (localStorage.getItem(TOUR_KEY)) return;
+  const t = setTimeout(async () => {
+    const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
+    if (rect) {
+      setTargetRect(rect);
+      setVisible(true);
+    }
+  }, 600);
+  return () => clearTimeout(t);
+}, [measureTarget]);
+
+// Measure target whenever step changes (skip on first render — init effect handles that)
+useEffect(() => {
+  if (!visible) return;
+  if (isFirstRender.current) {
+    isFirstRender.current = false;
+    return;
+  }
+  if (!currentStep) {
+    dismiss();
+    return;
+  }
+  measureTarget(currentStep.targetId).then((rect) => {
+    if (rect) {
+      setTargetRect(rect);
+      setTimeout(() => tooltipRef.current?.focus(), 50);
+    } else {
+      if (stepIndex < TOUR_STEPS.length - 1) {
+        setStepIndex((i) => i + 1);
+      } else {
+        dismiss();
       }
-    }, 600);
-    return () => clearTimeout(t);
-  }, [measureTarget]);
+    }
+  });
+  }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
 
   // Measure target whenever step changes (skip on first render — init effect handles that)
   useEffect(() => {

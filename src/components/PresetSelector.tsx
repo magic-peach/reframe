@@ -141,7 +141,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
   return (
     <div className="space-y-3">
       {/* Quick-action row */}
-      <div className="grid grid-cols-5 gap-1.5">
+      <div className="grid grid-cols-3 md:grid-cols-5 gap-1.5">
         {QUICK_ACTIONS.map(({ preset, label, platform, icon }) => {
           const isActive = recipe.preset === preset;
           return (

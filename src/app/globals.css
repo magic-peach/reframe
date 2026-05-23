@@ -5,8 +5,8 @@
 /* ── Light mode tokens ── */
 :root {
   --bg: #ffffff;
-  --surface: #f1f5f9;
-  --border: #cbd5e1;
+  --surface: #f8fafc;
+  --border: #e2e8f0;
   --text: #0f172a;
   --muted: #64748b;
   --accent: #3b82f6;
@@ -140,7 +140,7 @@ textarea:focus {
 }
 
 :focus-visible {
-  outline: 0;
-  box-shadow: 0 0 0 3px var(--accent-muted);
-  border-radius: var(--radius);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

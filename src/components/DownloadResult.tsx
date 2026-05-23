@@ -44,10 +44,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
   useEffect(() => {
     if (soundOnCompletion) {
       const audio = new Audio("/sounds/export-complete.mp3");
-      audio.play().catch((error) => {
-        console.error("Failed to play completion sound:", error);
-        setSoundError(true);
-      });
+      audio.play().catch((err) => console.error(err));
     }
   }, [soundOnCompletion]);
   const handleReset = () => {

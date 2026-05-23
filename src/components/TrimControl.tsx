@@ -257,9 +257,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             aria-label="Trim start time in seconds"
             aria-invalid={invalidStart}
             aria-describedby={invalidStart ? "trim-start-error" : undefined}
-            className={`${inputClass} ${
-              invalidStart ? "border-[var(--error)]" : "border-[var(--border)]"
-            }`}
+            className={`${inputClass} ${invalidStart ? "border-red-500 focus:ring-red-400" : "border-[var(--border)]"}`}
             placeholder="0"
           />
           {invalidStart && (
@@ -294,9 +292,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             aria-label="Trim end time in seconds"
             aria-invalid={invalidEnd}
             aria-describedby={invalidEnd ? "trim-end-error" : undefined}
-            className={`${inputClass} ${
-              invalidEnd ? "border-[var(--error)]" : "border-[var(--border)]"
-            }`}
+            className={`${inputClass} ${invalidEnd ? "border-red-500 focus:ring-red-400" : "border-[var(--border)]"}`}
             placeholder={duration > 0 ? `${duration.toFixed(1)}` : "full length"}
           />
           {invalidEnd && (
@@ -319,7 +315,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
       )}
       {recipe.trimEnd !== null &&
         recipe.trimEnd - recipe.trimStart < MIN_CLIP_DURATION && (
-          <p className="text-[10px] text-[var(--error)] font-heading">
+          <p className="text-[10px] text-red-500 font-heading">
             Clip must be at least 0.1 seconds long.
           </p>
       )}

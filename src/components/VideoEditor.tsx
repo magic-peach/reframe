@@ -70,6 +70,17 @@ function AccordionSection({
   onToggle: () => void;
   delay?: number;
 }) {
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+    if (isOpen) {
+      contentRef.current.style.maxHeight = `${contentRef.current.scrollHeight}px`;
+    } else {
+      contentRef.current.style.maxHeight = `0px`;
+    }
+  }, [isOpen]);
+
   return (
     <div className="animate-fade-in" style={{ animationDelay: `${delay}ms` }}>
       <button
@@ -97,10 +108,9 @@ function AccordionSection({
 
       <div
         id={`${id}-panel`}
-        className={cn(
-          "transition-all duration-200",
-          isOpen ? "block" : "hidden"
-        )}
+        ref={contentRef}
+        className="overflow-hidden transition-all duration-200"
+        style={{ maxHeight: isOpen ? undefined : 0 }}
       >
         <div className="px-3 pt-3 pb-0">{children}</div>
       </div>
@@ -122,37 +132,37 @@ function KeyboardShortcutsPanel() {
   const [open, setOpen] = useState(false);
 
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
-  {
-    keys: [
-      <Kbd key="ctrl">Ctrl</Kbd>,
-      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="shift">Shift</Kbd>,
-      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="e">E</Kbd>
-    ],
-    label: "Export video",
-  },
-  {
-    keys: [<Kbd key="m">M</Kbd>],
-    label: "Toggle audio mute",
-  },
-  {
-    keys: [<Kbd key="r">R</Kbd>],
-    label: "Reset all settings",
-  },
-  {
-    keys: [<Kbd key="esc">Esc</Kbd>],
-    label: "Cancel export",
-  },
-  {
-    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
-    label: "Switch preset by index",
-  },
-  {
-    keys: [<Kbd key="question">?</Kbd>],
-    label: "Toggle this panel",
-  },
-];
+    {
+      keys: [
+        <Kbd key="ctrl">Ctrl</Kbd>,
+        <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
+        <Kbd key="shift">Shift</Kbd>,
+        <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
+        <Kbd key="e">E</Kbd>
+      ],
+      label: "Export video",
+    },
+    {
+      keys: [<Kbd key="m">M</Kbd>],
+      label: "Toggle audio mute",
+    },
+    {
+      keys: [<Kbd key="r">R</Kbd>],
+      label: "Reset all settings",
+    },
+    {
+      keys: [<Kbd key="esc">Esc</Kbd>],
+      label: "Cancel export",
+    },
+    {
+      keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
+      label: "Switch preset by index",
+    },
+    {
+      keys: [<Kbd key="question">?</Kbd>],
+      label: "Toggle this panel",
+    },
+  ];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
@@ -220,20 +230,19 @@ export default function VideoEditor() {
     handleExport,
     status,
     cancelExport,
-    onToggleShortcutsModal: () => {},
+    onToggleShortcutsModal: () => { },
   });
 
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
-  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
     trim: false,
     rotation: false,
-    text: false,
     audio: false,
     export: false,
   });
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
 
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -296,8 +305,8 @@ export default function VideoEditor() {
     const qualityLabel = recipe.quality <= 21
       ? "High"
       : recipe.quality <= 25
-      ? "Balanced"
-      : "Small file";
+        ? "Balanced"
+        : "Small file";
 
     return `Exporting to ${width}×${height} ${recipe.format.toUpperCase()} • ${framingLabel} • ${speedLabel} • Quality: ${qualityLabel}`;
   }, [recipe]);
@@ -325,47 +334,25 @@ export default function VideoEditor() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
-        <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
-        <div
-          className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
-          style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
-          aria-label="Reframe — video editor"
-        >
-        <h1
-          className="font-display leading-none tracking-widest2 text-[var(--text)] break-words text-center transition-all"
-          style={{ fontSize: 'clamp(2rem,10vw,4rem)', viewTransitionName: 'reframe-text' }}
-        >
-          REFRAME
-        </h1>
-        <p
-          className="font-heading text-[var(--muted)] uppercase tracking-widest text-center"
-          style={{
-            fontSize: 'clamp(0.7rem,2vw,0.875rem)',
-            marginTop: 'clamp(0.25rem,1vw,0.5rem)',
-          }}
-        >
-          Your video, any format
-        </p>
-    <div
-      className="flex md:hidden items-center justify-center gap-2 font-heading font-semibold uppercase tracking-widest text-[var(--muted)] border-t border-[var(--border)]"
-      style={{
-        fontSize: 'clamp(0.6rem,1.5vw,0.75rem)',
-        marginTop: 'clamp(0.5rem,2vw,0.75rem)',
-        paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
-      }}
-    >
-      <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-      No login. No ads. 100% private.
-    </div>
-  </div>  
-  <div
-    className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
-    style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
-  >
-    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-    No login. No ads. 100% private - your video never leaves your device.
-  </div>
-    </header>
+
+        <header className="mb-10 flex max-lg:flex-col items-start lg:items-end justify-between animate-fade-in">
+          <div
+            className="inline-block px-5 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600"
+            aria-label="Reframe — video editor"
+          >
+            <h1 className="font-display text-4xl md:text-6xl leading-none tracking-widest2 text-[var(--text)]">
+              REFRAME
+            </h1>
+            <p className="font-heading text-xs md:text-sm text-[var(--muted)] mt-1 uppercase tracking-widest">
+              Your video, any format
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1 py-4">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse " />
+            No login. No ads. 100% private - your video never leaves your device.
+          </div>
+        </header>
+
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
@@ -441,22 +428,6 @@ export default function VideoEditor() {
                     delay={100}
                   >
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
-                  </AccordionSection>
-
-                  <AccordionSection
-                    id="text"
-                    icon={<Type size={12} />}
-                    title="Text Overlay"
-                    isOpen={openSections.text}
-                    onToggle={() => toggleSection("text")}
-                    delay={110}
-                  >
-                    <TextControls
-                      recipe={recipe}
-                      onChange={updateRecipe}
-                      selectedTextId={selectedTextId}
-                      onSelectText={setSelectedTextId}
-                    />
                   </AccordionSection>
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
@@ -627,11 +598,11 @@ export default function VideoEditor() {
           </div>
 
           <div className={cn(
-            "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
+            "space-y-5 transition-opacity duration-300",
             (isProcessing || !file) && "pointer-events-none opacity-50"
           )}>
             {!file && (
-              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 animate-fade-in">
+              <div className="bg-film-50 dark:bg-film-900/10 border border-film-100 dark:border-film-900/20 rounded-xl p-4 animate-fade-in">
                 <p className="text-[10px] font-heading font-bold text-film-600 uppercase tracking-widest">
                   Getting Started
                 </p>
@@ -650,19 +621,19 @@ export default function VideoEditor() {
                 delay={50}
               >
                 {recommendedPreset && (
-                  <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
+                  <div className="mb-4 rounded-xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
                     <p>
                       We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()} ({recommendedPreset.label.replace(/\s/g, "")})
                     </p>
                   </div>
                 )}
-                <div className="space-y-3">
-                  <PresetSelector recipe={recipe} onChange={updateRecipe} />
+                <PresetSelector recipe={recipe} onChange={updateRecipe} />
+                <div className="mt-3">
                   <FramingControl recipe={recipe} onChange={updateRecipe} />
                 </div>
               </AccordionSection>
 
-              <div className="pt-2 flex justify-center items-center gap-6">
+              <div className="pt-2 flex justify-between items-center">
                 <button
                   type="button"
                   onClick={handleCopyLink}
@@ -693,10 +664,10 @@ export default function VideoEditor() {
               id="export-button"
               type="button"
               onClick={handleExport}
-                disabled={!file || isProcessing}
-                aria-label='Export video'
-                aria-disabled={!file || isProcessing ? "true" : undefined}
-                title={!file ? "Upload a video to enable export" : undefined}
+              disabled={!file || isProcessing}
+              aria-label='Export video'
+              aria-disabled={!file || isProcessing ? "true" : undefined}
+              title={!file ? "Upload a video to enable export" : undefined}
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
@@ -705,7 +676,7 @@ export default function VideoEditor() {
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >
-             <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
+              <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
 

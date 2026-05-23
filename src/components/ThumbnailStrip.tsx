@@ -147,8 +147,10 @@ export default function ThumbnailStrip({
     if (videoSrc && duration > 0) {
       generateThumbnails();
     }
+
+
     return () => {
-      cancelThumbnailRun();
+      lastRunIdRef.current = lastRunIdRef.current + 1;
       revokeAllObjectUrls();
     };
   }, [cancelThumbnailRun, generateThumbnails, revokeAllObjectUrls, videoSrc, duration]);
@@ -214,9 +216,8 @@ export default function ThumbnailStrip({
               return (
                 <button
                   key={thumb.time}
-                  className={`thumb-btn ${isActive ? "active" : ""} ${
-                    !inTrimRange ? "out-of-range" : ""
-                  } ${isHovered ? "hovered" : ""}`}
+                  className={`thumb-btn ${isActive ? "active" : ""} ${!inTrimRange ? "out-of-range" : ""
+                    } ${isHovered ? "hovered" : ""}`}
                   onClick={() => onSeek(thumb.time)}
                   onMouseEnter={() => setHoveredIndex(i)}
                   onMouseLeave={() => setHoveredIndex(null)}

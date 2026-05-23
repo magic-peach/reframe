@@ -137,35 +137,21 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   }
 
   if (recipe.speed !== 1) {
-    const pts = (1 / recipe.speed).toFixed(4);
-    filters.push(`setpts=${pts}*PTS`);
+  const pts = (1 / recipe.speed).toFixed(4);
+  filters.push(`setpts=${pts}*PTS`);
   }
 
   if (recipe.denoise) {
     filters.push("hqdn3d=1.5:1.5:6:6");
   }
 
-  const needsEq =
-    recipe.brightness !== 0 ||
-    recipe.contrast !== 1 ||
-    recipe.saturation !== 1;
-
-  if (needsEq) {
-    filters.push(
-      `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
-    );
-  }
-
-  // Add text overlays
-  const textOverlays = recipe.textOverlays || [];
-  textOverlays.forEach((overlay) => {
-    filters.push(buildTextFilter(overlay, targetW, targetH));
-  });
-
+  filters.push(
+    `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+  );
   return filters.join(",");
 }
 
-export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+ export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
   if (speed <= 0) return "";
   const filters: string[] = [];
 
@@ -378,23 +364,6 @@ export async function exportVideo(
     onProgress(Math.min(99, Math.round(progress * 100)));
   };
 
-  // Read actual video duration via HTMLVideoElement so we can correctly
-  // compute output duration when trimEnd is null (no trim set by user).
-  // Falls back to trimEnd if metadata loading fails.
-  const videoDuration = await new Promise<number>((resolve) => {
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      URL.revokeObjectURL(video.src);
-      resolve(video.duration);
-    };
-    video.onerror = () => {
-      // Safe fallback: use trimEnd if available, otherwise 0 which
-      // will produce no -t argument and leave duration uncapped.
-      resolve(recipe.trimEnd ?? 0);
-    };
-    video.src = URL.createObjectURL(file);
-  });
 
   try {
     await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });

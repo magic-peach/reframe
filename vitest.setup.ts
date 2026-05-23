@@ -1,5 +1,6 @@
 // Vitest setup: polyfills and global mocks
 import '@testing-library/jest-dom/vitest'
+<<<<<<< HEAD
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -14,3 +15,5 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: () => false,
   }),
 })
+=======
+>>>>>>> c0e5715 (feat: added mobile responsiveness to upload page)
