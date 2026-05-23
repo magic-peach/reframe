@@ -1,12 +1,12 @@
 import { useEffect } from "react";
-import { EditRecipe, DEFAULT_RECIPE, ExportStatus } from "@/lib/types";
+import { EditRecipe, ExportStatus } from "@/lib/types";
 import { PRESETS } from "@/lib/presets";
 
 interface UseKeyboardShortcutsProps {
   file: File | null;
   recipe: EditRecipe;
   resetSettings: () => void;
-  updateRecipe: (recipe: Partial<EditRecipe>) => void;  
+  updateRecipe: (recipe: Partial<EditRecipe>) => void;
   handleExport: () => void;
   status: ExportStatus;
   cancelExport: () => void;
@@ -40,7 +40,7 @@ export function useKeyboardShortcuts({
         e.stopPropagation();   // ← add this
         if (file && status === "idle") handleExport();
         return;
-    }
+      }
 
       if (!file) return;
 

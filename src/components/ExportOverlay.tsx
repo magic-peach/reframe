@@ -68,7 +68,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 dark:bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--bg)] backdrop-blur-sm"
       >
         <div
           className="text-center space-y-6 max-w-xs px-6 animate-fade-in"

@@ -184,6 +184,57 @@ export default function ExportSettings({
           </span>
         </div>
       </div>
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label
+            htmlFor="denoise-toggle"
+            className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
+          >
+            <SlidersHorizontal size={10} />
+            Reduce noise
+
+            <span
+              className="cursor-help"
+              title="Reduces video noise. May slow down export slightly."
+            >
+              <InfoIcon size={14} />
+            </span>
+          </label>
+
+          <span className="flex text-sm font-heading font-bold text-film-600">
+            <input
+              id="denoise-toggle"
+              type="checkbox"
+              checked={recipe.denoise}
+              onChange={(e) =>
+                onChange({
+                  denoise: e.target.checked,
+                })
+              }
+              aria-label="Enable noise reduction"
+              aria-checked={recipe.denoise}
+              className="w-full accent-film-600 cursor-pointer"
+            />
+          </span>
+        </div>
+
+        <p className="text-xs text-[var(--muted)] mb-1">
+          Reduce low-light video grain
+        </p>
+
+        <div className="flex justify-end">
+          <span
+            className={cn(
+              "text-xs",
+              recipe.denoise
+                ? "text-red-700 font-medium"
+                : "text-[var(--muted)]"
+            )}
+          >
+            May slightly increase export time.
+          </span>
+        </div>
+      </div>
     </>
   );
 }

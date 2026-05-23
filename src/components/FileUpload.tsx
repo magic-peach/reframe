@@ -22,6 +22,7 @@ export default function FileUpload({
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [pageDragging, setPageDragging] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
 
@@ -37,12 +38,55 @@ export default function FileUpload({
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  const handleFile = (file: File) => {
+  // ── Page-level drag overlay ───────────────────────────
+  // Uses a counter so nested dragenter/dragleave don't flicker
+  useEffect(() => {
+    const onDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current += 1;
+      if (dragCounterRef.current === 1) setPageDragging(true);
+    };
+
+    const onDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current -= 1;
+      if (dragCounterRef.current === 0) setPageDragging(false);
+    };
+
+    const onDragOver = (e: DragEvent) => {
+      e.preventDefault(); // required to allow drop
+    };
+
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current = 0;
+      setPageDragging(false);
+
+      const file = e.dataTransfer?.files?.[0];
+      if (file) handleFile(file);
+    };
+
+    document.addEventListener("dragenter", onDragEnter);
+    document.addEventListener("dragleave", onDragLeave);
+    document.addEventListener("dragover", onDragOver);
+    document.addEventListener("drop", onDrop);
+
+    return () => {
+      document.removeEventListener("dragenter", onDragEnter);
+      document.removeEventListener("dragleave", onDragLeave);
+      document.removeEventListener("dragover", onDragOver);
+      document.removeEventListener("drop", onDrop);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── File validation ───────────────────────────────────
+  const handleFile = useCallback((file: File) => {
     setError("");
     setWarning("");
 
     if (!file.type.startsWith("video/")) {
-      setError("Only video files are allowed.");
+      setError("Please drop a valid video file (MP4, MOV, AVI, WebM, etc.)");
       return;
     }
 
@@ -64,14 +108,12 @@ export default function FileUpload({
         Math.round(file.size / (100 * 1024 * 1024))
       );
       setWarning(
-        `Large file detected (${formatBytes(
-          file.size
-        )}). Processing may take ~${estimatedMinutes} minutes and affect performance on low-memory devices.`
+        `Large file detected (${formatBytes(file.size)}). Processing may take ~${estimatedMinutes} minutes.`
       );
     }
 
     onFileSelect(file);
-  };
+  }, [onFileSelect]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,7 +125,6 @@ export default function FileUpload({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-
     const file = e.dataTransfer.files?.[0];
     if (file) handleFile(file);
   };
@@ -150,8 +191,8 @@ export default function FileUpload({
     <div
       id="upload-zone"
       role="button"
-      aria-label="Upload video — drag and drop or click to browse"
       tabIndex={0}
+      aria-label="Video upload area. Drag and drop a video file or press Enter to browse."
       onDragOver={(e) => {
         e.preventDefault();
         setDragging(true);
@@ -175,6 +216,7 @@ export default function FileUpload({
       {dragging && (
         <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-film-500/20 to-transparent pointer-events-none" />
       )}
+
       <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-200">
         <LottiePlayer animationData={uploadAnim} loop autoplay />
       </div>
@@ -196,7 +238,7 @@ export default function FileUpload({
         MP4 / MOV / AVI / WebM
       </div>
 
-      <p className="text-xs text-[var(--muted)] text-center">
+      <p className="text-xs text-gray-500 text-center">
         Supports: MP4, MOV, AVI, MKV, WebM, and most video formats up to 2GB
       </p>
 
@@ -211,10 +253,37 @@ export default function FileUpload({
   );
 
   return (
-    <div className="space-y-2">
-      {error && <p className="text-sm text-red-500">{error}</p>}
+    <>
+      {/* ── Page-level drag overlay ── */}
+      {pageDragging && (
+        <div
+          aria-live="polite"
+          aria-label="Drop your video file anywhere on the page"
+          className={cn(
+            "fixed inset-0 z-50 flex flex-col items-center justify-center gap-4",
+            "bg-black/60 backdrop-blur-sm",
+            "border-4 border-dashed border-film-500",
+            "transition-all duration-200 pointer-events-none"
+          )}
+        >
+          {/* Animated ring */}
+          <div className="relative flex items-center justify-center">
+            <div className="absolute w-32 h-32 rounded-full border-4 border-film-500/40 animate-ping" />
+            <div className="w-24 h-24 rounded-full bg-film-500/10 border-2 border-film-500 flex items-center justify-center">
+              <Film size={40} className="text-film-400" />
+            </div>
+          </div>
 
-      {warning && <p className="text-sm text-yellow-500">{warning}</p>}
+          <div className="text-center">
+            <p className="text-2xl font-bold text-white">
+              Drop your video anywhere
+            </p>
+            <p className="text-film-300 mt-1 text-sm">
+              Release to start uploading
+            </p>
+          </div>
+        </div>
+      )}
 
       {currentFile ? <FileInfo /> : <DropZone />}
 
