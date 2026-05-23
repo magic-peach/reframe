@@ -28,6 +28,7 @@ export default function ScrollToTop() {
 
   return (
     <button
+      type="button"
       onClick={scrollToTop}
       aria-label="Scroll to top"
       className="
