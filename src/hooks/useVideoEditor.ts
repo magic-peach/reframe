@@ -379,43 +379,44 @@ export function useVideoEditor() {
           return;
         }
 
-    try {
-      const { width, height, duration: dur } = await extractMetadata(selectedFile);
+        const { width, height, duration: dur } = await extractMetadata(selectedFile);
 
-      // Layer 5: Resolution check
-      const dimensionCheck = validateDimensions(width, height);
-      if (dimensionCheck === "blocked") {
-        const suggested = getDownscaledDimensions(width, height);
-        setError(
-          `Layer 5 Validation Failed: Resolution too high (${width}×${height}). ` +
-          `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
-        );
+        // Layer 5: Resolution check
+        const dimensionCheck = validateDimensions(width, height);
+        if (dimensionCheck === "blocked") {
+          const suggested = getDownscaledDimensions(width, height);
+          setError(
+            `Layer 5 Validation Failed: Resolution too high (${width}×${height}). ` +
+            `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
+          );
+          setStatus("error");
+          return;
+        }
+
+        setDuration(dur);
+        setVideoMetadata({ width, height, duration: dur });
+        setFile(selectedFile);
+
+        if (dimensionCheck === "warning") {
+          console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
+        }
+        setRecipe((prev) => {
+          const suggestedPreset = suggestPreset(width, height);
+          const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
+
+          return {
+            ...prev,
+            trimStart: 0,
+            trimEnd: null,
+            ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
+          };
+        });
+      } catch (err) {
+        setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
         setStatus("error");
-        return;
       }
+    })();
 
-      setDuration(dur);
-      setVideoMetadata({ width, height, duration: dur });
-      setFile(selectedFile);
-
-      if (dimensionCheck === "warning") {
-        console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
-      }
-      setRecipe((prev) => {
-        const suggestedPreset = suggestPreset(width, height);
-        const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
-
-        return {
-          ...prev,
-          trimStart: 0,
-          trimEnd: null,
-          ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
-        };
-      });
-    } catch (err) {
-      setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-      setStatus("error");
-    }
   }, []);
 
   const handleExport = useCallback(async () => {

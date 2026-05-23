@@ -144,7 +144,6 @@ export default function ThumbnailStrip({
       generateThumbnails();
     }
     return () => {
-      lastRunIdRef.current++;
       revokeAllObjectUrls();
     };
   }, [generateThumbnails, revokeAllObjectUrls, videoSrc, duration]);
