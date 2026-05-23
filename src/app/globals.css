@@ -4,12 +4,12 @@
 
 /* ── Light mode tokens ── */
 :root {
-  --bg: #F7F4F0;
-  --surface: #ffffff;
-  --border: #E8E3DC;
-  --text: #181412;
-  --muted: #5C5550;
-  --accent: #2563eb;
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #3b82f6;
   --accent-hover: #1d4ed8;
   --film-600: #e63946;
   --film-400: #ff6b6b;

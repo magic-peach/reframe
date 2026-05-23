@@ -164,15 +164,15 @@ function Tooltip({ step, stepIndex, totalSteps, rect, onNext, onSkip, tooltipRef
       aria-modal="true"
       aria-label={`Onboarding step ${stepIndex + 1} of ${totalSteps}: ${step.title}`}
       className="fixed z-[9999] w-80 rounded-xl shadow-2xl border
-        bg-white dark:bg-zinc-900
-        border-zinc-200 dark:border-zinc-700
-        text-zinc-900 dark:text-zinc-100
+        bg-[var(--surface)]
+        border-[var(--border)]
+        text-[var(--text)]
         transition-all duration-200"
       style={{ ...style }}
       tabIndex={-1}
     >
       {/* Progress bar */}
-      <div className="h-1 rounded-t-xl overflow-hidden bg-zinc-200 dark:bg-zinc-700">
+      <div className="h-1 rounded-t-xl overflow-hidden bg-[var(--border)]">
         <div
           className="h-full bg-indigo-500 transition-all duration-300"
           style={{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }}
@@ -186,14 +186,14 @@ function Tooltip({ step, stepIndex, totalSteps, rect, onNext, onSkip, tooltipRef
         </p>
 
         <h2 className="text-base font-semibold mb-1">{step.title}</h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-4">
+        <p className="text-sm text-[var(--muted)] leading-relaxed mb-4">
           {step.description}
         </p>
 
         <div className="flex items-center justify-between gap-3">
           <button
             onClick={onSkip}
-            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline underline-offset-2"
+            className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors underline underline-offset-2"
           >
             Skip tour
           </button>
