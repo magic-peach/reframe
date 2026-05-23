@@ -39,7 +39,7 @@ export class FFmpegLoadError extends Error {
 }
 
 export async function loadFFmpeg(
-  signal?: AbortSignal, 
+  signal?: AbortSignal,
   onProgress?: (percent: number) => void
 ): Promise<FFmpeg> {
   if (ffmpegInstance?.loaded) {
@@ -106,7 +106,7 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     filters.push("setpts=PTS-STARTPTS");
   }
 
- 
+
   if (recipe.stabilization) {
     filters.push("deshake");
   }
@@ -132,9 +132,14 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   }
 
   if (recipe.speed !== 1) {
-    const pts = (1 / recipe.speed).toFixed(4);
-    filters.push(`setpts=${pts}*PTS`);
+  const pts = (1 / recipe.speed).toFixed(4);
+  filters.push(`setpts=${pts}*PTS`);
   }
+
+  if (recipe.denoise) {
+    filters.push("hqdn3d=1.5:1.5:6:6");
+  }
+
   filters.push(
     `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
   );
@@ -187,7 +192,7 @@ function buildArguments(
 ): string[] {
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
@@ -338,7 +343,7 @@ export async function exportVideo(
     onProgress(Math.min(99, Math.round(progress * 100)));
   };
 
-  
+
   try {
     await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
