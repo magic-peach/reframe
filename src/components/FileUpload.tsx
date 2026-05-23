@@ -176,15 +176,15 @@ const FileInfo = () => (
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="text-xs font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide"
-      >
-        Change
-        <span className="text-[var(--muted)] ml-1">(Ctrl+O)</span>
-      </button>
-    </div>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="text-xs font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide"
+        >
+          Change
+          <span className="text-[var(--muted)] ml-1">(Ctrl+O)</span>
+        </button>
+      </div>
 
     <p className="text-xs text-[var(--muted)] mt-3 break-words">
   Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
@@ -257,7 +257,7 @@ const FileInfo = () => (
         MP4 / MOV / AVI / WebM
       </div>
 
-      <p className="text-xs text-[var(--muted)] text-center">
+      <p className="text-xs text-gray-500 text-center">
         Supports: MP4, MOV, AVI, MKV, WebM, and most video formats up to 2GB
       </p>
 
