@@ -1,5 +1,5 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile } from "@ffmpeg/util";
+import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { simd } from "wasm-feature-detect";
@@ -57,10 +57,20 @@ export async function loadFFmpeg(
   try {
     ffmpeg.on("progress", handleProgress);
 
-    // Secure engine load using verified runtime checksum hashes from main
+    const isIsolated = typeof self !== "undefined" && self.crossOriginIsolated;
+    const baseURL = isIsolated
+      ? "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm"
+      : "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+
     await ffmpeg.load({
-      coreURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+      ...(isIsolated && {
+        workerURL: await toBlobURL(
+          `${baseURL}/ffmpeg-core.worker.js`,
+          "text/javascript"
+        ),
+      }),
     }, { signal });
 
     onProgress?.(100);
