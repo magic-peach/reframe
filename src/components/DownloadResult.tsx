@@ -5,6 +5,7 @@ import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 import { Download, RotateCcw, Share2, AlertCircle, Volume2, VolumeX } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
+import { NativeShareButton } from "./NativeShareButton";
 import successAnim from "@/lib/lottie/success.json";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +32,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
   useEffect(() => {
     if (soundOnCompletion) {
       const audio = new Audio("/sounds/export-complete.mp3");
-      audio.play().catch(console.error);
+      audio.play().catch((err) => console.error(err));
     }
   }, [soundOnCompletion]);
   const handleReset = () => {
@@ -122,9 +123,14 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
             if (!isValid) e.preventDefault();
           }}
         >
-          <Download size={15} aria-hidden="true"  />
+          <Download size={15} aria-hidden="true" />
           Download {result.format.toUpperCase()}
         </a>
+        <NativeShareButton 
+          file={result.blob}
+          fileName={filename}
+          className="flex-1 min-w-[10rem] py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg"
+        />
         <a
           href={result.blobUrl}
           target="_blank"
@@ -141,7 +147,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
           onClick={handleReset}
           className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
         >
-          <RotateCcw size={14} aria-hidden="true"  />
+          <RotateCcw size={14} aria-hidden="true" />
           New
         </button>
         <a

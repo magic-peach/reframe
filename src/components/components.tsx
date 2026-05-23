@@ -8,25 +8,24 @@ interface CardProps {
 }
 
 /**
- * Reusable Card component demonstrating dark: variant usage.
- * All interactive and structural colors are dual-themed.
+ * Reusable Card component.
  */
 export function Card({ title, description, children, className = "" }: CardProps) {
   return (
     <div
       className={`
         rounded-xl border p-6
-        bg-white dark:bg-gray-800
-        border-gray-200 dark:border-gray-700
-        shadow-sm dark:shadow-gray-900/40
+        bg-[var(--surface)]
+        border-[var(--border)]
+        shadow-sm
         ${className}
       `}
     >
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+      <h2 className="text-xl font-semibold text-[var(--text)]">
         {title}
       </h2>
       {description && (
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-sm text-[var(--muted)]">
           {description}
         </p>
       )}
@@ -45,21 +44,22 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button({ variant = "primary", className = "", children, ...props }: ButtonProps) {
   const variants = {
     primary: `
-      bg-blue-600 dark:bg-blue-500
+      bg-[var(--accent)]
       text-white
-      hover:bg-blue-700 dark:hover:bg-blue-600
+      hover:opacity-90
       focus:ring-blue-500
     `,
     secondary: `
-      bg-gray-100 dark:bg-gray-700
-      text-gray-800 dark:text-gray-100
-      hover:bg-gray-200 dark:hover:bg-gray-600
+      bg-[var(--surface)]
+      text-[var(--text)]
+      border border-[var(--border)]
+      hover:opacity-90
       focus:ring-gray-400
     `,
     ghost: `
       bg-transparent
-      text-gray-700 dark:text-gray-300
-      hover:bg-gray-100 dark:hover:bg-gray-800
+      text-[var(--text)]
+      hover:bg-[var(--surface)]
       focus:ring-gray-400
     `,
   };
@@ -70,7 +70,6 @@ export function Button({ variant = "primary", className = "", children, ...props
         inline-flex items-center justify-center gap-2
         rounded-lg px-4 py-2 text-sm font-medium
         focus:outline-none focus:ring-2 focus:ring-offset-2
-        dark:focus:ring-offset-gray-900
         transition-colors duration-200
         disabled:opacity-50 disabled:cursor-not-allowed
         ${variants[variant]}
@@ -91,11 +90,11 @@ export function Input({ className = "", ...props }: React.InputHTMLAttributes<HT
     <input
       className={`
         w-full rounded-lg px-3 py-2 text-sm
-        bg-white dark:bg-gray-900
-        text-gray-900 dark:text-gray-100
-        border border-gray-300 dark:border-gray-600
-        placeholder-gray-400 dark:placeholder-gray-500
-        focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+        bg-[var(--bg)]
+        text-[var(--text)]
+        border border-[var(--border)]
+        placeholder-[var(--muted)]
+        focus:outline-none focus:ring-2 focus:ring-blue-500
         focus:border-transparent
         transition-colors duration-200
         ${className}
@@ -115,10 +114,10 @@ interface BadgeProps {
 
 export function Badge({ label, variant = "default" }: BadgeProps) {
   const variants = {
-    default:  "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300",
-    success:  "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400",
-    warning:  "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400",
-    error:    "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400",
+    default:  "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)]",
+    success:  "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)]",
+    warning:  "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)]",
+    error:    "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)]",
   };
 
   return (
