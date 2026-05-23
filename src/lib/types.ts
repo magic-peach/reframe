@@ -19,8 +19,8 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
-  version: number;
   sharpness: number;
+  version: number;
 }
 
 export type OverlayPosition =

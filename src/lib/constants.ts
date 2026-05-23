@@ -21,6 +21,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   stabilization: false,
   denoise: false,
   soundOnCompletion: false,
+  sharpness: 0,
   normalizeAudio: false,
   version: RECIPE_VERSION,
   sharpness: 0,
