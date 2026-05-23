@@ -142,7 +142,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             htmlFor="trim-start"
             className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
           >
-            Start (MM:SS)
+            Start (s)
           </label>
 
           <input
@@ -178,7 +178,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             htmlFor="trim-end"
             className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
           >
-            End (MM:SS)
+            End (s)
           </label>
 
           <input
