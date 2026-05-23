@@ -18,5 +18,5 @@ export function suggestPreset(width: number, height: number): SuggestedPresetId 
     return "square-1-1";
   }
 
-  return "vertical-9-16";
+  return width >= height ? "landscape-16-9" : "vertical-9-16";
 }

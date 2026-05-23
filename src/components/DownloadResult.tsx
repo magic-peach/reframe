@@ -6,6 +6,7 @@ import { formatBytes } from "@/lib/utils";
 import { Download, RotateCcw, Share2, AlertCircle, Archive, Volume2, VolumeX } from "lucide-react";
 import JSZip from "jszip";
 import LottiePlayer from "./LottiePlayer";
+import { NativeShareButton } from "./NativeShareButton";
 import successAnim from "@/lib/lottie/success.json";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +41,7 @@ export default function DownloadResult({
   useEffect(() => {
     if (soundOnCompletion && (result || isBatch)) {
       const audio = new Audio("/sounds/export-complete.mp3");
-      audio.play().catch(console.error);
+      audio.play().catch((err) => console.error(err));
     }
   }, [soundOnCompletion, result, isBatch]);
 
@@ -227,6 +228,11 @@ export default function DownloadResult({
           <Download size={15} aria-hidden="true" />
           Download {result.format.toUpperCase()}
         </a>
+        <NativeShareButton 
+          file={result.blob}
+          fileName={filename}
+          className="flex-1 min-w-[10rem] py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg"
+        />
         <a
           href={result.blobUrl}
           target="_blank"
