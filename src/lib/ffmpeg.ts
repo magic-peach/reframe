@@ -250,7 +250,7 @@ export async function exportVideo(
       }
 
       const data = await ffmpeg.readFile(fallbackOutputName, undefined, { signal });
-      const blob = new Blob([new Uint8Array(data as ArrayBuffer)], { type: "video/webm" });
+      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
       onProgress(100);
       return {
         blobUrl: URL.createObjectURL(blob),
@@ -262,7 +262,7 @@ export async function exportVideo(
     }
 
     const data = await ffmpeg.readFile(outputName, undefined, { signal });
-    const blob = new Blob([new Uint8Array(data as ArrayBuffer)], { type: mimeType });
+    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: mimeType });
     onProgress(100);
     return {
       blobUrl: URL.createObjectURL(blob),

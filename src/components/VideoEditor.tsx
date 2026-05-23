@@ -51,8 +51,8 @@ export default function VideoEditor() {
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
 
-  
   const isProcessing = status === "loading-engine" || status === "exporting";
+  const isReadyToExport = !!file && status === "idle";
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
@@ -304,10 +304,11 @@ export default function VideoEditor() {
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
+                  : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed",
+                isReadyToExport && "motion-safe:animate-pulse motion-reduce:animate-none"
               )}
             >
-              <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
+              <Zap size={20} />
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
           </div>
