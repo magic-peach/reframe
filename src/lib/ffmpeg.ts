@@ -139,7 +139,7 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
   return filters.join(",");
 }
 
- export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+ export function buildAudioFilter(speed: number, normalizeAudio: boolean = false): string {
   const filters: string[] = [];
 
   let remaining = speed;
