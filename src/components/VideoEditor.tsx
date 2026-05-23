@@ -187,10 +187,7 @@ export default function VideoEditor() {
   }, [status]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
-<<<<<<< issue-236-export-pulse
   const isReadyToExport = !!file && status === "idle";
-=======
->>>>>>> main
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const videoSrc = useMemo(
