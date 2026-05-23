@@ -336,7 +336,15 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   if (recipe.stabilization) {
     filters.push("deshake");
   }
-
+// Noise reduction using hqdn3d filter
+  if (recipe.noiseReduction && recipe.noiseReduction !== 'off') {
+    const noiseMap = {
+      light:  'hqdn3d=2.0:1.5:3.0:2.5',
+      medium: 'hqdn3d=4.0:3.0:6.0:4.5',
+      heavy:  'hqdn3d=6.0:5.0:9.0:6.5',
+    }
+    filters.push(noiseMap[recipe.noiseReduction])
+  }
   if (recipe.rotate === 90) {
     filters.push("transpose=1");
   } else if (recipe.rotate === 180) {
