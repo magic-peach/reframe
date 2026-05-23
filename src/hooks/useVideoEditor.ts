@@ -81,11 +81,11 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       "Trim start time must be earlier than the end time.",
     ],
     [
-      recipe.preset === "custom" && (recipe.customWidth < 16 || recipe.customWidth > 7680),
+      recipe.preset === "custom" && (Number.isNaN(recipe.customWidth) || recipe.customWidth < 16 || recipe.customWidth > 7680),
       "Width must be between 16px and 7680px.",
     ],
     [
-      recipe.preset === "custom" && (recipe.customHeight < 16 || recipe.customHeight > 7680),
+      recipe.preset === "custom" && (Number.isNaN(recipe.customHeight) || recipe.customHeight < 16 || recipe.customHeight > 7680),
       "Height must be between 16px and 7680px.",
     ],
     [
@@ -248,13 +248,17 @@ export function useVideoEditor() {
         const saved = localStorage.getItem("reframe-settings");
         if (saved) {
           const parsed = JSON.parse(saved);
+          const sanitizeDimension = (val: unknown, fallback: number): number => {
+            const n = Number(val);
+            return Number.isFinite(n) && n >= 16 && n <= 7680 ? n : fallback;
+          };
           setRecipe(prev => ({
             ...prev,
             preset: parsed.preset ?? prev.preset,
             quality: parsed.quality ?? prev.quality,
             speed: parsed.speed ?? prev.speed,
-            customWidth: parsed.customWidth ?? prev.customWidth,
-            customHeight: parsed.customHeight ?? prev.customHeight
+            customWidth: sanitizeDimension(parsed.customWidth, prev.customWidth),
+            customHeight: sanitizeDimension(parsed.customHeight, prev.customHeight),
           }));
         }
       }
