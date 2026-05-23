@@ -5,6 +5,7 @@ import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 import { Download, RotateCcw, Share2, AlertCircle, Volume2, VolumeX } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
+import { NativeShareButton } from "./NativeShareButton";
 import successAnim from "@/lib/lottie/success.json";
 import { cn } from "@/lib/utils";
 
@@ -125,6 +126,11 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
           <Download size={15} aria-hidden="true"  />
           Download {result.format.toUpperCase()}
         </a>
+        <NativeShareButton 
+          file={result.blob}
+          fileName={filename}
+          className="flex-1 min-w-[10rem] py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg"
+        />
         <a
           href={result.blobUrl}
           target="_blank"
