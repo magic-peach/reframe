@@ -1,10 +1,27 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const isDark = theme === "dark";
+
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="relative flex items-center justify-center w-9 h-9 rounded-full bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] opacity-50"
+      />
+    );
+  }
 
   return (
     <button

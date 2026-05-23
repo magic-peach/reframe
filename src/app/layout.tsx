@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ScrollToTop from "@/components/ScrollToTop";
 import BrandLogo from "@/components/BrandLogo";
+import SplashScreen from "@/components/SplashScreen";
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
@@ -75,6 +76,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <ThemeProvider>
+          <SplashScreen />
           <ErrorBoundary>
             <header
               role="banner"
