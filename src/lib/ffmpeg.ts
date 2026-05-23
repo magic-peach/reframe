@@ -401,6 +401,7 @@ export async function exportVideo(
       onProgress(100);
       return {
         blobUrl: URL.createObjectURL(blob),
+        blob,
         size: blob.size,
         width: targetW,
         height: targetH,
@@ -460,6 +461,7 @@ export async function exportVideo(
       onProgress(100);
       return {
         blobUrl: URL.createObjectURL(blob),
+        blob,
         size: blob.size,
         width: targetW,
         height: targetH,
@@ -474,6 +476,7 @@ export async function exportVideo(
     onProgress(100);
     return {
       blobUrl: URL.createObjectURL(blob),
+      blob,
       size: blob.size,
       width: targetW,
       height: targetH,

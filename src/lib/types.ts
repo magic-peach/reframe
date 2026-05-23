@@ -44,6 +44,7 @@ export interface BackgroundMusicOptions {
 
 export interface ExportResult {
   blobUrl: string;
+  blob: Blob;
   size: number;
   width: number;
   height: number;
