@@ -76,10 +76,10 @@ export default function ExportSettings({
           min={18}
           max={30}
           step={1}
-          value={recipe.quality}
+          value={48 - recipe.quality}
           onChange={(e) =>
             onChange({
-              quality: Number(
+              quality: 48 - Number(
                 e.target.value
               ),
             })
@@ -96,11 +96,11 @@ export default function ExportSettings({
         >
           <div className="flex justify-between">
             <span className="text-sm text-[var(--muted)]">
-              Best quality
+              Smallest file
             </span>
 
             <span className="text-sm text-[var(--muted)]">
-              Smallest file
+              Best quality
             </span>
           </div>
 
@@ -162,13 +162,11 @@ export default function ExportSettings({
                 })
               }
               aria-label="Enable video stabilization"
-              aria-checked={recipe.stabilization}
               className="w-full accent-film-600 cursor-pointer"
             />
           </span>
         </div>
 
-        {/* Short descriptive label explaining what the setting does */}
         <p className="text-xs text-[var(--muted)] mb-1">
           Reduce camera shake
         </p>
@@ -189,48 +187,53 @@ export default function ExportSettings({
       <div>
         <div className="flex items-center justify-between mb-1">
           <label
-            htmlFor="noise-reduction-toggle"
+            htmlFor="denoise-toggle"
             className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
           >
             <SlidersHorizontal size={10} />
-            Noise Reduction
+            Reduce noise
+
             <span
               className="cursor-help"
-              title="Reduces grain in low-light videos using FFmpeg hqdn3d filter."
+              title="Reduces video noise. May slow down export slightly."
             >
               <InfoIcon size={14} />
             </span>
           </label>
+
+          <span className="flex text-sm font-heading font-bold text-film-600">
+            <input
+              id="denoise-toggle"
+              type="checkbox"
+              checked={recipe.denoise}
+              onChange={(e) =>
+                onChange({
+                  denoise: e.target.checked,
+                })
+              }
+              aria-label="Enable noise reduction"
+              aria-checked={recipe.denoise}
+              className="w-full accent-film-600 cursor-pointer"
+            />
+          </span>
         </div>
 
-        <p className="text-xs text-[var(--muted)] mb-2">
-          Reduce grain in low-light footage
+        <p className="text-xs text-[var(--muted)] mb-1">
+          Reduce low-light video grain
         </p>
 
-        <div className="flex gap-2">
-          {(['off', 'light', 'medium', 'heavy'] as const).map((level) => (
-            <button
-              key={level}
-              onClick={() => onChange({ noiseReduction: level })}
-              className={cn(
-                "flex-1 py-1 text-xs font-heading font-semibold uppercase rounded border transition-colors",
-                recipe.noiseReduction === level
-                  ? "bg-film-600 text-white border-film-600"
-                  : "text-[var(--muted)] border-[var(--muted)] hover:border-film-600 hover:text-film-600"
-              )}
-            >
-              {level}
-            </button>
-          ))}
+        <div className="flex justify-end">
+          <span
+            className={cn(
+              "text-xs",
+              recipe.denoise
+                ? "text-red-700 font-medium"
+                : "text-[var(--muted)]"
+            )}
+          >
+            May slightly increase export time.
+          </span>
         </div>
-
-        {recipe.noiseReduction !== 'off' && (
-          <div className="flex justify-end mt-2">
-            <span className="text-xs text-red-700 font-medium">
-              ⚠ Note: significantly increases processing time.
-            </span>
-          </div>
-        )}
       </div>
     </>
   );
