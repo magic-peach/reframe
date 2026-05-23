@@ -279,7 +279,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               htmlFor="custom-width"
               className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
             >
-              Width (px)
+              Width
             </label>
             <input
               id="custom-width"
@@ -294,7 +294,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             />
           </div>
 
-          <div className="mt-5 flex flex-col items-center justify-center">
+          <div className="flex h-full flex-col items-center justify-center">
             <span className="font-heading text-sm font-medium text-[var(--muted)]">
               ×
             </span>
@@ -305,7 +305,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               htmlFor="custom-height"
               className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
             >
-              Height (px)
+              Height
             </label>
             <input
               id="custom-height"
