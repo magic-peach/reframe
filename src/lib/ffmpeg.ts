@@ -185,7 +185,7 @@ export async function exportVideo(
     const audioTrim = buildAudioTrimFilter(recipe);
     const audioSpeed = buildAudioFilter(recipe.speed);
     const afParts = [audioTrim, audioSpeed].filter(Boolean);
-   const af = afParts.join(",");
+    const af = afParts.join(",");
 
     const args = ["-i", inputName];
     if (vf) args.push("-vf", vf);
@@ -249,9 +249,8 @@ export async function exportVideo(
         throw new Error("Export failed");
       }
 
-  // const blob = new Blob([data.buffer], { type: "video/webm" });
-
-const blob = new Blob([new Uint8Array(data.buffer)], { type: "video/webm" });
+      const data = await ffmpeg.readFile(fallbackOutputName, undefined, { signal });
+      const blob = new Blob([new Uint8Array(data as ArrayBufferLike)], { type: "video/webm" });
       onProgress(100);
       return {
         blobUrl: URL.createObjectURL(blob),
@@ -262,9 +261,8 @@ const blob = new Blob([new Uint8Array(data.buffer)], { type: "video/webm" });
       };
     }
 
-  
-// Before: const blob = new Blob([data.buffer], { type: mimeType });
-const blob = new Blob([new Uint8Array(data.buffer)], { type: mimeType });
+    const data = await ffmpeg.readFile(outputName, undefined, { signal });
+    const blob = new Blob([new Uint8Array(data as ArrayBufferLike)], { type: mimeType });
     onProgress(100);
     return {
       blobUrl: URL.createObjectURL(blob),
