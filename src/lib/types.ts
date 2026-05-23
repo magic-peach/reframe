@@ -14,6 +14,7 @@ export interface EditRecipe {
   quality: number;
   format: "mp4" | "webm" | "mkv" | "gif";
   stabilization: boolean;
+  denoise: boolean;
   brightness: number;
   contrast: number;
   saturation: number;
@@ -43,6 +44,7 @@ export interface BackgroundMusicOptions {
 
 export interface ExportResult {
   blobUrl: string;
+  blob: Blob;
   size: number;
   width: number;
   height: number;

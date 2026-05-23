@@ -6,6 +6,7 @@ import { EditRecipe } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
+import ComparisonPreview from "./ComparisonPreview";
 
 interface Props {
   file: File | null;
@@ -18,9 +19,9 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
   const onLoadedRef = useRef<(() => void) | null>(null);
 
-  /** Capture the current video frame and download it as a PNG. */
   const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
     if (!video || video.readyState < 2) return;
@@ -58,7 +59,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     const id = ++lastId.current;
     const url = URL.createObjectURL(file);
 
-    // cleanup previous object URL safely
     if (urlRef.current) {
       URL.revokeObjectURL(urlRef.current);
     }
@@ -70,7 +70,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     video.src = url;
     video.load();
 
-    // define handler once per effect run
     const handleLoaded = () => {
       if (lastId.current !== id) return;
       video.play().catch(() => {});
@@ -81,20 +80,17 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     video.addEventListener("loadeddata", handleLoaded);
 
     return () => {
-      // cleanup event listener safely
       if (onLoadedRef.current) {
         video.removeEventListener("loadeddata", onLoadedRef.current);
         onLoadedRef.current = null;
       }
 
-      // stop playback safely
       if (video) {
         video.pause();
         video.removeAttribute("src");
         video.load();
       }
 
-      // revoke only if still current
       if (urlRef.current === url) {
         URL.revokeObjectURL(urlRef.current);
         urlRef.current = null;
@@ -102,7 +98,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     };
   }, [file, videoRef]);
 
-  // sync mute state to video element
   useEffect(() => {
     if (!videoRef.current || !recipe) return;
     videoRef.current.muted = !recipe.keepAudio;
@@ -113,11 +108,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
-  /**
-   * Compute the overlay geometry for the selected preset + framing mode.
-   * The preview container always uses a 16:9 aspect-video box.
-   * We express widths/heights as percentage strings for CSS.
-   */
   const overlay = (() => {
     if (!recipe || !showOverlay) return null;
 
@@ -188,94 +178,120 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
   };
 
   return (
-    <div
-      role="group"
-      className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      aria-label="Video preview (press Space to play/pause)"
-    >
-      {isLoading && (
-        <div
-          className="absolute inset-0 animate-pulse bg-gray-700 rounded-xl transition-opacity duration-300"
-          aria-label="Loading video preview"
-        />
-      )}
-      {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <video
-        ref={videoRef}
-        controls
-        className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
-        onLoadedData={() => setIsLoading(false)}
-        playsInline
-        muted={!recipe?.keepAudio}
+    <>
+      <div
+        role="group"
+        className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        aria-label="Video preview (press Space to play/pause)"
       >
-        <track kind="captions" />
-      </video>
+        {isLoading && (
+          <div
+            className="absolute inset-0 animate-pulse bg-gray-700 rounded-xl transition-opacity duration-300"
+            aria-label="Loading video preview"
+          />
+        )}
+        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+        <video
+          ref={videoRef}
+          controls
+          className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+          onLoadedData={() => setIsLoading(false)}
+          playsInline
+          muted={!recipe?.keepAudio}
+        >
+          <track kind="captions" />
+        </video>
 
-      {/* Letterbox / Crop overlay */}
-      {overlay && (
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          {overlay.mode === "fit" ? (
-            // Letterbox: semi-transparent bars outside the content area
-            <>
-              <div className="absolute left-0 right-0 top-0 bg-black/50" style={{ height: overlay.barTop }} />
-              <div className="absolute left-0 right-0 bottom-0 bg-black/50" style={{ height: overlay.barBottom }} />
-              <div className="absolute top-0 bottom-0 left-0 bg-black/50" style={{ width: overlay.barLeft }} />
-              <div className="absolute top-0 bottom-0 right-0 bg-black/50" style={{ width: overlay.barRight }} />
-            </>
-          ) : (
-            // Fill/crop: dashed border around the surviving area, dimmed outside
-            <>
-              <div className="absolute left-0 right-0 top-0 bg-red-900/50" style={{ height: overlay.barTop }} />
-              <div className="absolute left-0 right-0 bottom-0 bg-red-900/50" style={{ height: overlay.barBottom }} />
-              <div className="absolute top-0 bottom-0 left-0 bg-red-900/50" style={{ width: overlay.barLeft }} />
-              <div className="absolute top-0 bottom-0 right-0 bg-red-900/50" style={{ width: overlay.barRight }} />
-              <div
-                className="absolute border-2 border-dashed border-film-400"
-                style={{
-                  top: overlay.barTop,
-                  bottom: overlay.barBottom,
-                  left: overlay.barLeft,
-                  right: overlay.barRight,
-                }}
-              />
-            </>
-          )}
+        {/* Letterbox / Crop overlay */}
+        {overlay && (
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            {overlay.mode === "fit" ? (
+              // Letterbox: semi-transparent bars outside the content area
+              <>
+                <div className="absolute left-0 right-0 top-0 bg-black/50" style={{ height: overlay.barTop }} />
+                <div className="absolute left-0 right-0 bottom-0 bg-black/50" style={{ height: overlay.barBottom }} />
+                <div className="absolute top-0 bottom-0 left-0 bg-black/50" style={{ width: overlay.barLeft }} />
+                <div className="absolute top-0 bottom-0 right-0 bg-black/50" style={{ width: overlay.barRight }} />
+              </>
+            ) : (
+              // Fill/crop: dashed border around the surviving area, dimmed outside
+              <>
+                <div className="absolute left-0 right-0 top-0 bg-red-900/50" style={{ height: overlay.barTop }} />
+                <div className="absolute left-0 right-0 bottom-0 bg-red-900/50" style={{ height: overlay.barBottom }} />
+                <div className="absolute top-0 bottom-0 left-0 bg-red-900/50" style={{ width: overlay.barLeft }} />
+                <div className="absolute top-0 bottom-0 right-0 bg-red-900/50" style={{ width: overlay.barRight }} />
+                <div
+                  className="absolute border-2 border-dashed border-film-400"
+                  style={{
+                    top: overlay.barTop,
+                    bottom: overlay.barBottom,
+                    left: overlay.barLeft,
+                    right: overlay.barRight,
+                  }}
+                />
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Toggle button */}
+        {recipe && !isLoading && (
+          <button
+            type="button"
+            onClick={() => setShowOverlay((v) => !v)}
+            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+              showOverlay
+                ? "bg-film-600 text-white"
+                : "bg-black/60 text-white/70 hover:bg-black/80"
+            }`}
+            aria-pressed={showOverlay}
+            aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
+            title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
+          >
+            {showOverlay ? "Hide overlay" : "Show overlay"}
+          </button>
+        )}
+
+        {/* Compare button */}
+        {recipe && !isLoading && (
+          <button
+            type="button"
+            onClick={() => setShowComparison((v) => !v)}
+            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+              showComparison
+                ? "bg-film-600 text-white"
+                : "bg-black/60 text-white/70 hover:bg-black/80"
+            }`}
+            aria-pressed={showComparison}
+            aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
+            title={showComparison ? "Hide comparison preview" : "Show comparison preview"}
+          >
+            Compare
+          </button>
+        )}
+
+        {/* Grab frame button */}
+        {!isLoading && (
+          <button
+            type="button"
+            onClick={handleGrabFrame}
+            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-black/60 text-white/70 hover:bg-black/80 flex items-center gap-1"
+            aria-label="Grab frame as PNG"
+            title="Download current frame as PNG"
+          >
+            <Camera className="w-3 h-3" />
+            Grab frame
+          </button>
+        )}
+      </div>
+
+      {showComparison && file && (
+        <div className="mt-4">
+          <ComparisonPreview file={file} recipe={recipe} videoRef={videoRef} />
         </div>
       )}
-
-      {/* Toggle button */}
-      {recipe && !isLoading && (
-        <button
-          type="button"
-          onClick={() => setShowOverlay((v) => !v)}
-          className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-            showOverlay
-              ? "bg-film-600 text-white"
-              : "bg-black/60 text-white/70 hover:bg-black/80"
-          }`}
-          aria-pressed={showOverlay}
-          aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-          title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-        >
-          {showOverlay ? "Hide overlay" : "Show overlay"}
-        </button>
-      )}
-
-      {/* Grab frame button */}
-      {!isLoading && (
-        <button
-          type="button"
-          onClick={handleGrabFrame}
-          className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-black/60 text-white/70 hover:bg-black/80 flex items-center gap-1"
-          aria-label="Grab frame as PNG"
-          title="Download current frame as PNG"
-        >
-          <Camera className="w-3 h-3" />
-          Grab frame
-        </button>
-      )}
-    </div>
+    </>
   );
 }

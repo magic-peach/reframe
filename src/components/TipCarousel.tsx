@@ -94,8 +94,8 @@ export default function TipCarousel() {
         }`}
       >
         <div className="flex items-center gap-2">
-          <IconComponent className="text-film-600 dark:text-film-400" size={14} />
-          <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-film-600 dark:text-film-400">
+          <IconComponent className="text-film-600" size={14} />
+          <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-film-600">
             {activeTip.category}
           </span>
         </div>
@@ -119,8 +119,8 @@ export default function TipCarousel() {
             aria-label={`Go to tip ${idx + 1}`}
             className={`h-1.5 rounded-full transition-all duration-300 ease-out cursor-pointer ${
               idx === activeIdx 
-                ? "w-4 bg-film-600 dark:bg-film-400" 
-                : "w-1.5 bg-film-100 hover:bg-film-200 dark:bg-slate-700 dark:hover:bg-slate-600"
+                ? "w-4 bg-film-600"
+                : "w-1.5 bg-[var(--border)] hover:opacity-80"
             }`}
           />
         ))}
