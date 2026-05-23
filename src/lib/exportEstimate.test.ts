@@ -1,5 +1,6 @@
 import { estimateExportSize, formatEstimatedSize } from "./exportEstimate";
 import { EditRecipe } from "./types";
+import { describe, test, expect } from "vitest";
 
 // Minimal recipe factory — only the fields estimateExportSize cares about
 function makeRecipe(overrides: Partial<EditRecipe> = {}): EditRecipe {

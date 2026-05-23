@@ -1,4 +1,5 @@
 import type { EditRecipe } from "./types"
+import { RECIPE_VERSION } from "./types"
 
 export const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4] as const;
 
@@ -20,4 +21,5 @@ export const DEFAULT_RECIPE: EditRecipe = {
   stabilization: false,
   soundOnCompletion: false,
   normalizeAudio: false,
+  version: RECIPE_VERSION,
 };

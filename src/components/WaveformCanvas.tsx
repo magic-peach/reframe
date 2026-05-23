@@ -54,7 +54,7 @@ export default function WaveformCanvas({ samples, loading, hasAudio }: Props) {
     ctx.globalAlpha = 0.7;
 
     for (let i = 0; i < samples.length; i++) {
-      const amplitude = samples[i];
+      const amplitude = samples[i] ?? 0;
       const barHeight = Math.max(amplitude * (height * 0.92), 1.5);
       const x = i * barWidth;
       const y = midY - barHeight / 2;
