@@ -437,9 +437,10 @@ export default function VideoEditor() {
               id="export-button"
               type="button"
               onClick={handleExport}
-              disabled={!file || isProcessing}
-              aria-label='Export video'
-              aria-disabled={!file || isProcessing ? "true" : undefined}
+                disabled={!file || isProcessing}
+                aria-label='Export video'
+                aria-disabled={!file || isProcessing ? "true" : undefined}
+                title={!file ? "Upload a video to enable export" : undefined}
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
