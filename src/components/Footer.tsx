@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Github,
-  TwitterIcon,
   Instagram,
   ArrowRight,
   ShieldCheck,
@@ -154,25 +153,22 @@ export default function Footer() {
               </a>
 
               <a
-                href="https://twitter.com"
+                href="https://x.com/magic_peach_dev"
                 target="_blank"
                 rel="noopener"
                 className="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center group"
-                aria-label="Open Twitter"
+                aria-label="Open Reframe on X"
               >
-                <TwitterIcon
-                  size={18}
-                  aria-hidden="true"
-                  className="opacity-70 group-hover:opacity-100 transition-opacity"
-                />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="opacity-70 group-hover:opacity-100 transition-opacity">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
               </a>
-
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/magic_peach_dev"
                 target="_blank"
                 rel="noopener"
                 className="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center group"
-                aria-label="Open Instagram"
+                aria-label="Open Reframe on Instagram"
               >
                 <Instagram
                   size={18}
