@@ -318,16 +318,24 @@ export default function OnboardingTour() {
         clearTimeout(retryTimer);
       }
     };
-  }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
-
-  // Re-measure on resize
+  // Re-measure on resize or scroll so spotlight stays anchored to target.
+  // requestAnimationFrame prevents layout thrashing on rapid scroll/resize events.
   useEffect(() => {
     if (!visible) return;
-    const onResize = () => {
-      measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(setTargetRect);
+    let rafId: number;
+    const remeasure = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(setTargetRect);
+      });
     };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.addEventListener("resize", remeasure);
+    window.addEventListener("scroll", remeasure, true);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", remeasure);
+      window.removeEventListener("scroll", remeasure, true);
+    };
   }, [visible, stepIndex, measureTarget]);
 
   // Keyboard support
