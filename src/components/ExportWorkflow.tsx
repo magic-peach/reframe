@@ -117,6 +117,7 @@ export const ExportWorkflow = memo(({ stage, progress, eta }: ExportWorkflowProp
               value={progress}
               size="lg"
               radius="xl"
+              aria-label={stage === "preparing" ? "Engine download progress" : "Export progress"}
               animated={isActiveProcessing(stage)}
               styles={{
                 root: {

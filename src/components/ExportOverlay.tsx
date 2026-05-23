@@ -116,8 +116,8 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
   const getProgressMessage = () => {
     if (isLoading) {
       return {
-        title: "Initializing Export",
-        description: "Setting up the video engine for processing.",
+        title: "Initializing Engine",
+        description: "Downloading the video engine. This only happens once.",
       };
     }
     if (progress === 0) {
@@ -134,7 +134,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
     }
     return {
       title: "Exporting",
-      description: "Processing your video with hardware acceleration.",
+      description: "Processing your video locally with hardware acceleration.",
     };
   };
 
@@ -168,15 +168,16 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
             className="sr-only"
             aria-hidden="true"
           />
-          
           <Box mt="md">
             <ProcessingOrbit />
           </Box>
 
-          <Stack gap={2} className="transition-all duration-500">
+          <div className="export-text">
+            <Stack gap={4} className="transition-all duration-500">
+              <Stack gap={1}>
             <h2 
               key={title}
-              className="font-heading font-bold text-3xl tracking-tight text-[var(--text)] animate-fade-in"
+                  className="font-heading font-bold text-2xl tracking-tight text-[var(--text)] animate-fade-in"
             >
               {title}
             </h2>
@@ -189,11 +190,23 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
               {description}
             </Text>
           </Stack>
+              <Text 
+                size="xs" 
+                fw={700} 
+                tt="uppercase" 
+                lts="0.1em" 
+                c="red.6"
+                className="animate-pulse"
+                style={{ fontSize: rem(9) }}
+              >
+                Do not close or refresh this tab
+              </Text>
+            </Stack>
+          </div>
 
           <span className="sr-only">
-            {title}: {Math.round(progress)}%
+            {isLoading ? "Loading video engine" : "Exporting"}: {Math.round(progress)}%
           </span>
-
           <Box w="100%">
             <ExportWorkflow stage={exportStage} progress={progress} eta={eta} />
           </Box>
