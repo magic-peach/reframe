@@ -4,12 +4,12 @@
 
 /* ── Light mode tokens ── */
 :root {
-  --bg: #F7F4F0;         /* Soft light background */
-  --surface: #ffffff;    /* Pure white for cards/buttons */
-  --border: #E8E3DC;     /* Muted light border */
-  --text: #181412;       /* Near-black text */
-  --muted: #5C5550;      /* Secondary dark gray text */
-  --accent: #2563eb;
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #3b82f6;
   --accent-hover: #1d4ed8;
   --film-600: #e63946;
   --film-400: #ff6b6b;
@@ -51,6 +51,29 @@
   --film-400: #66FF66;
 }
 
+/* Ensure export overlay text is readable in high-contrast by forcing dark text */
+[data-theme="high-contrast"] .export-text,
+[data-theme="high-contrast"] .export-text * {
+  color: #000000 !important;
+}
+
+/* Make the main export button readable in high-contrast mode */
+[data-theme="high-contrast"] #export-button {
+  background: #7ee081 !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+[data-theme="high-contrast"] #export-button:hover,
+[data-theme="high-contrast"] #export-button:focus-visible {
+  background: #69d66d !important;
+  color: #000000 !important;
+}
+
+[data-theme="high-contrast"] #export-button svg {
+  color: #000000 !important;
+}
+
 /* ── Base styles ── */
 body {
   background-color: var(--bg);
@@ -65,4 +88,10 @@ body {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: ease;
   transition-duration: 200ms;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

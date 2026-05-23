@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState, useCallback } from "react";
 
 interface Thumbnail {
@@ -201,9 +202,12 @@ export default function ThumbnailStrip({
                   onMouseLeave={() => setHoveredIndex(null)}
                   title={`Seek to ${formatTime(thumb.time)}`}
                 >
-                  <img
+                  <Image
                     src={thumb.dataUrl}
                     alt={`Frame at ${formatTime(thumb.time)}`}
+                    width={160}
+                    height={90}
+                    unoptimized
                     draggable={false}
                   />
                   <span className="thumb-time">{formatTime(thumb.time)}</span>
