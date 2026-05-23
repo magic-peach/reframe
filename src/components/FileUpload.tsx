@@ -108,7 +108,7 @@ export default function FileUpload({
               </span>
             )}
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+          <div className="text-xs text-[var(--muted)] mt-1 space-y-0.5">
             <p>{formatBytes(currentFile?.size ?? 0)}</p>
 
             <p>
@@ -128,26 +128,9 @@ export default function FileUpload({
         Change
         <span className="text-[var(--muted)] ml-1">(Ctrl+O)</span>
       </button>
-
-
-      {fileError && (
-        <p className="text-xs text-red-500 mt-2 font-medium">
-          {fileError}
-        </p>
-      )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
     </div>
 
-    <p className="text-xs text-gray-500 mt-3 break-words">
+    <p className="text-xs text-[var(--muted)] mt-3 break-words">
       Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
     </p>
 
@@ -171,6 +154,7 @@ export default function FileUpload({
     <div
       id="upload-zone"
       role="button"
+      aria-label="Upload video — drag and drop or click to browse"
       tabIndex={0}
       onDragOver={(e) => {
         e.preventDefault();
@@ -221,7 +205,7 @@ export default function FileUpload({
         MP4 / MOV / AVI / WebM
       </div>
 
-      <p className="text-xs text-gray-500 text-center">
+      <p className="text-xs text-[var(--muted)] text-center">
         Supports: MP4, MOV, AVI, MKV, WebM, and most video formats up to 2GB
       </p>
 
