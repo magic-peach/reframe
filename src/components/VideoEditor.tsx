@@ -489,7 +489,7 @@ export default function VideoEditor() {
                           value={recipe.sharpness}
                           onChange={(e) => updateRecipe({ sharpness: Number(e.target.value) })}
                           aria-label="Adjust sharpness"
-                          className="w-full"
+                          className="w-full accent-film-600"
                         />
                       </div>
                     </div>
