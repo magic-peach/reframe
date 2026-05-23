@@ -24,5 +24,4 @@ export const DEFAULT_RECIPE: EditRecipe = {
   sharpness: 0,
   normalizeAudio: false,
   version: RECIPE_VERSION,
-  sharpness: 0,
 };
