@@ -219,6 +219,7 @@ export default function OnboardingTour() {
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);  
+  const currentStep = TOUR_STEPS[stepIndex];
 
   const dismiss = useCallback(() => {
     localStorage.setItem(TOUR_KEY, "1");
@@ -251,7 +252,7 @@ export default function OnboardingTour() {
   useEffect(() => {
   if (localStorage.getItem(TOUR_KEY)) return;
   const t = setTimeout(async () => {
-    const rect = await measureTarget(TOUR_STEPS[0].targetId);
+    const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
     if (rect) {
       setTargetRect(rect);
       setVisible(true);
@@ -267,7 +268,11 @@ useEffect(() => {
     isFirstRender.current = false;
     return;
   }
-  measureTarget(TOUR_STEPS[stepIndex].targetId).then((rect) => {
+  if (!currentStep) {
+    dismiss();
+    return;
+  }
+  measureTarget(currentStep.targetId).then((rect) => {
     if (rect) {
       setTargetRect(rect);
       setTimeout(() => tooltipRef.current?.focus(), 50);
@@ -279,13 +284,13 @@ useEffect(() => {
       }
     }
   });
-}, [stepIndex, visible, measureTarget, dismiss]);
+  }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
 
   // Re-measure on resize
   useEffect(() => {
   if (!visible) return;
   const onResize = () => {
-    measureTarget(TOUR_STEPS[stepIndex].targetId).then(setTargetRect);
+    measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(setTargetRect);
   };
   window.addEventListener("resize", onResize);
   return () => window.removeEventListener("resize", onResize);
@@ -305,7 +310,7 @@ useEffect(() => {
     return () => window.removeEventListener("keydown", onKey);
   }, [visible, stepIndex, dismiss]);
 
-  if (!visible || !targetRect) return null;
+  if (!visible || !targetRect || !currentStep) return null;
 
   return createPortal(
     <>
@@ -318,7 +323,7 @@ useEffect(() => {
       />
       <Spotlight rect={targetRect} />
       <Tooltip
-        step={TOUR_STEPS[stepIndex]}
+        step={currentStep}
         stepIndex={stepIndex}
         totalSteps={TOUR_STEPS.length}
         rect={targetRect}

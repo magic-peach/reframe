@@ -1,6 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-export const metadata = {
-  title: "Contact | Reframe",
+export const metadata: Metadata = {
+  title: "Contact — Reframe",
   description: "Get in touch with the Reframe team.",
 };
 export default function ContactPage() {
