@@ -33,7 +33,7 @@ export default function ThumbnailStrip({
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
   const offscreenVideoRef = useRef<HTMLVideoElement | null>(null);
-  const abortRef = useRef(false);
+  const lastRunIdRef = useRef(0);
   const objectUrlsRef = useRef<string[]>([]);
 
   const effectiveTrimEnd = trimEnd ?? duration;
@@ -46,81 +46,97 @@ export default function ThumbnailStrip({
   const generateThumbnails = useCallback(async () => {
     if (!videoSrc || duration <= 0) return;
 
-    abortRef.current = false;
+    const runId = ++lastRunIdRef.current;
     setIsGenerating(true);
     revokeAllObjectUrls();
     setThumbnails([]);
     setProgress(0);
 
     const video = document.createElement("video");
-    video.src = videoSrc;
-    video.crossOrigin = "anonymous";
-    video.muted = true;
-    video.preload = "auto";
     offscreenVideoRef.current = video;
 
-    await new Promise<void>((resolve, reject) => {
-      video.onloadedmetadata = () => resolve();
-      video.onerror = () => reject(new Error("Video load failed"));
-      video.load();
-    });
+    try {
+      video.src = videoSrc;
+      video.crossOrigin = "anonymous";
+      video.muted = true;
+      video.preload = "auto";
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const thumbW = 160;
-    const thumbH = 90;
-    canvas.width = thumbW;
-    canvas.height = thumbH;
-
-    const times: number[] = [];
-    for (let t = 0; t <= duration; t += intervalSeconds) {
-      times.push(Math.min(t, duration - 0.1));
-    }
-    if ((times[times.length - 1] ?? 0) < duration - 0.5) {
-      times.push(duration - 0.1);
-    }
-
-    const captured: Thumbnail[] = [];
-
-    for (let i = 0; i < times.length; i++) {
-      if (abortRef.current) break;
-
-      const time = times[i] ?? 0;
-      await new Promise<void>((resolve) => {
-        const onSeeked = async () => {
-          video.removeEventListener("seeked", onSeeked);
-          ctx.drawImage(video, 0, 0, thumbW, thumbH);
-
-          try {
-            const blob = await new Promise<Blob | null>((blobResolve) => {
-              canvas.toBlob((b) => blobResolve(b), "image/jpeg", 0.7);
-            });
-            if (blob && !abortRef.current) {
-              const url = URL.createObjectURL(blob);
-              objectUrlsRef.current.push(url);
-              captured.push({ time, dataUrl: url });
-
-              if (i === times.length - 1 || captured.length % 5 === 0) {
-                setThumbnails([...captured]);
-              }
-            }
-          } catch (err) {
-            console.error("Failed to generate thumbnail blob", err);
-          }
-
-          setProgress(Math.round(((i + 1) / times.length) * 100));
-          resolve();
-        };
-        video.addEventListener("seeked", onSeeked);
-        video.currentTime = time;
+      await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error("Video load failed"));
+        video.load();
       });
-    }
 
-    video.src = "";
-    offscreenVideoRef.current = null;
-    setIsGenerating(false);
+      if (lastRunIdRef.current !== runId) return;
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const thumbW = 160;
+      const thumbH = 90;
+      canvas.width = thumbW;
+      canvas.height = thumbH;
+
+      const times: number[] = [];
+      for (let t = 0; t <= duration; t += intervalSeconds) {
+        times.push(Math.min(t, duration - 0.1));
+      }
+      if ((times[times.length - 1] ?? 0) < duration - 0.5) {
+        times.push(duration - 0.1);
+      }
+
+      const captured: Thumbnail[] = [];
+
+      for (let i = 0; i < times.length; i++) {
+        if (lastRunIdRef.current !== runId) break;
+
+        const time = times[i] ?? 0;
+        await new Promise<void>((resolve) => {
+          const onSeeked = async () => {
+            video.removeEventListener("seeked", onSeeked);
+
+            if (lastRunIdRef.current !== runId) {
+              resolve();
+              return;
+            }
+
+            ctx.drawImage(video, 0, 0, thumbW, thumbH);
+
+            try {
+              const blob = await new Promise<Blob | null>((blobResolve) => {
+                canvas.toBlob((b) => blobResolve(b), "image/jpeg", 0.7);
+              });
+              if (blob && lastRunIdRef.current === runId) {
+                const url = URL.createObjectURL(blob);
+                objectUrlsRef.current.push(url);
+                captured.push({ time, dataUrl: url });
+
+                if (i === times.length - 1 || captured.length % 5 === 0) {
+                  setThumbnails([...captured]);
+                }
+              }
+            } catch (err) {
+              console.error("Failed to generate thumbnail blob", err);
+            }
+
+            setProgress(Math.round(((i + 1) / times.length) * 100));
+            resolve();
+          };
+          video.addEventListener("seeked", onSeeked);
+          video.currentTime = time;
+        });
+      }
+
+      if (lastRunIdRef.current === runId) {
+        setIsGenerating(false);
+      }
+    } finally {
+      video.src = "";
+      if (offscreenVideoRef.current === video) {
+        offscreenVideoRef.current = null;
+      }
+    }
   }, [videoSrc, duration, intervalSeconds, revokeAllObjectUrls]);
 
   useEffect(() => {
@@ -128,7 +144,7 @@ export default function ThumbnailStrip({
       generateThumbnails();
     }
     return () => {
-      abortRef.current = true;
+      lastRunIdRef.current++;
       revokeAllObjectUrls();
     };
   }, [generateThumbnails, revokeAllObjectUrls, videoSrc, duration]);
