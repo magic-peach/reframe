@@ -77,7 +77,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             htmlFor="speed-control"
             className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
           >
-            <Gauge size={10} aria-hidden="true"  /> Speed
+            <Gauge size={10} aria-hidden="true" /> Speed
           </label>
 
           <div className="text-right">

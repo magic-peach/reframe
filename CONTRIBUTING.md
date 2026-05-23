@@ -419,3 +419,16 @@ We expect all contributors to follow our Code of Conduct to create a safe, welco
 - **Constructive feedback is encouraged.**
 
 Thank you for making Reframe better! 🎬
+
+## Cross-Origin Isolation & GitHub Pages
+
+This project uses `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy`
+headers to enable cross-origin isolation, which allows FFmpeg.wasm to run in
+multi-threaded mode for significantly faster video exports.
+
+**GitHub Pages does not support custom HTTP headers.**
+If you are deploying to GitHub Pages, cross-origin isolation cannot be enabled
+and FFmpeg will automatically fall back to single-threaded mode.
+
+For full multi-threading support, deploy to **Vercel**, **Netlify**, or
+**Cloudflare Pages** where custom headers are supported.
