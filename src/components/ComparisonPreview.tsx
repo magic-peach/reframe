@@ -193,6 +193,11 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
           <video
             ref={rightVideoRef}
             className="w-full h-full object-contain"
+            style={{
+              filter: recipe
+                ? `brightness(${1 + recipe.brightness}) contrast(${recipe.contrast}) saturate(${recipe.saturation})`
+                : undefined,
+            }}
             playsInline
             muted
             autoPlay

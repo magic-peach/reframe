@@ -393,6 +393,47 @@ export default function VideoEditor() {
                     delay={175}
                   >
                     <div className="space-y-5">
+                      {/* Creative Filter Presets */}
+                      <div className="space-y-2">
+                        <span className="text-xs font-semibold text-[var(--muted)]">Creative Presets</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { name: "Normal", b: 0, c: 1, s: 1 },
+                            { name: "Vibrant", b: 0.05, c: 1.1, s: 1.4 },
+                            { name: "Cinematic", b: -0.05, c: 1.2, s: 0.8 },
+                            { name: "Vintage", b: 0.05, c: 0.95, s: 0.85 },
+                            { name: "Noir", b: 0, c: 1.25, s: 0 },
+                            { name: "Faded", b: 0.1, c: 0.85, s: 0.9 },
+                          ].map((p) => {
+                            const isCurrent =
+                              recipe.brightness === p.b &&
+                              recipe.contrast === p.c &&
+                              recipe.saturation === p.s;
+                            return (
+                              <button
+                                key={p.name}
+                                type="button"
+                                onClick={() =>
+                                  updateRecipe({
+                                    brightness: p.b,
+                                    contrast: p.c,
+                                    saturation: p.s,
+                                  })
+                                }
+                                className={cn(
+                                  "px-2.5 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded-lg border transition-all duration-150 cursor-pointer",
+                                  isCurrent
+                                    ? "bg-film-600 text-white border-film-600 shadow-[0_0_8px_rgba(230,57,70,0.3)] scale-105"
+                                    : "bg-[var(--surface)] text-[var(--muted)] border-[var(--border)] hover:bg-[var(--border)]"
+                                )}
+                              >
+                                {p.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       {/* Brightness */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
