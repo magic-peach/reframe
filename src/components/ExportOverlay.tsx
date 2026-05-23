@@ -68,7 +68,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--bg)] backdrop-blur-sm"
       >
         <div
           className="text-center space-y-6 max-w-xs px-6 animate-fade-in"
@@ -88,7 +88,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
               aria-hidden="true"
             />
           </div>
-          <div>
+          <div className="export-text">
             <h2 className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">
               {isLoading ? "Loading engine" : "Exporting"}
             </h2>
@@ -113,7 +113,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
                   aria-valuenow={progress}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={isLoading? "Engine download progress": "Export progress"}
+                  aria-label={isLoading ? "Engine download progress" : "Export progress"}
                   className="h-full bg-film-600 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
@@ -127,11 +127,11 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
                 <button
                   type="button"
                   onClick={() => onCancel?.()}
-                  className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-100 active:scale-[0.98]"
+                  className="inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--text)] transition-colors hover:opacity-95 active:scale-[0.98]"
                 >
                   Cancel Export
                 </button>
-                <p className="text-gray-500 text-xs">
+                <p className="text-[var(--text)] text-xs">
                   Press Escape to cancel
                 </p>
               </div>
