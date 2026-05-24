@@ -34,6 +34,7 @@ export default function ThumbnailStrip({
   const stripRef = useRef<HTMLDivElement>(null);
   const offscreenVideoRef = useRef<HTMLVideoElement | null>(null);
   const lastRunIdRef = useRef(0);
+  const abortRef = useRef(false);
   const objectUrlsRef = useRef<string[]>([]);
 
   const effectiveTrimEnd = trimEnd ?? duration;
@@ -47,6 +48,7 @@ export default function ThumbnailStrip({
     if (!videoSrc || duration <= 0) return;
 
     const runId = ++lastRunIdRef.current;
+    abortRef.current = false;
     setIsGenerating(true);
     revokeAllObjectUrls();
     setThumbnails([]);
@@ -98,7 +100,7 @@ export default function ThumbnailStrip({
       const captured: Thumbnail[] = [];
 
       for (let i = 0; i < times.length; i++) {
-        if (lastRunIdRef.current !== runId) break;
+        if (abortRef.current || lastRunIdRef.current !== runId) break;
 
         const time = times[i] ?? 0;
         await new Promise<void>((resolve) => {
@@ -114,7 +116,7 @@ export default function ThumbnailStrip({
               const blob = await new Promise<Blob | null>((blobResolve) =>
                 canvas.toBlob((b) => blobResolve(b), "image/jpeg", 0.7)
               );
-              if (blob && lastRunIdRef.current === runId) {
+              if (blob && !abortRef.current && lastRunIdRef.current === runId) {
                 const url = URL.createObjectURL(blob);
                 objectUrlsRef.current.push(url);
                 captured.push({ time, dataUrl: url });
@@ -143,6 +145,8 @@ export default function ThumbnailStrip({
       if (offscreenVideoRef.current === video) {
         offscreenVideoRef.current = null;
       }
+      setIsGenerating(false);
+      abortRef.current = false;
     }
   }, [videoSrc, duration, intervalSeconds, revokeAllObjectUrls]);
 
@@ -151,7 +155,8 @@ export default function ThumbnailStrip({
       generateThumbnails();
     }
     return () => {
-      lastRunIdRef.current++;
+      // signal any running generator to stop and cleanup URLs
+      abortRef.current = true;
       revokeAllObjectUrls();
     };
   }, [generateThumbnails, revokeAllObjectUrls, videoSrc, duration]);
