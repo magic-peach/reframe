@@ -284,7 +284,6 @@ export default function OnboardingTour() {
     });
   }, []);
 
-  // Initialise on mount
   useEffect(() => {
     if (localStorage.getItem(TOUR_KEY)) return;
 
@@ -487,6 +486,6 @@ export default function OnboardingTour() {
         />
       </div>
     </FocusTrap>,
-    document.body
+    document.body,
   );
 }
