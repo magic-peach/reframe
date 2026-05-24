@@ -363,6 +363,16 @@ export default function TimelineEditor({
         className="timeline-ruler"
         onMouseDown={(e) => handleMouseDown(e, "playhead")}
         onTouchStart={(e) => handleTouchStart(e, "playhead")}
+        role="slider"
+        aria-label="Timeline time ruler"
+        aria-valuenow={currentTime}
+        aria-valuemin={0}
+        aria-valuemax={duration}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowLeft") onSeek(Math.max(0, currentTime - 1));
+          if (e.key === "ArrowRight") onSeek(Math.min(duration, currentTime + 1));
+        }}
       >
         {ticks.map((tick) => (
           <div
@@ -419,6 +429,21 @@ export default function TimelineEditor({
           }}
           onMouseDown={(e) => handleMouseDown(e, "clip")}
           onTouchStart={(e) => handleTouchStart(e, "clip")}
+          role="button"
+          tabIndex={0}
+          aria-label="Active video clip range"
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft") {
+              const newStart = Math.max(0, recipe.trimStart - 0.1);
+              const offset = recipe.trimStart - newStart;
+              onChange({ trimStart: parseFloat(newStart.toFixed(2)), trimEnd: parseFloat((effectiveTrimEnd - offset).toFixed(2)) });
+            }
+            if (e.key === "ArrowRight") {
+              const newEnd = Math.min(duration, effectiveTrimEnd + 0.1);
+              const offset = newEnd - effectiveTrimEnd;
+              onChange({ trimStart: parseFloat((recipe.trimStart + offset).toFixed(2)), trimEnd: parseFloat(newEnd.toFixed(2)) });
+            }
+          }}
         >
           {/* Trim Handles */}
           <div
@@ -428,6 +453,13 @@ export default function TimelineEditor({
             role="slider"
             aria-label="Drag start trim handle"
             aria-valuenow={recipe.trimStart}
+            aria-valuemin={0}
+            aria-valuemax={duration}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowLeft") onChange({ trimStart: Math.max(0, recipe.trimStart - 0.1) });
+              if (e.key === "ArrowRight") onChange({ trimStart: Math.min(effectiveTrimEnd - 0.1, recipe.trimStart + 0.1) });
+            }}
           >
             <GripVertical size={14} className="text-white drop-shadow" />
           </div>
@@ -439,6 +471,13 @@ export default function TimelineEditor({
             role="slider"
             aria-label="Drag end trim handle"
             aria-valuenow={effectiveTrimEnd}
+            aria-valuemin={0}
+            aria-valuemax={duration}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowLeft") onChange({ trimEnd: Math.max(recipe.trimStart + 0.1, effectiveTrimEnd - 0.1) });
+              if (e.key === "ArrowRight") onChange({ trimEnd: Math.min(duration, effectiveTrimEnd + 0.1) });
+            }}
           >
             <GripVertical size={14} className="text-white drop-shadow" />
           </div>
@@ -458,6 +497,16 @@ export default function TimelineEditor({
           style={{ left: `${playheadPct}%` }}
           onMouseDown={(e) => handleMouseDown(e, "playhead")}
           onTouchStart={(e) => handleTouchStart(e, "playhead")}
+          role="slider"
+          aria-label="Playhead scrubber"
+          aria-valuenow={currentTime}
+          aria-valuemin={0}
+          aria-valuemax={duration}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft") onSeek(Math.max(0, currentTime - 1));
+            if (e.key === "ArrowRight") onSeek(Math.min(duration, currentTime + 1));
+          }}
         >
           <div className="playhead-head" />
         </div>
