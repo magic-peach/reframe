@@ -150,7 +150,16 @@ export function useVideoEditor() {
   const [overlayPosition, setOverlayPosition] = useState<OverlayPosition>("bottom-right");
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
+  const [overlayX, setOverlayX] = useState<number | null>(null);
+  const [overlayY, setOverlayY] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
+
+  useEffect(() => {
+    if (!overlayFile) {
+      setOverlayX(null);
+      setOverlayY(null);
+    }
+  }, [overlayFile]);
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
     const next = { ...prev, ...patch };
@@ -189,6 +198,8 @@ export function useVideoEditor() {
         return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 2;
       case "saturation":
         return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 3;
+      case "reverse":
+        return typeof val === "boolean";
       default:
         return true;
     }
@@ -455,6 +466,8 @@ export function useVideoEditor() {
           position: overlayPosition,
           size: overlaySize,
           opacity: overlayOpacity,
+          x: overlayX !== null ? overlayX : undefined,
+          y: overlayY !== null ? overlayY : undefined,
         }
       );
       if (exportCancelledRef.current) return;
@@ -481,7 +494,7 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, loopMusic, musicFile, musicVolume, originalAudioVolume]);
+  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, overlayX, overlayY, duration, loopMusic, musicFile, musicVolume, originalAudioVolume]);
 
 
   useEffect(() => {
@@ -666,6 +679,10 @@ export function useVideoEditor() {
     setOverlaySize,
     overlayOpacity,
     setOverlayOpacity,
+    overlayX,
+    setOverlayX,
+    overlayY,
+    setOverlayY,
     recommendedPreset,
     currentTime,
     toggleSound,

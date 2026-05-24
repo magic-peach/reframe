@@ -140,6 +140,10 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     filters.push("hqdn3d=1.5:1.5:6:6");
   }
 
+  if (recipe.reverse) {
+    filters.push("reverse");
+  }
+
   filters.push(
     `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
   );
@@ -193,8 +197,9 @@ function buildArguments(
 ): string[] {
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
+  const audioReverse = hasOriginalAudio && recipe.reverse ? "areverse" : "";
   const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
+  const afParts = [audioTrim, audioReverse, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
   const musicIdx = 1;
@@ -231,7 +236,12 @@ function buildArguments(
         "bottom-left":  "20:H-h-20",
         "bottom-right": "W-w-20:H-h-20",
       };
-      const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
+      let pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
+      if (overlayOptions!.x !== undefined && overlayOptions!.y !== undefined) {
+        const xPct = (overlayOptions!.x / 100).toFixed(4);
+        const yPct = (overlayOptions!.y / 100).toFixed(4);
+        pos = `W*${xPct}:H*${yPct}`;
+      }
       filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
       filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
       videoOut = "[vout]";
@@ -350,9 +360,10 @@ export async function exportVideo(
 
     const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = buildAudioTrimFilter(recipe);
+  const audioReverse = recipe.reverse ? "areverse" : "";
   const audioSpeed = buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false);
 
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
+  const afParts = [audioTrim, audioReverse, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
     const hasMusicTrack = !!(musicOptions?.file && recipe.keepAudio);
     const musicInputName = `music_input_${sessionId}.mp3`;

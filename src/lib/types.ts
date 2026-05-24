@@ -19,6 +19,7 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  reverse: boolean;
   version: number;
 }
 
@@ -33,6 +34,8 @@ export interface ImageOverlayOptions {
   position: OverlayPosition;
   size: number;
   opacity: number;
+  x?: number;
+  y?: number;
 }
 
 export interface BackgroundMusicOptions {
@@ -86,6 +89,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
+  if (typeof v.reverse !== "boolean") return false;
 
   return true;
 }
