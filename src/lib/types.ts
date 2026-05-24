@@ -1,5 +1,18 @@
 export const RECIPE_VERSION = 1;
 
+/**
+ * Text overlay data structure for rendering custom text on videos.
+ */
+export interface TextOverlay {
+  id: string;
+  text: string;
+  x: number; // Percentage (0-100) from left
+  y: number; // Percentage (0-100) from top
+  fontSize: number; // In pixels
+  color: string; // Hex color
+  fontWeight: "normal" | "bold" | "900";
+}
+
 export interface EditRecipe {
   preset: string;
   customWidth: number;
@@ -14,10 +27,12 @@ export interface EditRecipe {
   quality: number;
   format: "mp4" | "webm" | "mkv" | "gif";
   stabilization: boolean;
+  denoise: boolean;
   brightness: number;
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  textOverlays: TextOverlay[];
   version: number;
 }
 
@@ -43,10 +58,12 @@ export interface BackgroundMusicOptions {
 
 export interface ExportResult {
   blobUrl: string;
+  blob: Blob;
   size: number;
   width: number;
   height: number;
   format: "mp4" | "webm" | "mkv" | "gif";
+  exportDurationMs?: number;
 }
 
 export type ExportStatus =
@@ -55,38 +72,6 @@ export type ExportStatus =
   | "exporting"
   | "done"
   | "error";
-
-export const SPEED_STEPS = [
-  0.25,
-  0.5,
-  0.75,
-  1,
-  1.25,
-  1.5,
-  2,
-  4,
-] as const;
-
-export const DEFAULT_RECIPE: EditRecipe = {
-  preset: "vertical-9-16",
-  customWidth: 1920,
-  customHeight: 1080,
-  framing: "fit",
-  trimStart: 0,
-  trimEnd: null,
-  rotate: 0,
-  keepAudio: true,
-  normalizeAudio: false,
-  speed: 1,
-  quality: 23,
-  format: "mp4",
-  stabilization: false,
-  brightness: 0,
-  contrast: 0,
-  saturation: 0,
-  soundOnCompletion: false,
-  version: RECIPE_VERSION,
-};
 
 export const MAX_FILE_SIZE =
   2 * 1024 * 1024 * 1024;
@@ -116,6 +101,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
+  if (!Array.isArray(v.textOverlays)) return false;
 
   return true;
 }

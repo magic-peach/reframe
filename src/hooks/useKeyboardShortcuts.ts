@@ -6,7 +6,7 @@ interface UseKeyboardShortcutsProps {
   file: File | null;
   recipe: EditRecipe;
   resetSettings: () => void;
-  updateRecipe: (recipe: Partial<EditRecipe>) => void;  
+  updateRecipe: (recipe: Partial<EditRecipe>) => void;
   handleExport: () => void;
   status: ExportStatus;
   cancelExport: () => void;
