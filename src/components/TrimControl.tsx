@@ -235,7 +235,6 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
           />
         </div>
       )}
-<<<<<<< HEAD
 
       <WaveformCanvas
         samples={waveform}
