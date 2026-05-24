@@ -60,7 +60,6 @@ export default function VideoPreview({
   useEffect(() => {
     if (!file) return;
 
-    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     setIsLoading(true);
     const id = ++lastId.current;
     const url = URL.createObjectURL(file);
