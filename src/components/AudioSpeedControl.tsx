@@ -146,7 +146,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       )}
 
       {recipe.keepAudio && (recipe.trimStart !== 0 || recipe.trimEnd !== null) && (
-        <div role="note" className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-700 leading-relaxed flex items-start gap-2 animate-fade-in">
+        <div role="note" className="mt-3 p-3 bg-[var(--accent-muted)] border border-[var(--border)] rounded text-sm text-[var(--text)] leading-relaxed flex items-start gap-2 animate-fade-in">
           <AlertTriangle size={12} aria-hidden="true" className="shrink-0 mt-0.5" />
           <p>
             Note: If audio doesn&apos;t start within the selected range, the output will be silent.
