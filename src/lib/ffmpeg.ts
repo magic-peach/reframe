@@ -1,6 +1,6 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
-import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
+import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions, SubtitleOptions } from "./types";
 import { getPresetById } from "./presets";
 import { simd } from "wasm-feature-detect";
 
@@ -160,6 +160,55 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
   return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
 }
 
+function buildSubtitleFilter(
+  subtitleOptions: SubtitleOptions | undefined,
+  targetW: number,
+  targetH: number,
+  fontFileLoaded: boolean
+): string {
+  if (!subtitleOptions || !subtitleOptions.file || subtitleOptions.cues.length === 0) {
+    return "";
+  }
+
+  const sizeMap = {
+    small: Math.max(16, Math.round(targetH * 0.035)),
+    medium: Math.max(24, Math.round(targetH * 0.05)),
+    large: Math.max(36, Math.round(targetH * 0.07)),
+  };
+  const fontSize = sizeMap[subtitleOptions.fontSize] ?? sizeMap.medium;
+  const marginY = Math.round(targetH * 0.08);
+
+  const filters = subtitleOptions.cues.map((cue) => {
+    const escaped = cue.text
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "'\\''")
+      .replace(/:/g, "\\:")
+      .replace(/%/g, "\\%")
+      .replace(/,/g, "\\,")
+      .replace(/\r?\n/g, "\n");
+
+    let f = `drawtext=text='${escaped}':enable='between(t,${cue.startTime},${cue.endTime})':fontsize=${fontSize}:fontcolor=${subtitleOptions.textColor}:x=(w-text_w)/2:y=h-text_h-${marginY}`;
+
+    if (fontFileLoaded) {
+      f += `:fontfile=font.ttf`;
+    }
+
+    if (subtitleOptions.bgOpacity > 0) {
+      const boxColor = `black@${subtitleOptions.bgOpacity}`;
+      const padding = Math.max(4, Math.round(fontSize * 0.25));
+      f += `:box=1:boxcolor=${boxColor}:boxborderw=${padding}`;
+    }
+
+    if (subtitleOptions.hasShadow) {
+      f += `:shadowcolor=black@0.6:shadowx=2:shadowy=2`;
+    }
+
+    return f;
+  });
+
+  return filters.join(",");
+}
+
 function buildArguments(
   recipe: EditRecipe,
   format: "mp4" | "webm" | "mkv" | "gif",
@@ -173,11 +222,15 @@ function buildArguments(
   hasOverlay: boolean,
   overlayInputName: string,
   overlayOptions: ImageOverlayOptions | undefined,
-  hasOriginalAudio: boolean
+  hasOriginalAudio: boolean,
+  hasSubtitles: boolean,
+  subtitleOptions: SubtitleOptions | undefined,
+  fontFileLoaded: boolean
 ): string[] {
-  const vf = buildVideoFilter(recipe, targetW, targetH);
+  let vf = buildVideoFilter(recipe, targetW, targetH);
+  const subF = hasSubtitles ? buildSubtitleFilter(subtitleOptions, targetW, targetH, fontFileLoaded) : "";
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
@@ -194,7 +247,7 @@ const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.norm
     args.push("-i", overlayInputName);
   }
 
-  const needsFilterComplex = hasOverlay || hasMusicTrack;
+  const needsFilterComplex = hasOverlay || hasMusicTrack || hasSubtitles;
   const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
 
   if (needsFilterComplex) {
@@ -217,8 +270,13 @@ const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.norm
       };
       const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
       filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
-      filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
-      videoOut = "[vout]";
+      filterParts.push(`${videoOut}[logo]overlay=${pos}[logo_vout]`);
+      videoOut = "[logo_vout]";
+    }
+
+    if (hasSubtitles && subF) {
+      filterParts.push(`${videoOut}${subF}[sub_vout]`);
+      videoOut = "[sub_vout]";
     }
 
     let audioOut = "";
@@ -287,7 +345,8 @@ export async function exportVideo(
   onProgress: (percent: number) => void,
   signal?: AbortSignal,
   musicOptions?: BackgroundMusicOptions,
-  overlayOptions?: ImageOverlayOptions
+  overlayOptions?: ImageOverlayOptions,
+  subtitleOptions?: SubtitleOptions
 ): Promise<ExportResult> {
   const sessionId = buildSessionId();
   let targetW: number, targetH: number;
@@ -331,6 +390,27 @@ export async function exportVideo(
   
   try {
     await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
+
+    const hasSubtitles = !!(subtitleOptions?.file && subtitleOptions.cues.length > 0);
+    let fontFileLoaded = false;
+    if (hasSubtitles) {
+      const fontUrls: Record<string, string> = {
+        "Inter": "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_fvQtMwCp5GP3JT.ttf",
+        "Roboto": "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Mu4mxK.ttf",
+        "Outfit": "https://fonts.gstatic.com/s/outfit/v11/q35yD1V9e3qxF37b9dQ.ttf",
+        "Playfair Display": "https://fonts.gstatic.com/s/playfairdisplay/v37/nuFvD-vYSZ27K9oF456vUTupHzU0GZ71qtQ.ttf",
+      };
+      const fontUrl = fontUrls[subtitleOptions!.fontFamily] ?? fontUrls["Inter"];
+
+      try {
+        const fontData = await fetchFile(fontUrl);
+        await ffmpeg.writeFile("font.ttf", fontData, { signal });
+        cleanupFiles.add("font.ttf");
+        fontFileLoaded = true;
+      } catch (err) {
+        console.error("Failed to load custom font, falling back to basic font", err);
+      }
+    }
 
     const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = buildAudioTrimFilter(recipe);
@@ -411,7 +491,8 @@ export async function exportVideo(
     let args = buildArguments(
       recipe, recipe.format, outputName, inputName, targetW, targetH,
       hasMusicTrack, musicInputName, musicOptions,
-      hasOverlay, overlayInputName, overlayOptions, true
+      hasOverlay, overlayInputName, overlayOptions, true,
+      hasSubtitles, subtitleOptions, fontFileLoaded
     );
 
     let exitCode = await ffmpeg.exec(args, undefined, { signal });
@@ -422,7 +503,8 @@ export async function exportVideo(
       args = buildArguments(
         recipe, recipe.format, outputName, inputName, targetW, targetH,
         hasMusicTrack, musicInputName, musicOptions,
-        hasOverlay, overlayInputName, overlayOptions, false
+        hasOverlay, overlayInputName, overlayOptions, false,
+        hasSubtitles, subtitleOptions, fontFileLoaded
       );
       exitCode = await ffmpeg.exec(args, undefined, { signal });
     }
@@ -432,7 +514,8 @@ export async function exportVideo(
       args = buildArguments(
         recipe, "webm", fallbackOutputName, inputName, targetW, targetH,
         hasMusicTrack, musicInputName, musicOptions,
-        hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected
+        hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected,
+        hasSubtitles, subtitleOptions, fontFileLoaded
       );
 
       const fallbackCode = await ffmpeg.exec(args, undefined, { signal });

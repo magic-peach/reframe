@@ -31,6 +31,24 @@ export interface ImageOverlayOptions {
   opacity: number;
 }
 
+export interface SubtitleCue {
+  id: number;
+  startTime: number;
+  endTime: number;
+  text: string;
+}
+
+export interface SubtitleOptions {
+  file: File | null;
+  cues: SubtitleCue[];
+  fontFamily: string;
+  fontSize: "small" | "medium" | "large";
+  textColor: string;
+  bgOpacity: number;
+  hasShadow: boolean;
+}
+
+
 export interface BackgroundMusicOptions {
   file: File | null;
   musicVolume: number;

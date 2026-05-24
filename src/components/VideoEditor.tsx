@@ -16,10 +16,11 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import SubtitleControl from "./SubtitleControl";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  SlidersHorizontal, Zap, AlertTriangle, Github, Copy, Type
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 
@@ -119,6 +120,13 @@ export default function VideoEditor() {
     overlayPosition, setOverlayPosition,
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
+    subtitleFile, setSubtitleFile,
+    subtitleCues, setSubtitleCues,
+    subtitleFontFamily, setSubtitleFontFamily,
+    subtitleFontSize, setSubtitleFontSize,
+    subtitleTextColor, setSubtitleTextColor,
+    subtitleBgOpacity, setSubtitleBgOpacity,
+    subtitleHasShadow, setSubtitleHasShadow,
     recommendedPreset,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
@@ -202,7 +210,17 @@ export default function VideoEditor() {
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} recipe={recipe} videoRef={videoRef} />
+                  <VideoPreview
+                    file={file}
+                    recipe={recipe}
+                    videoRef={videoRef}
+                    subtitleCues={subtitleCues}
+                    subtitleFontFamily={subtitleFontFamily}
+                    subtitleFontSize={subtitleFontSize}
+                    subtitleTextColor={subtitleTextColor}
+                    subtitleBgOpacity={subtitleBgOpacity}
+                    subtitleHasShadow={subtitleHasShadow}
+                  />
 
                   <div className="mt-3">
                     <ThumbnailStrip
@@ -346,6 +364,23 @@ export default function VideoEditor() {
                       setOverlayOpacity={setOverlayOpacity}
                     />
                   </Section>
+                  <Section icon={<Type size={12} />} title="Subtitles" delay={130}>
+                    <SubtitleControl
+                      subtitleFile={subtitleFile}
+                      setSubtitleFile={setSubtitleFile}
+                      subtitleCues={subtitleCues}
+                      subtitleFontFamily={subtitleFontFamily}
+                      setSubtitleFontFamily={setSubtitleFontFamily}
+                      subtitleFontSize={subtitleFontSize}
+                      setSubtitleFontSize={setSubtitleFontSize}
+                      subtitleTextColor={subtitleTextColor}
+                      setSubtitleTextColor={setSubtitleTextColor}
+                      subtitleBgOpacity={subtitleBgOpacity}
+                      setSubtitleBgOpacity={setSubtitleBgOpacity}
+                      subtitleHasShadow={subtitleHasShadow}
+                      setSubtitleHasShadow={setSubtitleHasShadow}
+                    />
+                  </Section>
                 </div>
               </div>
             )}
@@ -412,7 +447,6 @@ export default function VideoEditor() {
                 <FramingControl recipe={recipe} onChange={updateRecipe} />
               </Section>
 
-              <div className="pt-2 flex justify-center">
               <div className="pt-2 flex justify-between items-center">
                 <button
                   type="button"

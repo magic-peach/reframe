@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, SubtitleCue } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
@@ -114,6 +114,34 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
   );
 }
 
+export function parseSRT(content: string): SubtitleCue[] {
+  const cues: SubtitleCue[] = [];
+  const blocks = content.trim().split(/\r?\n\s*\r?\n/);
+
+  for (const block of blocks) {
+    const lines = block.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    if (lines.length < 3) continue;
+
+    const id = parseInt(lines[0], 10);
+    if (isNaN(id)) continue;
+
+    const timeMatch = lines[1].match(/(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/);
+    if (!timeMatch) continue;
+
+    const parseTime = (h: string, m: string, s: string, ms: string) => {
+      return parseInt(h, 10) * 3600 + parseInt(m, 10) * 60 + parseInt(s, 10) + parseInt(ms, 10) / 1000;
+    };
+
+    const startTime = parseTime(timeMatch[1], timeMatch[2], timeMatch[3], timeMatch[4]);
+    const endTime = parseTime(timeMatch[5], timeMatch[6], timeMatch[7], timeMatch[8]);
+    const text = lines.slice(2).join("\n");
+
+    cues.push({ id, startTime, endTime, text });
+  }
+
+  return cues;
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -146,6 +174,15 @@ export function useVideoEditor() {
   const [overlayPosition, setOverlayPosition] = useState<OverlayPosition>("bottom-right");
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
+
+  const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
+  const [subtitleCues, setSubtitleCues] = useState<SubtitleCue[]>([]);
+  const [subtitleFontFamily, setSubtitleFontFamily] = useState("Inter");
+  const [subtitleFontSize, setSubtitleFontSize] = useState<"small" | "medium" | "large">("medium");
+  const [subtitleTextColor, setSubtitleTextColor] = useState("#ffffff");
+  const [subtitleBgOpacity, setSubtitleBgOpacity] = useState(0.5);
+  const [subtitleHasShadow, setSubtitleHasShadow] = useState(true);
+
 
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
@@ -243,6 +280,26 @@ export function useVideoEditor() {
       // ignore
     }
   }, []);
+
+  useEffect(() => {
+    if (!subtitleFile) {
+      setSubtitleCues([]);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (text) {
+        setSubtitleCues(parseSRT(text));
+      }
+    };
+    reader.onerror = () => {
+      setSubtitleCues([]);
+    };
+    reader.readAsText(subtitleFile);
+  }, [subtitleFile]);
+
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -402,6 +459,15 @@ export function useVideoEditor() {
           position: overlayPosition,
           size: overlaySize,
           opacity: overlayOpacity,
+        },
+        {
+          file: subtitleFile,
+          cues: subtitleCues,
+          fontFamily: subtitleFontFamily,
+          fontSize: subtitleFontSize,
+          textColor: subtitleTextColor,
+          bgOpacity: subtitleBgOpacity,
+          hasShadow: subtitleHasShadow,
         }
       );
       if (exportCancelledRef.current) return;
@@ -428,7 +494,7 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, loopMusic, musicFile, musicVolume, originalAudioVolume]);
+  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, loopMusic, musicFile, musicVolume, originalAudioVolume, subtitleFile, subtitleCues, subtitleFontFamily, subtitleFontSize, subtitleTextColor, subtitleBgOpacity, subtitleHasShadow]);
 
 
   useEffect(() => {
@@ -541,6 +607,13 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
+    setSubtitleFile(null);
+    setSubtitleCues([]);
+    setSubtitleFontFamily("Inter");
+    setSubtitleFontSize("medium");
+    setSubtitleTextColor("#ffffff");
+    setSubtitleBgOpacity(0.5);
+    setSubtitleHasShadow(true);
   }, [result]);
 
   useEffect(() => {
@@ -600,5 +673,19 @@ export function useVideoEditor() {
     overlayOpacity,
     setOverlayOpacity,
     recommendedPreset,
+    subtitleFile,
+    setSubtitleFile,
+    subtitleCues,
+    setSubtitleCues,
+    subtitleFontFamily,
+    setSubtitleFontFamily,
+    subtitleFontSize,
+    setSubtitleFontSize,
+    subtitleTextColor,
+    setSubtitleTextColor,
+    subtitleBgOpacity,
+    setSubtitleBgOpacity,
+    subtitleHasShadow,
+    setSubtitleHasShadow,
   };
 }
