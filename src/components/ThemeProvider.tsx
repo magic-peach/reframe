@@ -33,7 +33,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 <<<<<<< HEAD
   const [theme, setThemeState] = useState<Theme>("light");
 =======
-  const [theme, setThemeState] = useState<Theme>(getCurrentTheme);
+  const [theme, setThemeState] = useState<Theme>("light");
 >>>>>>> ea94c89b27bd4df99171a19ca9f1623133950514
 
   const applyTheme = useCallback(
@@ -58,7 +58,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       applyTheme(storedTheme, false);
     }
 =======
-    setThemeState(getCurrentTheme());
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme === "dark" || storedTheme === "light") {
+      applyTheme(storedTheme as Theme, false);
+    }
 >>>>>>> ea94c89b27bd4df99171a19ca9f1623133950514
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");

@@ -399,7 +399,6 @@ export function useVideoEditor() {
     }
 
     try {
-<<<<<<< HEAD
       const metadata = await extractMetadata(selectedFile);
       const dimensionCheck = validateDimensions(metadata.width, metadata.height);
 
@@ -407,37 +406,18 @@ export function useVideoEditor() {
         const suggested = getDownscaledDimensions(metadata.width, metadata.height);
         setError(
           `Layer 5 Validation Failed: Resolution too high (${metadata.width}×${metadata.height}). ` +
-=======
-      const { width, height, duration: dur } = await extractMetadata(selectedFile);
-
-      // Layer 5: Resolution check
-      const dimensionCheck = validateDimensions(width, height);
-      if (dimensionCheck === "blocked") {
-        const suggested = getDownscaledDimensions(width, height);
-        setError(
-          `Layer 5 Validation Failed: Resolution too high (${width}×${height}). ` +
->>>>>>> ea94c89b27bd4df99171a19ca9f1623133950514
           `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
         );
         setStatus("error");
         return;
       }
 
-<<<<<<< HEAD
       setDuration(metadata.duration);
       setVideoMetadata(metadata);
       setFile(selectedFile);
 
       if (dimensionCheck === "warning") {
         console.warn(`[Reframe] High resolution video detected (${metadata.width}×${metadata.height}). Export may be slow.`);
-=======
-      setDuration(dur);
-      setVideoMetadata({ width, height, duration: dur });
-      setFile(selectedFile);
-
-      if (dimensionCheck === "warning") {
-        console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
->>>>>>> ea94c89b27bd4df99171a19ca9f1623133950514
       }
       setRecipe((prev) => {
         const suggestedPreset = suggestPreset(metadata.width, metadata.height);

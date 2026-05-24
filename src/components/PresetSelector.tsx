@@ -146,82 +146,80 @@ export default function PresetSelector({ recipe, onChange }: Props) {
     if (recipe.preset === id) onChange({ preset: "custom" });
   };
 
-  const allPresets = [
-    ...PRESETS.filter(p => p.id !== "custom"),
-    ...customProfiles.map(p => ({
-      id: p.id,
-      label: p.label,
-      platform: "Custom Profile",
-      width: p.recipe.customWidth ?? 1920,
-      height: p.recipe.customHeight ?? 1080,
-      isCustom: true
-    }))
-  ];
+      {recipe.preset === "custom" && (
+        <>
+          <div className="mt-2 flex items-center gap-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm animate-fade-in">
+            <div className="flex-1">
+              <label
+                htmlFor="custom-width"
+                className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
+              >
+                Width (px)
+              </label>
+              <input
+                id="custom-width"
+                type="number"
+                autoComplete="off"
+                min={16}
+                max={7680}
+                step={2}
+                value={recipe.customWidth}
+                onChange={(e) => handleWidthChange(Number(e.target.value))}
+                className="w-full min-w-20 rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
 
-  const filteredPresets = allPresets
-    .filter((preset) =>
-      preset.label.toLowerCase().includes(search.toLowerCase()) ||
-      preset.platform.toLowerCase().includes(search.toLowerCase())
-    )
-    .sort((a, b) => {
-      const aFav = favorites.includes(a.id) ? 1 : 0;
-      const bFav = favorites.includes(b.id) ? 1 : 0;
-      if (aFav !== bFav) return bFav - aFav;
-      return 0;
-    });
+            <div className="flex h-full flex-col items-center justify-center">
+              <span className="font-heading text-sm font-medium text-[var(--muted)]">
+                ×
+              </span>
+            </div>
 
-  const handlePresetSelect = useCallback(
-    (presetId: string) => {
-      const customProfile = customProfiles.find(p => p.id === presetId);
-      if (customProfile) {
-        onChange({ ...customProfile.recipe, preset: presetId });
-      } else {
-        onChange({ preset: presetId });
-      }
-      setSearch("");
-    },
-    [onChange, customProfiles],
-  );
+            <div className="flex-1">
+              <label
+                htmlFor="custom-height"
+                className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
+              >
+                Height (px)
+              </label>
+              <input
+                id="custom-height"
+                type="number"
+                autoComplete="off"
+                min={16}
+                max={7680}
+                step={2}
+                value={recipe.customHeight}
+                onChange={(e) => handleHeightChange(Number(e.target.value))}
+                className="w-full min-w-20 rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
 
-  const handleWidthChange = useCallback(
-    (width: number) => {
-      if (!isNaN(width) && width >= 16 && width <= 7680) {
-        onChange({ customWidth: width });
-      }
-    },
-    [onChange],
-  );
+            <div className="hidden h-full flex-col justify-end sm:flex">
+              <span className="mb-1.5 block text-center text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+                Ratio
+              </span>
+              <div className="flex h-[38px] items-center rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 text-xs font-medium text-film-700">
+                {getOrientationLabel(
+                  recipe.customWidth || 0,
+                  recipe.customHeight || 0,
+                )}
+              </div>
+            </div>
+          </div>
 
-  const handleHeightChange = useCallback(
-    (height: number) => {
-      if (!isNaN(height) && height >= 16 && height <= 7680) {
-        onChange({ customHeight: height });
-      }
-    },
-    [onChange],
-  );
-
-  return (
-    <div className="space-y-3">
-      {/* Quick-action row */}
-      <div className="grid grid-cols-5 gap-1.5">
-        {QUICK_ACTIONS.map(({ preset, label, platform, icon }) => {
-          const isActive = recipe.preset === preset;
-          return (
+          <div className="mt-2 flex justify-end animate-fade-in">
             <button
-              key={`${preset}-${label}`}
               type="button"
-              aria-label={`${platform} ${label}`}
-              aria-pressed={isActive}
-              onClick={() => onChange({ preset })}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.04] active:scale-[0.97]",
-                isActive
-                  ? "border-film-500 bg-film-50 text-film-600"
-                  : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-300 hover:bg-film-50/30 hover:text-[var(--text)]",
-              )}
+              onClick={handleSaveProfile}
+              className="flex items-center gap-2 rounded-lg border border-film-200 bg-film-50 px-3 py-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-600 transition-colors hover:bg-film-100"
             >
-              {icon}
+              <Save size={12} />
+              Save as Profile
+            </button>
+          </div>
+        </>
+      )}
               <span className={cn(
                 "text-[9px] font-heading font-bold uppercase tracking-wide leading-none",
                 isActive ? "text-film-700" : "text-[var(--muted)]",
