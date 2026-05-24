@@ -7,6 +7,8 @@ import { formatDuration } from "@/lib/utils";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import WaveformCanvas from "@/components/WaveformCanvas";
 
+const MIN_CLIP_DURATION = 0.1;
+
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60)
   const s = (seconds % 60).toFixed(1)
@@ -162,6 +164,13 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
       setEndErrorMsg("End time must be greater than start time.");
       return;
     }
+
+     if ((n - recipe.trimStart) < MIN_CLIP_DURATION) {
+    setEnd(true);
+    setEndErrorMsg(`Clip must be at least ${MIN_CLIP_DURATION}s long.`);
+    return;
+  }
+
 
     if (duration > 0 && n > duration + 0.01) {
       setEnd(true);
