@@ -134,6 +134,11 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
     onChange({ trimStart: n });
   };
 
+  /**
+   * Handles changes to the trim-end input field.
+   * Uses local `endInput` state to avoid stripping decimals mid-entry
+   * (e.g. typing "2." would not be coerced to "2" before the user finishes).
+   */
   const handleEnd = (val: string) => {
     setEndInput(val);
 
