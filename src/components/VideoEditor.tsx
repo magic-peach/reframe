@@ -17,6 +17,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
 import {
@@ -283,6 +284,22 @@ export default function VideoEditor() {
     () => (file ? URL.createObjectURL(file) : null),
     [file]
   );
+
+  const exportSummary = useMemo(() => {
+    const preset = getPresetById(recipe.preset);
+    const width = recipe.preset === "custom" ? recipe.customWidth : (preset?.width ?? recipe.customWidth);
+    const height = recipe.preset === "custom" ? recipe.customHeight : (preset?.height ?? recipe.customHeight);
+
+    const framingLabel = recipe.framing === "fit" ? "Fit" : "Fill";
+    const speedLabel = `${recipe.speed}× speed`;
+    const qualityLabel = recipe.quality <= 21
+      ? "High"
+      : recipe.quality <= 25
+      ? "Balanced"
+      : "Small file";
+
+    return `Exporting to ${width}×${height} ${recipe.format.toUpperCase()} • ${framingLabel} • ${speedLabel} • Quality: ${qualityLabel}`;
+  }, [recipe]);
 
   useEffect(() => {
     return () => {
@@ -656,6 +673,12 @@ export default function VideoEditor() {
             </div>
 
             <KeyboardShortcutsPanel />
+
+            {file && (
+              <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)] leading-relaxed">
+                {exportSummary}
+              </p>
+            )}
 
             <button
               id="export-button"
