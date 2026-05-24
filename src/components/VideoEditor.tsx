@@ -377,7 +377,13 @@ export default function VideoEditor() {
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
-                    <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
+                   
+                    <ExportSettings
+  recipe={recipe}
+  duration={duration}
+  videoFile={file}
+  onChange={updateRecipe}
+/>
                   </Section>
                   <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
                     <ImageOverlay
