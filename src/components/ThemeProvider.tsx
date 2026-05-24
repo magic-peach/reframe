@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-type Theme = "light" | "dark" | "high-contrast";
+type Theme = "light" | "dark";
 
 interface ThemeContextValue {
   // `theme` may be `undefined` on the first render (SSR) until we
@@ -70,6 +70,19 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           applyTheme(e.matches ? "dark" : "light", false);
         }
       } catch {}
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [applyTheme]);
+
+  useEffect(() => {
+    setThemeState(getCurrentTheme());
+
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem("theme")) {
+        applyTheme(e.matches ? "dark" : "light", false);
+      }
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
