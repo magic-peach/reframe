@@ -14,29 +14,33 @@ interface TourStep {
 }
 
 const TOUR_STEPS: TourStep[] = [
-   {
+  {
     targetId: "upload-zone",
     title: "Drop your video here",
-    description: "Click to browse or drag and drop a video file to get started.",
+    description:
+      "Click to browse or drag and drop a video file to get started.",
     position: "right",
   },
   {
     targetId: "preset-selector",
     title: "Pick an output format",
-    description: "Choose a preset optimised for your platform — Instagram, YouTube, TikTok and more.",
+    description:
+      "Choose a preset optimised for your platform — Instagram, YouTube, TikTok and more.",
     position: "left",
   },
   {
-    targetId: "preset-selector",
+    targetId: "trim",
     title: "Trim & adjust",
-    description: "After uploading, set in/out points and tweak colour in the controls that appear on the left.",
+    description:
+      "After uploading, set in/out points and tweak colour in the controls that appear on the left.",
     position: "left",
   },
-    {
+  {
     targetId: "export-button",
     title: "Export your video",
-    description: "Click Export (or press ⌘↵) to process your video locally — nothing ever leaves your device.",
-    position: "top",  
+    description:
+      "Click Export (or press ⌘↵) to process your video locally — nothing ever leaves your device.",
+    position: "top",
   },
 ];
 
@@ -53,7 +57,7 @@ interface Rect {
 function getTooltipStyle(
   rect: Rect,
   position: TourStep["position"],
-  tooltipRef: React.RefObject<HTMLDivElement | null>
+  tooltipRef: React.RefObject<HTMLDivElement | null>,
 ): React.CSSProperties {
   const tooltip = tooltipRef.current;
   const tw = tooltip?.offsetWidth ?? 320;
@@ -153,7 +157,15 @@ interface TooltipProps {
   tooltipRef: React.RefObject<HTMLDivElement | null>;
 }
 
-function Tooltip({ step, stepIndex, totalSteps, rect, onNext, onSkip, tooltipRef }: TooltipProps) {
+function Tooltip({
+  step,
+  stepIndex,
+  totalSteps,
+  rect,
+  onNext,
+  onSkip,
+  tooltipRef,
+}: TooltipProps) {
   const style = getTooltipStyle(rect, step.position, tooltipRef);
   const isLast = stepIndex === totalSteps - 1;
 
@@ -198,8 +210,10 @@ function Tooltip({ step, stepIndex, totalSteps, rect, onNext, onSkip, tooltipRef
             Skip tour
           </button>
           <button
-              onClick={onNext}
-            ref={(el) => { el?.focus(); }}
+            onClick={onNext}
+            ref={(el) => {
+              el?.focus();
+            }}
             className="px-4 py-2 rounded-lg text-sm font-medium
               bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
               text-white transition-colors focus-visible:outline focus-visible:outline-2
@@ -218,7 +232,7 @@ export default function OnboardingTour() {
   const [visible, setVisible] = useState(false);
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const isFirstRender = useRef(true);  
+  const isFirstRender = useRef(true);
   const currentStep = TOUR_STEPS[stepIndex];
 
   const dismiss = useCallback(() => {
@@ -227,74 +241,94 @@ export default function OnboardingTour() {
   }, []);
 
   const measureTarget = useCallback((id: string): Promise<Rect | null> => {
-  return new Promise((resolve) => {
-    const attempt = (tries: number) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => {
-          const r = el.getBoundingClientRect();
-          resolve({ top: r.top, left: r.left, width: r.width, height: r.height });
-        }, 400); // wait for scroll to finish
-        return;
-      }
-      if (tries <= 0) {
-        resolve(null);
-        return;
-      }
-      setTimeout(() => attempt(tries - 1), 300);
-    };
-    attempt(5);
-  });
-}, []);
+    return new Promise((resolve) => {
+      const attempt = (tries: number) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => {
+            const r = el.getBoundingClientRect();
+            resolve({
+              top: r.top,
+              left: r.left,
+              width: r.width,
+              height: r.height,
+            });
+          }, 400); // wait for scroll to finish
+          return;
+        }
+        if (tries <= 0) {
+          resolve(null);
+          return;
+        }
+        setTimeout(() => attempt(tries - 1), 300);
+      };
+      attempt(5);
+    });
+  }, []);
 
   // Initialise on mount
   useEffect(() => {
-  if (localStorage.getItem(TOUR_KEY)) return;
-  const t = setTimeout(async () => {
-    const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
-    if (rect) {
-      setTargetRect(rect);
-      setVisible(true);
-    }
-  }, 600);
-  return () => clearTimeout(t);
-}, [measureTarget]);
-
-// Measure target whenever step changes (skip on first render — init effect handles that)
-useEffect(() => {
-  if (!visible) return;
-  if (isFirstRender.current) {
-    isFirstRender.current = false;
-    return;
-  }
-  if (!currentStep) {
-    dismiss();
-    return;
-  }
-  measureTarget(currentStep.targetId).then((rect) => {
-    if (rect) {
-      setTargetRect(rect);
-      setTimeout(() => tooltipRef.current?.focus(), 50);
-    } else {
-      if (stepIndex < TOUR_STEPS.length - 1) {
-        setStepIndex((i) => i + 1);
-      } else {
-        dismiss();
+    if (localStorage.getItem(TOUR_KEY)) return;
+    const t = setTimeout(async () => {
+      const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
+      if (rect) {
+        setTargetRect(rect);
+        setVisible(true);
       }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [measureTarget]);
+
+  // Measure target whenever step changes (skip on first render — init effect handles that)
+  useEffect(() => {
+    if (!visible) return;
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
     }
-  });
+    if (!currentStep) {
+      dismiss();
+      return;
+    }
+
+    let retryCount = 0;
+    const maxRetries = 10; // Retry up to 10 times (5 seconds total with 500ms delays)
+    let retryTimer: number | null = null;
+
+    const tryMeasure = () => {
+      measureTarget(currentStep.targetId).then((rect) => {
+        if (rect) {
+          setTargetRect(rect);
+          setTimeout(() => tooltipRef.current?.focus(), 50);
+          retryCount = 0; // Reset on success
+        } else if (retryCount < maxRetries) {
+          // Keep retrying without auto-skipping
+          retryCount++;
+          retryTimer = window.setTimeout(tryMeasure, 500);
+        }
+        // If max retries exceeded, just stay on current step and wait for user interaction
+      });
+    };
+
+    tryMeasure();
+
+    return () => {
+      if (retryTimer !== null) {
+        clearTimeout(retryTimer);
+      }
+    };
   }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
 
   // Re-measure on resize
   useEffect(() => {
-  if (!visible) return;
-  const onResize = () => {
-    measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(setTargetRect);
-  };
-  window.addEventListener("resize", onResize);
-  return () => window.removeEventListener("resize", onResize);
-}, [visible, stepIndex, measureTarget]);
+    if (!visible) return;
+    const onResize = () => {
+      measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(setTargetRect);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [visible, stepIndex, measureTarget]);
 
   // Keyboard support
   useEffect(() => {
@@ -335,6 +369,6 @@ useEffect(() => {
         tooltipRef={tooltipRef}
       />
     </>,
-    document.body
+    document.body,
   );
 }

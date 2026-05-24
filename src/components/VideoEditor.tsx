@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
+import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
@@ -9,17 +10,17 @@ import PresetSelector from "./PresetSelector";
 import FramingControl from "./FramingControl";
 import TrimControl from "./TrimControl";
 import RotateControl from "./RotateControl";
+import TextControls from "./TextControls";
 import AudioSpeedControl from "./AudioSpeedControl";
 import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
-import PipelineStudio from "./PipelineStudio";
 
 import { cn } from "@/lib/utils";
 import {
-  Layers, Crop, Scissors, RotateCw, Volume2,
+  Layers, Crop, Scissors, RotateCw, Volume2, Type,
   SlidersHorizontal, Zap, AlertTriangle, Github, Copy
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
@@ -232,20 +233,30 @@ export default function VideoEditor() {
   });
 
   const [copied, setCopied] = useState(false);
-  const [isDraggingGlobally, setIsDraggingGlobally] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
     trim: false,
     rotation: false,
+    text: false,
     audio: false,
     export: false,
   });
 
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  const downloadRef = useRef<HTMLDivElement>(null);
 
-  const [activeTab, setActiveTab] = useState<"classic" | "pipeline">("classic");
+  /**
+   * Updates a text overlay property and syncs with recipe.
+   */
+  const handleUpdateTextOverlay = (id: string, updates: Partial<TextOverlay>) => {
+    const updatedOverlays = (recipe.textOverlays || []).map((overlay) =>
+      overlay.id === id ? { ...overlay, ...updates } : overlay
+    );
+    updateRecipe({ textOverlays: updatedOverlays });
+  };
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
@@ -323,58 +334,51 @@ export default function VideoEditor() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
-
-        <header className="mb-10 flex items-end justify-between animate-fade-in">
-          <div
-            className="inline-block px-5 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600"
-            aria-label="Reframe — video editor"
-          >
-            <h1 className="font-display text-6xl leading-none tracking-widest2 text-[var(--text)]">
-              REFRAME
-            </h1>
-            <p className="font-heading text-sm text-[var(--muted)] mt-1 uppercase tracking-widest">
-              Your video, any format
-            </p>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
-            No login. No ads. 100% private - your video never leaves your device.
-          </div>
-        </header>
-
-        {/* Mode Switcher */}
-        <div className="flex gap-2 mb-6 p-1 bg-[var(--surface)] border border-[var(--border)] rounded-xl max-w-sm animate-fade-in">
-          <button
-            type="button"
-            onClick={() => setActiveTab("classic")}
-            className={cn(
-              "flex-1 py-2 px-3 rounded-lg text-xs font-heading font-bold uppercase tracking-wider transition-all",
-              activeTab === "classic"
-                ? "bg-film-600 text-white shadow-sm"
-                : "text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--border)]"
-            )}
-          >
-            Classic Editor
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("pipeline")}
-            className={cn(
-              "flex-1 py-2 px-3 rounded-lg text-xs font-heading font-bold uppercase tracking-wider transition-all",
-              activeTab === "pipeline"
-                ? "bg-film-600 text-white shadow-sm"
-                : "text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--border)]"
-            )}
-          >
-            Pipeline Studio
-          </button>
-        </div>
-
-        {activeTab === "classic" ? (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
+        <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
+        <div
+          className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
+          style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
+          aria-label="Reframe — video editor"
+        >
+        <h1
+          className="font-display leading-none tracking-widest2 text-[var(--text)] break-words text-center transition-all"
+          style={{ fontSize: 'clamp(2rem,10vw,4rem)', viewTransitionName: 'reframe-text' }}
+        >
+          REFRAME
+        </h1>
+        <p
+          className="font-heading text-[var(--muted)] uppercase tracking-widest text-center"
+          style={{
+            fontSize: 'clamp(0.7rem,2vw,0.875rem)',
+            marginTop: 'clamp(0.25rem,1vw,0.5rem)',
+          }}
+        >
+          Your video, any format
+        </p>
+    <div
+      className="flex md:hidden items-center justify-center gap-2 font-heading font-semibold uppercase tracking-widest text-[var(--muted)] border-t border-[var(--border)]"
+      style={{
+        fontSize: 'clamp(0.6rem,1.5vw,0.75rem)',
+        marginTop: 'clamp(0.5rem,2vw,0.75rem)',
+        paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
+      }}
+    >
+      <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
+      No login. No ads. 100% private.
+    </div>
+  </div>  
+  <div
+    className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
+    style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
+  >
+    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
+    No login. No ads. 100% private - your video never leaves your device.
+  </div>
+    </header>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
-            <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
+            <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in">
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
@@ -386,7 +390,14 @@ export default function VideoEditor() {
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} recipe={recipe} videoRef={videoRef} />
+                  <VideoPreview
+                    file={file}
+                    recipe={recipe}
+                    videoRef={videoRef}
+                    selectedTextId={selectedTextId}
+                    onSelectText={setSelectedTextId}
+                    onUpdateText={handleUpdateTextOverlay}
+                  />
 
                   <div className="mt-3">
                     <ThumbnailStrip
@@ -409,7 +420,7 @@ export default function VideoEditor() {
             )}
             {file && (
               <div className={cn(
-                "grid grid-cols-1 sm:grid-cols-2 gap-4",
+                "grid grid-cols-1 gap-4",
                 isProcessing && "pointer-events-none opacity-50"
               )}>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
@@ -438,6 +449,22 @@ export default function VideoEditor() {
                     delay={100}
                   >
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
+                  </AccordionSection>
+
+                  <AccordionSection
+                    id="text"
+                    icon={<Type size={12} />}
+                    title="Text Overlay"
+                    isOpen={openSections.text}
+                    onToggle={() => toggleSection("text")}
+                    delay={110}
+                  >
+                    <TextControls
+                      recipe={recipe}
+                      onChange={updateRecipe}
+                      selectedTextId={selectedTextId}
+                      onSelectText={setSelectedTextId}
+                    />
                   </AccordionSection>
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
