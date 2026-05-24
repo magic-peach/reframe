@@ -19,8 +19,22 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+function getCurrentTheme(): Theme {
+  if (
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+  ) {
+    return "dark";
+  }
+  return "light";
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
+<<<<<<< HEAD
   const [theme, setThemeState] = useState<Theme>("light");
+=======
+  const [theme, setThemeState] = useState<Theme>(getCurrentTheme);
+>>>>>>> ea94c89b27bd4df99171a19ca9f1623133950514
 
   const applyTheme = useCallback(
     (next: Theme, persist = true) => {
@@ -38,10 +52,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+<<<<<<< HEAD
     const storedTheme = localStorage.getItem("theme");
     if (storedTheme === "dark" || storedTheme === "light") {
       applyTheme(storedTheme, false);
     }
+=======
+    setThemeState(getCurrentTheme());
+>>>>>>> ea94c89b27bd4df99171a19ca9f1623133950514
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e: MediaQueryListEvent) => {

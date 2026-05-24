@@ -235,6 +235,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
           />
         </div>
       )}
+<<<<<<< HEAD
 
       <WaveformCanvas
         samples={waveform}
@@ -243,6 +244,8 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
         fallbackMessage={waveformSkipReason}
       />
 
+=======
+>>>>>>> ea94c89b27bd4df99171a19ca9f1623133950514
       <div className="flex gap-3">
         <div className="flex-1">
           <label
