@@ -144,6 +144,7 @@ export default function ThumbnailStrip({
       generateThumbnails();
     }
     return () => {
+      // Increment ref to invalidate any pending async operations
       lastRunIdRef.current++;
       revokeAllObjectUrls();
     };

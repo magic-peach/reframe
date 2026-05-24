@@ -5,8 +5,8 @@
 /* ── Light mode tokens ── */
 :root {
   --bg: #ffffff;
-  --surface: #f8fafc;
-  --border: #e2e8f0;
+  --surface: #f1f5f9;
+  --border: #cbd5e1;
   --text: #0f172a;
   --muted: #64748b;
   --accent: #3b82f6;
