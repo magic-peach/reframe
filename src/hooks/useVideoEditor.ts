@@ -598,13 +598,6 @@ export function useVideoEditor() {
    },[result?.blobUrl])
 
   useEffect(() => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-    }
-  }, [previewUrl]);
-
-  useEffect(() => {
     return () => {
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl);
@@ -684,11 +677,6 @@ export function useVideoEditor() {
 
     setIsPreviewing(true);
     try {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-        setPreviewUrl(null);
-      }
-
       let ffmpeg = ffmpegRef.current;
       if (!ffmpeg?.loaded) {
         ffmpeg = await loadFFmpeg();
@@ -702,7 +690,15 @@ export function useVideoEditor() {
     } finally {
       setIsPreviewing(false);
     }
-  }, [file, recipe, isPreviewing, previewUrl, status]);
+  }, [file, recipe, isPreviewing, status]);
+
+  useEffect(() => {
+    if (file) return;
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  }, [file, previewUrl]);
 
   return {
     file,
