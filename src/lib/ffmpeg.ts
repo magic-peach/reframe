@@ -165,11 +165,11 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   return filters.join(",");
 }
 
-export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
-  if (speed <= 0) return "";
+export function buildAudioFilter(recipe: EditRecipe): string {
+  if (recipe.speed <= 0) return "";
   const filters: string[] = [];
 
-  let remaining = speed;
+  let remaining = recipe.speed;
   while (remaining < 0.5) {
     filters.push("atempo=0.5");
     remaining /= 0.5;
@@ -184,7 +184,11 @@ export function buildAudioFilter(speed: number, normalizeAudio: boolean): string
     filters.push(`atempo=${Number(remaining.toFixed(4))}`);
   }
 
-  if (normalizeAudio) filters.push("loudnorm=I=-14:TP=-1.5:LRA=11");
+  if (recipe.volume !== undefined && recipe.volume !== 100) {
+    filters.push(`volume=${(recipe.volume / 100).toFixed(2)}`);
+  }
+
+  if (recipe.normalizeAudio) filters.push("loudnorm=I=-14:TP=-1.5:LRA=11");
 
   return filters.join(",");
 }
@@ -213,7 +217,7 @@ function buildArguments(
 ): string[] {
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 

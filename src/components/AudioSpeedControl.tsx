@@ -115,6 +115,33 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       </div>
 
       {recipe.keepAudio && (
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <label
+            htmlFor="volume-control"
+            className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
+          >
+            <Volume2 size={10} aria-hidden="true" /> Volume
+          </label>
+
+          <span className="text-sm font-heading font-bold text-film-600 block">
+            {recipe.volume}%
+          </span>
+        </div>
+        <input
+          id="volume-control"
+          type="range"
+          min={0}
+          max={200}
+          step={1}
+          value={recipe.volume ?? 100}
+          onChange={(e) => onChange({ volume: Number(e.target.value) })}
+          className="w-full h-11 accent-film-600 cursor-pointer"
+        />
+      </div>
+      )}
+
+      {recipe.keepAudio && (
         <button
           type="button"
           onClick={() => onChange({ normalizeAudio: !recipe.normalizeAudio })}
