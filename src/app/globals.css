@@ -1,67 +1,95 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
 
 /* ── Light mode tokens ── */
 :root {
-  --bg: #ffffff;
-  --surface: #f1f5f9;
-  --border: #cbd5e1;
-  --text: #0f172a;
-  --muted: #64748b;
-  --accent: #3b82f6;
+  --bg: #F8F6F3;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --border: #E8E3DC;
+  --border-hover: #d1ccc5;
+  --text: #1a1714;
+  --muted: #6b6560;
+  --accent: #2563eb;
   --accent-hover: #1d4ed8;
-  --accent-muted: rgba(59, 130, 246, 0.12);
-  --radius: 10px;
-  --shadow: 0 2px 12px rgba(15, 23, 42, 0.12);
-  --film-600: #e63946;
-  --film-400: #ff6b6b;
+  --film-50: #fff1f2;
+  --film-100: #ffe4e6;
+  --film-200: #fecdd3;
+  --film-300: #fda4af;
+  --film-400: #fb7185;
+  --film-500: #f43f5e;
+  --film-600: #e11d48;
+  --film-700: #be123c;
+  --film-800: #9f1239;
+  --film-900: #881337;
+  --film-950: #4c0519;
   --warning: #f59e0b;
   --error: #ef4444;
   --error-bg: #fee2e2;
   --error-border: #fca5a5;
   --error-hover: #fecaca;
+  --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --card-shadow-hover: 0 10px 20px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --glow-color: rgba(244, 63, 94, 0.2);
 }
 
 /* ── Dark mode tokens ── */
 .dark {
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --border: #2e3147;
-  --text: #f0f0f5;
-  --muted: #8b8fa8;
-  --accent: #4f6ef7;
-  --accent-hover: #3a57d4;
-  --accent-muted: rgba(79, 110, 247, 0.12);
-  --radius: 10px;
-  --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --bg: #0c1222;
+  --surface: #162032;
+  --surface-elevated: #1c2a42;
+  --border: #2a3a52;
+  --border-hover: #3a4f6e;
+  --text: #f1f5f9;
+  --muted: #8b9cb8;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --film-50: #1e0a10;
+  --film-100: #2d1018;
+  --film-200: #4a1525;
+  --film-300: #7a1e3a;
+  --film-400: #c4345a;
+  --film-500: #f43f5e;
+  --film-600: #f65a76;
+  --film-700: #f8899a;
+  --film-800: #fab3be;
+  --film-900: #fddce2;
+  --film-950: #fef0f2;
   --warning: #fbbf24;
   --error: #f87171;
-  --error-bg: #7f1d1d;
-  --error-border: #991b1b;
-  --error-hover: #991b1b;
+  --error-bg: #3b1111;
+  --error-border: #5c1a1a;
+  --error-hover: #5c1a1a;
+  --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
+  --card-shadow-hover: 0 10px 25px -5px rgb(0 0 0 / 0.4), 0 8px 15px -6px rgb(0 0 0 / 0.3);
+  --glow-color: rgba(244, 63, 94, 0.3);
 }
 
 /* ── High contrast mode tokens ── */
 [data-theme="high-contrast"] {
   --bg: #000000;
   --surface: #000000;
+  --surface-elevated: #111111;
   --border: #FFFFFF;
-
+  --border-hover: #FFFFFF;
   --text: #FFFFFF;
   --muted: #FFFFFF;
-
   --accent: #FFFF00;
   --accent-hover: #FFFF00;
-  --accent-muted: rgba(255, 255, 0, 0.22);
-  --radius: 10px;
-  --shadow: none;
-
   --error: #FF6666;
   --success: #66FF66;
-
   --film-600: #FF6666;
   --film-400: #66FF66;
+  --card-shadow: none;
+  --card-shadow-hover: none;
+  --glow-color: rgba(255, 255, 0, 0.2);
+}
+
+/* ── Smooth scrolling ── */
+html {
+  scroll-behavior: smooth;
 }
 
 /* Ensure export overlay text is readable in high-contrast by forcing dark text */
@@ -91,56 +119,195 @@
 body {
   background-color: var(--bg);
   color: var(--text);
-  line-height: 1.6;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  color: var(--text);
-  font-weight: 700;
-}
-
-p,
-li {
-  color: color-mix(in srgb, var(--text) 95%, transparent);
-}
-
-button {
-  transition: all 0.2s ease;
-}
-
-input,
-select,
-textarea {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-muted);
-  outline: none;
+  transition: background-color 0.4s ease, color 0.4s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Smooth transitions for all themed elements */
 *,
 *::before,
 *::after {
-  transition-property: background-color, border-color, color, fill, stroke;
-  transition-timing-function: ease;
-  transition-duration: 200ms;
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, transform, opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
 }
 
 :focus-visible {
-  outline: 0;
-  box-shadow: 0 0 0 3px var(--accent-muted);
-  border-radius: var(--radius);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Custom Range Slider Styling ── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  height: 2rem;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--border), var(--border));
+  border: 1px solid var(--border);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--film-600, #e11d48);
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--film-600);
+  margin-top: -7px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 0 2px var(--film-500);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--film-600, #e11d48);
+  border: 3px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--film-600);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 0 2px var(--film-500);
+}
+
+/* ── Custom checkbox styling ── */
+input[type="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 4px;
+  accent-color: var(--film-600, #e11d48);
+  cursor: pointer;
+}
+
+/* ── Animations ── */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px -5px var(--glow-color);
+  }
+
+  50% {
+    box-shadow: 0 0 30px -3px var(--glow-color);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ── Selection ── */
+::selection {
+  background-color: var(--film-500);
+  color: white;
+}
+
+/* ── Scrollbar styling ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }

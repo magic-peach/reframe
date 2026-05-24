@@ -28,7 +28,7 @@ export default function FileUpload({
   const [warning, setWarning] = useState("");
   const dragCounterRef = useRef(0);
 
-  // ── Keyboard shortcut Ctrl+O ──────────────────────────
+  // Keyboard shortcut Ctrl+O
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o") {
@@ -40,8 +40,7 @@ export default function FileUpload({
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  // ── Page-level drag overlay ───────────────────────────
-  // Uses a counter so nested dragenter/dragleave don't flicker
+  // Page-level drag overlay (counter to avoid flicker)
   useEffect(() => {
     const onDragEnter = (e: DragEvent) => {
       e.preventDefault();
@@ -82,7 +81,7 @@ export default function FileUpload({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── File validation ───────────────────────────────────
+  // File validation
   const handleFile = useCallback((file: File) => {
     setError("");
     setWarning("");
@@ -117,7 +116,7 @@ export default function FileUpload({
     onFileSelect(file);
   }, [onFileSelect]);
 
-  // ── Drop zone (inner) handler ─────────────────────────
+  // Inner drop handler
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
@@ -125,9 +124,9 @@ export default function FileUpload({
     if (file) handleFile(file);
   };
 
-  // ── File info (shown after upload) ───────────────────
+  // File info shown after selecting a file
   const FileInfo = () => (
-    <div className="px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow)]">
+    <div className="px-4 py-3 bg-film-50 border border-film-200 rounded-lg">
       <div className="flex flex-col lg:flex-row lg:items-center gap-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className="hidden lg:flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--surface)] border border-[var(--border)] shrink-0">
@@ -136,11 +135,11 @@ export default function FileUpload({
           <Film size={18} className="lg:hidden text-film-600 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-0.5">
-              <p className="text-sm font-semibold text-[var(--text)] truncate max-w-[320px] xl:max-w-[420px]">
+              <p className="text-sm font-semibold text-film-700 truncate max-w-[320px] xl:max-w-[420px]">
                 {currentFile?.name}
               </p>
               {currentFile && (
-                <span className="px-2 py-0.5 bg-[var(--accent-muted)] text-[var(--text)] font-bold tracking-wider rounded text-[10px] uppercase shrink-0">
+                <span className="px-2 py-0.5 bg-gray-700 text-white font-bold tracking-wider rounded text-[10px] uppercase shrink-0">
                   {currentFile.name.includes(".")
                     ? currentFile.name.split(".").pop()
                     : "VIDEO"}
@@ -166,30 +165,28 @@ export default function FileUpload({
           Change
           <span className="text-[var(--muted)] ml-1">(Ctrl+O)</span>
         </button>
+
+        {fileError && (
+          <p className="text-xs text-red-500 mt-2 font-medium">{fileError}</p>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="video/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+          }}
+        />
       </div>
 
       <p className="text-xs text-[var(--muted)] mt-3 break-words">
         Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
       </p>
-
-      {fileError && (
-        <p className="text-xs text-[var(--error)] mt-2 font-medium">{fileError}</p>
-      )}
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
     </div>
   );
 
-  // ── Drop zone (inner) ─────────────────────────────────
   const DropZone = () => (
     <div
       id="upload-zone"
@@ -209,11 +206,11 @@ export default function FileUpload({
         }
       }}
       className={cn(
-        "group flex flex-col items-center justify-center gap-4 py-12 px-6",
-        "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden",
+        "group flex flex-col items-center justify-center gap-5 py-14 px-8",
+        "border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 relative overflow-hidden",
         dragging
-          ? "border-[var(--accent)] bg-[var(--accent-muted)] scale-[1.02] shadow-[var(--shadow)] ring-4 ring-[var(--accent-muted)]"
-          : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
+          ? "border-film-500 bg-film-50/60 scale-[1.02] shadow-[0_0_50px_-10px_rgba(230,57,70,0.4)] ring-4 ring-film-500/20"
+          : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/30 hover:shadow-card-hover"
       )}
     >
       {dragging && (
@@ -244,7 +241,7 @@ export default function FileUpload({
       </p>
 
       {fileError && (
-        <p className="text-sm text-[var(--error)] text-center">{fileError}</p>
+        <p className="text-sm text-red-500 text-center">{fileError}</p>
       )}
 
       <input
@@ -262,7 +259,7 @@ export default function FileUpload({
 
   return (
     <>
-      {/* ── Page-level drag overlay ── */}
+      {/* Page-level drag overlay */}
       {pageDragging && (
         <div
           aria-live="polite"
@@ -274,7 +271,6 @@ export default function FileUpload({
             "transition-all duration-200 pointer-events-none"
           )}
         >
-          {/* Animated ring */}
           <div className="relative flex items-center justify-center">
             <div className="absolute w-32 h-32 rounded-full border-4 border-film-500/40 animate-ping" />
             <div className="w-24 h-24 rounded-full bg-film-500/10 border-2 border-film-500 flex items-center justify-center">
@@ -283,25 +279,21 @@ export default function FileUpload({
           </div>
 
           <div className="text-center">
-            <p className="text-2xl font-bold text-white">
-              Drop your video anywhere
-            </p>
-            <p className="text-film-300 mt-1 text-sm">
-              Release to start uploading
-            </p>
+            <p className="text-2xl font-bold text-white">Drop your video anywhere</p>
+            <p className="text-film-300 mt-1 text-sm">Release to start uploading</p>
           </div>
         </div>
       )}
 
-      {/* ── Normal upload UI ── */}
+      {/* Normal upload UI */}
       <div className="space-y-2">
         {error && (
-          <p role="alert" className="text-sm text-[var(--error)]">
+          <p role="alert" className="text-sm text-red-500">
             {error}
           </p>
         )}
         {warning && (
-          <p role="alert" className="text-sm text-[var(--warning)]">
+          <p role="alert" className="text-sm text-yellow-500">
             {warning}
           </p>
         )}
