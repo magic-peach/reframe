@@ -4,6 +4,9 @@ import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  // Avoid rendering until theme is initialized on the client to prevent
+  // SSR/client hydration mismatches and visible flicker.
+  if (theme === undefined) return null;
 
   return (
     <button
