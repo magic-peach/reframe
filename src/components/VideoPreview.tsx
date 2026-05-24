@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
-import { useEffect, useRef, useState, useCallback, RefObject } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, RefObject } from "react";
 import { EditRecipe, TextOverlay } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
@@ -124,23 +124,40 @@ export default function VideoPreview({
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
+  const aspectStyle = useMemo(() => {
+    if (!recipe) return undefined;
+    const preset = recipe.preset === "custom"
+      ? { width: recipe.customWidth, height: recipe.customHeight }
+      : getPresetById(recipe.preset);
+    if (!preset) return undefined;
+    return { aspectRatio: `${preset.width} / ${preset.height}` };
+  }, [recipe]);
+
   /**
-   * Track preview container dimensions for text overlay positioning.
+   * Track preview container dimensions for text overlay positioning using ResizeObserver.
    */
   useEffect(() => {
+    const container = previewContainerRef.current;
+    if (!container) return;
+
     const updateDimensions = () => {
-      if (previewContainerRef.current) {
-        const rect = previewContainerRef.current.getBoundingClientRect();
-        setContainerDimensions({
-          width: rect.width,
-          height: rect.height,
-        });
-      }
+      const rect = container.getBoundingClientRect();
+      setContainerDimensions({
+        width: rect.width,
+        height: rect.height,
+      });
     };
 
     updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
+
+    const observer = new ResizeObserver(() => {
+      updateDimensions();
+    });
+
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   const overlay = (() => {
@@ -217,7 +234,8 @@ export default function VideoPreview({
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] mx-auto max-h-[60vh] object-contain"
+        style={aspectStyle || { aspectRatio: "16 / 9" }}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"

@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions */
 "use client";
 
-import { useEffect, useRef, useState, useCallback, RefObject } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, RefObject } from "react";
 import { EditRecipe } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,15 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const aspectStyle = useMemo(() => {
+    if (!recipe) return undefined;
+    const preset = recipe.preset === "custom"
+      ? { width: recipe.customWidth, height: recipe.customHeight }
+      : getPresetById(recipe.preset);
+    if (!preset) return undefined;
+    return { aspectRatio: `${preset.width} / ${preset.height}` };
+  }, [recipe]);
 
   // Calculate overlay for the right (reframed) side
   const overlay = (() => {
@@ -166,7 +175,8 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
   return (
     <div
       ref={containerRef}
-      className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video"
+      className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] mx-auto max-h-[60vh] object-contain"
+      style={aspectStyle || { aspectRatio: "16 / 9" }}
       role="group"
       aria-label="Video comparison preview"
     >
