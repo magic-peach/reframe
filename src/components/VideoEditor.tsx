@@ -18,6 +18,7 @@ import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
 import { getPresetById } from "@/lib/presets";
+import SplitExport from "./SplitExport";
 
 import { cn } from "@/lib/utils";
 import {
@@ -232,6 +233,7 @@ export default function VideoEditor() {
     rotation: false,
     text: false,
     audio: false,
+    split: false,
     export: false,
   });
 
@@ -556,6 +558,16 @@ export default function VideoEditor() {
                   <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
                   </Section>
+                  <AccordionSection
+                    id="split"
+                    icon={<Scissors size={12} />}
+                    title="Split Video"
+                    isOpen={openSections.split}
+                    onToggle={() => toggleSection("split")}
+                    delay={195}
+                  >
+                    <SplitExport file={file} recipe={recipe} duration={duration} />
+                  </AccordionSection>
                   <AccordionSection
                     id="export"
                     icon={<SlidersHorizontal size={12} />}
