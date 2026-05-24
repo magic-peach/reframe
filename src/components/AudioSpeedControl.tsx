@@ -1,4 +1,4 @@
-"use client";
+"use client";   
 import { useEffect } from "react";
 
 import { EditRecipe } from "@/lib/types"
@@ -97,7 +97,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
             htmlFor="speed-control"
             className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
           >
-            <Gauge size={10} /> Speed
+            <Gauge size={10} aria-hidden="true" /> Speed
           </label>
 
           <div className="text-right">
@@ -137,8 +137,8 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
       </div>
 
       {recipe.keepAudio && (recipe.trimStart !== 0 || recipe.trimEnd !== null) && (
-        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-700 leading-relaxed flex items-start gap-2 animate-fade-in">
-          <AlertTriangle size={12} className="shrink-0 mt-0.5" />
+        <div role="note" className="mt-3 p-3 bg-[var(--accent-muted)] border border-[var(--border)] rounded text-sm text-[var(--text)] leading-relaxed flex items-start gap-2 animate-fade-in">
+          <AlertTriangle size={12} aria-hidden="true" className="shrink-0 mt-0.5" />
           <p>
             Note: If audio doesn&apos;t start within the selected range, the output will be silent.
           </p>
