@@ -114,8 +114,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
         </div>
       </div>
 
-      {recipe.keepAudio && (
-      <div>
+      <div className={cn("transition-opacity duration-200", !recipe.keepAudio && "opacity-50 pointer-events-none")}>
         <div className="flex items-center justify-between mb-2">
           <label
             htmlFor="volume-control"
@@ -134,12 +133,12 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           min={0}
           max={200}
           step={1}
+          disabled={!recipe.keepAudio}
           value={recipe.volume ?? 100}
           onChange={(e) => onChange({ volume: Number(e.target.value) })}
           className="w-full h-11 accent-film-600 cursor-pointer"
         />
       </div>
-      )}
 
       {recipe.keepAudio && (
         <button
