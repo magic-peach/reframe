@@ -2,6 +2,7 @@
 
 import { EditRecipe } from "@/lib/types";
 import { RotateCw } from "lucide-react";
+import BaseButton from "./ui/BaseButton";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -17,23 +18,18 @@ export default function RotateControl({ recipe, onChange }: Props) {
       {ROTATIONS.map((deg) => {
         const active = recipe.rotate === deg;
         return (
-          <button
+          <BaseButton
             type="button"
             key={deg}
             onClick={() => onChange({ rotate: deg })}
             aria-label={`Rotate video to ${deg} degrees`}
             aria-pressed={active}
-            className={cn(
-              "flex-1 min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 py-3 rounded-lg border text-xs transition-all duration-150 cursor-pointer hover:scale-[1.03] active:scale-[0.97]",
-              active
-                ? "border-film-500 bg-film-50 text-film-700 font-heading font-semibold"
-                : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
-            )}
+            active={active}
+            className="flex-1 flex flex-col items-center gap-1.5 py-3"
           >
-            <RotateCw size={15} style={{ transform: `rotate(${deg}deg)`, transformOrigin: 'center' }} className="transition-transform" />
-            <span className="sr-only">Rotate video to {deg} degrees</span>
+            <RotateCw size={15} aria-hidden="true" style={{ transform: `rotate(${deg}deg)`, transformOrigin: 'center' }} className="transition-transform" />
             {deg}
-          </button>
+          </BaseButton>
         );
       })}
     </div>
