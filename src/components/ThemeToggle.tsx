@@ -17,9 +17,10 @@ export function ThemeToggle() {
         bg-[var(--surface)]
         text-[var(--text)]
         border border-[var(--border)]
-        hover:opacity-90
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-        transition-colors duration-200
+        hover:border-[var(--accent)] hover:bg-[var(--accent-muted)]
+        focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2
+        focus:ring-offset-[var(--bg)]
+        transition-all duration-200
       "
     >
       {isDark ? (

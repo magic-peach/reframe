@@ -16,6 +16,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
 import {
@@ -45,6 +46,62 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
         <div className="flex-1 h-px bg-[var(--border)]" />
       </div>
       {children}
+    </div>
+  );
+}
+
+/** Accordion section with collapsible content. */
+function AccordionSection({
+  id,
+  icon,
+  title,
+  children,
+  isOpen,
+  onToggle,
+  delay = 0,
+}: {
+  id: string;
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+  isOpen: boolean;
+  onToggle: () => void;
+  delay?: number;
+}) {
+  return (
+    <div className="animate-fade-in" style={{ animationDelay: `${delay}ms` }}>
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        aria-controls={`${id}-panel`}
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[var(--border)] transition-colors duration-150"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-film-500 opacity-80">{icon}</span>
+          <span className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">{title}</span>
+        </div>
+        <svg
+          aria-hidden="true"
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          className={cn("text-[var(--muted)] transition-transform duration-200", isOpen && "rotate-180")}
+        >
+          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      <div
+        id={`${id}-panel`}
+        className={cn(
+          "transition-all duration-200",
+          isOpen ? "block" : "hidden"
+        )}
+      >
+        <div className="px-3 pt-3 pb-0">{children}</div>
+      </div>
     </div>
   );
 }
@@ -117,7 +174,7 @@ function KeyboardShortcutsPanel() {
 export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
-    result, error, updateRecipe,
+    result, error, exportStartedAt, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
     videoRef,
     seekTo,
@@ -134,7 +191,11 @@ export default function VideoEditor() {
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    const encoded = btoa(JSON.stringify(recipe));
+    const url = new URL(window.location.href);
+    url.searchParams.set("settings", encoded);
+    history.replaceState(null, "", url.toString());
+    navigator.clipboard.writeText(url.toString()).then(() => {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
     });
@@ -152,10 +213,33 @@ export default function VideoEditor() {
 
   const isProcessing = status === "loading-engine" || status === "exporting";
 
+  const intervalSeconds = useMemo(() => {
+    if (duration <= 30) return 2;
+    if (duration <= 120) return 5;
+    if (duration <= 300) return 15;
+    return 30;
+  }, [duration]);
+
   const videoSrc = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
     [file]
   );
+
+  const exportSummary = useMemo(() => {
+    const preset = getPresetById(recipe.preset);
+    const width = recipe.preset === "custom" ? recipe.customWidth : (preset?.width ?? recipe.customWidth);
+    const height = recipe.preset === "custom" ? recipe.customHeight : (preset?.height ?? recipe.customHeight);
+
+    const framingLabel = recipe.framing === "fit" ? "Fit" : "Fill";
+    const speedLabel = `${recipe.speed}× speed`;
+    const qualityLabel = recipe.quality <= 21
+      ? "High"
+      : recipe.quality <= 25
+      ? "Balanced"
+      : "Small file";
+
+    return `Exporting to ${width}×${height} ${recipe.format.toUpperCase()} • ${framingLabel} • ${speedLabel} • Quality: ${qualityLabel}`;
+  }, [recipe]);
 
   useEffect(() => {
     return () => {
@@ -165,7 +249,12 @@ export default function VideoEditor() {
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
-      <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
+      <ExportOverlay
+        status={status}
+        progress={progress}
+        exportStartedAt={exportStartedAt}
+        onCancel={cancelExport}
+      />
       <OnboardingTour />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
@@ -219,6 +308,7 @@ export default function VideoEditor() {
                       trimStart={recipe.trimStart ?? 0}
                       trimEnd={recipe.trimEnd ?? duration}
                       onSeek={seekTo}
+                      intervalSeconds={intervalSeconds}
                     />
                   </div>
                 </div>
@@ -374,6 +464,8 @@ export default function VideoEditor() {
                     navigator.clipboard.writeText(error).then(() => {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
+                    }).catch((err) => {
+                      console.error("Failed to copy error to clipboard:", err);
                     });
                   }}
                   className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-sm font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
@@ -401,9 +493,19 @@ export default function VideoEditor() {
           </div>
 
           <div className={cn(
-            "space-y-5",
-            isProcessing && "pointer-events-none opacity-50"
+            "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
+            (isProcessing || !file) && "pointer-events-none opacity-50"
           )}>
+            {!file && (
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 animate-fade-in">
+                <p className="text-[10px] font-heading font-bold text-film-600 uppercase tracking-widest">
+                  Getting Started
+                </p>
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  Upload a video file to enable these export settings.
+                </p>
+              </div>
+            )}
             <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
               <Section icon={<Layers size={12} />} title="Output size">
                 {recommendedPreset && (
@@ -413,14 +515,13 @@ export default function VideoEditor() {
                     </p>
                   </div>
                 )}
-                <PresetSelector recipe={recipe} onChange={updateRecipe} />
-              </Section>
+                <div className="space-y-3">
+                  <PresetSelector recipe={recipe} onChange={updateRecipe} />
+                  <FramingControl recipe={recipe} onChange={updateRecipe} />
+                </div>
+              </AccordionSection>
 
-              <Section icon={<Crop size={12} />} title="Framing" delay={100}>
-                <FramingControl recipe={recipe} onChange={updateRecipe} />
-              </Section>
-
-              <div className="pt-2 flex justify-between items-center">
+              <div className="pt-2 flex justify-center items-center gap-6">
                 <button
                   type="button"
                   onClick={handleCopyLink}
@@ -441,6 +542,12 @@ export default function VideoEditor() {
 
             <KeyboardShortcutsPanel />
 
+            {file && (
+              <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)] leading-relaxed">
+                {exportSummary}
+              </p>
+            )}
+
             <button
               id="export-button"
               type="button"
@@ -452,7 +559,7 @@ export default function VideoEditor() {
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
-                  ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
+                  ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >

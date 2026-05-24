@@ -112,7 +112,7 @@ export default function ExportSettings({
           </p>
 
           {isGif && (
-            <p className="text-xs text-amber-600 font-medium">
+            <p className="text-xs text-[var(--warning)] font-medium">
               ⚠ GIF files can be very large. Keep clips under 10 s for best results.
             </p>
           )}
@@ -176,7 +176,7 @@ export default function ExportSettings({
             className={cn(
               "text-xs",
               recipe.stabilization
-                ? "text-red-700 font-medium"
+                ? "text-[var(--error)] font-medium"
                 : "text-[var(--muted)]"
             )}
           >
