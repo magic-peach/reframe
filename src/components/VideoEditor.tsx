@@ -19,7 +19,7 @@ import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
 import TextControls from "./TextControls";
 import { getPresetById } from "@/lib/presets";
-
+import { TextOverlay } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
