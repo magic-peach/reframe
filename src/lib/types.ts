@@ -68,6 +68,7 @@ export interface ExportResult {
 
 export type ExportStatus =
   | "idle"
+  | "loading"
   | "loading-engine"
   | "exporting"
   | "done"

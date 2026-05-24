@@ -353,12 +353,13 @@ export function useVideoEditor() {
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
     setResult(null);
-    setStatus("idle");
+    setStatus("loading");
     setError(null);
     setFile(null);
     setVideoMetadata(null);
     if (!selectedFile.type.startsWith("video/")) {
       setFileError("Please upload a video file only.");
+      setStatus("idle");
       return;
     }
 
@@ -411,6 +412,7 @@ export function useVideoEditor() {
       setDuration(dur);
       setVideoMetadata({ width, height, duration: dur });
       setFile(selectedFile);
+      setStatus("idle");
 
       if (dimensionCheck === "warning") {
         console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
@@ -612,6 +614,26 @@ export function useVideoEditor() {
       }
     }
    },[result?.blobUrl])
+
+  // Reset export status/result/error when recipe or options change after an export/error
+  useEffect(() => {
+    if (status === "done" || status === "error") {
+      setStatus("idle");
+      setResult(null);
+      setError(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    recipe,
+    musicFile,
+    musicVolume,
+    originalAudioVolume,
+    loopMusic,
+    overlayFile,
+    overlayPosition,
+    overlaySize,
+    overlayOpacity,
+  ]);
 
   useEffect(() => {
     return () => {

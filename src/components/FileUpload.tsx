@@ -12,6 +12,7 @@ interface Props {
   currentFile: File | null;
   fileError: string;
   duration: number;
+  isLoading?: boolean;
 }
 
 export default function FileUpload({
@@ -19,6 +20,7 @@ export default function FileUpload({
   currentFile,
   fileError,
   duration,
+  isLoading = false,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -259,6 +261,24 @@ export default function FileUpload({
       />
     </div>
   );
+ 
+  // ── Loading state ──
+  const LoadingState = () => (
+    <div className="flex flex-col items-center justify-center gap-4 py-12 px-6 border-2 border-dashed border-[var(--border)] rounded-xl bg-[var(--bg)] animate-pulse">
+      <div className="relative flex items-center justify-center w-16 h-16">
+        <div className="absolute w-12 h-12 rounded-full border-4 border-film-500/20 border-t-film-600 animate-spin" />
+        <Film size={20} className="text-film-600 animate-pulse" />
+      </div>
+      <div className="text-center">
+        <p className="font-heading font-semibold text-[var(--text)] text-base">
+          Processing Video
+        </p>
+        <p className="text-sm text-[var(--muted)] mt-1">
+          Extracting dimensions, aspect ratio, and metadata...
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -305,7 +325,7 @@ export default function FileUpload({
             {warning}
           </p>
         )}
-        {currentFile ? <FileInfo /> : <DropZone />}
+        {isLoading ? <LoadingState /> : currentFile ? <FileInfo /> : <DropZone />}
       </div>
     </>
   );

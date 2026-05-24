@@ -271,7 +271,7 @@ export default function VideoEditor() {
     }
   }, [status]);
 
-  const isProcessing = status === "loading-engine" || status === "exporting";
+  const isProcessing = status === "loading" || status === "loading-engine" || status === "exporting";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const intervalSeconds = useMemo(() => {
@@ -370,7 +370,13 @@ export default function VideoEditor() {
 
           <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                currentFile={file}
+                fileError={fileError}
+                duration={duration}
+                isLoading={status === "loading"}
+              />
 
               {!file && (
                 <div className="text-center text-[var(--muted)] py-6">
