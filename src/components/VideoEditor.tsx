@@ -3,6 +3,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
@@ -16,6 +17,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import TextControls from "./TextControls";
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
@@ -187,7 +189,20 @@ export default function VideoEditor() {
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const downloadRef = useRef<HTMLDivElement>(null);
+
+  // Setup keyboard shortcuts
+  useKeyboardShortcuts({
+    file,
+    recipe,
+    resetSettings,
+    updateRecipe,
+    handleExport,
+    status,
+    cancelExport,
+    onToggleShortcutsModal: () => {},
+  });
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
@@ -444,6 +459,14 @@ export default function VideoEditor() {
                       setOverlayOpacity={setOverlayOpacity}
                     />
                   </Section>
+                  <Section icon={<Layers size={12} />} title="Text overlays" delay={130}>
+                    <TextControls
+                      recipe={recipe}
+                      onChange={updateRecipe}
+                      selectedTextId={selectedTextId}
+                      onSelectText={setSelectedTextId}
+                    />
+                  </Section>
                 </div>
               </div>
             )}
@@ -507,7 +530,13 @@ export default function VideoEditor() {
               </div>
             )}
             <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
-              <Section icon={<Layers size={12} />} title="Output size">
+              <AccordionSection 
+                id="output-size"
+                icon={<Layers size={12} />} 
+                title="Output size"
+                isOpen={true}
+                onToggle={() => {}}
+              >
                 {recommendedPreset && (
                   <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
                     <p>
