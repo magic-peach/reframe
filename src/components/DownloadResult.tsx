@@ -12,6 +12,16 @@ import { cn } from "@/lib/utils";
 const SHARE_TWEET_TEXT =
   "I just edited my video with @reframevideo — free browser-based video editor! Check it out: https://github.com/magic-peach/reframe";
 
+function formatExportDuration(ms: number): string {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (minutes === 0) return `${seconds} sec`;
+  if (seconds === 0) return `${minutes} min`;
+  return `${minutes} min ${seconds} sec`;
+}
+
 interface Props {
   result: ExportResult;
   onReset: () => void;
@@ -82,6 +92,12 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">File size</p>
           <p className="font-heading font-bold text-[var(--text)]">{formatBytes(result.size)}</p>
         </div>
+        {typeof result.exportDurationMs === "number" && (
+          <div className="col-span-2 bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
+            <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">Export time</p>
+            <p className="font-heading font-bold text-[var(--text)]">Exported in {formatExportDuration(result.exportDurationMs)}</p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-1.5 pt-2">

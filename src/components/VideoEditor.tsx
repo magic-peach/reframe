@@ -70,17 +70,6 @@ function AccordionSection({
   onToggle: () => void;
   delay?: number;
 }) {
-  const contentRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!contentRef.current) return;
-    if (isOpen) {
-      contentRef.current.style.maxHeight = `${contentRef.current.scrollHeight}px`;
-    } else {
-      contentRef.current.style.maxHeight = `0px`;
-    }
-  }, [isOpen]);
-
   return (
     <div className="animate-fade-in" style={{ animationDelay: `${delay}ms` }}>
       <button
@@ -108,9 +97,10 @@ function AccordionSection({
 
       <div
         id={`${id}-panel`}
-        ref={contentRef}
-        className="overflow-hidden transition-all duration-200"
-        style={{ maxHeight: isOpen ? undefined : 0 }}
+        className={cn(
+          "transition-all duration-200",
+          isOpen ? "block" : "hidden"
+        )}
       >
         <div className="px-3 pt-3 pb-0">{children}</div>
       </div>
@@ -209,7 +199,7 @@ function KeyboardShortcutsPanel() {
 export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
-    result, error, updateRecipe,
+    result, error, exportStartedAt, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
     videoRef,
     seekTo,
@@ -261,7 +251,11 @@ export default function VideoEditor() {
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    const encoded = btoa(JSON.stringify(recipe));
+    const url = new URL(window.location.href);
+    url.searchParams.set("settings", encoded);
+    history.replaceState(null, "", url.toString());
+    navigator.clipboard.writeText(url.toString()).then(() => {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
     });
@@ -316,7 +310,12 @@ export default function VideoEditor() {
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
-      <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
+      <ExportOverlay
+        status={status}
+        progress={progress}
+        exportStartedAt={exportStartedAt}
+        onCancel={cancelExport}
+      />
       <OnboardingTour />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
@@ -657,13 +656,13 @@ export default function VideoEditor() {
                     </p>
                   </div>
                 )}
-                <PresetSelector recipe={recipe} onChange={updateRecipe} />
-                <div className="mt-3">
+                <div className="space-y-3">
+                  <PresetSelector recipe={recipe} onChange={updateRecipe} />
                   <FramingControl recipe={recipe} onChange={updateRecipe} />
                 </div>
               </AccordionSection>
 
-              <div className="pt-2 flex justify-between items-center">
+              <div className="pt-2 flex justify-center items-center gap-6">
                 <button
                   type="button"
                   onClick={handleCopyLink}
