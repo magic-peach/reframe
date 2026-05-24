@@ -110,6 +110,7 @@ export default function ImageOverlayPanel({
 
         {/* Right Side: Horizontal Details Card */}
         <div
+          role="button"
           onClick={() => {
             if (overlayFile && setIsSelected) {
               setIsSelected(!isSelected);
@@ -118,6 +119,14 @@ export default function ImageOverlayPanel({
           onFocus={() => {
             if (overlayFile && setIsSelected) {
               setIsSelected(true);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              if (overlayFile && setIsSelected) {
+                setIsSelected(!isSelected);
+              }
             }
           }}
           tabIndex={overlayFile ? 0 : -1}

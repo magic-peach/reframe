@@ -218,6 +218,7 @@ function ShortcutsHelpModal({ isOpen, onClose }: ShortcutsHelpModalProps) {
   ];
 
   return (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in"
       role="dialog"
@@ -225,6 +226,7 @@ function ShortcutsHelpModal({ isOpen, onClose }: ShortcutsHelpModalProps) {
       aria-labelledby="modal-title"
       onClick={onClose}
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         className="w-full max-w-lg rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-2xl overflow-hidden flex flex-col animate-scale-in"
         onClick={(e) => e.stopPropagation()}

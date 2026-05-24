@@ -192,8 +192,10 @@ export function useVideoEditor() {
     if (index > 0) {
       isUndoingOrRedoing.current = true;
       const prevRecipe = list[index - 1];
-      setRecipe(prevRecipe);
-      setHistoryIndex(index - 1);
+      if (prevRecipe) {
+        setRecipe(prevRecipe);
+        setHistoryIndex(index - 1);
+      }
       setTimeout(() => {
         isUndoingOrRedoing.current = false;
       }, 0);
@@ -205,8 +207,10 @@ export function useVideoEditor() {
     if (index < list.length - 1) {
       isUndoingOrRedoing.current = true;
       const nextRecipe = list[index + 1];
-      setRecipe(nextRecipe);
-      setHistoryIndex(index + 1);
+      if (nextRecipe) {
+        setRecipe(nextRecipe);
+        setHistoryIndex(index + 1);
+      }
       setTimeout(() => {
         isUndoingOrRedoing.current = false;
       }, 0);
