@@ -9,6 +9,12 @@ import WaveformCanvas from "@/components/WaveformCanvas";
 
 const MIN_CLIP_DURATION = 0.1;
 
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = (seconds % 60).toFixed(1)
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(4, '0')}`
+}
+
 interface Props {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
@@ -159,6 +165,13 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
       return;
     }
 
+     if ((n - recipe.trimStart) < MIN_CLIP_DURATION) {
+    setEnd(true);
+    setEndErrorMsg(`Clip must be at least ${MIN_CLIP_DURATION}s long.`);
+    return;
+  }
+
+
     if (duration > 0 && n > duration + 0.01) {
       setEnd(true);
       setEndErrorMsg(
@@ -241,7 +254,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             htmlFor="trim-start"
             className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
           >
-            Start (sec)
+            Start (s)
           </label>
 
           <input
@@ -278,7 +291,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             htmlFor="trim-end"
             className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
           >
-            End (sec)
+            End (s)
           </label>
 
           <input
@@ -313,8 +326,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
       {duration > 0 && (
         <p className="text-sm text-[var(--muted)] font-heading mt-1">
-          Clip: {formatDuration(clipLength)} of{" "}
-          {formatDuration(duration)}
+          Clip: {formatTime(clipLength)} of {formatTime(duration)}
         </p>
       )}
       {recipe.trimEnd !== null &&
