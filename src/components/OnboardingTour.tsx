@@ -327,54 +327,9 @@ export default function OnboardingTour() {
       if (retryTimer !== null) clearTimeout(retryTimer);
     };
   }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
-    if (!currentStep) {
-      dismiss();
-      return;
-    }
-
-    let retryCount = 0;
-    const maxRetries = 10; // Retry up to 10 times (5 seconds total with 500ms delays)
-    let retryTimer: number | null = null;
-
-    const tryMeasure = () => {
-      measureTarget(currentStep.targetId).then((rect) => {
-        if (rect) {
-          setTargetRect(rect);
-          setTimeout(() => tooltipRef.current?.focus(), 50);
-          retryCount = 0; // Reset on success
-        } else if (retryCount < maxRetries) {
-          // Keep retrying without auto-skipping
-          retryCount++;
-          retryTimer = window.setTimeout(tryMeasure, 500);
-        }
-        // If max retries exceeded, just stay on current step and wait for user interaction
-      });
-    };
-
-    tryMeasure();
-
-    return () => {
-      if (retryTimer !== null) {
-        clearTimeout(retryTimer);
-      }
-    };
->>>>>>> upstream/main
-  }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
 
   // Re-measure on resize
   useEffect(() => {
-<<<<<<< HEAD
-  if (!visible) return;
-  const onResize = () => {
-    const id = TOUR_STEPS[stepIndex]?.targetId ?? "";
-    measureTarget(id).then(setTargetRect).catch((error) => {
-      console.error("Failed to re-measure tour target on resize:", error);
-    });
-  };
-  window.addEventListener("resize", onResize);
-  return () => window.removeEventListener("resize", onResize);
-}, [visible, stepIndex, measureTarget]);
-=======
     if (!visible) return;
     const onResize = () => {
       measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(setTargetRect);
@@ -382,7 +337,6 @@ export default function OnboardingTour() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [visible, stepIndex, measureTarget]);
->>>>>>> upstream/main
 
   // Keyboard support
   useEffect(() => {
