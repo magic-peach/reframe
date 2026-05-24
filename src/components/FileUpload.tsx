@@ -25,6 +25,7 @@ export default function FileUpload({
   const [pageDragging, setPageDragging] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
+  const dragCounterRef = useRef(0);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -283,6 +284,18 @@ export default function FileUpload({
             </p>
           </div>
         </div>
+      )}
+
+      {error && (
+        <p role="alert" className="text-sm text-red-500">
+          {error}
+        </p>
+      )}
+
+      {warning && (
+        <p role="alert" className="text-sm text-yellow-500">
+          {warning}
+        </p>
       )}
 
       {currentFile ? <FileInfo /> : <DropZone />}
