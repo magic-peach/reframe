@@ -18,7 +18,6 @@ import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay";
 import SubtitleControl from "./SubtitleControl";
-import ImageOverlay from "./ImageOverlay"
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
@@ -363,7 +362,7 @@ export default function VideoEditor() {
                 paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
               }}
             >
-              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
+              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
               No login. No ads. 100% private.
             </div>
           </div>  
@@ -371,50 +370,10 @@ export default function VideoEditor() {
             className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
             style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
           >
-            <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
+            <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
             No login. No ads. 100% private - your video never leaves your device.
           </div>
         </header>
-        <div
-          className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
-          style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
-          aria-label="Reframe — video editor"
-        >
-        <h1
-          className="font-display leading-none tracking-widest2 text-[var(--text)] break-words text-center transition-all"
-          style={{ fontSize: 'clamp(2rem,10vw,4rem)', viewTransitionName: 'reframe-text' }}
-        >
-          REFRAME
-        </h1>
-        <p
-          className="font-heading text-[var(--muted)] uppercase tracking-widest text-center"
-          style={{
-            fontSize: 'clamp(0.7rem,2vw,0.875rem)',
-            marginTop: 'clamp(0.25rem,1vw,0.5rem)',
-          }}
-        >
-          Your video, any format
-        </p>
-    <div
-      className="flex md:hidden items-center justify-center gap-2 font-heading font-semibold uppercase tracking-widest text-[var(--muted)] border-t border-[var(--border)]"
-      style={{
-        fontSize: 'clamp(0.6rem,1.5vw,0.75rem)',
-        marginTop: 'clamp(0.5rem,2vw,0.75rem)',
-        paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
-      }}
-    >
-      <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-      No login. No ads. 100% private.
-    </div>
-  </div>  
-  <div
-    className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
-    style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
-  >
-    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-    No login. No ads. 100% private - your video never leaves your device.
-  </div>
-    </header>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">

@@ -260,7 +260,7 @@ function buildArguments(
   hasOriginalAudio: boolean,
   hasSubtitles: boolean,
   subtitleOptions: SubtitleOptions | undefined,
-  fontFileLoaded: boolean
+  fontFileLoaded: boolean,
   videoDuration: number
 ): string[] {
   let vf = buildVideoFilter(recipe, targetW, targetH);
@@ -573,8 +573,7 @@ export async function exportVideo(
       recipe, recipe.format, outputName, inputName, targetW, targetH,
       hasMusicTrack, musicInputName, musicOptions,
       hasOverlay, overlayInputName, overlayOptions, true,
-      hasSubtitles, subtitleOptions, fontFileLoaded
-      hasOverlay, overlayInputName, overlayOptions, true, videoDuration
+      hasSubtitles, subtitleOptions, fontFileLoaded, videoDuration
     );
 
     let exitCode = await ffmpeg.exec(args, undefined, { signal });
@@ -586,8 +585,7 @@ export async function exportVideo(
         recipe, recipe.format, outputName, inputName, targetW, targetH,
         hasMusicTrack, musicInputName, musicOptions,
         hasOverlay, overlayInputName, overlayOptions, false,
-        hasSubtitles, subtitleOptions, fontFileLoaded
-        hasOverlay, overlayInputName, overlayOptions, false, videoDuration
+        hasSubtitles, subtitleOptions, fontFileLoaded, videoDuration
       );
       exitCode = await ffmpeg.exec(args, undefined, { signal });
     }
@@ -598,8 +596,7 @@ export async function exportVideo(
         recipe, "webm", fallbackOutputName, inputName, targetW, targetH,
         hasMusicTrack, musicInputName, musicOptions,
         hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected,
-        hasSubtitles, subtitleOptions, fontFileLoaded
-        hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected, videoDuration
+        hasSubtitles, subtitleOptions, fontFileLoaded, videoDuration
       );
 
       const fallbackCode = await ffmpeg.exec(args, undefined, { signal });

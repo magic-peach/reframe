@@ -147,6 +147,8 @@ export function parseSRT(content: string): SubtitleCue[] {
   }
 
   return cues;
+}
+
 function encodeRecipe(recipe: EditRecipe): string {
   return btoa(JSON.stringify(recipe));
 }
@@ -579,21 +581,6 @@ export function useVideoEditor() {
       }
     }
   }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, loopMusic, musicFile, musicVolume, originalAudioVolume, subtitleFile, subtitleCues, subtitleFontFamily, subtitleFontSize, subtitleTextColor, subtitleBgOpacity, subtitleHasShadow]);
-  }, [
-    duration,
-    file,
-    loopMusic,
-    musicFile,
-    musicVolume,
-    originalAudioVolume,
-    overlayFile,
-    overlayOpacity,
-    overlayPosition,
-    overlaySize,
-    recipe,
-    result,
-    status,
-  ]);
 
 
   useEffect(() => {
