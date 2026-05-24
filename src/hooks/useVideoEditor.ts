@@ -627,7 +627,7 @@ export function useVideoEditor() {
     const handleTimeUpdate = () => setCurrentTime(video.currentTime);
     video.addEventListener("timeupdate", handleTimeUpdate);
     return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  });
+  },[]);
 
   const toggleSound = useCallback(() => {
   updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });

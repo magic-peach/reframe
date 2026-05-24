@@ -156,7 +156,7 @@ export default function VideoPreview({
     <>
       <div
         ref={previewContainerRef}
-        className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video"
+        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video"
       >
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
@@ -174,17 +174,17 @@ export default function VideoPreview({
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
             {overlay.mode === "fit" ? (
               <>
-                <div className="absolute left-0 right-0 top-0 bg-black/50" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-black/50" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-black/50" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-black/50" style={{ width: overlay.barRight }} />
+                <div className="absolute left-0 right-0 top-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ height: overlay.barTop }} />
+                <div className="absolute left-0 right-0 bottom-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ height: overlay.barBottom }} />
+                <div className="absolute top-0 bottom-0 left-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ width: overlay.barLeft }} />
+                <div className="absolute top-0 bottom-0 right-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ width: overlay.barRight }} />
               </>
             ) : (
               <>
-                <div className="absolute left-0 right-0 top-0 bg-red-900/50" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-red-900/50" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-red-900/50" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-red-900/50" style={{ width: overlay.barRight }} />
+                <div className="absolute left-0 right-0 top-0 bg-[var(--error-bg)]" style={{ height: overlay.barTop }} />
+                <div className="absolute left-0 right-0 bottom-0 bg-[var(--error-bg)]" style={{ height: overlay.barBottom }} />
+                <div className="absolute top-0 bottom-0 left-0 bg-[var(--error-bg)]" style={{ width: overlay.barLeft }} />
+                <div className="absolute top-0 bottom-0 right-0 bg-[var(--error-bg)]" style={{ width: overlay.barRight }} />
                 <div
                   className="absolute border-2 border-dashed border-film-400"
                   style={{
@@ -218,8 +218,8 @@ export default function VideoPreview({
             onClick={() => setShowOverlay((v) => !v)}
             className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
               showOverlay
-                ? "bg-film-600 text-white"
-                : "bg-black/60 text-white/70 hover:bg-black/80"
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
             }`}
             aria-pressed={showOverlay}
             aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
@@ -236,8 +236,8 @@ export default function VideoPreview({
             onClick={() => setShowComparison((v) => !v)}
             className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
               showComparison
-                ? "bg-film-600 text-white"
-                : "bg-black/60 text-white/70 hover:bg-black/80"
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
             }`}
             aria-pressed={showComparison}
             aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
@@ -246,6 +246,7 @@ export default function VideoPreview({
             Compare
           </button>
         )}
+
       </div>
 
       {showComparison && file && (
