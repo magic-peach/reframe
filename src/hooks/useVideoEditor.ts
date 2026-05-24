@@ -6,6 +6,7 @@ import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
+import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
@@ -75,19 +76,21 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       "Trim start time cannot be less than 0 seconds.",
     ],
     [
-      recipe.trimEnd !== null && recipe.trimEnd > duration,
+      recipe.trimEnd !== null && duration > 0 && recipe.trimEnd > duration,
       `Trim end time cannot exceed the video duration (${Math.floor(duration)}s).`,
     ],
     [
-      recipe.trimStart >= (recipe.trimEnd ?? duration),
+      recipe.trimEnd !== null
+        ? recipe.trimStart >= recipe.trimEnd
+        : (duration > 0 && recipe.trimStart >= duration),
       "Trim start time must be earlier than the end time.",
     ],
     [
-      recipe.preset === "custom" && (recipe.customWidth < 16 || recipe.customWidth > 7680),
+      recipe.preset === "custom" && (Number.isNaN(recipe.customWidth) || recipe.customWidth < 16 || recipe.customWidth > 7680),
       "Width must be between 16px and 7680px.",
     ],
     [
-      recipe.preset === "custom" && (recipe.customHeight < 16 || recipe.customHeight > 7680),
+      recipe.preset === "custom" && (Number.isNaN(recipe.customHeight) || recipe.customHeight < 16 || recipe.customHeight > 7680),
       "Height must be between 16px and 7680px.",
     ],
     [
@@ -154,7 +157,7 @@ export function useVideoEditor() {
   const [overlayPosition, setOverlayPosition] = useState<OverlayPosition>("bottom-right");
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
-
+  const [currentTime, setCurrentTime] = useState(0);
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
     const next = { ...prev, ...patch };
@@ -254,13 +257,17 @@ export function useVideoEditor() {
 
         if (saved) {
           const parsed = JSON.parse(saved);
+          const sanitizeDimension = (val: unknown, fallback: number): number => {
+            const n = Number(val);
+            return Number.isFinite(n) && n >= 16 && n <= 7680 ? n : fallback;
+          };
           setRecipe(prev => ({
             ...prev,
             preset: savedPreset !== DEFAULT_RECIPE.preset ? savedPreset : (parsed.preset ?? prev.preset),
             quality: parsed.quality ?? prev.quality,
             speed: parsed.speed ?? prev.speed,
-            customWidth: parsed.customWidth ?? prev.customWidth,
-            customHeight: parsed.customHeight ?? prev.customHeight
+            customWidth: sanitizeDimension(parsed.customWidth, prev.customWidth),
+            customHeight: sanitizeDimension(parsed.customHeight, prev.customHeight),
           }));
         } else {
           setRecipe(prev => ({ ...prev, preset: savedPreset }));
@@ -376,9 +383,25 @@ export function useVideoEditor() {
 
     try {
       const metadata = await extractMetadata(selectedFile);
+      const dimensionCheck = validateDimensions(metadata.width, metadata.height);
+
+      if (dimensionCheck === "blocked") {
+        const suggested = getDownscaledDimensions(metadata.width, metadata.height);
+        setError(
+          `Layer 5 Validation Failed: Resolution too high (${metadata.width}×${metadata.height}). ` +
+          `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
+        );
+        setStatus("error");
+        return;
+      }
+
       setDuration(metadata.duration);
       setVideoMetadata(metadata);
       setFile(selectedFile);
+
+      if (dimensionCheck === "warning") {
+        console.warn(`[Reframe] High resolution video detected (${metadata.width}×${metadata.height}). Export may be slow.`);
+      }
       setRecipe((prev) => {
         const suggestedPreset = suggestPreset(metadata.width, metadata.height);
         const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
@@ -616,6 +639,13 @@ export function useVideoEditor() {
       videoRef.current.currentTime = time;
     }
   }, []);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
+  });
 
   const toggleSound = useCallback(() => {
   updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
@@ -656,6 +686,7 @@ export function useVideoEditor() {
     overlayOpacity,
     setOverlayOpacity,
     recommendedPreset,
+    currentTime,
     toggleSound,
   };
 }

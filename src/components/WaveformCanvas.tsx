@@ -6,6 +6,7 @@ interface Props {
   samples: number[];
   loading: boolean;
   hasAudio: boolean;
+  fallbackMessage?: string | null;
 }
 
 // Reads a CSS variable from :root, falling back to a default
@@ -14,7 +15,7 @@ function getCssVar(name: string, fallback: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }
 
-export default function WaveformCanvas({ samples, loading, hasAudio }: Props) {
+export default function WaveformCanvas({ samples, loading, hasAudio, fallbackMessage }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -80,6 +81,21 @@ export default function WaveformCanvas({ samples, loading, hasAudio }: Props) {
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (fallbackMessage) {
+    return (
+      <div
+        role="status"
+        aria-label="Waveform preview unavailable"
+        className="flex h-16 items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-[11px] text-[var(--muted)]"
+      >
+        <div className="h-1.5 flex-1 rounded-full bg-[var(--border)]" />
+        <span className="max-w-[70%] text-right leading-tight">
+          {fallbackMessage}
+        </span>
       </div>
     );
   }
