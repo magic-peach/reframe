@@ -10,7 +10,6 @@
 ## Participant Info
 - GitHub username: - Contribution level (Beginner/Intermediate/Advanced): ## Screen Recording
 > **How to record:** run `bun run dev` → open http://localhost:3000 → demonstrate the full working flow.
-
 **Recording / Loom link:** ## Checklist
 - [ ] I have read the contribution guidelines
 - [ ] My changes follow the project structure
