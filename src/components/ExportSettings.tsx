@@ -32,6 +32,8 @@ export default function ExportSettings({
       ? "Balanced"
       : "Small file";
 
+  const isGif = recipe.format === "gif";
+
   const estimatedSize =
     formatEstimatedSize(
       estimateExportSize(
@@ -74,10 +76,10 @@ export default function ExportSettings({
           min={18}
           max={30}
           step={1}
-          value={recipe.quality}
+          value={48 - recipe.quality}
           onChange={(e) =>
             onChange({
-              quality: Number(
+              quality: 48 - Number(
                 e.target.value
               ),
             })
@@ -94,11 +96,11 @@ export default function ExportSettings({
         >
           <div className="flex justify-between">
             <span className="text-sm text-[var(--muted)]">
-              Best quality
+              Smallest file
             </span>
 
             <span className="text-sm text-[var(--muted)]">
-              Smallest file
+              Best quality
             </span>
           </div>
 
@@ -108,8 +110,15 @@ export default function ExportSettings({
               {estimatedSize}
             </span>
           </p>
+
+          {isGif && (
+            <p className="text-xs text-[var(--warning)] font-medium">
+              ⚠ GIF files can be very large. Keep clips under 10 s for best results.
+            </p>
+          )}
         </div>
 
+        {!isGif && (
         <div className="flex items-center justify-between mt-4">
           <label
             htmlFor="sound-on-completion"
@@ -129,6 +138,7 @@ export default function ExportSettings({
             className="accent-film-600 cursor-pointer"
           />
         </div>
+        )}
       </div>
 
       <div>
@@ -152,13 +162,11 @@ export default function ExportSettings({
                 })
               }
               aria-label="Enable video stabilization"
-              aria-checked={recipe.stabilization}
               className="w-full accent-film-600 cursor-pointer"
             />
           </span>
         </div>
 
-        {/* Short descriptive label explaining what the setting does */}
         <p className="text-xs text-[var(--muted)] mb-1">
           Reduce camera shake
         </p>
@@ -168,11 +176,62 @@ export default function ExportSettings({
             className={cn(
               "text-xs",
               recipe.stabilization
-                ? "text-red-700 font-medium"
+                ? "text-[var(--error)] font-medium"
                 : "text-[var(--muted)]"
             )}
           >
             Note: significantly increases processing time.
+          </span>
+        </div>
+      </div>
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <label
+            htmlFor="denoise-toggle"
+            className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
+          >
+            <SlidersHorizontal size={10} />
+            Reduce noise
+
+            <span
+              className="cursor-help"
+              title="Reduces video noise. May slow down export slightly."
+            >
+              <InfoIcon size={14} />
+            </span>
+          </label>
+
+          <span className="flex text-sm font-heading font-bold text-film-600">
+            <input
+              id="denoise-toggle"
+              type="checkbox"
+              checked={recipe.denoise}
+              onChange={(e) =>
+                onChange({
+                  denoise: e.target.checked,
+                })
+              }
+              aria-label="Enable noise reduction"
+              aria-checked={recipe.denoise}
+              className="w-full accent-film-600 cursor-pointer"
+            />
+          </span>
+        </div>
+
+        <p className="text-xs text-[var(--muted)] mb-1">
+          Reduce low-light video grain
+        </p>
+
+        <div className="flex justify-end">
+          <span
+            className={cn(
+              "text-xs",
+              recipe.denoise
+                ? "text-red-700 font-medium"
+                : "text-[var(--muted)]"
+            )}
+          >
+            May slightly increase export time.
           </span>
         </div>
       </div>

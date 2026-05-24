@@ -1,7 +1,8 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile } from "@ffmpeg/util";
+import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
+import { buildTextFilter } from "./text-overlay";
 import { simd } from "wasm-feature-detect";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
@@ -39,7 +40,7 @@ export class FFmpegLoadError extends Error {
 }
 
 export async function loadFFmpeg(
-  signal?: AbortSignal, 
+  signal?: AbortSignal,
   onProgress?: (percent: number) => void
 ): Promise<FFmpeg> {
   if (ffmpegInstance?.loaded) {
@@ -57,10 +58,20 @@ export async function loadFFmpeg(
   try {
     ffmpeg.on("progress", handleProgress);
 
-    // Secure engine load using verified runtime checksum hashes from main
+    const isIsolated = typeof self !== "undefined" && self.crossOriginIsolated;
+    const baseURL = isIsolated
+      ? "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm"
+      : "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+
     await ffmpeg.load({
-      coreURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+      ...(isIsolated && {
+        workerURL: await toBlobURL(
+          `${baseURL}/ffmpeg-core.worker.js`,
+          "text/javascript"
+        ),
+      }),
     }, { signal });
 
     onProgress?.(100);
@@ -87,16 +98,14 @@ function buildSessionId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
+export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
 
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
     const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
     filters.push(`trim=start=${recipe.trimStart}:end=${end}`);
-    filters.push("setpts=PTS-STARTPTS");
   }
 
- 
   if (recipe.stabilization) {
     filters.push("deshake");
   }
@@ -121,22 +130,46 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     );
   }
 
+  // Normalize timestamps only when needed — trim or speed change both
+  // require a clean 0-based timeline to produce correct output duration.
+  if (recipe.trimStart > 0 || recipe.trimEnd !== null || recipe.speed !== 1) {
+    filters.push("setpts=PTS-STARTPTS");
+  }
+
   if (recipe.speed !== 1) {
     const pts = (1 / recipe.speed).toFixed(4);
     filters.push(`setpts=${pts}*PTS`);
   }
-  filters.push(
-    `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
-  );
+
+  if (recipe.denoise) {
+    filters.push("hqdn3d=1.5:1.5:6:6");
+  }
+
+  const needsEq =
+    recipe.brightness !== 0 ||
+    recipe.contrast !== 1 ||
+    recipe.saturation !== 1;
+
+  if (needsEq) {
+    filters.push(
+      `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+    );
+  }
+
+  // Add text overlays
+  const textOverlays = recipe.textOverlays || [];
+  textOverlays.forEach((overlay) => {
+    filters.push(buildTextFilter(overlay, targetW, targetH));
+  });
+
   return filters.join(",");
 }
 
-export function buildAudioFilter(speed: number): string {
-  if (speed === 1) return "";
-
+export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+  if (speed <= 0) return "";
   const filters: string[] = [];
-  let remaining = speed;
 
+  let remaining = speed;
   while (remaining < 0.5) {
     filters.push("atempo=0.5");
     remaining /= 0.5;
@@ -151,6 +184,8 @@ export function buildAudioFilter(speed: number): string {
     filters.push(`atempo=${Number(remaining.toFixed(4))}`);
   }
 
+  if (normalizeAudio) filters.push("loudnorm=I=-14:TP=-1.5:LRA=11");
+
   return filters.join(",");
 }
 
@@ -162,7 +197,7 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
 
 function buildArguments(
   recipe: EditRecipe,
-  format: "mp4" | "webm" | "mkv",
+  format: "mp4" | "webm" | "mkv" | "gif",
   outputName: string,
   inputName: string,
   targetW: number,
@@ -173,11 +208,12 @@ function buildArguments(
   hasOverlay: boolean,
   overlayInputName: string,
   overlayOptions: ImageOverlayOptions | undefined,
-  hasOriginalAudio: boolean
+  hasOriginalAudio: boolean,
+  videoDuration: number
 ): string[] {
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed) : "";
+  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
@@ -266,14 +302,28 @@ function buildArguments(
   }
 
   if (format === "webm") {
-    args.push("-c:v", "libvpx-vp9", "-b:v", "0", "-crf", String(recipe.quality));
+    args.push(
+      "-c:v", "libvpx-vp9",
+      "-b:v", "0",
+      "-crf", String(recipe.quality),
+      "-cpu-used", "4",
+      "-deadline", "realtime"
+    );
     if (shouldKeepAudio) args.push("-c:a", "libopus");
   } else if (format === "mkv") {
-    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "medium");
+    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast");
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
   } else {
-    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "medium", "-movflags", "+faststart");
+    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast", "-movflags", "+faststart");
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
+  }
+
+  // Add explicit output duration when speed != 1 to prevent slight duration
+  // overshoot caused by encoder/filter pipeline frame flush at stream end.
+  if (recipe.speed !== 1) {
+    const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
+    const outputDuration = sourceDuration / recipe.speed;
+    args.push("-t", outputDuration.toFixed(6));
   }
 
   args.push(outputName);
@@ -312,6 +362,8 @@ export async function exportVideo(
         return { filename: `output_${sessionId}.webm`, mimeType: "video/webm" };
       case "mkv":
         return { filename: `output_${sessionId}.mkv`, mimeType: "video/x-matroska" };
+      case "gif":
+        return { filename: `output_${sessionId}.gif`, mimeType: "image/gif" };
       default:
         return { filename: `output_${sessionId}.mp4`, mimeType: "video/mp4" };
     }
@@ -319,11 +371,30 @@ export async function exportVideo(
 
   const { filename: outputName, mimeType } = getOutputConfig(recipe.format);
   const fallbackOutputName = `fallback_${sessionId}.webm`;
-  const cleanupFiles = new Set<string>([inputName, outputName, fallbackOutputName]);
+  const paletteName = `palette_${sessionId}.png`;
+  const cleanupFiles = new Set<string>([inputName, outputName, fallbackOutputName, paletteName]);
 
   const handleProgress = ({ progress }: { progress: number }) => {
     onProgress(Math.min(99, Math.round(progress * 100)));
   };
+
+  // Read actual video duration via HTMLVideoElement so we can correctly
+  // compute output duration when trimEnd is null (no trim set by user).
+  // Falls back to trimEnd if metadata loading fails.
+  const videoDuration = await new Promise<number>((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(video.src);
+      resolve(video.duration);
+    };
+    video.onerror = () => {
+      // Safe fallback: use trimEnd if available, otherwise 0 which
+      // will produce no -t argument and leave duration uncapped.
+      resolve(recipe.trimEnd ?? 0);
+    };
+    video.src = URL.createObjectURL(file);
+  });
 
   try {
     await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
@@ -335,7 +406,7 @@ export async function exportVideo(
       cleanupFiles.add(musicInputName);
     }
 
-    const hasOverlay = !!(overlayOptions?.file);
+    const hasOverlay = !!overlayOptions?.file;
     const overlayExt = overlayOptions?.file?.name.split(".").pop() ?? "png";
     const overlayInputName = `overlay_${sessionId}.${overlayExt}`;
     if (hasOverlay) {
@@ -344,6 +415,59 @@ export async function exportVideo(
     }
 
     ffmpeg.on("progress", handleProgress);
+
+    // ── Two-pass GIF export ──────────────────────────────────────────────────
+    if (recipe.format === "gif") {
+      const vf = buildVideoFilter(recipe, targetW, targetH);
+      const vfWithPalette = vf ? `${vf},palettegen` : "palettegen";
+      const vfWithPaletteUse = vf
+        ? `[0:v]${vf}[x];[x][1:v]paletteuse`
+        : "[0:v][1:v]paletteuse";
+
+      // Add explicit output duration when speed != 1 to prevent slight duration
+      // overshoot caused by encoder/filter pipeline frame flush at stream end.
+      // Applied to both passes so palette and render are bounded identically.
+      const gifDurationArgs: string[] =
+        recipe.speed !== 1
+          ? (() => {
+              const sourceDuration =
+                (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
+              const outputDuration = sourceDuration / recipe.speed;
+              return ["-t", outputDuration.toFixed(6)];
+            })()
+          : [];
+
+      // Pass 1: generate colour palette
+      const pass1Code = await ffmpeg.exec(
+        ["-i", inputName, "-vf", vfWithPalette, ...gifDurationArgs, "-y", paletteName],
+        undefined,
+        { signal }
+      );
+      if (pass1Code !== 0) throw new Error("GIF palette generation failed");
+
+      // Pass 2: render GIF using the palette
+      const pass2Code = await ffmpeg.exec(
+        ["-i", inputName, "-i", paletteName, "-lavfi", vfWithPaletteUse, ...gifDurationArgs, "-y", outputName],
+        undefined,
+        { signal }
+      );
+      if (pass2Code !== 0) throw new Error("GIF export failed");
+
+      const data = await ffmpeg.readFile(outputName, undefined, { signal });
+      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "image/gif" });
+
+      ffmpeg.off("progress", handleProgress);
+      onProgress(100);
+      return {
+        blobUrl: URL.createObjectURL(blob),
+        blob,
+        size: blob.size,
+        width: targetW,
+        height: targetH,
+        format: "gif" as const,
+      };
+    }
+    // ────────────────────────────────────────────────────────────────────────
 
     let missingAudioDetected = false;
     const logListener = ({ message }: { message: string }) => {
@@ -362,7 +486,7 @@ export async function exportVideo(
     let args = buildArguments(
       recipe, recipe.format, outputName, inputName, targetW, targetH,
       hasMusicTrack, musicInputName, musicOptions,
-      hasOverlay, overlayInputName, overlayOptions, true
+      hasOverlay, overlayInputName, overlayOptions, true, videoDuration
     );
 
     let exitCode = await ffmpeg.exec(args, undefined, { signal });
@@ -373,7 +497,7 @@ export async function exportVideo(
       args = buildArguments(
         recipe, recipe.format, outputName, inputName, targetW, targetH,
         hasMusicTrack, musicInputName, musicOptions,
-        hasOverlay, overlayInputName, overlayOptions, false
+        hasOverlay, overlayInputName, overlayOptions, false, videoDuration
       );
       exitCode = await ffmpeg.exec(args, undefined, { signal });
     }
@@ -383,7 +507,7 @@ export async function exportVideo(
       args = buildArguments(
         recipe, "webm", fallbackOutputName, inputName, targetW, targetH,
         hasMusicTrack, musicInputName, musicOptions,
-        hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected
+        hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected, videoDuration
       );
 
       const fallbackCode = await ffmpeg.exec(args, undefined, { signal });
@@ -396,6 +520,7 @@ export async function exportVideo(
       onProgress(100);
       return {
         blobUrl: URL.createObjectURL(blob),
+        blob,
         size: blob.size,
         width: targetW,
         height: targetH,
@@ -410,6 +535,7 @@ export async function exportVideo(
     onProgress(100);
     return {
       blobUrl: URL.createObjectURL(blob),
+      blob,
       size: blob.size,
       width: targetW,
       height: targetH,
