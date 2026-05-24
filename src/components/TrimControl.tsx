@@ -177,64 +177,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
   return (
     <div id="trim-control" className="space-y-3">
-      {duration > 0 && (
-        <div
-          role="toolbar"
-          aria-label="Trim timeline"
-          ref={trackRef}
-          className="relative h-6 flex items-center cursor-pointer select-none"
-          onClick={(e) => {
-            if (dragging.current) return;
-            const s = xToSeconds(e.clientX);
-            onChange({ trimStart: s });
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowLeft") onChange({ trimStart: Math.max(0, recipe.trimStart - 0.1) });
-            if (e.key === "ArrowRight") onChange({ trimStart: Math.min((recipe.trimEnd ?? duration) - 0.1, recipe.trimStart + 0.1) });
-          }}
-        >
-          <div className="absolute inset-x-0 h-1.5 rounded-full bg-[var(--border)]" />
-          <div
-            className="absolute h-1.5 rounded-full bg-film-400 opacity-60"
-            style={{
-              left: `${(recipe.trimStart / duration) * 100}%`,
-              right: `${((duration - (recipe.trimEnd ?? duration)) / duration) * 100}%`,
-            }}
-          />
-          <div
-            role="slider"
-            aria-label="Trim start"
-            aria-valuenow={recipe.trimStart}
-            aria-valuemin={0}
-            aria-valuemax={duration}
-            tabIndex={0}
-            className="absolute w-4 h-4 rounded-full bg-white border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
-            style={{ left: `${(recipe.trimStart / duration) * 100}%` }}
-            onMouseDown={() => { dragging.current = "start"; }}
-            onTouchStart={() => { dragging.current = "start"; }}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowLeft") onChange({ trimStart: Math.max(0, recipe.trimStart - 0.1) });
-              if (e.key === "ArrowRight") onChange({ trimStart: Math.min((recipe.trimEnd ?? duration) - 0.1, recipe.trimStart + 0.1) });
-            }}
-          />
-          <div
-            role="slider"
-            aria-label="Trim end"
-            aria-valuenow={recipe.trimEnd ?? duration}
-            aria-valuemin={0}
-            aria-valuemax={duration}
-            tabIndex={0}
-            className="absolute w-4 h-4 rounded-full bg-white border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
-            style={{ left: `${((recipe.trimEnd ?? duration) / duration) * 100}%` }}
-            onMouseDown={() => { dragging.current = "end"; }}
-            onTouchStart={() => { dragging.current = "end"; }}
-            onKeyDown={(e) => {
-              if (e.key === "ArrowLeft") onChange({ trimEnd: Math.max(recipe.trimStart + 0.1, (recipe.trimEnd ?? duration) - 0.1) });
-              if (e.key === "ArrowRight") onChange({ trimEnd: Math.min(duration, (recipe.trimEnd ?? duration) + 0.1) });
-            }}
-          />
-        </div>
-      )}
+
       <div className="flex gap-3">
         <div className="flex-1">
           <label

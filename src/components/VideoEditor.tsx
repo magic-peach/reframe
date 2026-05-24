@@ -5,7 +5,7 @@ import { useVideoEditor } from "@/hooks/useVideoEditor";
 import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
-import ThumbnailStrip from "./ThumbnailStrip";
+import TimelineEditor from "./TimelineEditor";
 import PresetSelector from "./PresetSelector";
 import FramingControl from "./FramingControl";
 import TrimControl from "./TrimControl";
@@ -397,14 +397,13 @@ export default function VideoEditor() {
                   />
 
                   <div className="mt-3">
-                    <ThumbnailStrip
+                    <TimelineEditor
                       videoSrc={videoSrc}
                       duration={duration}
                       currentTime={currentTime}
-                      trimStart={recipe.trimStart ?? 0}
-                      trimEnd={recipe.trimEnd ?? duration}
+                      recipe={recipe}
+                      onChange={updateRecipe}
                       onSeek={seekTo}
-                      intervalSeconds={intervalSeconds}
                     />
                   </div>
                 </div>
