@@ -32,6 +32,7 @@ export default function RotateControl({ recipe, onChange }: Props) {
           >
             <RotateCw
               size={15}
+              aria-hidden="true"
               style={{ transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
               className="transition-transform"
             />
