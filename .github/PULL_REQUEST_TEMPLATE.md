@@ -13,7 +13,7 @@
 
 ## Screen Recording
 > **How to record:** run `bun run dev` → open http://localhost:3000 → demonstrate the full working flow.
->**Recording / Loom link:**
+> **Recording / Loom link:**
 
 ## Checklist
 - [ ] I have read the contribution guidelines
