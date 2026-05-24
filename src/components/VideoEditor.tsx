@@ -17,6 +17,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import PreviewPanel from "./PreviewPanel";
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
@@ -210,6 +211,9 @@ export default function VideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    previewUrl,
+    isPreviewing,
+    generatePreview,
   } = useVideoEditor();
 
   useKeyboardShortcuts({
@@ -688,6 +692,13 @@ export default function VideoEditor() {
                 {exportSummary}
               </p>
             )}
+
+            <PreviewPanel
+              previewUrl={previewUrl}
+              isPreviewing={isPreviewing}
+              onPreview={generatePreview}
+              isDisabled={!file || isProcessing}
+            />
 
             <button
               id="export-button"
