@@ -59,39 +59,39 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
     }
   }, [xToSeconds, duration, recipe.trimStart, recipe.trimEnd, onChange]);
 
- useEffect(() => {
-  const onMove = (e: MouseEvent | TouchEvent) => {
-    let clientX: number;
+  useEffect(() => {
+    const onMove = (e: MouseEvent | TouchEvent) => {
+      let clientX: number;
 
-    if ("touches" in e) {
-      const touch = e.touches[0];
+      if ("touches" in e) {
+        const touch = e.touches[0];
 
-      if (!touch) return;
+        if (!touch) return;
 
-      clientX = touch.clientX;
-    } else {
-      clientX = e.clientX;
-    }
+        clientX = touch.clientX;
+      } else {
+        clientX = e.clientX;
+      }
 
-    applyDrag(clientX);
-  };
+      applyDrag(clientX);
+    };
 
-  const onUp = () => {
-    dragging.current = null;
-  };
+    const onUp = () => {
+      dragging.current = null;
+    };
 
-  document.addEventListener("mousemove", onMove);
-  document.addEventListener("mouseup", onUp);
-  document.addEventListener("touchmove", onMove);
-  document.addEventListener("touchend", onUp);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    document.addEventListener("touchmove", onMove);
+    document.addEventListener("touchend", onUp);
 
-  return () => {
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onUp);
-    document.removeEventListener("touchmove", onMove);
-    document.removeEventListener("touchend", onUp);
-  };
-}, [applyDrag]);
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onUp);
+    };
+  }, [applyDrag]);
   const handleStart = (val: string) => {
     setStartInput(val);
 
@@ -330,5 +330,3 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
     </div>
   );
 }
-
-
