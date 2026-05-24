@@ -19,7 +19,9 @@ export const DEFAULT_RECIPE: EditRecipe = {
   contrast: 1,
   saturation: 1,
   stabilization: false,
+  denoise: false,
   soundOnCompletion: false,
   normalizeAudio: false,
+  textOverlays: [],
   version: RECIPE_VERSION,
 };

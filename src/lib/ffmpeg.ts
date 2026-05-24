@@ -1,7 +1,8 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile } from "@ffmpeg/util";
+import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
+import { buildTextFilter } from "./text-overlay";
 import { simd } from "wasm-feature-detect";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
@@ -39,7 +40,7 @@ export class FFmpegLoadError extends Error {
 }
 
 export async function loadFFmpeg(
-  signal?: AbortSignal, 
+  signal?: AbortSignal,
   onProgress?: (percent: number) => void
 ): Promise<FFmpeg> {
   if (ffmpegInstance?.loaded) {
@@ -57,10 +58,20 @@ export async function loadFFmpeg(
   try {
     ffmpeg.on("progress", handleProgress);
 
-    // Secure engine load using verified runtime checksum hashes from main
+    const isIsolated = typeof self !== "undefined" && self.crossOriginIsolated;
+    const baseURL = isIsolated
+      ? "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm"
+      : "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+
     await ffmpeg.load({
-      coreURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+      ...(isIsolated && {
+        workerURL: await toBlobURL(
+          `${baseURL}/ffmpeg-core.worker.js`,
+          "text/javascript"
+        ),
+      }),
     }, { signal });
 
     onProgress?.(100);
@@ -87,7 +98,7 @@ function buildSessionId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
+export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
 
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
@@ -96,7 +107,7 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     filters.push("setpts=PTS-STARTPTS");
   }
 
- 
+
   if (recipe.stabilization) {
     filters.push("deshake");
   }
@@ -122,16 +133,29 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
   }
 
   if (recipe.speed !== 1) {
-    const pts = (1 / recipe.speed).toFixed(4);
-    filters.push(`setpts=${pts}*PTS`);
+  const pts = (1 / recipe.speed).toFixed(4);
+  filters.push(`setpts=${pts}*PTS`);
   }
+
+  if (recipe.denoise) {
+    filters.push("hqdn3d=1.5:1.5:6:6");
+  }
+
   filters.push(
     `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
   );
+
+  // Add text overlays
+  const textOverlays = recipe.textOverlays || [];
+  textOverlays.forEach((overlay) => {
+    filters.push(buildTextFilter(overlay, targetW, targetH));
+  });
+
   return filters.join(",");
 }
 
  export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+  if (speed <= 0) return "";
   const filters: string[] = [];
 
   let remaining = speed;
@@ -177,7 +201,7 @@ function buildArguments(
 ): string[] {
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
@@ -328,7 +352,7 @@ export async function exportVideo(
     onProgress(Math.min(99, Math.round(progress * 100)));
   };
 
-  
+
   try {
     await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
@@ -386,6 +410,7 @@ export async function exportVideo(
       onProgress(100);
       return {
         blobUrl: URL.createObjectURL(blob),
+        blob,
         size: blob.size,
         width: targetW,
         height: targetH,
@@ -445,6 +470,7 @@ export async function exportVideo(
       onProgress(100);
       return {
         blobUrl: URL.createObjectURL(blob),
+        blob,
         size: blob.size,
         width: targetW,
         height: targetH,
@@ -459,6 +485,7 @@ export async function exportVideo(
     onProgress(100);
     return {
       blobUrl: URL.createObjectURL(blob),
+      blob,
       size: blob.size,
       width: targetW,
       height: targetH,
