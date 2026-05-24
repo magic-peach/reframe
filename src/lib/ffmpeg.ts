@@ -470,15 +470,10 @@ function buildArguments(
     if (hasOverlay) {
       const scaledW = overlayOptions!.size;
       const alpha = (overlayOptions!.opacity / 100).toFixed(2);
-      const posMap: Record<string, string> = {
-        "top-left":     "20:20",
-        "top-right":    "W-w-20:20",
-        "bottom-left":  "20:H-h-20",
-        "bottom-right": "W-w-20:H-h-20",
-      };
-      const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
+      const overlayX = `(main_w)*${overlayOptions!.position.x}/100`;
+      const overlayY = `(main_h)*${overlayOptions!.position.y}/100`;
       filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
-      filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
+      filterParts.push(`${videoOut}[logo]overlay=${overlayX}:${overlayY}[vout]`);
       videoOut = "[vout]";
     }
 

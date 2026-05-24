@@ -16,6 +16,12 @@ interface Props {
   selectedTextId?: string | null;
   onSelectText?: (id: string | null) => void;
   onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
+  overlayFile?: File | null;
+  overlayPosition?: { x: number; y: number };
+  overlaySize?: number;
+  overlayOpacity?: number;
+  setOverlayPosition?: (p: { x: number; y: number }) => void;
+  setOverlaySize?: (size: number) => void;
 }
 
 export default function VideoPreview({
@@ -25,19 +31,48 @@ export default function VideoPreview({
   selectedTextId = null,
   onSelectText,
   onUpdateText,
+  overlayFile,
+  overlayPosition,
+  overlaySize = 250,
+  overlayOpacity = 100,
+  setOverlayPosition,
+  setOverlaySize,
 }: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0,
   });
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const innerCanvasRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
 
+  // High-performance DOM track nodes
+  const overlayDOMRef = useRef<HTMLDivElement>(null);
+  const canvasRectRef = useRef<DOMRect | null>(null); // Cached geometry to stop layout thrashing
+  const dragStartCoordsRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const resizeStartSizeRef = useRef<number>(250);
+
+  const [isDraggingOverlay, setIsDraggingOverlay] = useState(false);
+  const [isResizingOverlay, setIsResizingOverlay] = useState(false);
+  const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
+
+  // Handle local memory compilation for overlay source files safely
+  useEffect(() => {
+    if (!overlayFile) {
+      setOverlayUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(overlayFile);
+    setOverlayUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [overlayFile]);
+
+  /** Capture the current video frame and download it as a PNG. */
   const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
     if (!video || video.readyState < 2) return;
@@ -52,7 +87,6 @@ export default function VideoPreview({
 
     canvas.toBlob((blob) => {
       if (!blob) return;
-
       const totalSec = Math.floor(video.currentTime);
       const mins = String(Math.floor(totalSec / 60)).padStart(2, "0");
       const secs = String(totalSec % 60).padStart(2, "0");
@@ -74,10 +108,6 @@ export default function VideoPreview({
     setIsLoading(true);
     const id = ++lastId.current;
     const url = URL.createObjectURL(file);
-
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
-    }
     urlRef.current = url;
 
     const video = videoRef.current;
@@ -92,7 +122,6 @@ export default function VideoPreview({
     };
 
     onLoadedRef.current = handleLoaded;
-
     video.addEventListener("loadeddata", handleLoaded);
 
     return () => {
@@ -100,13 +129,11 @@ export default function VideoPreview({
         video.removeEventListener("loadeddata", onLoadedRef.current);
         onLoadedRef.current = null;
       }
-
       if (video) {
         video.pause();
         video.removeAttribute("src");
         video.load();
       }
-
       if (urlRef.current === url) {
         URL.revokeObjectURL(urlRef.current);
         urlRef.current = null;
@@ -124,9 +151,7 @@ export default function VideoPreview({
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
-  /**
-   * Track preview container dimensions for text overlay positioning.
-   */
+  /** Track preview container dimensions for text overlay positioning. */
   useEffect(() => {
     const updateDimensions = () => {
       if (previewContainerRef.current) {
@@ -143,134 +168,229 @@ export default function VideoPreview({
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  const overlay = (() => {
-    if (!recipe || !showOverlay) return null;
-
-    const preset = recipe.preset === "custom"
+  // --- Absolute WYSIWYG Canvas Math ---
+  const activePreset = recipe
+    ? recipe.preset === "custom"
       ? { width: recipe.customWidth, height: recipe.customHeight }
-      : getPresetById(recipe.preset);
+      : getPresetById(recipe.preset)
+    : undefined;
 
-    if (!preset) return null;
+  const containerRatio = 16 / 9;
+  const outputRatio = activePreset ? activePreset.width / activePreset.height : containerRatio;
 
-    // Preview container is 16:9
-    const containerW = 16;
-    const containerH = 9;
-    const containerRatio = containerW / containerH;   // 1.777…
-    const outputRatio = preset.width / preset.height;
+  let boxTop = 0, boxBottom = 0, boxLeft = 0, boxRight = 0;
 
-    if (recipe.framing === "fit") {
-      // Letterbox: the output video fits entirely inside 16:9, padded with bars.
-      if (outputRatio > containerRatio) {
-        // Wider output → pillarbox bars on top & bottom
-        const contentH = (containerRatio / outputRatio) * 100;
-        const barH = (100 - contentH) / 2;
-        return { mode: "fit", barTop: `${barH}%`, barBottom: `${barH}%`, barLeft: "0", barRight: "0" };
-      } else {
-        // Taller output → letterbox bars on left & right
-        const contentW = (outputRatio / containerRatio) * 100;
-        const barW = (100 - contentW) / 2;
-        return { mode: "fit", barTop: "0", barBottom: "0", barLeft: `${barW}%`, barRight: `${barW}%` };
-      }
-    } else {
-      // Fill / crop: the output fills the entire 16:9 preview — show a box representing what survives the crop.
-      if (outputRatio < containerRatio) {
-        // Output is taller → crops top & bottom
-        const visibleH = (outputRatio / containerRatio) * 100;
-        const cropH = (100 - visibleH) / 2;
-        return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };
-      } else {
-        // Output is wider → crops left & right
-        const visibleW = (containerRatio / outputRatio) * 100;
-        const cropW = (100 - visibleW) / 2;
-        return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
+  if (outputRatio > containerRatio) {
+    const boxHeightPct = (containerRatio / outputRatio) * 100;
+    const barH = (100 - boxHeightPct) / 2;
+    boxTop = barH;
+    boxBottom = barH;
+  } else {
+    const boxWidthPct = (outputRatio / containerRatio) * 100;
+    const barW = (100 - boxWidthPct) / 2;
+    boxLeft = barW;
+    boxRight = barW;
+  }
+
+  // --- High-Performance Smooth Drag Node Operators ---
+  const handleOverlayPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isResizingOverlay || !overlayPosition) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsDraggingOverlay(true);
+
+    // Cache canvas metrics once at the beginning of interaction to eliminate layout thrashing
+    if (innerCanvasRef.current) {
+      canvasRectRef.current = innerCanvasRef.current.getBoundingClientRect();
+    }
+
+    dragStartCoordsRef.current = { x: e.clientX, y: e.clientY };
+    dragStartPosRef.current = { x: overlayPosition.x, y: overlayPosition.y };
+  };
+
+  const handleOverlayPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingOverlay || !canvasRectRef.current || !overlayDOMRef.current) return;
+
+    const rect = canvasRectRef.current; // Read instantly from memory cache
+    const deltaX = e.clientX - dragStartCoordsRef.current.x;
+    const deltaY = e.clientY - dragStartCoordsRef.current.y;
+
+    const pctDeltaX = (deltaX / rect.width) * 100;
+    const pctDeltaY = (deltaY / rect.height) * 100;
+
+    let targetX = Math.min(100, Math.max(0, dragStartPosRef.current.x + pctDeltaX));
+    let targetY = Math.min(100, Math.max(0, dragStartPosRef.current.y + pctDeltaY));
+
+    // Direct styling modification on DOM layer for instantaneous tracking response
+    overlayDOMRef.current.style.left = `${targetX}%`;
+    overlayDOMRef.current.style.top = `${targetY}%`;
+  };
+
+  const handleOverlayPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setIsDraggingOverlay(false);
+
+    if (overlayDOMRef.current) {
+      const savedX = parseFloat(overlayDOMRef.current.style.left);
+      const savedY = parseFloat(overlayDOMRef.current.style.top);
+      if (!isNaN(savedX) && !isNaN(savedY)) {
+        setOverlayPosition?.({ x: savedX, y: savedY });
       }
     }
-  })();
+    canvasRectRef.current = null; // Flush cache
+  };
 
-  if (!file) return null;
+  // --- High-Performance Smooth Resize Node Operators ---
+  const handleResizePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsResizingOverlay(true);
+
+    // Cache canvas metrics once at the beginning of resize interaction
+    if (innerCanvasRef.current) {
+      canvasRectRef.current = innerCanvasRef.current.getBoundingClientRect();
+    }
+
+    resizeStartSizeRef.current = overlaySize;
+    dragStartCoordsRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleResizePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isResizingOverlay || !canvasRectRef.current || !overlayDOMRef.current) return;
+    e.stopPropagation();
+
+    const rect = canvasRectRef.current; // Read instantly from memory cache
+    const presetWidth = activePreset?.width || 1920;
+    const deltaX = e.clientX - dragStartCoordsRef.current.x;
+
+    const deltaPresetPx = (deltaX / rect.width) * presetWidth;
+    let newWidthPresetPx = resizeStartSizeRef.current + deltaPresetPx;
+
+    if (newWidthPresetPx >= 50 && newWidthPresetPx <= presetWidth) {
+      overlayDOMRef.current.style.width = `${(newWidthPresetPx / presetWidth) * 100}%`;
+    }
+  };
+
+  const handleResizePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setIsResizingOverlay(false);
+
+    if (overlayDOMRef.current) {
+      const currentPctWidth = parseFloat(overlayDOMRef.current.style.width);
+      const presetWidth = activePreset?.width || 1920;
+      if (!isNaN(currentPctWidth)) {
+        const finalSizePx = (currentPctWidth / 100) * presetWidth;
+        setOverlaySize?.(finalSizePx);
+      }
+    }
+    canvasRectRef.current = null; // Flush cache
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.code === "Space") {
       const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return;
+      
       const video = videoRef.current;
       if (video) {
-        e.preventDefault(); // Prevent default page scroll
-        if (video.paused) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
+        e.preventDefault();
+        if (video.paused) video.play().catch(() => {});
+        else video.pause();
       }
     }
   };
+
+  if (!file) return null;
 
   return (
     <>
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"
+        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
       >
         {isLoading && (
           <div
-            className="absolute inset-0 animate-pulse bg-[var(--surface)] rounded-xl transition-opacity duration-300"
+            className="absolute inset-0 animate-pulse bg-[var(--surface)] rounded-xl transition-opacity duration-300 z-20"
             aria-label="Loading video preview"
           />
         )}
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video
-          ref={videoRef}
-          controls
-          className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
-          onLoadedData={() => setIsLoading(false)}
-          playsInline
-          muted={!recipe?.keepAudio}
-        >
-          <track kind="captions" />
-        </video>
 
-        {/* Letterbox / Crop overlay */}
-        {overlay && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-            {overlay.mode === "fit" ? (
-              // Letterbox: semi-transparent bars outside the content area
-              <>
-                <div className="absolute left-0 right-0 top-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ width: overlay.barRight }} />
-              </>
-            ) : (
-              // Fill/crop: dashed border around the surviving area, dimmed outside
-              <>
-                <div className="absolute left-0 right-0 top-0 bg-[var(--error-bg)]" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-[var(--error-bg)]" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-[var(--error-bg)]" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-[var(--error-bg)]" style={{ width: overlay.barRight }} />
-                <div
-                  className="absolute border-2 border-dashed border-film-400"
-                  style={{
-                    top: overlay.barTop,
-                    bottom: overlay.barBottom,
-                    left: overlay.barLeft,
-                    right: overlay.barRight,
-                  }}
-                />
-              </>
+        {/* The WYSIWYG Inner Canvas Boundary */}
+        <div
+          ref={innerCanvasRef}
+          className="absolute flex items-center justify-center overflow-hidden transition-all duration-300 ease-in-out ring-1 ring-white/10 shadow-2xl bg-black select-none touch-none"
+          style={{
+            top: `${boxTop}%`,
+            bottom: `${boxBottom}%`,
+            left: `${boxLeft}%`,
+            right: `${boxRight}%`,
+          }}
+        >
+          <video
+            ref={videoRef}
+            controls
+            onLoadedData={() => setIsLoading(false)}
+            className={cn(
+              "w-full h-full transition-all duration-300 ease-in-out pointer-events-none",
+              recipe?.framing === "fill" ? "object-cover" : "object-contain",
+              isLoading ? "opacity-0" : "opacity-100"
             )}
-          </div>
-        )}
+            style={{
+              transform: recipe ? `rotate(${recipe.rotate}deg)` : "none",
+              filter: recipe ? `brightness(${recipe.brightness + 1}) contrast(${recipe.contrast}) saturate(${recipe.saturation})` : "none",
+            }}
+            playsInline
+            muted={!recipe?.keepAudio}
+          >
+            <track kind="captions" />
+          </video>
+
+          {/* High-Performance Smooth Rendering Image Overlay Wrapper */}
+          {overlayUrl && overlayPosition && (
+            <div
+              ref={overlayDOMRef}
+              className="group absolute select-none touch-none z-30"
+              style={{
+                left: `${overlayPosition.x}%`,
+                top: `${overlayPosition.y}%`,
+                opacity: overlayOpacity / 100,
+                width: `${(overlaySize / (activePreset?.width || 1920)) * 100}%`,
+                cursor: isDraggingOverlay ? "grabbing" : "grab",
+              }}
+              onPointerDown={handleOverlayPointerDown}
+              onPointerMove={handleOverlayPointerMove}
+              onPointerUp={handleOverlayPointerUp}
+              onPointerCancel={handleOverlayPointerUp}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={overlayUrl}
+                className="w-full h-auto pointer-events-none select-none"
+                alt="Workspace Overlay"
+              />
+
+              {/* Seamless Resize Grab Anchor */}
+              <div
+                className={cn(
+                  "absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-[var(--accent)] rounded-full border-2 border-white cursor-nwse-resize z-50 touch-none shadow-md transition-opacity duration-200",
+                  isResizingOverlay ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                )}
+                onPointerDown={handleResizePointerDown}
+                onPointerMove={handleResizePointerMove}
+                onPointerUp={handleResizePointerUp}
+                onPointerCancel={handleResizePointerUp}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Draggable Text Overlays */}
         {recipe && !isLoading && containerDimensions.width > 0 && (
@@ -284,34 +404,15 @@ export default function VideoPreview({
           />
         )}
 
-        {/* Toggle button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowOverlay((v) => !v)}
-            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showOverlay
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showOverlay}
-            aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-            title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-          >
-            {showOverlay ? "Hide overlay" : "Show overlay"}
-          </button>
-        )}
-
         {/* Compare button */}
         {recipe && !isLoading && (
           <button
             type="button"
             onClick={() => setShowComparison((v) => !v)}
-            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showComparison
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
+            className={cn(
+              "absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto",
+              showComparison ? "bg-[var(--accent)] text-white" : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
+            )}
             aria-pressed={showComparison}
             aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
             title={showComparison ? "Hide comparison preview" : "Show comparison preview"}
@@ -325,7 +426,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={handleGrabFrame}
-            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
+            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-20 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] flex items-center gap-1"
             aria-label="Grab frame as PNG"
             title="Download current frame as PNG"
           >
