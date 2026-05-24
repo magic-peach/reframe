@@ -135,9 +135,6 @@ export function useVideoEditor() {
   } | null>(null);
   const [recipe, setRecipe] = useState({
     ...DEFAULT_RECIPE,
-    soundOnCompletion:
-      typeof window !== "undefined" &&
-      localStorage.getItem("soundOnCompletion") === "true",
   });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
@@ -158,6 +155,18 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const soundOnCompletion = localStorage.getItem("soundOnCompletion");
+    if (soundOnCompletion === null) return;
+
+    setRecipe((prev) => ({
+      ...prev,
+      soundOnCompletion: soundOnCompletion === "true",
+    }));
+  }, []);
+
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
     const next = { ...prev, ...patch };
