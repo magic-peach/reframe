@@ -318,6 +318,8 @@ export default function OnboardingTour() {
         clearTimeout(retryTimer);
       }
     };
+  }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
+
   // Re-measure on resize or scroll so spotlight stays anchored to target.
   // requestAnimationFrame prevents layout thrashing on rapid scroll/resize events.
   useEffect(() => {
