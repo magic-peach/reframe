@@ -92,10 +92,6 @@ export default function FileUpload({
       return;
     }
 
-    if (file.size > 500 * 1024 * 1024) {
-      setError("File size exceeds 500MB limit. Please select a smaller video.");
-      return;
-    }
 
     if (file.size > MAX_FILE_SIZE) {
       setError(
