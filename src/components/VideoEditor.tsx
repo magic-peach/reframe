@@ -17,6 +17,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import PreviewPanel from "./PreviewPanel";
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
@@ -210,6 +211,9 @@ export default function VideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    previewUrl,
+    isPreviewing,
+    generatePreview,
   } = useVideoEditor();
 
   useKeyboardShortcuts({
@@ -680,6 +684,16 @@ export default function VideoEditor() {
                 </button>
               </div>
             </div>
+
+            {file && (
+              <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 animate-fade-in" style={{ animationDelay: "100ms" }}>
+                <PreviewPanel
+                  previewUrl={previewUrl}
+                  isPreviewing={isPreviewing}
+                  onGeneratePreview={generatePreview}
+                />
+              </div>
+            )}
 
             <KeyboardShortcutsPanel />
 

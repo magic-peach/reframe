@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
-import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
+import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError, generatePreviewFrame } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
 
@@ -174,6 +174,10 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
+
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
     const next = { ...prev, ...patch };
@@ -527,6 +531,37 @@ export function useVideoEditor() {
     status,
   ]);
 
+  const generatePreview = useCallback(async () => {
+    if (!file) return;
+    if (isPreviewing) return;
+
+    const abortController = new AbortController();
+
+    try {
+      setIsPreviewing(true);
+      setError(null);
+
+      const ffmpeg = await loadFFmpeg(abortController.signal);
+
+      const newPreviewUrl = await generatePreviewFrame(ffmpeg, file, recipe, abortController.signal);
+
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setPreviewUrl(newPreviewUrl);
+    } catch (err) {
+      console.error("preview generation failed:", err);
+      if (err instanceof FFmpegLoadError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(`Failed to generate preview: ${err.message}`);
+      } else {
+        setError("Failed to generate preview. Please try again.");
+      }
+    } finally {
+      setIsPreviewing(false);
+    }
+  }, [file, recipe, previewUrl]);
 
   useEffect(() => {
     if (status === "exporting") {
@@ -612,6 +647,14 @@ export function useVideoEditor() {
       }
     }
    },[result?.blobUrl])
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   useEffect(() => {
     return () => {
@@ -716,5 +759,8 @@ export function useVideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    previewUrl,
+    isPreviewing,
+    generatePreview,
   };
 }

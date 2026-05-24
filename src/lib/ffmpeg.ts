@@ -27,6 +27,68 @@ async function fetchWithIntegrity(url: string, mimeType: string): Promise<string
   return URL.createObjectURL(blob);
 }
 
+export async function generatePreviewFrame(ffmpeg:FFmpeg,file:File,recipe:EditRecipe,signal?:AbortSignal):Promise<string>{
+
+  let targetH:number,targetW:number;
+  if (recipe.preset === "custom") {
+    targetW = recipe.customWidth;
+    targetH = recipe.customHeight;
+  } else {
+    const preset = getPresetById(recipe.preset);
+    targetW = preset?.width ?? 1920;
+    targetH = preset?.height ?? 1080;
+  }
+
+  targetW = Math.round(targetW / 2) * 2;
+  targetH = Math.round(targetH / 2) * 2;
+
+
+  const videoDuration = await new Promise<number>((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(video.src);
+      resolve(video.duration);
+    };
+    video.onerror = () => resolve(recipe.trimEnd ?? 0);
+    video.src = URL.createObjectURL(file);
+  });
+
+  
+  const end = recipe.trimEnd ?? videoDuration;
+   const mid = recipe.trimStart + (end-recipe.trimStart)/2;
+
+    const sessionId = buildSessionId();
+  const ext = file.name.split(".").pop() ?? "mp4";
+  const inputName = `preview_input_${sessionId}.${ext}`;
+  const outputName = `preview_output_${sessionId}.jpg`;
+
+  try {
+    await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
+        const vf = buildVideoFilter(recipe, targetW, targetH);
+        const args = [
+      "-ss", String(mid),   
+      "-i", inputName,           
+      ...(vf ? ["-vf", vf] : []), 
+      "-frames:v", "1",           
+      "-f", "image2",             
+      "-vcodec", "mjpeg",         
+      "-y",                       
+      outputName,
+    ];
+    const exitCode = await ffmpeg.exec(args,undefined,{signal});
+    if(exitCode!==0) throw new Error("Could not load Preview ")
+   const data = await ffmpeg.readFile(outputName,undefined,{signal})
+    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "image/jpeg" });
+    return URL.createObjectURL(blob);
+  } finally {
+    for (const path of [inputName, outputName]) {
+      try { await ffmpeg.deleteFile(path); } catch {}
+    }
+  }
+
+}
+
 let ffmpegInstance: FFmpeg | null = null;
 
 /**
@@ -60,12 +122,12 @@ export async function loadFFmpeg(
 
     const isIsolated = typeof self !== "undefined" && self.crossOriginIsolated;
     const baseURL = isIsolated
-      ? "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm"
-      : "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+  ? "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/umd"
+  : CORE_BASE_URL;
 
     await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+      coreURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
       ...(isIsolated && {
         workerURL: await toBlobURL(
           `${baseURL}/ffmpeg-core.worker.js`,
