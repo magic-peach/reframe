@@ -15,22 +15,16 @@ interface ThemeContextValue {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
+  mounted: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-function getCurrentTheme(): Theme {
-  if (
-    typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark")
-  ) {
-    return "dark";
-  }
-  return "light";
-}
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(getCurrentTheme);
+  // Always start with "light" on the server so SSR and the initial client
+  // render produce identical HTML (avoids hydration mismatch).
+  const [theme, setThemeState] = useState<Theme>("light");
+  const [mounted, setMounted] = useState(false);
 
   const applyTheme = useCallback(
     (next: Theme, persist = true) => {
@@ -48,7 +42,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    setThemeState(getCurrentTheme());
+    // Read the real theme from the DOM after hydration is complete.
+    const actual = document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light";
+    setThemeState(actual);
+    setMounted(true);
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e: MediaQueryListEvent) => {
@@ -70,7 +69,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, mounted }}>
       {children}
     </ThemeContext.Provider>
   );

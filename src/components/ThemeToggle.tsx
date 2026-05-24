@@ -3,14 +3,15 @@
 import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, mounted } = useTheme();
   const isDark = theme === "dark";
 
   return (
     <button
        type="button"
        onClick={toggleTheme}
-       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+       // Keep a stable aria-label until mounted to avoid hydration mismatch.
+       aria-label={mounted ? (isDark ? "Switch to light mode" : "Switch to dark mode") : "Toggle theme"}
       className="
         relative flex items-center justify-center
         w-9 h-9 rounded-full
@@ -23,7 +24,8 @@ export function ThemeToggle() {
         transition-all duration-200
       "
     >
-      {isDark ? (
+      {/* Render nothing until mounted so server and first client render match */}
+      {mounted && (isDark ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 24 24"
@@ -52,7 +54,7 @@ export function ThemeToggle() {
           <circle cx="12" cy="12" r="4" />
           <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
         </svg>
-      )}
+      ))}
     </button>
   );
 }

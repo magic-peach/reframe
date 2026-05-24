@@ -152,10 +152,10 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               aria-pressed={isActive}
               onClick={() => onChange({ preset })}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.04] active:scale-[0.97]",
+                "flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl border text-center transition-all duration-300 cursor-pointer hover:-translate-y-0.5 active:scale-[0.97]",
                 isActive
-                  ? "border-film-500 bg-film-50 text-film-600"
-                  : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-300 hover:bg-film-50/30 hover:text-[var(--text)]",
+                  ? "border-film-500 bg-film-50 text-film-600 shadow-[0_0_15px_-3px_rgba(230,57,70,0.15)] ring-1 ring-film-500/20"
+                  : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-300 hover:bg-film-50/30 hover:shadow-card hover:text-[var(--text)]",
               )}
             >
               {icon}
@@ -201,10 +201,10 @@ export default function PresetSelector({ recipe, onChange }: Props) {
                 aria-label={`${preset.label.replaceAll(":", " is to ")} output ratio`}
                 aria-pressed={active}
                 className={cn(
-                  "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+                  "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-all duration-300 cursor-pointer hover:-translate-y-0.5 active:scale-[0.98]",
                   active
-                    ? "border-film-500 bg-film-50"
-                    : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
+                    ? "border-film-500 bg-film-50 shadow-[0_0_15px_-3px_rgba(230,57,70,0.15)] ring-1 ring-film-500/20"
+                    : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30 hover:shadow-card",
                 )}
               >
                 <RatioBox
@@ -239,10 +239,10 @@ export default function PresetSelector({ recipe, onChange }: Props) {
           aria-pressed={recipe.preset === "custom"}
           onClick={() => handlePresetSelect("custom")}
           className={cn(
-            "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+            "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-all duration-300 cursor-pointer hover:-translate-y-0.5 active:scale-[0.98]",
             recipe.preset === "custom"
-              ? "border-film-500 bg-film-50"
-              : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
+              ? "border-film-500 bg-film-50 shadow-[0_0_15px_-3px_rgba(230,57,70,0.15)] ring-1 ring-film-500/20"
+              : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30 hover:shadow-card",
           )}
         >
           <Settings2

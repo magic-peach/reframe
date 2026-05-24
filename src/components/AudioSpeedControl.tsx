@@ -12,7 +12,7 @@ interface Props {
 
 export default function AudioSpeedControl({ recipe, onChange }: Props) {
   const speedIndex = SPEED_STEPS.indexOf(recipe.speed as (typeof SPEED_STEPS)[number]);
-  
+
   const getSpeedDescription = (speed: number) => {
     if (speed <= 0.5) return "Very Slow";
     if (speed < 1) return "Slow";
@@ -44,18 +44,18 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
         aria-label={recipe.keepAudio ? "Mute video audio (M)" : "Unmute video audio (M)"}
         aria-pressed={recipe.keepAudio}
         className={cn(
-          "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
-          "hover:scale-[1.01] active:scale-[0.99]",
+          "w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-300",
+          "hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer",
           recipe.keepAudio
-            ? "border-film-300 bg-film-50 text-film-700"
-            : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
+            ? "border-film-300 bg-film-50 text-film-700 shadow-[0_0_15px_-3px_rgba(230,57,70,0.15)] ring-1 ring-film-500/20"
+            : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-300 hover:bg-film-50/30 hover:shadow-card hover:text-[var(--text)]"
         )}
-        >
+      >
         {recipe.keepAudio ? (
-        <Volume2 size={16} aria-hidden="true" />
-      ) : (
-        <VolumeX size={16} aria-hidden="true" />
-            )}
+          <Volume2 size={16} aria-hidden="true" />
+        ) : (
+          <VolumeX size={16} aria-hidden="true" />
+        )}
         <span className="sr-only">
           {recipe.keepAudio ? "Turn audio off" : "Turn audio on"}
         </span>
@@ -120,17 +120,17 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           onClick={() => onChange({ normalizeAudio: !recipe.normalizeAudio })}
           aria-label={
             recipe.normalizeAudio
-            ? "Turn off audio normalization"
-            : "Turn on audio normalization"
+              ? "Turn off audio normalization"
+              : "Turn on audio normalization"
           }
           aria-pressed={recipe.normalizeAudio}
           aria-describedby="normalize-audio-description"
           className={cn(
-            "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
-            "hover:scale-[1.01] active:scale-[0.99]",
+            "w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-300",
+            "hover:-translate-y-0.5 active:scale-[0.99] cursor-pointer",
             recipe.normalizeAudio
-              ? "border-film-300 bg-film-50 text-film-700"
-              : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
+              ? "border-film-300 bg-film-50 text-film-700 shadow-[0_0_15px_-3px_rgba(230,57,70,0.15)] ring-1 ring-film-500/20"
+              : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-300 hover:bg-film-50/30 hover:shadow-card hover:text-[var(--text)]"
           )}
         >
           <Gauge size={16} aria-hidden="true" />

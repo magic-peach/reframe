@@ -43,10 +43,6 @@ export default function ThumbnailStrip({
     objectUrlsRef.current = [];
   }, []);
 
-  const cancelThumbnailRun = useCallback(() => {
-    lastRunIdRef.current += 1;
-  }, []);
-
   const generateThumbnails = useCallback(async () => {
     if (!videoSrc || duration <= 0) return;
 
@@ -148,10 +144,10 @@ export default function ThumbnailStrip({
       generateThumbnails();
     }
     return () => {
-      cancelThumbnailRun();
+      lastRunIdRef.current++;
       revokeAllObjectUrls();
     };
-  }, [cancelThumbnailRun, generateThumbnails, revokeAllObjectUrls, videoSrc, duration]);
+  }, [generateThumbnails, revokeAllObjectUrls, videoSrc, duration]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -242,12 +238,11 @@ export default function ThumbnailStrip({
       <style>{`
         .thumbnail-strip-wrapper {
           width: 100%;
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
+          background: #0d0d0f;
+          border: 1px solid #1e1e24;
+          border-radius: 10px;
           overflow: hidden;
           font-family: 'SF Mono', 'Fira Code', monospace;
-          box-shadow: var(--shadow);
         }
 
         .strip-header {
@@ -255,8 +250,8 @@ export default function ThumbnailStrip({
           align-items: center;
           gap: 12px;
           padding: 8px 14px;
-          background: var(--bg);
-          border-bottom: 1px solid var(--border);
+          background: #111115;
+          border-bottom: 1px solid #1e1e24;
         }
 
         .strip-label {
@@ -267,14 +262,14 @@ export default function ThumbnailStrip({
           font-weight: 600;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: var(--muted);
+          color: #5a5a72;
         }
 
         .strip-progress {
           position: relative;
           flex: 1;
           height: 3px;
-          background: var(--border);
+          background: #1e1e24;
           border-radius: 2px;
           overflow: hidden;
           display: flex;
@@ -286,7 +281,7 @@ export default function ThumbnailStrip({
           left: 0;
           top: 0;
           height: 100%;
-          background: var(--accent);
+          background: linear-gradient(90deg, #4f6ef7, #a78bfa);
           border-radius: 2px;
           transition: width 0.2s ease;
         }
@@ -295,14 +290,14 @@ export default function ThumbnailStrip({
           position: absolute;
           right: -28px;
           font-size: 9px;
-          color: var(--muted);
+          color: #5a5a72;
           white-space: nowrap;
         }
 
         .strip-meta {
           margin-left: auto;
           font-size: 10px;
-          color: var(--muted);
+          color: #3a3a50;
         }
 
         .strip-scroll-area {
@@ -310,7 +305,7 @@ export default function ThumbnailStrip({
           overflow-y: hidden;
           padding: 10px 10px 6px;
           scrollbar-width: thin;
-          scrollbar-color: var(--border) transparent;
+          scrollbar-color: #2a2a35 transparent;
         }
 
         .strip-scroll-area::-webkit-scrollbar {
@@ -322,7 +317,7 @@ export default function ThumbnailStrip({
         }
 
         .strip-scroll-area::-webkit-scrollbar-thumb {
-          background: var(--border);
+          background: #2a2a35;
           border-radius: 2px;
         }
 
@@ -335,7 +330,7 @@ export default function ThumbnailStrip({
           width: 106px;
           height: 60px;
           border-radius: 6px;
-          background: linear-gradient(90deg, var(--bg) 25%, var(--surface) 50%, var(--bg) 75%);
+          background: linear-gradient(90deg, #111115 25%, #1a1a22 50%, #111115 75%);
           background-size: 200% 100%;
           animation: shimmer 1.4s infinite;
           flex-shrink: 0;
@@ -386,14 +381,14 @@ export default function ThumbnailStrip({
         .thumb-btn:hover,
         .thumb-btn.hovered {
           transform: translateY(-3px) scale(1.04);
-          box-shadow: var(--shadow);
-          outline-color: var(--accent);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+          outline-color: rgba(79, 110, 247, 0.5);
           z-index: 2;
         }
 
         .thumb-btn.active {
-          outline-color: var(--accent);
-          box-shadow: 0 0 0 2px var(--accent), var(--shadow);
+          outline-color: #4f6ef7;
+          box-shadow: 0 0 0 2px #4f6ef7, 0 8px 20px rgba(79,110,247,0.3);
           z-index: 3;
         }
 
@@ -411,9 +406,9 @@ export default function ThumbnailStrip({
           left: 0;
           right: 0;
           padding: 3px 4px 3px;
-          background: linear-gradient(transparent, var(--bg));
+          background: linear-gradient(transparent, rgba(0,0,0,0.85));
           font-size: 9px;
-          color: var(--muted);
+          color: rgba(255,255,255,0.75);
           text-align: center;
           letter-spacing: 0.04em;
           pointer-events: none;
@@ -421,7 +416,7 @@ export default function ThumbnailStrip({
         }
 
         .thumb-btn.active .thumb-time {
-          color: var(--text);
+          color: #a5b4fc;
         }
 
         .active-indicator {
@@ -431,8 +426,8 @@ export default function ThumbnailStrip({
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: var(--accent);
-          box-shadow: 0 0 6px var(--accent);
+          background: #4f6ef7;
+          box-shadow: 0 0 6px #4f6ef7;
           animation: pulse-dot 1.5s ease-in-out infinite;
         }
 
