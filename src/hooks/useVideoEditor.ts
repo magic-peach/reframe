@@ -561,7 +561,7 @@ export function useVideoEditor() {
     } finally {
       setIsPreviewing(false);
     }
-  }, [file, recipe, previewUrl]);
+  }, [file, recipe, previewUrl,isPreviewing]);
 
   useEffect(() => {
     if (status === "exporting") {

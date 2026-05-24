@@ -3,6 +3,7 @@
 import { Image as ImageIcon } from "lucide-react";
 import BaseButton from "./ui/BaseButton";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 interface PreviewPanelProps {
   previewUrl: string | null;
@@ -68,9 +69,11 @@ export default function PreviewPanel({
 
       {previewUrl && (
         <div className="rounded-lg overflow-hidden border border-[var(--border)] bg-[var(--bg)]">
-          <img
+          <Image
             src={previewUrl}
             alt="Frame preview"
+            width={1920}
+            height={1080}
             className="w-full h-auto object-contain"
           />
         </div>
