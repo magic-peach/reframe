@@ -1,5 +1,3 @@
-Reframe is a high-performance web application built with Next.js and TypeScript. It focuses on delivering a seamless user experience through a modern, responsive interface powered by Tailwind CSS and optimized by the Bun runtime. The project is designed for rapid development and scalable deployment on Vercel.
-
 ## Description
 ## Related Issue
 ## Type of Contribution
@@ -12,6 +10,7 @@ Reframe is a high-performance web application built with Next.js and TypeScript.
 ## Participant Info
 - GitHub username: - Contribution level (Beginner/Intermediate/Advanced): ## Screen Recording
 > **How to record:** run `bun run dev` → open http://localhost:3000 → demonstrate the full working flow.
+
 **Recording / Loom link:** ## Checklist
 - [ ] I have read the contribution guidelines
 - [ ] My changes follow the project structure
