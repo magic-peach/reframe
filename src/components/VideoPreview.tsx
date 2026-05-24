@@ -232,6 +232,7 @@ export default function VideoPreview({
         <video
           ref={videoRef}
           controls
+          preload="metadata"
           className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
           onLoadedData={() => setIsLoading(false)}
           playsInline
