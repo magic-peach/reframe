@@ -32,11 +32,12 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
 
   const isModified = recipe.speed !== 1 || !recipe.keepAudio;
 
+  // TS FIX: Guarantee a number is always passed to the UI and functions
+  const currentSpeed = SPEED_STEPS[localSpeedIndex] ?? 1;
+
   return (
     <div className="space-y-4">
-      {/* CLS FIX: Fixed height wrapper (h-6) ensures the layout never jumps.
-        The button smoothly fades in and out instead of mounting/unmounting.
-      */}
+      {/* CLS FIX: Fixed height wrapper (h-6) ensures the layout never jumps. */}
       <div className="h-6 flex justify-end">
         <button
           type="button"
@@ -97,10 +98,10 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
 
           <div className="text-right">
             <span className="text-sm font-heading font-bold text-film-600 block">
-              {SPEED_STEPS[localSpeedIndex]}x
+              {currentSpeed}x
             </span>
             <span id="speed-description" className="text-sm text-[var(--muted)]">
-              {getSpeedDescription(SPEED_STEPS[localSpeedIndex])}
+              {getSpeedDescription(currentSpeed)}
             </span>
           </div>
         </div>
@@ -124,7 +125,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           }}
           aria-labelledby="speed-label"
           aria-describedby="speed-description"
-          aria-valuetext={`${SPEED_STEPS[localSpeedIndex]}x speed, ${getSpeedDescription(SPEED_STEPS[localSpeedIndex])}`}
+          aria-valuetext={`${currentSpeed}x speed, ${getSpeedDescription(currentSpeed)}`}
           className="w-full h-11 accent-film-600 cursor-pointer"
         />
         <div className="flex justify-between mt-1 overflow-hidden">
