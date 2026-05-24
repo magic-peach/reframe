@@ -1,9 +1,0 @@
-Resolves #876
-
-**What changed?**
-Added `min-w-20` to the custom width and height inputs in the `PresetSelector` component. 
-
-**Why?**
-As mentioned in the issue, the inputs were getting squished by flexbox layout constraints to the point where 4-digit resolutions (like 1920 or 1080) were getting clipped and looking like "19" and "10". Enforcing a minimum width ensures the inputs stay wide enough to comfortably fit standard video dimensions without breaking the UI on smaller panels. 
-
-Let me know if you want me to make any adjustments! (GSSoC'26)
