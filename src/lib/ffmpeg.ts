@@ -27,6 +27,7 @@ async function fetchWithIntegrity(url: string, mimeType: string): Promise<string
 }
 
 let ffmpegInstance: FFmpeg | null = null;
+let loadingPromise: Promise<FFmpeg> | null = null;
 
 /**
  * Error thrown when the FFmpeg WebAssembly core fails to load.
@@ -47,32 +48,39 @@ export async function loadFFmpeg(
     return ffmpegInstance;
   }
 
-  const ffmpeg = ffmpegInstance ?? new FFmpeg();
-  ffmpegInstance = ffmpeg;
-
-  const handleProgress = ({ progress }: { progress: number }) => {
-    onProgress?.(Math.round(progress * 100));
-  };
-
-  try {
-    ffmpeg.on("progress", handleProgress);
-
-    // Secure engine load using verified runtime checksum hashes from main
-    await ffmpeg.load({
-      coreURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
-    }, { signal });
-
-    onProgress?.(100);
-    return ffmpeg;
-  } catch (err) {
-    if (ffmpegInstance === ffmpeg) {
-      ffmpegInstance = null;
-    }
-    throw new FFmpegLoadError("Failed to load the FFmpeg engine. Check your internet connection.");
-  } finally {
-    ffmpeg.off("progress", handleProgress);
+  if (loadingPromise) {
+    return loadingPromise;
   }
+
+  loadingPromise = (async () => {
+    const ffmpeg = ffmpegInstance ?? new FFmpeg();
+    ffmpegInstance = ffmpeg;
+
+    const handleProgress = ({ progress }: { progress: number }) => {
+      onProgress?.(Math.round(progress * 100));
+    };
+
+    try {
+      ffmpeg.on("progress", handleProgress);
+
+      // Secure engine load using verified runtime checksum hashes from main
+      await ffmpeg.load({
+        coreURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
+        wasmURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
+      }, { signal });
+
+      onProgress?.(100);
+      return ffmpeg;
+    } catch (err) {
+      ffmpegInstance = null;
+      throw new FFmpegLoadError("Failed to load the FFmpeg engine. Check your internet connection.");
+    } finally {
+      ffmpeg.off("progress", handleProgress);
+      loadingPromise = null;
+    }
+  })();
+
+  return loadingPromise;
 }
 
 export function terminateFFmpeg() {
