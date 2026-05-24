@@ -325,8 +325,27 @@ git commit -m "feat: add aria-label to export button"
 3. Fill in the PR template:
    - Describe what you changed and why
    - Reference the issue: `Closes #<issue-number>`
-   - Add screenshots for UI changes
+   - **Attach a screen recording** (required for UI/feature changes — see below)
 4. Submit the PR — maintainers will review within a few days
+
+### Screen Recording Requirement
+
+**Any PR that adds or modifies a UI element, a user-facing feature, or any visual behaviour must include a screen recording of the working change running on your local machine.**
+
+This is a hard requirement — PRs without a recording will not be merged until one is added.
+
+**What to record:**
+- Run `bun run dev` and open `http://localhost:3000`
+- Demonstrate the full working flow of your change (e.g. upload a video → use the new control → export → see the result)
+- Show any edge cases your implementation handles (empty state, error state, etc.)
+
+**How to record:**
+- **macOS**: `Cmd + Shift + 5` → Record Selected Portion, or use QuickTime Player
+- **Windows**: `Win + G` → Xbox Game Bar → Capture
+- **Linux**: OBS Studio, GNOME Screenshot tool, or `kazam`
+- **Any OS**: [Loom](https://loom.com) (free, great for sharing)
+
+Attach the recording directly to the PR by dragging the file into the GitHub comment box, or paste a Loom/shareable link.
 
 ### PR Checklist
 
@@ -336,6 +355,7 @@ git commit -m "feat: add aria-label to export button"
 - [ ] UI changes tested on mobile (use browser DevTools)
 - [ ] Accessibility: new interactive elements have ARIA labels
 - [ ] Issue number referenced in PR description
+- [ ] **Screen recording attached** (required for all UI/feature PRs)
 
 ---
 
@@ -399,3 +419,16 @@ We expect all contributors to follow our Code of Conduct to create a safe, welco
 - **Constructive feedback is encouraged.**
 
 Thank you for making Reframe better! 🎬
+
+## Cross-Origin Isolation & GitHub Pages
+
+This project uses `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy`
+headers to enable cross-origin isolation, which allows FFmpeg.wasm to run in
+multi-threaded mode for significantly faster video exports.
+
+**GitHub Pages does not support custom HTTP headers.**
+If you are deploying to GitHub Pages, cross-origin isolation cannot be enabled
+and FFmpeg will automatically fall back to single-threaded mode.
+
+For full multi-threading support, deploy to **Vercel**, **Netlify**, or
+**Cloudflare Pages** where custom headers are supported.

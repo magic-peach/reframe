@@ -120,6 +120,15 @@ Open [http://localhost:3000](http://localhost:3000) — component changes reflec
 bun run build
 ```
 
+## Theme (Dark Mode)
+
+Reframe supports a theme toggle in the header that switches between light, dark, and a high-contrast mode. The app remembers your choice in localStorage and will respect your system preference when no explicit choice is saved.
+
+- Use the theme button in the top-right to switch modes.
+- The selected theme is persisted across sessions.
+- You can override the theme manually in the browser console by setting `localStorage.setItem('theme', 'dark')` (values: `light`, `dark`, `high-contrast`) and reloading the page.
+
+
 Outputs a static site to `out/` — deploy to Vercel, Netlify, GitHub Pages, or any static host.
 
 ---
