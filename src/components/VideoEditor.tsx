@@ -279,6 +279,13 @@ export default function VideoEditor() {
   const isProcessing = status === "loading-engine" || status === "exporting";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
+  const intervalSeconds = useMemo(() => {
+    if (duration <= 30) return 2;
+    if (duration <= 120) return 5;
+    if (duration <= 300) return 15;
+    return 30;
+  }, [duration]);
+
   const videoSrc = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
     [file]
@@ -375,6 +382,7 @@ export default function VideoEditor() {
                       trimStart={recipe.trimStart ?? 0}
                       trimEnd={recipe.trimEnd ?? duration}
                       onSeek={seekTo}
+                      intervalSeconds={intervalSeconds}
                     />
                   </div>
                 </div>
