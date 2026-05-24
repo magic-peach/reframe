@@ -56,26 +56,34 @@ export async function loadFFmpeg(
 
   try {
     ffmpeg.on("progress", handleProgress);
-
     const isIsolated = typeof self !== "undefined" && self.crossOriginIsolated;
-    const baseURL = isIsolated
-      ? "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm"
-      : "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+    const origin = typeof self !== "undefined" && self.location ? self.location.origin : "";
+    
+    let coreURL: string;
+    let wasmURL: string;
+    let workerURL: string | undefined;
+
+    if (isIsolated) {
+      coreURL = `${origin}/ffmpeg/core-mt/ffmpeg-core.js`;
+      wasmURL = `${origin}/ffmpeg/core-mt/ffmpeg-core.wasm`;
+      workerURL = `${origin}/ffmpeg/core-mt/ffmpeg-core.worker.js`;
+    } else {
+      coreURL = `${origin}/ffmpeg/umd/ffmpeg-core.js`;
+      wasmURL = `${origin}/ffmpeg/umd/ffmpeg-core.wasm`;
+    }
 
     await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-      ...(isIsolated && {
-        workerURL: await toBlobURL(
-          `${baseURL}/ffmpeg-core.worker.js`,
-          "text/javascript"
-        ),
+      coreURL: await toBlobURL(coreURL, "text/javascript"),
+      wasmURL: await toBlobURL(wasmURL, "application/wasm"),
+      ...(workerURL && {
+        workerURL: await toBlobURL(workerURL, "text/javascript"),
       }),
     }, { signal });
 
     onProgress?.(100);
     return ffmpeg;
   } catch (err) {
+    console.error("Failed to load FFmpeg:", err);
     if (ffmpegInstance === ffmpeg) {
       ffmpegInstance = null;
     }
@@ -182,7 +190,7 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
 
 function buildArguments(
   recipe: EditRecipe,
-  format: "mp4" | "webm" | "mkv" | "gif",
+  format: "mp4" | "webm" | "mkv" | "gif" | "mp3" | "wav",
   outputName: string,
   inputName: string,
   targetW: number,
@@ -195,6 +203,8 @@ function buildArguments(
   overlayOptions: ImageOverlayOptions | undefined,
   hasOriginalAudio: boolean
 ): string[] {
+  const isAudioOnly = format === "mp3" || format === "wav";
+
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
   const audioReverse = hasOriginalAudio && recipe.reverse ? "areverse" : "";
@@ -206,6 +216,60 @@ function buildArguments(
   const overlayIdx = hasMusicTrack ? 2 : 1;
 
   const args: string[] = [];
+
+  if (isAudioOnly) {
+    args.push("-i", inputName);
+    if (hasMusicTrack) {
+      if (musicOptions!.loopMusic) args.push("-stream_loop", "-1");
+      args.push("-i", musicInputName);
+    }
+
+    const needsFilterComplex = hasMusicTrack;
+    const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
+
+    if (shouldKeepAudio) {
+      if (needsFilterComplex) {
+        const filterParts: string[] = [];
+        const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
+        if (hasOriginalAudio) {
+          const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
+          const origChain = afParts.length > 0
+            ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
+            : `[0:a]volume=${origVol}[orig]`;
+          filterParts.push(origChain);
+          filterParts.push(`[${musicIdx}:a]volume=${musicVol}[music]`);
+          filterParts.push(`[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
+        } else {
+          filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
+        }
+        if (filterParts.length > 0) {
+          args.push("-filter_complex", filterParts.join(";"));
+          args.push("-map", "[aout]");
+        }
+      } else {
+        if (af && hasOriginalAudio) {
+          args.push("-af", af);
+        }
+        if (hasOriginalAudio) {
+          args.push("-map", "0:a");
+        }
+      }
+
+      if (format === "mp3") {
+        args.push("-c:a", "libmp3lame", "-q:a", "2");
+      } else {
+        args.push("-c:a", "pcm_s16le");
+      }
+    } else {
+      args.push("-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo", "-t", "1");
+      args.push("-c:a", format === "mp3" ? "libmp3lame" : "pcm_s16le");
+    }
+
+    args.push("-vn");
+    args.push(outputName);
+    return args;
+  }
+
   args.push("-i", inputName);
   if (hasMusicTrack) {
     if (musicOptions!.loopMusic) args.push("-stream_loop", "-1");
@@ -340,6 +404,10 @@ export async function exportVideo(
         return { filename: `output_${sessionId}.mkv`, mimeType: "video/x-matroska" };
       case "gif":
         return { filename: `output_${sessionId}.gif`, mimeType: "image/gif" };
+      case "mp3":
+        return { filename: `output_${sessionId}.mp3`, mimeType: "audio/mpeg" };
+      case "wav":
+        return { filename: `output_${sessionId}.wav`, mimeType: "audio/wav" };
       default:
         return { filename: `output_${sessionId}.mp4`, mimeType: "video/mp4" };
     }
@@ -424,6 +492,7 @@ export async function exportVideo(
 
     let missingAudioDetected = false;
     const logListener = ({ message }: { message: string }) => {
+      console.log("[FFMPEG LOG]", message);
       const msg = message.toLowerCase();
       if (
         msg.includes("matches no streams") ||
@@ -457,6 +526,9 @@ export async function exportVideo(
 
     // Fallback Attempt 3: Switch codecs to WebM if container errors happen
     if (exitCode !== 0) {
+      if (recipe.format === "mp3" || recipe.format === "wav") {
+        throw new Error("Export failed");
+      }
       args = buildArguments(
         recipe, "webm", fallbackOutputName, inputName, targetW, targetH,
         hasMusicTrack, musicInputName, musicOptions,
@@ -492,7 +564,7 @@ export async function exportVideo(
       size: blob.size,
       width: targetW,
       height: targetH,
-      format: recipe.format as "mp4" | "webm" | "mkv",
+      format: recipe.format as "mp4" | "webm" | "mkv" | "gif" | "mp3" | "wav",
     };
   } finally {
     ffmpeg.off("progress", handleProgress);

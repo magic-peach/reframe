@@ -191,7 +191,7 @@ export function useVideoEditor() {
       case "quality":
         return typeof val === "number" && !isNaN(val) && val >= 18 && val <= 30;
       case "format":
-        return val === "mp4" || val === "webm" || val === "mkv" || val === "gif";
+        return val === "mp4" || val === "webm" || val === "mkv" || val === "gif" || val === "mp3" || val === "wav";
       case "brightness":
         return typeof val === "number" && !isNaN(val) && val >= -1 && val <= 1;
       case "contrast":

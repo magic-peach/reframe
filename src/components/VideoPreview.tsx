@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
-import { EditRecipe } from "@/lib/types";
+import { EditRecipe, OverlayPosition } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
@@ -12,15 +12,137 @@ interface Props {
   file: File | null;
   recipe?: EditRecipe;
   videoRef: RefObject<HTMLVideoElement | null>;
+  overlayFile?: File | null;
+  overlayPosition?: OverlayPosition;
+  overlaySize?: number;
+  overlayOpacity?: number;
+  overlayX?: number | null;
+  overlayY?: number | null;
+  setOverlayX?: (x: number | null) => void;
+  setOverlayY?: (y: number | null) => void;
 }
 
-export default function VideoPreview({ file, recipe, videoRef }: Props) {
+export default function VideoPreview({
+  file,
+  recipe,
+  videoRef,
+  overlayFile,
+  overlayPosition,
+  overlaySize,
+  overlayOpacity,
+  overlayX,
+  overlayY,
+  setOverlayX,
+  setOverlayY,
+}: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const onLoadedRef = useRef<(() => void) | null>(null);
+
+  const [overlayUrl, setOverlayUrl] = useState<string>("");
+  const overlayDragRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!overlayFile) {
+      setOverlayUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(overlayFile);
+    setOverlayUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [overlayFile]);
+
+  const getOverlayStyle = () => {
+    if (!overlayFile) return {};
+
+    if (overlayX === undefined || overlayY === undefined || overlayX === null || overlayY === null) {
+      const spacing = "20px";
+      if (overlayPosition === "top-left") {
+        return { left: spacing, top: spacing };
+      }
+      if (overlayPosition === "top-right") {
+        return { right: spacing, top: spacing };
+      }
+      if (overlayPosition === "bottom-left") {
+        return { left: spacing, bottom: spacing };
+      }
+      return { right: spacing, bottom: spacing };
+    }
+
+    return {
+      left: `${overlayX}%`,
+      top: `${overlayY}%`,
+    };
+  };
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+
+    const getCoords = (evt: any) => {
+      if (evt.touches && evt.touches.length > 0) {
+        return { x: evt.touches[0].clientX, y: evt.touches[0].clientY };
+      }
+      return { x: evt.clientX, y: evt.clientY };
+    };
+
+    const startCoords = getCoords(e);
+    const startX = startCoords.x;
+    const startY = startCoords.y;
+
+    let currentLeft = 20;
+    let currentTop = 20;
+
+    const overlayElement = overlayDragRef.current;
+    if (overlayElement) {
+      const overlayRect = overlayElement.getBoundingClientRect();
+      currentLeft = overlayRect.left - rect.left;
+      currentTop = overlayRect.top - rect.top;
+    }
+
+    const onMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const moveCoords = getCoords(moveEvent);
+      const curX = moveCoords.x;
+      const curY = moveCoords.y;
+
+      const dx = curX - startX;
+      const dy = curY - startY;
+
+      let newLeft = currentLeft + dx;
+      let newTop = currentTop + dy;
+
+      const overlayW = overlaySize ?? 150;
+      const overlayH = overlayElement ? overlayElement.clientHeight : overlayW * 0.75;
+
+      newLeft = Math.max(0, Math.min(rect.width - overlayW, newLeft));
+      newTop = Math.max(0, Math.min(rect.height - overlayH, newTop));
+
+      const pctX = (newLeft / rect.width) * 100;
+      const pctY = (newTop / rect.height) * 100;
+
+      if (setOverlayX) setOverlayX(parseFloat(pctX.toFixed(2)));
+      if (setOverlayY) setOverlayY(parseFloat(pctY.toFixed(2)));
+    };
+
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onUp);
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onUp);
+  };
 
   const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
@@ -180,6 +302,7 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
   return (
     <>
       <div
+        ref={containerRef}
         role="group"
         className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
         tabIndex={0}
@@ -208,6 +331,28 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         >
           <track kind="captions" />
         </video>
+
+        {overlayFile && overlayUrl && (
+          <div
+            ref={overlayDragRef}
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+            className="absolute cursor-move select-none group border border-transparent hover:border-film-500 hover:shadow-[0_0_8px_rgba(139,92,246,0.5)] transition-colors"
+            style={{
+              width: `${overlaySize}px`,
+              opacity: (overlayOpacity ?? 100) / 100,
+              zIndex: 40,
+              ...getOverlayStyle(),
+            }}
+          >
+            <img
+              src={overlayUrl}
+              alt="Overlay asset"
+              className="w-full h-auto pointer-events-none"
+            />
+            <div className="absolute inset-0 bg-film-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-sm pointer-events-none" />
+          </div>
+        )}
 
         {/* Letterbox / Crop overlay */}
         {overlay && (
@@ -294,7 +439,17 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
 
       {showComparison && file && (
         <div className="mt-4">
-          <ComparisonPreview file={file} recipe={recipe} videoRef={videoRef} />
+          <ComparisonPreview
+            file={file}
+            recipe={recipe}
+            videoRef={videoRef}
+            overlayFile={overlayFile}
+            overlayPosition={overlayPosition}
+            overlaySize={overlaySize}
+            overlayOpacity={overlayOpacity}
+            overlayX={overlayX}
+            overlayY={overlayY}
+          />
         </div>
       )}
     </>

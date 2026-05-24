@@ -214,6 +214,8 @@ export default function VideoEditor() {
     overlayPosition, setOverlayPosition,
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
+    overlayX, setOverlayX,
+    overlayY, setOverlayY,
     recommendedPreset,
     currentTime,
     toggleSound,
@@ -322,7 +324,19 @@ export default function VideoEditor() {
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} recipe={recipe} videoRef={videoRef} />
+                  <VideoPreview
+                    file={file}
+                    recipe={recipe}
+                    videoRef={videoRef}
+                    overlayFile={overlayFile}
+                    overlayPosition={overlayPosition}
+                    overlaySize={overlaySize}
+                    overlayOpacity={overlayOpacity}
+                    overlayX={overlayX}
+                    overlayY={overlayY}
+                    setOverlayX={setOverlayX}
+                    setOverlayY={setOverlayY}
+                  />
 
                   <div className="mt-3">
                     <ThumbnailStrip
