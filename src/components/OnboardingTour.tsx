@@ -77,9 +77,10 @@ function getTooltipStyle(
         left: sr.left + sr.width / 2 - tw / 2,
       };
     case "left":
+      const calculatedLeft = sr.left - tw - TOOLTIP_OFFSET;
       return {
         top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left - tw - TOOLTIP_OFFSET,
+        left: Math.max(16, calculatedLeft),
       };
     case "right":
       return {
@@ -240,52 +241,66 @@ export default function OnboardingTour() {
     setVisible(false);
   }, []);
 
+
   const measureTarget = useCallback((id: string): Promise<Rect | null> => {
-    return new Promise((resolve) => {
-      const attempt = (tries: number) => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          setTimeout(() => {
+  return new Promise((resolve) => {
+    const attempt = (tries: number) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "auto", block: "center" });
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
             const r = el.getBoundingClientRect();
             resolve({
               top: r.top,
               left: r.left,
               width: r.width,
               height: r.height,
-            });
-          }, 400); // wait for scroll to finish
-          return;
-        }
-        if (tries <= 0) {
-          resolve(null);
-          return;
-        }
-        setTimeout(() => attempt(tries - 1), 300);
-      };
-      attempt(5);
-    });
-  }, []);
+            })
+          })
+        }); // wait for scroll to finish
+        return;
+      }
+      if (tries <= 0) {
+        resolve(null);
+        return;
+      }
+      setTimeout(() => attempt(tries - 1), 300);
+    };
+    attempt(5);
+  });
+}, []);
 
   // Initialise on mount
   useEffect(() => {
-    if (localStorage.getItem(TOUR_KEY)) return;
-    const t = setTimeout(async () => {
-      const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
-      if (rect) {
-        setTargetRect(rect);
-        setVisible(true);
-      }
-    }, 600);
-    return () => clearTimeout(t);
-  }, [measureTarget]);
+  if (localStorage.getItem(TOUR_KEY)) return;
+  const t = setTimeout(async () => {
+    const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
+    if (rect) {
+      setTargetRect(rect);
+      setVisible(true);
+    }
+  }, 600);
+  return () => clearTimeout(t);
+}, [measureTarget]);
 
-  // Measure target whenever step changes (skip on first render — init effect handles that)
-  useEffect(() => {
-    if (!visible) return;
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
+// Measure target whenever step changes (skip on first render — init effect handles that)
+useEffect(() => {
+  if (!visible) return;
+  if (isFirstRender.current) {
+    isFirstRender.current = false;
+    return;
+  }
+  if (!currentStep) {
+    dismiss();
+    return;
+  }
+  measureTarget(currentStep.targetId).then((rect) => {
+    if (rect) {
+      setTargetRect(rect);
+      setTimeout(() => tooltipRef.current?.focus(), 50);
+    } else {
+      console.warn("Failed to measure onboarding target:", currentStep.targetId);
     }
     if (!currentStep) {
       dismiss();
@@ -318,6 +333,7 @@ export default function OnboardingTour() {
         clearTimeout(retryTimer);
       }
     };
+  });
   }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
 
   // Re-measure on resize
