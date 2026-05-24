@@ -1,5 +1,18 @@
 export const RECIPE_VERSION = 1;
 
+/**
+ * Text overlay data structure for rendering custom text on videos.
+ */
+export interface TextOverlay {
+  id: string;
+  text: string;
+  x: number; // Percentage (0-100) from left
+  y: number; // Percentage (0-100) from top
+  fontSize: number; // In pixels
+  color: string; // Hex color
+  fontWeight: "normal" | "bold" | "900";
+}
+
 export interface EditRecipe {
   preset: string;
   customWidth: number;
@@ -19,6 +32,7 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  textOverlays: TextOverlay[];
   version: number;
 }
 
@@ -86,6 +100,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
+  if (!Array.isArray(v.textOverlays)) return false;
 
   return true;
 }

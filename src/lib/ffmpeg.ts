@@ -2,6 +2,7 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
+import { buildTextFilter } from "./text-overlay";
 import { simd } from "wasm-feature-detect";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
@@ -143,6 +144,13 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   filters.push(
     `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
   );
+
+  // Add text overlays
+  const textOverlays = recipe.textOverlays || [];
+  textOverlays.forEach((overlay) => {
+    filters.push(buildTextFilter(overlay, targetW, targetH));
+  });
+
   return filters.join(",");
 }
 

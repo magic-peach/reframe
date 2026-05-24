@@ -154,11 +154,12 @@ export default function ThumbnailStrip({
     if (videoSrc && duration > 0) {
       generateThumbnails();
     }
-    return () => {
-      // signal any running generator to stop and cleanup URLs
+        return () => {
+      // Signal any running generator to stop and invalidate pending runs
       abortRef.current = true;
+      lastRunIdRef.current++;
       revokeAllObjectUrls();
-    };
+        };
   }, [generateThumbnails, revokeAllObjectUrls, videoSrc, duration]);
 
   const formatTime = (seconds: number) => {
