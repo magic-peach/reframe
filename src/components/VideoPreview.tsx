@@ -1,22 +1,38 @@
 "use client";
 
 import { useEffect, useRef, useState, RefObject } from "react";
-import { EditRecipe } from "@/lib/types";
+import { EditRecipe, TextOverlay } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import ComparisonPreview from "./ComparisonPreview";
+import DraggableTextOverlays from "./DraggableTextOverlays";
 
 interface Props {
   file: File | null;
   recipe: EditRecipe;
   videoRef: RefObject<HTMLVideoElement | null>;
+  selectedTextId?: string | null;
+  onSelectText?: (id: string | null) => void;
+  onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
 }
 
-export default function VideoPreview({ file, recipe, videoRef }: Props) {
+export default function VideoPreview({
+  file,
+  recipe,
+  videoRef,
+  selectedTextId = null,
+  onSelectText,
+  onUpdateText,
+}: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [containerDimensions, setContainerDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+  const previewContainerRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -75,6 +91,25 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
+  /**
+   * Track preview container dimensions for text overlay positioning.
+   */
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (previewContainerRef.current) {
+        const rect = previewContainerRef.current.getBoundingClientRect();
+        setContainerDimensions({
+          width: rect.width,
+          height: rect.height,
+        });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
+
   const overlay = (() => {
     if (!recipe || !showOverlay) return null;
 
@@ -93,25 +128,21 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     if (recipe.framing === "fit") {
       // Letterbox: the output video fits entirely inside 16:9, padded with bars.
       if (outputRatio > containerRatio) {
-        // Wider output → pillarbox bars on top & bottom
         const contentH = (containerRatio / outputRatio) * 100;
         const barH = (100 - contentH) / 2;
         return { mode: "fit", barTop: `${barH}%`, barBottom: `${barH}%`, barLeft: "0", barRight: "0" };
       } else {
-        // Taller output → letterbox bars on left & right
         const contentW = (outputRatio / containerRatio) * 100;
         const barW = (100 - contentW) / 2;
         return { mode: "fit", barTop: "0", barBottom: "0", barLeft: `${barW}%`, barRight: `${barW}%` };
       }
     } else {
-      // Fill / crop: the output fills the entire 16:9 preview — show a box representing what survives the crop.
+      // Fill / crop
       if (outputRatio < containerRatio) {
-        // Output is taller → crops top & bottom
         const visibleH = (outputRatio / containerRatio) * 100;
         const cropH = (100 - visibleH) / 2;
         return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };
       } else {
-        // Output is wider → crops left & right
         const visibleW = (containerRatio / outputRatio) * 100;
         const cropW = (100 - visibleW) / 2;
         return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
@@ -123,7 +154,10 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
 
   return (
     <>
-      <div className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video">
+      <div
+        ref={previewContainerRef}
+        className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video"
+      >
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           ref={videoRef}
@@ -139,7 +173,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         {overlay && (
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
             {overlay.mode === "fit" ? (
-              // Letterbox: semi-transparent bars outside the content area
               <>
                 <div className="absolute left-0 right-0 top-0 bg-black/50" style={{ height: overlay.barTop }} />
                 <div className="absolute left-0 right-0 bottom-0 bg-black/50" style={{ height: overlay.barBottom }} />
@@ -147,7 +180,6 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
                 <div className="absolute top-0 bottom-0 right-0 bg-black/50" style={{ width: overlay.barRight }} />
               </>
             ) : (
-              // Fill/crop: dashed border around the surviving area, dimmed outside
               <>
                 <div className="absolute left-0 right-0 top-0 bg-red-900/50" style={{ height: overlay.barTop }} />
                 <div className="absolute left-0 right-0 bottom-0 bg-red-900/50" style={{ height: overlay.barBottom }} />
@@ -165,6 +197,18 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
               </>
             )}
           </div>
+        )}
+
+        {/* Draggable Text Overlays */}
+        {recipe && containerDimensions.width > 0 && (
+          <DraggableTextOverlays
+            recipe={recipe}
+            containerWidth={containerDimensions.width}
+            containerHeight={containerDimensions.height}
+            selectedTextId={selectedTextId ?? null}
+            onSelectText={onSelectText || (() => {})}
+            onUpdateText={onUpdateText || (() => {})}
+          />
         )}
 
         {/* Toggle button */}
