@@ -116,8 +116,8 @@ export default function VideoEditor() {
             }
           }}
         >
-          <div className="bg-[var(--surface)] p-10 rounded-2xl shadow-2xl flex flex-col items-center gap-4 animate-bounce pointer-events-none">
-            <Layers size={48} className="text-film-500" />
+          <div className="bg-[var(--surface)] p-10 rounded-2xl shadow-2xl flex flex-col items-center gap-4 motion-safe:animate-bounce pointer-events-none">
+            <Layers size={48} className="text-[var(--accent)]" />
             <h2 className="font-display text-3xl tracking-widest text-[var(--text)] text-center">Drop video here to begin</h2>
           </div>
         </div>
