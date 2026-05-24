@@ -165,7 +165,7 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   return filters.join(",");
 }
 
-export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+export function buildAudioFilter(speed: number, normalizeAudio: boolean = false): string {
   if (speed <= 0) return "";
   const filters: string[] = [];
 
