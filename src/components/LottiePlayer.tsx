@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { AnimationItem } from 'lottie-web';
 
 interface Props {
   animationData: object;
@@ -24,7 +25,7 @@ export default function LottiePlayer({
   useEffect(() => {
     if (!containerRef.current) return;
     let cancelled = false;
-    let anim: any = null;
+    let anim: AnimationItem | null = null;
 
     import("lottie-web").then((mod) => {
       if (cancelled || !containerRef.current) return;
@@ -36,18 +37,28 @@ export default function LottiePlayer({
         autoplay,
         animationData,
       });
-      const prefersReducedMotion =
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (prefersReducedMotion && anim) {
-        anim.goToAndStop(1, true);
-      }
-    });
+      const mediaQuery = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      );
+      const handleMotionChange = () => {
+        if (!anim) return;
+
+        if (mediaQuery.matches) {
+          anim.goToAndStop(1, true);
+        } else {
+          anim.play();
+        }
+      };
+      handleMotionChange();
+      mediaQuery.addEventListener("change", handleMotionChange);
+    
 
     return () => {
       cancelled = true;
+      mediaQuery.removeEventListener("change", handleMotionChange);
       anim?.destroy();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    });
   }, [animationData, loop, autoplay]);
 
   return (
@@ -62,3 +73,4 @@ export default function LottiePlayer({
     </>
   );
 }
+
