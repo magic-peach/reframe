@@ -143,9 +143,10 @@ export default function ThumbnailStrip({
     if (videoSrc && duration > 0) {
       generateThumbnails();
     }
+    const runIdAtEffect = lastRunIdRef.current;
     return () => {
-      // Increment ref to invalidate any pending async operations
-      lastRunIdRef.current++;
+      // Use captured run id to invalidate any pending async operations
+      lastRunIdRef.current = runIdAtEffect + 1;
       revokeAllObjectUrls();
     };
   }, [generateThumbnails, revokeAllObjectUrls, videoSrc, duration]);
