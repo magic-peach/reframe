@@ -81,6 +81,7 @@ export interface ExportResult {
   width: number;
   height: number;
   format: "mp4" | "webm" | "mkv" | "gif";
+  exportDurationMs?: number;
 }
 
 export type ExportStatus =

@@ -104,9 +104,7 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
     const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
     filters.push(`trim=start=${recipe.trimStart}:end=${end}`);
-    filters.push("setpts=PTS-STARTPTS");
   }
-
 
   if (recipe.stabilization) {
     filters.push("deshake");
@@ -132,18 +130,31 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     );
   }
 
+  // Normalize timestamps only when needed — trim or speed change both
+  // require a clean 0-based timeline to produce correct output duration.
+  if (recipe.trimStart > 0 || recipe.trimEnd !== null || recipe.speed !== 1) {
+    filters.push("setpts=PTS-STARTPTS");
+  }
+
   if (recipe.speed !== 1) {
-  const pts = (1 / recipe.speed).toFixed(4);
-  filters.push(`setpts=${pts}*PTS`);
+    const pts = (1 / recipe.speed).toFixed(4);
+    filters.push(`setpts=${pts}*PTS`);
   }
 
   if (recipe.denoise) {
     filters.push("hqdn3d=1.5:1.5:6:6");
   }
 
-  filters.push(
-    `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
-  );
+  const needsEq =
+    recipe.brightness !== 0 ||
+    recipe.contrast !== 1 ||
+    recipe.saturation !== 1;
+
+  if (needsEq) {
+    filters.push(
+      `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+    );
+  }
 
   // Add text overlays
   const textOverlays = recipe.textOverlays || [];
@@ -154,7 +165,7 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   return filters.join(",");
 }
 
- export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
   if (speed <= 0) return "";
   const filters: string[] = [];
 
@@ -169,7 +180,7 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     remaining /= 2.0;
   }
 
- if (Math.abs(remaining - 1.0) > 0.001) {
+  if (Math.abs(remaining - 1.0) > 0.001) {
     filters.push(`atempo=${Number(remaining.toFixed(4))}`);
   }
 
@@ -250,6 +261,7 @@ function buildArguments(
   hasSubtitles: boolean,
   subtitleOptions: SubtitleOptions | undefined,
   fontFileLoaded: boolean
+  videoDuration: number
 ): string[] {
   let vf = buildVideoFilter(recipe, targetW, targetH);
   const subF = hasSubtitles ? buildSubtitleFilter(subtitleOptions, targetW, targetH, fontFileLoaded) : "";
@@ -348,14 +360,28 @@ function buildArguments(
   }
 
   if (format === "webm") {
-    args.push("-c:v", "libvpx-vp9", "-b:v", "0", "-crf", String(recipe.quality));
+    args.push(
+      "-c:v", "libvpx-vp9",
+      "-b:v", "0",
+      "-crf", String(recipe.quality),
+      "-cpu-used", "4",
+      "-deadline", "realtime"
+    );
     if (shouldKeepAudio) args.push("-c:a", "libopus");
   } else if (format === "mkv") {
-    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "medium");
+    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast");
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
   } else {
-    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "medium", "-movflags", "+faststart");
+    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast", "-movflags", "+faststart");
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
+  }
+
+  // Add explicit output duration when speed != 1 to prevent slight duration
+  // overshoot caused by encoder/filter pipeline frame flush at stream end.
+  if (recipe.speed !== 1) {
+    const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
+    const outputDuration = sourceDuration / recipe.speed;
+    args.push("-t", outputDuration.toFixed(6));
   }
 
   args.push(outputName);
@@ -411,6 +437,23 @@ export async function exportVideo(
     onProgress(Math.min(99, Math.round(progress * 100)));
   };
 
+  // Read actual video duration via HTMLVideoElement so we can correctly
+  // compute output duration when trimEnd is null (no trim set by user).
+  // Falls back to trimEnd if metadata loading fails.
+  const videoDuration = await new Promise<number>((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(video.src);
+      resolve(video.duration);
+    };
+    video.onerror = () => {
+      // Safe fallback: use trimEnd if available, otherwise 0 which
+      // will produce no -t argument and leave duration uncapped.
+      resolve(recipe.trimEnd ?? 0);
+    };
+    video.src = URL.createObjectURL(file);
+  });
 
   try {
     await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
@@ -449,7 +492,7 @@ export async function exportVideo(
       cleanupFiles.add(musicInputName);
     }
 
-    const hasOverlay = !!(overlayOptions?.file);
+    const hasOverlay = !!overlayOptions?.file;
     const overlayExt = overlayOptions?.file?.name.split(".").pop() ?? "png";
     const overlayInputName = `overlay_${sessionId}.${overlayExt}`;
     if (hasOverlay) {
@@ -467,9 +510,22 @@ export async function exportVideo(
         ? `[0:v]${vf}[x];[x][1:v]paletteuse`
         : "[0:v][1:v]paletteuse";
 
+      // Add explicit output duration when speed != 1 to prevent slight duration
+      // overshoot caused by encoder/filter pipeline frame flush at stream end.
+      // Applied to both passes so palette and render are bounded identically.
+      const gifDurationArgs: string[] =
+        recipe.speed !== 1
+          ? (() => {
+              const sourceDuration =
+                (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
+              const outputDuration = sourceDuration / recipe.speed;
+              return ["-t", outputDuration.toFixed(6)];
+            })()
+          : [];
+
       // Pass 1: generate colour palette
       const pass1Code = await ffmpeg.exec(
-        ["-i", inputName, "-vf", vfWithPalette, "-y", paletteName],
+        ["-i", inputName, "-vf", vfWithPalette, ...gifDurationArgs, "-y", paletteName],
         undefined,
         { signal }
       );
@@ -477,7 +533,7 @@ export async function exportVideo(
 
       // Pass 2: render GIF using the palette
       const pass2Code = await ffmpeg.exec(
-        ["-i", inputName, "-i", paletteName, "-lavfi", vfWithPaletteUse, "-y", outputName],
+        ["-i", inputName, "-i", paletteName, "-lavfi", vfWithPaletteUse, ...gifDurationArgs, "-y", outputName],
         undefined,
         { signal }
       );
@@ -518,6 +574,7 @@ export async function exportVideo(
       hasMusicTrack, musicInputName, musicOptions,
       hasOverlay, overlayInputName, overlayOptions, true,
       hasSubtitles, subtitleOptions, fontFileLoaded
+      hasOverlay, overlayInputName, overlayOptions, true, videoDuration
     );
 
     let exitCode = await ffmpeg.exec(args, undefined, { signal });
@@ -530,6 +587,7 @@ export async function exportVideo(
         hasMusicTrack, musicInputName, musicOptions,
         hasOverlay, overlayInputName, overlayOptions, false,
         hasSubtitles, subtitleOptions, fontFileLoaded
+        hasOverlay, overlayInputName, overlayOptions, false, videoDuration
       );
       exitCode = await ffmpeg.exec(args, undefined, { signal });
     }
@@ -541,6 +599,7 @@ export async function exportVideo(
         hasMusicTrack, musicInputName, musicOptions,
         hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected,
         hasSubtitles, subtitleOptions, fontFileLoaded
+        hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected, videoDuration
       );
 
       const fallbackCode = await ffmpeg.exec(args, undefined, { signal });
