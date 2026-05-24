@@ -1,7 +1,7 @@
 "use client";
 
 import FocusTrap from "focus-trap-react";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { ExportStatus } from "@/lib/types";
 import LottiePlayer from "./LottiePlayer";
 import spinnerAnim from "@/lib/lottie/spinner.json";
@@ -10,13 +10,22 @@ import TipCarousel from "./TipCarousel";
 interface Props {
   status: ExportStatus;
   progress: number;
+  exportStartedAt?: number | null;
   onCancel?: () => void;
 }
 
-export default function ExportOverlay({ status, progress, onCancel }: Props) {
+function formatElapsed(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+export default function ExportOverlay({ status, progress, exportStartedAt, onCancel }: Props) {
   const visible = status === "loading-engine" || status === "exporting";
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -49,6 +58,21 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
       previousFocusRef.current.focus();
     }
   }, [visible]);
+
+  useEffect(() => {
+    if (status !== "exporting" || !exportStartedAt) {
+      setElapsedMs(0);
+      return;
+    }
+
+    const updateElapsed = () => {
+      setElapsedMs(Date.now() - exportStartedAt);
+    };
+
+    updateElapsed();
+    const timer = window.setInterval(updateElapsed, 1000);
+    return () => window.clearInterval(timer);
+  }, [status, exportStartedAt]);
 
   if (!visible) return null;
 
@@ -104,7 +128,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
           <span className="sr-only">
             {status === "loading-engine"
               ? `Loading video engine: ${progress}%`
-              : `Exporting: ${progress}%`}
+              : `Exporting: ${progress}%, ${formatElapsed(elapsedMs)} elapsed`}
           </span>
             <div className="w-full space-y-2">
               <div className="h-1 w-full bg-film-100 rounded-full overflow-hidden">
@@ -118,9 +142,12 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-xs font-heading font-semibold text-[var(--muted)]">
-                {progress}%
-              </p>
+              <div className="flex items-center justify-between gap-4 text-xs font-heading font-semibold text-[var(--muted)]">
+                <span>{progress}%</span>
+                {!isLoading && (
+                  <span>{formatElapsed(elapsedMs)} elapsed</span>
+                )}
+              </div>
               <TipCarousel />
               {!isLoading && (
               <div className="flex flex-col items-center gap-3 mt-4">
