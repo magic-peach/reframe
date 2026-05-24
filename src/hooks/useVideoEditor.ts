@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
@@ -156,6 +157,7 @@ export function useVideoEditor() {
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const ffmpegRef = useRef<FFmpeg | null>(null);
 
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [musicVolume, setMusicVolume] = useState(70);
@@ -441,6 +443,7 @@ export function useVideoEditor() {
       setResult(null);
 
       const ffmpeg = await loadFFmpeg(abortController.signal);
+      ffmpegRef.current = ffmpeg;
       if (exportCancelledRef.current) return;
 
       const startedAt = Date.now();
@@ -686,8 +689,13 @@ export function useVideoEditor() {
         setPreviewUrl(null);
       }
 
-      const ffmpeg = await loadFFmpeg();
-      const url = await generatePreviewFrame(file, recipe, ffmpeg);
+      let ffmpeg = ffmpegRef.current;
+      if (!ffmpeg?.loaded) {
+        ffmpeg = await loadFFmpeg();
+        ffmpegRef.current = ffmpeg;
+      }
+
+      const url = await generatePreviewFrame(ffmpeg, file, recipe);
       setPreviewUrl(url);
     } catch (err) {
       setPreviewUrl(null);
