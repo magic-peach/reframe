@@ -40,3 +40,12 @@ bun.lockb
 
 # npm lockfile (project uses bun)
 package-lock.json
+
+# local test media and output files
+input.mp4
+*.mp4
+*.webm
+*.mkv
+processed_dataset/
+output/
+

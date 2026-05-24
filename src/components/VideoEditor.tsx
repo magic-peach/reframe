@@ -15,6 +15,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import PipelineStudio from "./PipelineStudio";
 
 import { cn } from "@/lib/utils";
 import {
@@ -243,7 +244,8 @@ export default function VideoEditor() {
 
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
-  const downloadRef = useRef<HTMLDivElement>(null);
+
+  const [activeTab, setActiveTab] = useState<"classic" | "pipeline">("classic");
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
@@ -340,7 +342,36 @@ export default function VideoEditor() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
+        {/* Mode Switcher */}
+        <div className="flex gap-2 mb-6 p-1 bg-[var(--surface)] border border-[var(--border)] rounded-xl max-w-sm animate-fade-in">
+          <button
+            type="button"
+            onClick={() => setActiveTab("classic")}
+            className={cn(
+              "flex-1 py-2 px-3 rounded-lg text-xs font-heading font-bold uppercase tracking-wider transition-all",
+              activeTab === "classic"
+                ? "bg-film-600 text-white shadow-sm"
+                : "text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--border)]"
+            )}
+          >
+            Classic Editor
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("pipeline")}
+            className={cn(
+              "flex-1 py-2 px-3 rounded-lg text-xs font-heading font-bold uppercase tracking-wider transition-all",
+              activeTab === "pipeline"
+                ? "bg-film-600 text-white shadow-sm"
+                : "text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--border)]"
+            )}
+          >
+            Pipeline Studio
+          </button>
+        </div>
+
+        {activeTab === "classic" ? (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
@@ -658,6 +689,14 @@ export default function VideoEditor() {
             )}
           </div>
         </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
+              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
+            </div>
+            <PipelineStudio file={file} />
+          </div>
+        )}
       </div>
     </div>
   );
