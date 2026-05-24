@@ -79,6 +79,11 @@ describe("buildVideoFilter", () => {
     expect(result).toContain("eq=brightness=0.5:contrast=1.2:saturation=1.5");
   });
 
+  it("should skip eq filter when adjustments are neutral", () => {
+    const result = buildVideoFilter(base({ brightness: 0, contrast: 1, saturation: 1 }), 1280, 720);
+    expect(result).not.toContain("eq=");
+  });
+
   it("should handle trim + speed + rotate all at once", () => {
     const result = buildVideoFilter(base({ trimStart: 2, trimEnd: 8, speed: 2, rotate: 90 }), 1280, 720);
     expect(result).toContain("trim=start=2:end=8");
