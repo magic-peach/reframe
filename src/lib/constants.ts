@@ -23,5 +23,9 @@ export const DEFAULT_RECIPE: EditRecipe = {
   soundOnCompletion: false,
   normalizeAudio: false,
   textOverlays: [],
+  chromaKeyEnabled: false,
+  chromaKeyColor: "#00FF00",
+  chromaKeySimilarity: 0.3,
+  chromaKeyBlend: 0.1,
   version: RECIPE_VERSION,
 };
