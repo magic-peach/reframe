@@ -640,18 +640,49 @@ export function useVideoEditor() {
 
 
   const reset = useCallback(() => {
+    exportCancelledRef.current = true;
+    exportAbortControllerRef.current?.abort();
+    exportAbortControllerRef.current = null;
+    terminateFFmpeg();
+
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
+
     setFile(null);
     setVideoMetadata(null);
     setDuration(0);
-    setRecipe(DEFAULT_RECIPE);
+    setCurrentTime(0);
+    setFileError("");
+    setRecipe({
+      ...DEFAULT_RECIPE,
+      soundOnCompletion:
+        typeof window !== "undefined" &&
+        localStorage.getItem("soundOnCompletion") === "true",
+    });
     setStatus("idle");
     setProgress(0);
     setResult(null);
     setError(null);
     setExportStartedAt(null);
+
+    setMusicFile(null);
+    setMusicVolume(70);
+    setOriginalAudioVolume(40);
+    setLoopMusic(false);
+    setOverlayFile(null);
+    setOverlayPosition("bottom-right");
+    setOverlaySize(150);
+    setOverlayOpacity(100);
+
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    }
+
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("reframe-settings");
     } catch {
       // ignore
     }
