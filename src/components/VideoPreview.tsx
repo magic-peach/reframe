@@ -35,8 +35,6 @@ export default function VideoPreview({
   overlayPosition,
   overlaySize = 250,
   overlayOpacity = 100,
-  setOverlayPosition,
-  setOverlaySize,
 }: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
@@ -50,15 +48,6 @@ export default function VideoPreview({
   const innerCanvasRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
 
-  // High-performance DOM track nodes
-  const overlayDOMRef = useRef<HTMLDivElement>(null);
-  const canvasRectRef = useRef<DOMRect | null>(null); // Cached geometry to stop layout thrashing
-  const dragStartCoordsRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const resizeStartSizeRef = useRef<number>(250);
-
-  const [isDraggingOverlay, setIsDraggingOverlay] = useState(false);
-  const [isResizingOverlay, setIsResizingOverlay] = useState(false);
   const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
 
   // Handle local memory compilation for overlay source files safely
@@ -122,11 +111,11 @@ export default function VideoPreview({
     };
 
     onLoadedRef.current = handleLoaded;
-    video.addEventListener("loadeddata", handleLoaded);
+    video.addEventListener("loadedmetadata", handleLoaded); // Optimized to prevent race-condition load locks
 
     return () => {
       if (onLoadedRef.current) {
-        video.removeEventListener("loadeddata", onLoadedRef.current);
+        video.removeEventListener("loadedmetadata", onLoadedRef.current);
         onLoadedRef.current = null;
       }
       if (video) {
@@ -192,104 +181,6 @@ export default function VideoPreview({
     boxRight = barW;
   }
 
-  // --- High-Performance Smooth Drag Node Operators ---
-  const handleOverlayPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (isResizingOverlay || !overlayPosition) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setIsDraggingOverlay(true);
-
-    // Cache canvas metrics once at the beginning of interaction to eliminate layout thrashing
-    if (innerCanvasRef.current) {
-      canvasRectRef.current = innerCanvasRef.current.getBoundingClientRect();
-    }
-
-    dragStartCoordsRef.current = { x: e.clientX, y: e.clientY };
-    dragStartPosRef.current = { x: overlayPosition.x, y: overlayPosition.y };
-  };
-
-  const handleOverlayPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingOverlay || !canvasRectRef.current || !overlayDOMRef.current) return;
-
-    const rect = canvasRectRef.current; // Read instantly from memory cache
-    const deltaX = e.clientX - dragStartCoordsRef.current.x;
-    const deltaY = e.clientY - dragStartCoordsRef.current.y;
-
-    const pctDeltaX = (deltaX / rect.width) * 100;
-    const pctDeltaY = (deltaY / rect.height) * 100;
-
-    let targetX = Math.min(100, Math.max(0, dragStartPosRef.current.x + pctDeltaX));
-    let targetY = Math.min(100, Math.max(0, dragStartPosRef.current.y + pctDeltaY));
-
-    // Direct styling modification on DOM layer for instantaneous tracking response
-    overlayDOMRef.current.style.left = `${targetX}%`;
-    overlayDOMRef.current.style.top = `${targetY}%`;
-  };
-
-  const handleOverlayPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    setIsDraggingOverlay(false);
-
-    if (overlayDOMRef.current) {
-      const savedX = parseFloat(overlayDOMRef.current.style.left);
-      const savedY = parseFloat(overlayDOMRef.current.style.top);
-      if (!isNaN(savedX) && !isNaN(savedY)) {
-        setOverlayPosition?.({ x: savedX, y: savedY });
-      }
-    }
-    canvasRectRef.current = null; // Flush cache
-  };
-
-  // --- High-Performance Smooth Resize Node Operators ---
-  const handleResizePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setIsResizingOverlay(true);
-
-    // Cache canvas metrics once at the beginning of resize interaction
-    if (innerCanvasRef.current) {
-      canvasRectRef.current = innerCanvasRef.current.getBoundingClientRect();
-    }
-
-    resizeStartSizeRef.current = overlaySize;
-    dragStartCoordsRef.current = { x: e.clientX, y: e.clientY };
-  };
-
-  const handleResizePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isResizingOverlay || !canvasRectRef.current || !overlayDOMRef.current) return;
-    e.stopPropagation();
-
-    const rect = canvasRectRef.current; // Read instantly from memory cache
-    const presetWidth = activePreset?.width || 1920;
-    const deltaX = e.clientX - dragStartCoordsRef.current.x;
-
-    const deltaPresetPx = (deltaX / rect.width) * presetWidth;
-    let newWidthPresetPx = resizeStartSizeRef.current + deltaPresetPx;
-
-    if (newWidthPresetPx >= 50 && newWidthPresetPx <= presetWidth) {
-      overlayDOMRef.current.style.width = `${(newWidthPresetPx / presetWidth) * 100}%`;
-    }
-  };
-
-  const handleResizePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    setIsResizingOverlay(false);
-
-    if (overlayDOMRef.current) {
-      const currentPctWidth = parseFloat(overlayDOMRef.current.style.width);
-      const presetWidth = activePreset?.width || 1920;
-      if (!isNaN(currentPctWidth)) {
-        const finalSizePx = (currentPctWidth / 100) * presetWidth;
-        setOverlaySize?.(finalSizePx);
-      }
-    }
-    canvasRectRef.current = null; // Flush cache
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.code === "Space") {
       const target = e.target as HTMLElement;
@@ -326,7 +217,7 @@ export default function VideoPreview({
         {/* The WYSIWYG Inner Canvas Boundary */}
         <div
           ref={innerCanvasRef}
-          className="absolute flex items-center justify-center overflow-hidden transition-all duration-300 ease-in-out ring-1 ring-white/10 shadow-2xl bg-black select-none touch-none"
+          className="absolute flex items-center justify-center overflow-hidden transition-all duration-300 ease-in-out ring-1 ring-white/10 shadow-2xl bg-black select-none"
           style={{
             top: `${boxTop}%`,
             bottom: `${boxBottom}%`,
@@ -339,7 +230,7 @@ export default function VideoPreview({
             controls
             onLoadedData={() => setIsLoading(false)}
             className={cn(
-              "w-full h-full transition-all duration-300 ease-in-out pointer-events-none",
+              "w-full h-full transition-all duration-300 ease-in-out relative z-10",
               recipe?.framing === "fill" ? "object-cover" : "object-contain",
               isLoading ? "opacity-0" : "opacity-100"
             )}
@@ -356,37 +247,19 @@ export default function VideoPreview({
           {/* High-Performance Smooth Rendering Image Overlay Wrapper */}
           {overlayUrl && overlayPosition && (
             <div
-              ref={overlayDOMRef}
-              className="group absolute select-none touch-none z-30"
+              className="absolute select-none z-30 pointer-events-none"
               style={{
                 left: `${overlayPosition.x}%`,
                 top: `${overlayPosition.y}%`,
                 opacity: overlayOpacity / 100,
                 width: `${(overlaySize / (activePreset?.width || 1920)) * 100}%`,
-                cursor: isDraggingOverlay ? "grabbing" : "grab",
               }}
-              onPointerDown={handleOverlayPointerDown}
-              onPointerMove={handleOverlayPointerMove}
-              onPointerUp={handleOverlayPointerUp}
-              onPointerCancel={handleOverlayPointerUp}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={overlayUrl}
                 className="w-full h-auto pointer-events-none select-none"
                 alt="Workspace Overlay"
-              />
-
-              {/* Seamless Resize Grab Anchor */}
-              <div
-                className={cn(
-                  "absolute -bottom-1.5 -right-1.5 w-4 h-4 bg-[var(--accent)] rounded-full border-2 border-white cursor-nwse-resize z-50 touch-none shadow-md transition-opacity duration-200",
-                  isResizingOverlay ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                )}
-                onPointerDown={handleResizePointerDown}
-                onPointerMove={handleResizePointerMove}
-                onPointerUp={handleResizePointerUp}
-                onPointerCancel={handleResizePointerUp}
               />
             </div>
           )}
