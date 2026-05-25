@@ -320,10 +320,16 @@ function buildArguments(
 
   // Add explicit output duration when speed != 1 to prevent slight duration
   // overshoot caused by encoder/filter pipeline frame flush at stream end.
+  // Guard against sourceDuration <= 0: if video metadata failed to load,
+  // videoDuration falls back to 0, making sourceDuration 0. Passing -t 0
+  // to FFmpeg produces a zero-length output file. Skip -t in that case so
+  // FFmpeg encodes the full stream without an artificial cap.
   if (recipe.speed !== 1) {
     const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
-    const outputDuration = sourceDuration / recipe.speed;
-    args.push("-t", outputDuration.toFixed(6));
+    if (sourceDuration > 0) {
+      const outputDuration = sourceDuration / recipe.speed;
+      args.push("-t", outputDuration.toFixed(6));
+    }
   }
 
   args.push(outputName);
@@ -427,11 +433,14 @@ export async function exportVideo(
       // Add explicit output duration when speed != 1 to prevent slight duration
       // overshoot caused by encoder/filter pipeline frame flush at stream end.
       // Applied to both passes so palette and render are bounded identically.
+      // Skip -t when sourceDuration <= 0 (metadata load failure fallback) to
+      // avoid producing a zero-length GIF.
       const gifDurationArgs: string[] =
         recipe.speed !== 1
           ? (() => {
               const sourceDuration =
                 (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
+              if (sourceDuration <= 0) return [];
               const outputDuration = sourceDuration / recipe.speed;
               return ["-t", outputDuration.toFixed(6)];
             })()
