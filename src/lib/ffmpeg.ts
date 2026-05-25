@@ -4,6 +4,7 @@ import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions }
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
 import { simd } from "wasm-feature-detect";
+import { SubtitleItem } from "./subtitles";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
@@ -98,7 +99,42 @@ function buildSessionId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
+function buildSubtitleFilter(
+  sub: SubtitleItem,
+  recipe: EditRecipe,
+  targetW: number,
+  targetH: number
+): string {
+  const escapedText = sub.text
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "'\\\\''")
+    .replace(/:/g, "\\:")
+    .replace(/\n/g, "\n");
+
+  const xExpr = "(w-text_w)/2";
+  const yExpr = "h-th-h*0.12";
+
+  let styleParams = "";
+  if (recipe.subtitleBgType === "box") {
+    const boxCol = recipe.subtitleBgColor.replace("#", "0x") + "@0.6";
+    styleParams = `:box=1:boxcolor=${boxCol}:boxborderw=8`;
+  } else if (recipe.subtitleBgType === "outline") {
+    const borderCol = recipe.subtitleBgColor;
+    styleParams = `:borderw=2:bordercolor=${borderCol}`;
+  } else if (recipe.subtitleBgType === "shadow") {
+    const shadowCol = recipe.subtitleBgColor.replace("#", "0x") + "@0.6";
+    styleParams = `:shadowcolor=${shadowCol}:shadowx=2:shadowy=2`;
+  }
+
+  return `drawtext=text='${escapedText}':x=${xExpr}:y=${yExpr}:fontsize=${recipe.subtitleSize}:fontcolor=${recipe.subtitleColor}${styleParams}:enable='between(t,${sub.startTime},${sub.endTime})'`;
+}
+
+export function buildVideoFilter(
+  recipe: EditRecipe,
+  targetW: number,
+  targetH: number,
+  subtitles?: SubtitleItem[]
+): string {
   const filters: string[] = [];
 
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
@@ -162,6 +198,13 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     filters.push(buildTextFilter(overlay, targetW, targetH));
   });
 
+  // Add subtitles if present
+  if (subtitles && subtitles.length > 0) {
+    subtitles.forEach((sub) => {
+      filters.push(buildSubtitleFilter(sub, recipe, targetW, targetH));
+    });
+  }
+
   return filters.join(",");
 }
 
@@ -209,9 +252,10 @@ function buildArguments(
   overlayInputName: string,
   overlayOptions: ImageOverlayOptions | undefined,
   hasOriginalAudio: boolean,
-  videoDuration: number
+  videoDuration: number,
+  subtitles?: SubtitleItem[]
 ): string[] {
-  const vf = buildVideoFilter(recipe, targetW, targetH);
+  const vf = buildVideoFilter(recipe, targetW, targetH, subtitles);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
   const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
@@ -337,7 +381,8 @@ export async function exportVideo(
   onProgress: (percent: number) => void,
   signal?: AbortSignal,
   musicOptions?: BackgroundMusicOptions,
-  overlayOptions?: ImageOverlayOptions
+  overlayOptions?: ImageOverlayOptions,
+  subtitles?: SubtitleItem[]
 ): Promise<ExportResult> {
   const sessionId = buildSessionId();
   let targetW: number, targetH: number;
@@ -418,7 +463,7 @@ export async function exportVideo(
 
     // ── Two-pass GIF export ──────────────────────────────────────────────────
     if (recipe.format === "gif") {
-      const vf = buildVideoFilter(recipe, targetW, targetH);
+      const vf = buildVideoFilter(recipe, targetW, targetH, subtitles);
       const vfWithPalette = vf ? `${vf},palettegen` : "palettegen";
       const vfWithPaletteUse = vf
         ? `[0:v]${vf}[x];[x][1:v]paletteuse`
@@ -486,7 +531,8 @@ export async function exportVideo(
     let args = buildArguments(
       recipe, recipe.format, outputName, inputName, targetW, targetH,
       hasMusicTrack, musicInputName, musicOptions,
-      hasOverlay, overlayInputName, overlayOptions, true, videoDuration
+      hasOverlay, overlayInputName, overlayOptions, true, videoDuration,
+      subtitles
     );
 
     let exitCode = await ffmpeg.exec(args, undefined, { signal });
@@ -497,7 +543,8 @@ export async function exportVideo(
       args = buildArguments(
         recipe, recipe.format, outputName, inputName, targetW, targetH,
         hasMusicTrack, musicInputName, musicOptions,
-        hasOverlay, overlayInputName, overlayOptions, false, videoDuration
+        hasOverlay, overlayInputName, overlayOptions, false, videoDuration,
+        subtitles
       );
       exitCode = await ffmpeg.exec(args, undefined, { signal });
     }
@@ -507,7 +554,8 @@ export async function exportVideo(
       args = buildArguments(
         recipe, "webm", fallbackOutputName, inputName, targetW, targetH,
         hasMusicTrack, musicInputName, musicOptions,
-        hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected, videoDuration
+        hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected, videoDuration,
+        subtitles
       );
 
       const fallbackCode = await ffmpeg.exec(args, undefined, { signal });

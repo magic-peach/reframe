@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
 import ComparisonPreview from "./ComparisonPreview";
 import DraggableTextOverlays from "./DraggableTextOverlays";
+import { SubtitleItem } from "@/lib/subtitles";
 
 interface Props {
   file: File | null;
@@ -16,6 +17,7 @@ interface Props {
   selectedTextId?: string | null;
   onSelectText?: (id: string | null) => void;
   onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
+  parsedSubtitles?: SubtitleItem[] | null;
 }
 
 export default function VideoPreview({
@@ -25,7 +27,40 @@ export default function VideoPreview({
   selectedTextId = null,
   onSelectText,
   onUpdateText,
+  parsedSubtitles = null,
 }: Props) {
+  const [localCurrentTime, setLocalCurrentTime] = useState(0);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
+      setLocalCurrentTime(video.currentTime);
+    };
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, [videoRef, file]);
+
+  const activeSub = useMemo(() => {
+    if (!parsedSubtitles || parsedSubtitles.length === 0) return null;
+    return parsedSubtitles.find(
+      (sub) => localCurrentTime >= sub.startTime && localCurrentTime <= sub.endTime
+    );
+  }, [parsedSubtitles, localCurrentTime]);
+
+  const scaledFontSize = useMemo(() => {
+    if (!recipe) return 24;
+    const preset = recipe.preset === "custom"
+      ? { width: recipe.customWidth, height: recipe.customHeight }
+      : getPresetById(recipe.preset);
+    const targetH = preset?.height ?? 1080;
+    const scale = containerDimensions.height / targetH;
+    return Math.max(12, Math.round(recipe.subtitleSize * scale));
+  }, [recipe, containerDimensions.height]);
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -287,6 +322,40 @@ export default function VideoPreview({
                 />
               </>
             )}
+          </div>
+        )}
+
+        {/* Subtitles Overlay */}
+        {activeSub && recipe && (
+          <div
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-none text-center select-none z-10 max-w-[85%] font-medium transition-all"
+            style={{
+              bottom: "12%",
+              fontFamily: recipe.subtitleFont === "system-ui" ? "system-ui, sans-serif" : `'${recipe.subtitleFont}', system-ui, sans-serif`,
+              fontSize: `${scaledFontSize}px`,
+              color: recipe.subtitleColor,
+              lineHeight: 1.3,
+              whiteSpace: "pre-line",
+              paintOrder: "stroke fill",
+              ...(recipe.subtitleBgType === "box" && {
+                backgroundColor: `color-mix(in srgb, ${recipe.subtitleBgColor} 75%, transparent)`,
+                padding: "0.25em 0.6em",
+                borderRadius: "0.375em",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+              }),
+              ...(recipe.subtitleBgType === "shadow" && {
+                textShadow: `0 2px 4px rgba(0,0,0,0.5), 0 4px 12px color-mix(in srgb, ${recipe.subtitleBgColor} 60%, transparent)`,
+              }),
+              ...(recipe.subtitleBgType === "outline" && {
+                WebkitTextStroke: `1.5px ${recipe.subtitleBgColor}`,
+                textShadow: "0 2px 4px rgba(0,0,0,0.8)",
+              }),
+              ...(recipe.subtitleBgType === "none" && {
+                textShadow: "0 2px 4px rgba(0,0,0,0.8)",
+              }),
+            }}
+          >
+            {activeSub.text}
           </div>
         )}
 

@@ -7,6 +7,7 @@ import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import { SubtitleItem, parseSRT } from "@/lib/subtitles";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
@@ -174,6 +175,28 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
+
+  const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
+  const [parsedSubtitles, setParsedSubtitles] = useState<SubtitleItem[] | null>(null);
+
+  const handleSubtitleSelect = useCallback(async (selectedFile: File) => {
+    if (!selectedFile) return;
+    setSubtitleFile(selectedFile);
+    try {
+      const text = await selectedFile.text();
+      const subs = parseSRT(text);
+      setParsedSubtitles(subs);
+    } catch (err) {
+      console.error("Failed to parse subtitle file:", err);
+      setParsedSubtitles([]);
+    }
+  }, []);
+
+  const clearSubtitles = useCallback(() => {
+    setSubtitleFile(null);
+    setParsedSubtitles(null);
+  }, []);
+
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
     const next = { ...prev, ...patch };
@@ -212,6 +235,16 @@ export function useVideoEditor() {
         return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 2;
       case "saturation":
         return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 3;
+      case "subtitleFont":
+        return typeof val === "string";
+      case "subtitleColor":
+        return typeof val === "string";
+      case "subtitleSize":
+        return typeof val === "number" && !isNaN(val) && val >= 10 && val <= 120;
+      case "subtitleBgType":
+        return ["none", "box", "shadow", "outline"].includes(val);
+      case "subtitleBgColor":
+        return typeof val === "string";
       default:
         return true;
     }
@@ -483,7 +516,8 @@ export function useVideoEditor() {
           position: overlayPosition,
           size: overlaySize,
           opacity: overlayOpacity,
-        }
+        },
+        parsedSubtitles ?? undefined
       );
       if (exportCancelledRef.current) return;
 
@@ -527,6 +561,7 @@ export function useVideoEditor() {
     recipe,
     result,
     status,
+    parsedSubtitles,
   ]);
 
 
@@ -633,6 +668,7 @@ export function useVideoEditor() {
     overlayPosition,
     overlaySize,
     overlayOpacity,
+    subtitleFile,
   ]);
 
   useEffect(() => {
@@ -673,6 +709,8 @@ export function useVideoEditor() {
     setResult(null);
     setError(null);
     setExportStartedAt(null);
+    setSubtitleFile(null);
+    setParsedSubtitles(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -738,5 +776,9 @@ export function useVideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    subtitleFile,
+    parsedSubtitles,
+    handleSubtitleSelect,
+    clearSubtitles,
   };
 }

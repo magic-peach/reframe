@@ -17,12 +17,14 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import SubtitleControls from "./SubtitleControls";
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2, Type,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  SlidersHorizontal, Zap, AlertTriangle, Github, Copy,
+  Subtitles
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -210,6 +212,10 @@ export default function VideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    subtitleFile,
+    parsedSubtitles,
+    handleSubtitleSelect,
+    clearSubtitles,
   } = useVideoEditor();
 
   useKeyboardShortcuts({
@@ -231,6 +237,7 @@ export default function VideoEditor() {
     trim: false,
     rotation: false,
     text: false,
+    subtitles: false,
     audio: false,
     export: false,
   });
@@ -394,6 +401,7 @@ export default function VideoEditor() {
                     selectedTextId={selectedTextId}
                     onSelectText={setSelectedTextId}
                     onUpdateText={handleUpdateTextOverlay}
+                    parsedSubtitles={parsedSubtitles}
                   />
 
                   <div className="mt-3">
@@ -461,6 +469,25 @@ export default function VideoEditor() {
                       onChange={updateRecipe}
                       selectedTextId={selectedTextId}
                       onSelectText={setSelectedTextId}
+                    />
+                  </AccordionSection>
+
+                  <AccordionSection
+                    id="subtitles"
+                    icon={<Subtitles size={12} />}
+                    title="Subtitles / Captions"
+                    isOpen={openSections.subtitles}
+                    onToggle={() => toggleSection("subtitles")}
+                    delay={115}
+                  >
+                    <SubtitleControls
+                      recipe={recipe}
+                      onChange={updateRecipe}
+                      subtitleFile={subtitleFile}
+                      parsedSubtitles={parsedSubtitles}
+                      onSubtitleSelect={handleSubtitleSelect}
+                      onClearSubtitles={clearSubtitles}
+                      onSeek={seekTo}
                     />
                   </AccordionSection>
                 </div>
