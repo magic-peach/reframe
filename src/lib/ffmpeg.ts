@@ -532,14 +532,16 @@ function buildArguments(
       "-b:v", "0",
       "-crf", String(recipe.quality),
       "-cpu-used", "4",
-      "-deadline", "realtime"
+      "-deadline", "realtime",
+      "-threads", "2",
+      "-max_muxing_queue_size", "9999"
     );
     if (shouldKeepAudio) args.push("-c:a", "libopus");
   } else if (format === "mkv") {
-    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast");
+    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast", "-threads", "2", "-max_muxing_queue_size", "9999");
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
   } else {
-    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast", "-movflags", "+faststart");
+    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast", "-movflags", "+faststart", "-threads", "2", "-max_muxing_queue_size", "9999");
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
   }
 
