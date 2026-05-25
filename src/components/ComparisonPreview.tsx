@@ -19,43 +19,11 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Calculate overlay for the right (reframed) side
-  const overlay = (() => {
-    if (!recipe) return null;
-
-    const preset = recipe.preset === "custom"
-      ? { width: recipe.customWidth, height: recipe.customHeight }
-      : getPresetById(recipe.preset);
-
-    if (!preset) return null;
-
-    const containerW = 16;
-    const containerH = 9;
-    const containerRatio = containerW / containerH;
-    const outputRatio = preset.width / preset.height;
-
-    if (recipe.framing === "fit") {
-      if (outputRatio > containerRatio) {
-        const contentH = (containerRatio / outputRatio) * 100;
-        const barH = (100 - contentH) / 2;
-        return { mode: "fit", barTop: `${barH}%`, barBottom: `${barH}%`, barLeft: "0", barRight: "0" };
-      } else {
-        const contentW = (outputRatio / containerRatio) * 100;
-        const barW = (100 - contentW) / 2;
-        return { mode: "fit", barTop: "0", barBottom: "0", barLeft: `${barW}%`, barRight: `${barW}%` };
-      }
-    } else {
-      if (outputRatio < containerRatio) {
-        const visibleH = (outputRatio / containerRatio) * 100;
-        const cropH = (100 - visibleH) / 2;
-        return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };
-      } else {
-        const visibleW = (containerRatio / outputRatio) * 100;
-        const cropW = (100 - visibleW) / 2;
-        return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
-      }
-    }
-  })();
+  const preset = recipe?.preset === "custom"
+    ? { width: recipe.customWidth, height: recipe.customHeight }
+    : recipe ? getPresetById(recipe.preset) : null;
+  
+  const outputRatio = preset ? preset.width / preset.height : 16 / 9;
 
   // Load video source for both left and right videos
   useEffect(() => {
@@ -188,51 +156,31 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
         className="absolute inset-0 overflow-hidden"
         style={{ left: `${sliderPosition}%` }}
       >
-        <div className="absolute inset-0" style={{ left: `-${sliderPosition}%`, right: 0 }}>
-          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <video
-            ref={rightVideoRef}
-            className="w-full h-full object-contain"
-            playsInline
-            muted
-            autoPlay
-            loop
+        <div className="absolute inset-0 flex items-center justify-center" style={{ left: `-${sliderPosition}%`, right: 0 }}>
+          <div 
+            className="relative bg-black transition-all duration-300"
+            style={{
+              aspectRatio: `${outputRatio}`,
+              width: outputRatio > (16 / 9) ? '100%' : 'auto',
+              height: outputRatio <= (16 / 9) ? '100%' : 'auto',
+              maxWidth: '100%',
+              maxHeight: '100%'
+            }}
           >
-            <track kind="captions" />
-          </video>
-        </div>
-
-        {/* Overlay on reframed side */}
-        {overlay && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-            {overlay.mode === "fit" ? (
-              // Letterbox: semi-transparent bars outside the content area
-              <>
-                <div className="absolute left-0 right-0 top-0 bg-black/50" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-black/50" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-black/50" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-black/50" style={{ width: overlay.barRight }} />
-              </>
-            ) : (
-              // Fill/crop: dashed border around the surviving area, dimmed outside
-              <>
-                <div className="absolute left-0 right-0 top-0 bg-red-900/50" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-red-900/50" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-red-900/50" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-red-900/50" style={{ width: overlay.barRight }} />
-                <div
-                  className="absolute border-2 border-dashed border-film-400"
-                  style={{
-                    top: overlay.barTop,
-                    bottom: overlay.barBottom,
-                    left: overlay.barLeft,
-                    right: overlay.barRight,
-                  }}
-                />
-              </>
-            )}
+            {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+            <video
+              ref={rightVideoRef}
+              className="w-full h-full"
+              style={{ objectFit: recipe?.framing === "fit" ? "contain" : "cover" }}
+              playsInline
+              muted
+              autoPlay
+              loop
+            >
+              <track kind="captions" />
+            </video>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Draggable divider slider */}
