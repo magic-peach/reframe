@@ -28,7 +28,8 @@ export function parseSRT(content: string): SubtitleItem[] {
     // 00:00:01,000 --> 00:00:04,000
     // Subtitle text here...
     let timestampLineIndex = 0;
-    if (/^\d+$/.test(lines[0].trim())) {
+    const firstLine = lines[0];
+    if (firstLine && /^\d+$/.test(firstLine.trim())) {
       timestampLineIndex = 1;
     }
 
@@ -38,8 +39,12 @@ export function parseSRT(content: string): SubtitleItem[] {
     const parts = timestampLine.split("-->");
     if (parts.length !== 2) continue;
 
-    const startTime = parseSRTTimestamp(parts[0].trim());
-    const endTime = parseSRTTimestamp(parts[1].trim());
+    const part0 = parts[0];
+    const part1 = parts[1];
+    if (!part0 || !part1) continue;
+
+    const startTime = parseSRTTimestamp(part0.trim());
+    const endTime = parseSRTTimestamp(part1.trim());
 
     if (startTime === null || endTime === null) continue;
 
@@ -68,10 +73,16 @@ function parseSRTTimestamp(timestamp: string): number | null {
   const match = timestamp.match(regex);
   if (!match) return null;
 
-  const hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
-  const seconds = parseInt(match[3], 10);
-  const milliseconds = parseInt(match[4], 10);
+  const h = match[1];
+  const m = match[2];
+  const s = match[3];
+  const ms = match[4];
+  if (!h || !m || !s || !ms) return null;
+
+  const hours = parseInt(h, 10);
+  const minutes = parseInt(m, 10);
+  const seconds = parseInt(s, 10);
+  const milliseconds = parseInt(ms, 10);
 
   return hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
 }

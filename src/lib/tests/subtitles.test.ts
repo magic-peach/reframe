@@ -13,9 +13,9 @@ describe("parseSRT", () => {
 Hello World!`;
     const result = parseSRT(srt);
     expect(result.length).toBe(1);
-    expect(result[0].startTime).toBe(1.0);
-    expect(result[0].endTime).toBe(4.5);
-    expect(result[0].text).toBe("Hello World!");
+    expect(result[0]!.startTime).toBe(1.0);
+    expect(result[0]!.endTime).toBe(4.5);
+    expect(result[0]!.text).toBe("Hello World!");
   });
 
   it("correctly parses multiple subtitle blocks", () => {
@@ -28,13 +28,13 @@ Hello World!
 This is a second caption.`;
     const result = parseSRT(srt);
     expect(result.length).toBe(2);
-    expect(result[0].startTime).toBe(1.0);
-    expect(result[0].endTime).toBe(3.0);
-    expect(result[0].text).toBe("Hello World!");
+    expect(result[0]!.startTime).toBe(1.0);
+    expect(result[0]!.endTime).toBe(3.0);
+    expect(result[0]!.text).toBe("Hello World!");
 
-    expect(result[1].startTime).toBe(4.25);
-    expect(result[1].endTime).toBe(7.1);
-    expect(result[1].text).toBe("This is a second caption.");
+    expect(result[1]!.startTime).toBe(4.25);
+    expect(result[1]!.endTime).toBe(7.1);
+    expect(result[1]!.text).toBe("This is a second caption.");
   });
 
   it("handles multi-line subtitles", () => {
@@ -45,9 +45,9 @@ subtitle text.
 Enjoy it!`;
     const result = parseSRT(srt);
     expect(result.length).toBe(1);
-    expect(result[0].startTime).toBe(75.123);
-    expect(result[0].endTime).toBe(80.5);
-    expect(result[0].text).toBe("This is a multi-line\nsubtitle text.\nEnjoy it!");
+    expect(result[0]!.startTime).toBe(75.123);
+    expect(result[0]!.endTime).toBe(80.5);
+    expect(result[0]!.text).toBe("This is a multi-line\nsubtitle text.\nEnjoy it!");
   });
 
   it("handles alternative timestamp separators (dot instead of comma)", () => {
@@ -56,17 +56,17 @@ Enjoy it!`;
 Test dot timestamps.`;
     const result = parseSRT(srt);
     expect(result.length).toBe(1);
-    expect(result[0].startTime).toBe(5.5);
-    expect(result[0].endTime).toBe(8.2);
-    expect(result[0].text).toBe("Test dot timestamps.");
+    expect(result[0]!.startTime).toBe(5.5);
+    expect(result[0]!.endTime).toBe(8.2);
+    expect(result[0]!.text).toBe("Test dot timestamps.");
   });
 
   it("handles Windows CRLF and trailing spaces", () => {
     const srt = "1\r\n00:00:02,000 --> 00:00:05,000\r\nWindows CRLF Test\r\n\r\n2\r\n00:00:06,000 --> 00:00:08,000\r\nSecond Line\r\n";
     const result = parseSRT(srt);
     expect(result.length).toBe(2);
-    expect(result[0].text).toBe("Windows CRLF Test");
-    expect(result[1].text).toBe("Second Line");
+    expect(result[0]!.text).toBe("Windows CRLF Test");
+    expect(result[1]!.text).toBe("Second Line");
   });
 
   it("ignores blocks with invalid timestamps", () => {
@@ -79,6 +79,6 @@ Some text
 Valid Subtitle`;
     const result = parseSRT(srt);
     expect(result.length).toBe(1);
-    expect(result[0].text).toBe("Valid Subtitle");
+    expect(result[0]!.text).toBe("Valid Subtitle");
   });
 });

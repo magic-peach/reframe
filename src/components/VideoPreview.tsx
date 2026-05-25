@@ -30,6 +30,10 @@ export default function VideoPreview({
   parsedSubtitles = null,
 }: Props) {
   const [localCurrentTime, setLocalCurrentTime] = useState(0);
+  const [containerDimensions, setContainerDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
 
   useEffect(() => {
     const video = videoRef.current;
@@ -66,10 +70,6 @@ export default function VideoPreview({
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
-  const [containerDimensions, setContainerDimensions] = useState({
-    width: 0,
-    height: 0,
-  });
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
 
