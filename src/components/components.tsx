@@ -8,25 +8,21 @@ interface CardProps {
 }
 
 /**
- * Reusable Card component demonstrating dark: variant usage.
- * All interactive and structural colors are dual-themed.
+ * Reusable Card component.
  */
 export function Card({ title, description, children, className = "" }: CardProps) {
   return (
     <div
       className={`
-        rounded-xl border p-6
-        bg-white dark:bg-gray-800
-        border-gray-200 dark:border-gray-700
-        shadow-sm dark:shadow-gray-900/40
+        rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow)]
         ${className}
       `}
     >
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+      <h2 className="text-xl font-semibold text-[var(--text)]">
         {title}
       </h2>
       {description && (
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-1 text-sm text-[var(--muted)]">
           {description}
         </p>
       )}
@@ -45,22 +41,23 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button({ variant = "primary", className = "", children, ...props }: ButtonProps) {
   const variants = {
     primary: `
-      bg-blue-600 dark:bg-blue-500
+      bg-[var(--accent)]
       text-white
-      hover:bg-blue-700 dark:hover:bg-blue-600
-      focus:ring-blue-500
+      hover:bg-[var(--accent-hover)] hover:scale-[1.02]
+      focus:ring-[var(--accent)]
     `,
     secondary: `
-      bg-gray-100 dark:bg-gray-700
-      text-gray-800 dark:text-gray-100
-      hover:bg-gray-200 dark:hover:bg-gray-600
-      focus:ring-gray-400
+      bg-[var(--accent-muted)]
+      text-[var(--text)]
+      border border-[var(--accent)]
+      hover:bg-[var(--surface)] hover:scale-[1.02]
+      focus:ring-[var(--accent)]
     `,
     ghost: `
       bg-transparent
-      text-gray-700 dark:text-gray-300
-      hover:bg-gray-100 dark:hover:bg-gray-800
-      focus:ring-gray-400
+      text-[var(--muted)]
+      hover:bg-[var(--accent-muted)] hover:text-[var(--text)]
+      focus:ring-[var(--accent)]
     `,
   };
 
@@ -68,10 +65,10 @@ export function Button({ variant = "primary", className = "", children, ...props
     <button
       className={`
         inline-flex items-center justify-center gap-2
-        rounded-lg px-4 py-2 text-sm font-medium
+        rounded-[var(--radius)] px-4 py-2 text-sm font-medium
         focus:outline-none focus:ring-2 focus:ring-offset-2
-        dark:focus:ring-offset-gray-900
-        transition-colors duration-200
+        focus:ring-offset-[var(--bg)]
+        transition-all duration-200
         disabled:opacity-50 disabled:cursor-not-allowed
         ${variants[variant]}
         ${className}
@@ -90,14 +87,10 @@ export function Input({ className = "", ...props }: React.InputHTMLAttributes<HT
   return (
     <input
       className={`
-        w-full rounded-lg px-3 py-2 text-sm
-        bg-white dark:bg-gray-900
-        text-gray-900 dark:text-gray-100
-        border border-gray-300 dark:border-gray-600
-        placeholder-gray-400 dark:placeholder-gray-500
-        focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
-        focus:border-transparent
-        transition-colors duration-200
+        w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]
+        placeholder:text-[var(--muted)]
+        focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-muted)]
+        transition-all duration-200
         ${className}
       `}
       {...props}
@@ -115,10 +108,10 @@ interface BadgeProps {
 
 export function Badge({ label, variant = "default" }: BadgeProps) {
   const variants = {
-    default:  "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300",
-    success:  "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400",
-    warning:  "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400",
-    error:    "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400",
+    default: "bg-[var(--accent-muted)] text-[var(--text)]",
+    success: "bg-[var(--accent-muted)] text-[var(--text)]",
+    warning: "bg-[var(--accent-muted)] text-[var(--text)]",
+    error: "bg-[var(--error-bg)] text-[var(--error)]",
   };
 
   return (

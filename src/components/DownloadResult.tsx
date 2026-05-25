@@ -3,21 +3,33 @@
 import { useState, useEffect } from "react";
 import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
-import { Download, RotateCcw, Share2, AlertCircle } from "lucide-react";
+import { Download, RotateCcw, Share2, AlertCircle, Volume2, VolumeX } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
+import { NativeShareButton } from "./NativeShareButton";
 import successAnim from "@/lib/lottie/success.json";
 import { cn } from "@/lib/utils";
 
 const SHARE_TWEET_TEXT =
   "I just edited my video with @reframevideo — free browser-based video editor! Check it out: https://github.com/magic-peach/reframe";
 
+function formatExportDuration(ms: number): string {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (minutes === 0) return `${seconds} sec`;
+  if (seconds === 0) return `${minutes} min`;
+  return `${minutes} min ${seconds} sec`;
+}
+
 interface Props {
   result: ExportResult;
   onReset: () => void;
   soundOnCompletion: boolean;
+  onToggleSound: () => void;
 }
 
-export default function DownloadResult({ result, onReset, soundOnCompletion }: Props) {
+export default function DownloadResult({ result, onReset, soundOnCompletion, onToggleSound }: Props) {
   const defaultName = `reframe_${result.width}x${result.height}`;
   const [name, setName] = useState(defaultName);
 
@@ -27,10 +39,15 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
 
   const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(SHARE_TWEET_TEXT)}`;
 
+  const [soundError, setSoundError] = useState(false);
+
   useEffect(() => {
     if (soundOnCompletion) {
       const audio = new Audio("/sounds/export-complete.mp3");
-      audio.play().catch(console.error);
+      audio.play().catch((error) => {
+        console.error("Failed to play completion sound:", error);
+        setSoundError(true);
+      });
     }
   }, [soundOnCompletion]);
   const handleReset = () => {
@@ -41,15 +58,30 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
 
   return (
     <div className="p-5 bg-[var(--surface)] border border-[var(--border)] rounded-xl space-y-4">
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 shrink-0">
-          <LottiePlayer animationData={successAnim} loop={false} autoplay />
-        </div>
-        <div>
-          <p className="font-heading font-bold text-base text-[var(--text)]">Export complete</p>
-          <p className="text-xs text-[var(--muted)] mt-0.5">Ready to download</p>
-        </div>
-      </div>
+      <div className="flex items-center justify-between">
+  <div className="flex items-center gap-4">
+    <div className="w-12 h-12 shrink-0">
+      <LottiePlayer animationData={successAnim} loop={false} autoplay />
+    </div>
+    <div>
+      <p className="font-heading font-bold text-base text-[var(--text)]">Export complete</p>
+      <p className="text-xs text-[var(--muted)] mt-0.5">Ready to download</p>
+    </div>
+  </div>
+  <button
+    type="button"
+    onClick={onToggleSound}
+    aria-label={soundOnCompletion ? "Mute completion sound" : "Unmute completion sound"}
+    className="p-2 rounded-lg border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--bg)] transition-colors"
+    title={soundOnCompletion ? "Sound on" : "Sound off"}
+  >
+    {soundOnCompletion ? <Volume2 size={14} /> : <VolumeX size={14} />}
+  </button>
+</div>
+
+  {soundError && (
+    <p className="text-xs text-[var(--muted)]">Completion sound could not be played on this device.</p>
+  )}
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
@@ -60,6 +92,12 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">File size</p>
           <p className="font-heading font-bold text-[var(--text)]">{formatBytes(result.size)}</p>
         </div>
+        {typeof result.exportDurationMs === "number" && (
+          <div className="col-span-2 bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
+            <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">Export time</p>
+            <p className="font-heading font-bold text-[var(--text)]">Exported in {formatExportDuration(result.exportDurationMs)}</p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-1.5 pt-2">
@@ -67,7 +105,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
           <label htmlFor="filename-input" className="text-[var(--muted)] font-heading font-semibold uppercase tracking-wider">
             Filename
           </label>
-          <span className={cn("transition-colors", name.length >= 100 ? "text-red-500 font-medium" : "text-[var(--muted)]")}>
+          <span className={cn("transition-colors", name.length >= 100 ? "text-[var(--error)] font-medium" : "text-[var(--muted)]")}>
             {100 - name.length} chars remaining
           </span>
         </div>
@@ -80,7 +118,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
             maxLength={100}
             className={cn(
               "flex-1 px-3 py-2.5 bg-[var(--bg)] border rounded-lg text-sm transition-colors text-[var(--text)] placeholder:text-[var(--muted)]",
-              !isValid && name.length > 0 ? "border-red-500 focus:outline-red-500 focus:ring-1 focus:ring-red-500" : "border-[var(--border)] focus:outline-film-500"
+              !isValid && name.length > 0 ? "border-[var(--error)] focus:outline-[var(--error)] focus:ring-1 focus:ring-[var(--error)]" : "border-[var(--border)] focus:outline-[var(--accent)]"
             )}
             placeholder="Enter filename"
           />
@@ -89,7 +127,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
           </span>
         </div>
         {!isValid && name.length > 0 && (
-          <p className="text-xs text-red-500 px-1 flex items-center gap-1.5 mt-1 animate-fade-in">
+          <p className="text-xs text-[var(--error)] px-1 flex items-center gap-1.5 mt-1 animate-fade-in">
             <AlertCircle size={12} />
             Filename contains invalid characters (\ / : * ? &quot; &lt; &gt; |)
           </p>
@@ -101,24 +139,29 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
           href={isValid ? result.blobUrl : undefined}
           download={isValid ? filename : undefined}
           className={cn(
-            "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-white text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
-            isValid
-              ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-              : "bg-film-600/50 cursor-not-allowed"
+            "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
+            isValid 
+              ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.99] cursor-pointer"
+              : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
           )}
           onClick={(e) => {
             if (!isValid) e.preventDefault();
           }}
         >
-          <Download size={15} aria-hidden="true"  />
+          <Download size={15} aria-hidden="true" />
           Download {result.format.toUpperCase()}
         </a>
+        <NativeShareButton 
+          file={result.blob}
+          fileName={filename}
+          className="flex-1 min-w-[10rem] py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg"
+        />
         <a
           href={result.blobUrl}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Preview video in new tab"
-          className="flex items-center justify-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] transition-colors"
         >
           Preview
         </a>
@@ -127,9 +170,9 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
           title="Reset and upload a new video"
           aria-label="Upload a new video"
           onClick={handleReset}
-          className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
+          className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] transition-colors"
         >
-          <RotateCcw size={14} aria-hidden="true"  />
+          <RotateCcw size={14} aria-hidden="true" />
           New
         </button>
         <a
@@ -137,7 +180,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion }: P
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Share on X (opens in a new tab)"
-          className="flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 border border-[var(--border)] text-[var(--text)] text-sm font-heading font-bold uppercase tracking-wide rounded-lg hover:bg-[var(--bg)] transition-colors"
+          className="flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 border border-[var(--border)] text-[var(--text)] text-sm font-heading font-bold uppercase tracking-wide rounded-lg hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] transition-colors"
         >
           <Share2 size={15} aria-hidden="true" />
           Share on X

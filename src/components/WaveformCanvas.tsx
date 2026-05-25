@@ -35,7 +35,7 @@ export default function WaveformCanvas({ samples, loading, hasAudio }: Props) {
     const midY = height / 2;
 
     // Read theme colour from :root — falls back to a visible purple
-    const accentColor = getCssVar("--film-500", "#8b5cf6");
+    const accentColor = getCssVar("--accent", "#4f6ef7");
 
     if (!hasAudio || samples.length === 0) {
       // Flat centre line for silent videos
@@ -54,7 +54,7 @@ export default function WaveformCanvas({ samples, loading, hasAudio }: Props) {
     ctx.globalAlpha = 0.7;
 
     for (let i = 0; i < samples.length; i++) {
-      const amplitude = samples[i];
+      const amplitude = samples[i] ?? 0;
       const barHeight = Math.max(amplitude * (height * 0.92), 1.5);
       const x = i * barWidth;
       const y = midY - barHeight / 2;

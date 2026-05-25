@@ -28,12 +28,13 @@ export default function ScrollToTop() {
 
   return (
     <button
+      type="button"
       onClick={scrollToTop}
       aria-label="Scroll to top"
       className="
         fixed bottom-5 right-5 z-50
         h-12 w-12 rounded-full
-        bg-black text-white shadow-lg
+        bg-[var(--accent)] text-white shadow-[var(--shadow)]
         flex items-center justify-center
         md:hidden
       "
