@@ -11,21 +11,15 @@ const SRI_HASHES: Record<string, string> = {
   "ffmpeg-core.wasm": "sha384-U1VDhkPYrM3wTCT4/vjSpSsKqG/UjljYrYCI4hBSJ02svbCkxuCi6U6u/peg5vpW",
 };
 
-type SerializedFile = {
-  name: string;
-  type: string;
-  data: ArrayBuffer;
-};
-
 type ExportRequest = {
   type: "export";
   id: string;
-  file: SerializedFile;
+  file: File;
   recipe: EditRecipe;
   videoDuration: number;
-  musicFile?: SerializedFile;
+  musicFile?: File;
   musicOptions?: BackgroundMusicOptions;
-  overlayFile?: SerializedFile;
+  overlayFile?: File;
   overlayOptions?: ImageOverlayOptions;
 };
 
@@ -338,9 +332,7 @@ async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
   }
 }
 
-function serializeFileBuffer(file: SerializedFile): Uint8Array {
-  return new Uint8Array(file.data);
-}
+
 
 function getOutputConfig(format: string, sessionId: string) {
   switch (format) {
@@ -387,35 +379,26 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
   targetW = Math.round(targetW / 2) * 2;
   targetH = Math.round(targetH / 2) * 2;
 
-  const ext = request.file.name.split(".").pop() ?? "mp4";
-  const inputName = `input_${sessionId}.${ext}`;
+  const workerfsDir = `/workerfs_${sessionId}`;
+  await ffmpeg.createDir(workerfsDir);
+  
+  const workerFsMountFiles: File[] = [request.file];
+  if (request.musicFile) workerFsMountFiles.push(request.musicFile);
+  if (request.overlayFile) workerFsMountFiles.push(request.overlayFile);
+  
+  await ffmpeg.mount("WORKERFS" as any, { files: workerFsMountFiles }, workerfsDir);
 
+  const inputName = `${workerfsDir}/${request.file.name}`;
   const { filename: outputName, mimeType } = getOutputConfig(recipe.format, sessionId);
   const fallbackOutputName = `fallback_${sessionId}.webm`;
   const paletteName = `palette_${sessionId}.png`;
-  const cleanupFiles = new Set<string>([inputName, outputName, fallbackOutputName, paletteName]);
-
-  const fileBytes = serializeFileBuffer(request.file);
-  await ffmpeg.writeFile(inputName, fileBytes, { signal: activeExportAbortController?.signal });
+  
+  const cleanupFiles = new Set<string>([outputName, fallbackOutputName, paletteName]);
 
   const hasMusicTrack = !!(request.musicFile && recipe.keepAudio);
-  const musicInputName = `music_input_${sessionId}.mp3`;
-  if (hasMusicTrack) {
-    cleanupFiles.add(musicInputName);
-    await ffmpeg.writeFile(musicInputName, serializeFileBuffer(request.musicFile!), {
-      signal: activeExportAbortController?.signal,
-    });
-  }
-
+  const musicInputName = request.musicFile ? `${workerfsDir}/${request.musicFile.name}` : "";
   const hasOverlay = !!request.overlayFile;
-  const overlayExt = request.overlayFile?.name.split(".").pop() ?? "png";
-  const overlayInputName = `overlay_${sessionId}.${overlayExt}`;
-  if (hasOverlay) {
-    cleanupFiles.add(overlayInputName);
-    await ffmpeg.writeFile(overlayInputName, serializeFileBuffer(request.overlayFile!), {
-      signal: activeExportAbortController?.signal,
-    });
-  }
+  const overlayInputName = request.overlayFile ? `${workerfsDir}/${request.overlayFile.name}` : "";
 
   const videoDuration = request.videoDuration;
 
@@ -458,9 +441,10 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
       if (pass2Code !== 0) throw new Error("GIF export failed");
 
       // Free WASM memory before reading output
-      await removeFile(inputName);
-      if (hasMusicTrack) await removeFile(musicInputName);
-      if (hasOverlay) await removeFile(overlayInputName);
+      try {
+        await ffmpeg.unmount(workerfsDir);
+        await ffmpeg.deleteDir(workerfsDir);
+      } catch (e) {}
       await removeFile(paletteName);
 
       const data = await ffmpeg.readFile(outputName, undefined, {
@@ -560,9 +544,10 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
       if (fallbackCode !== 0) throw new Error("Export failed");
 
       // Free WASM memory before reading output
-      await removeFile(inputName);
-      if (hasMusicTrack) await removeFile(musicInputName);
-      if (hasOverlay) await removeFile(overlayInputName);
+      try {
+        await ffmpeg.unmount(workerfsDir);
+        await ffmpeg.deleteDir(workerfsDir);
+      } catch (e) {}
 
       const data = await ffmpeg.readFile(fallbackOutputName, undefined, {
         signal: activeExportAbortController?.signal,
@@ -581,9 +566,10 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     }
 
     // Free WASM memory before reading output
-    await removeFile(inputName);
-    if (hasMusicTrack) await removeFile(musicInputName);
-    if (hasOverlay) await removeFile(overlayInputName);
+    try {
+      await ffmpeg.unmount(workerfsDir);
+      await ffmpeg.deleteDir(workerfsDir);
+    } catch (e) {}
 
     const data = await ffmpeg.readFile(outputName, undefined, {
       signal: activeExportAbortController?.signal,
@@ -605,6 +591,10 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     for (const path of cleanupFiles) {
       await removeFile(path);
     }
+    try {
+      await ffmpeg.unmount(workerfsDir);
+      await ffmpeg.deleteDir(workerfsDir);
+    } catch (e) {}
   }
 }
 

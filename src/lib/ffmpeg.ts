@@ -9,21 +9,15 @@ const FFMPEG_WORKER_URL =
     ? new URL("./ffmpeg.worker.ts", import.meta.url)
     : null;
 
-type SerializedFile = {
-  name: string;
-  type: string;
-  data: ArrayBuffer;
-};
-
 type WorkerExportRequest = {
   type: "export";
   id: string;
-  file: SerializedFile;
+  file: File;
   recipe: EditRecipe;
   videoDuration: number;
-  musicFile?: SerializedFile;
+  musicFile?: File;
   musicOptions?: BackgroundMusicOptions;
-  overlayFile?: SerializedFile;
+  overlayFile?: File;
   overlayOptions?: ImageOverlayOptions;
 };
 
@@ -220,28 +214,6 @@ export async function exportVideo(
   }
 
   const sessionId = buildSessionId();
-  const arrayBuffer = await file.arrayBuffer();
-  const filePayload: SerializedFile = {
-    name: file.name,
-    type: file.type || "video/mp4",
-    data: arrayBuffer,
-  };
-
-  const musicFilePayload = musicOptions?.file
-    ? {
-        name: musicOptions.file.name,
-        type: musicOptions.file.type || "audio/mpeg",
-        data: await musicOptions.file.arrayBuffer(),
-      }
-    : undefined;
-
-  const overlayFilePayload = overlayOptions?.file
-    ? {
-        name: overlayOptions.file.name,
-        type: overlayOptions.file.type || "image/png",
-        data: await overlayOptions.file.arrayBuffer(),
-      }
-    : undefined;
 
   const sanitizedMusicOptions = musicOptions
     ? { ...musicOptions, file: null }
@@ -268,23 +240,18 @@ export async function exportVideo(
   };
   signal?.addEventListener("abort", onAbort, { once: true });
 
-  const transfers: Transferable[] = [arrayBuffer];
-  if (musicFilePayload) transfers.push(musicFilePayload.data);
-  if (overlayFilePayload) transfers.push(overlayFilePayload.data);
-
   ffmpegWorker.postMessage(
     {
       type: "export",
       id: sessionId,
-      file: filePayload,
+      file,
       recipe,
       videoDuration: await getVideoDuration(file),
-      musicFile: musicFilePayload,
+      musicFile: musicOptions?.file,
       musicOptions: sanitizedMusicOptions,
-      overlayFile: overlayFilePayload,
+      overlayFile: overlayOptions?.file,
       overlayOptions: sanitizedOverlayOptions,
-    } as WorkerExportRequest,
-    transfers
+    } as WorkerExportRequest
   );
 
   try {
