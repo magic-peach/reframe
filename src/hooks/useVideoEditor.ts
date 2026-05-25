@@ -125,6 +125,14 @@ function encodeRecipe(recipe: EditRecipe): string {
 function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   try {
     const decoded = JSON.parse(atob(encoded));
+    if (!decoded || typeof decoded !== "object") return null;
+    // Validate the merged recipe before accepting any decoded values.
+    // This prevents a tampered or malformed share URL from injecting
+    // out-of-range numbers, invalid enum strings, or other unexpected
+    // values into the editor state. If any field fails, the whole link
+    // is rejected and the editor starts from safe defaults.
+    const merged = { ...DEFAULT_RECIPE, ...decoded };
+    if (!isValidRecipe(merged)) return null;
     return decoded as Partial<EditRecipe>;
   } catch {
     return null;
