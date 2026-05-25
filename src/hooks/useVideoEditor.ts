@@ -352,6 +352,15 @@ export function useVideoEditor() {
   }, [videoMetadata]);
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
+    // If an export is running, cancel it before replacing the file so that
+    // the previous FFmpeg worker does not write a result for the old file
+    // after the new file has already been loaded.
+    if (exportAbortControllerRef.current) {
+      exportCancelledRef.current = true;
+      exportAbortControllerRef.current.abort();
+      exportAbortControllerRef.current = null;
+    }
+
     setResult(null);
     setStatus("idle");
     setError(null);
