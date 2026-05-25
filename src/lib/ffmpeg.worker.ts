@@ -226,7 +226,9 @@ function buildArguments(
         "bottom-left":  "20:H-h-20",
         "bottom-right": "W-w-20:H-h-20",
       };
-      const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
+const pos = overlayOptions?.position
+  ? `(W-w)*${overlayOptions.position.x}/100:(H-h)*${overlayOptions.position.y}/100`
+  : "W-w-20:H-h-20";
       filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
       filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
       videoOut = "[vout]";
