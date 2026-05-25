@@ -80,6 +80,9 @@ function createWorker(): Worker {
     workerReadyReject = reject;
   });
 
+  // Start the ffmpeg loading process immediately
+  ffmpegWorker.postMessage({ type: "load" });
+
   return ffmpegWorker;
 }
 
@@ -165,10 +168,6 @@ export async function loadFFmpeg(
   if (workerReady && workerReadyResolve === null) {
     onProgress?.(100);
     return;
-  }
-
-  if (!workerReady) {
-    ffmpegWorker!.postMessage({ type: "load" });
   }
 
   pendingProgress = onProgress ?? null;
