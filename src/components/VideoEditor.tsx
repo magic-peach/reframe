@@ -32,51 +32,26 @@ interface SectionProps {
   title: string;
   children: React.ReactNode;
   delay?: number;
+  id?: string;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
-function Section({ icon, title, children, delay = 0 }: SectionProps) {
-  return (
-    <div
-      className="space-y-3 animate-fade-in"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="flex items-center gap-2">
-        <span className="text-film-500 opacity-80">{icon}</span>
-        <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
-          {title}
-        </h3>
-        <div className="flex-1 h-px bg-[var(--border)]" />
-      </div>
-      {children}
-    </div>
-  );
-}
+function Section({ icon, title, children, delay = 0, id, isOpen, onToggle }: SectionProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const generatedId = useMemo(() => title.replace(/\s+/g, "-").toLowerCase(), [title]);
+  const panelId = id ?? generatedId;
+  const controlled = typeof isOpen === "boolean" && typeof onToggle === "function";
+  const open = controlled ? !!isOpen : internalOpen;
+  const localToggle = controlled ? onToggle! : () => setInternalOpen((v) => !v);
 
-/** Accordion section with collapsible content. */
-function AccordionSection({
-  id,
-  icon,
-  title,
-  children,
-  isOpen,
-  onToggle,
-  delay = 0,
-}: {
-  id: string;
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-  isOpen: boolean;
-  onToggle: () => void;
-  delay?: number;
-}) {
   return (
     <div className="animate-fade-in" style={{ animationDelay: `${delay}ms` }}>
       <button
         type="button"
-        aria-expanded={isOpen}
-        aria-controls={`${id}-panel`}
-        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={`${panelId}-panel`}
+        onClick={localToggle}
         className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[var(--border)] transition-colors duration-150"
       >
         <div className="flex items-center gap-2">
@@ -89,17 +64,17 @@ function AccordionSection({
           height="12"
           viewBox="0 0 12 12"
           fill="none"
-          className={cn("text-[var(--muted)] transition-transform duration-200", isOpen && "rotate-180")}
+          className={cn("text-[var(--muted)] transition-transform duration-200", open && "rotate-180")}
         >
           <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
       <div
-        id={`${id}-panel`}
+        id={`${panelId}-panel`}
         className={cn(
           "transition-all duration-200",
-          isOpen ? "block" : "hidden"
+          open ? "block" : "hidden"
         )}
       >
         <div className="px-3 pt-3 pb-0">{children}</div>
@@ -107,6 +82,8 @@ function AccordionSection({
     </div>
   );
 }
+
+const AccordionSection = Section;
 
 /** Inline keyboard hint badge. */
 function Kbd({ children }: { children: React.ReactNode }) {
@@ -198,15 +175,32 @@ function KeyboardShortcutsPanel() {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
-    result, error, exportStartedAt, updateRecipe,
-    handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
+    file,
+    duration,
+    recipe,
+    status,
+    progress,
+    result,
+    error,
+    errorInfo,
+    exportStartedAt,
+    updateRecipe,
+    handleFileSelect,
+    fileError,
+    handleExport,
+    cancelExport,
+    reset,
+    resetSettings,
     videoRef,
     seekTo,
-    overlayFile, setOverlayFile,
-    overlayPosition, setOverlayPosition,
-    overlaySize, setOverlaySize,
-    overlayOpacity, setOverlayOpacity,
+    overlayFile,
+    setOverlayFile,
+    overlayPosition,
+    setOverlayPosition,
+    overlaySize,
+    setOverlaySize,
+    overlayOpacity,
+    setOverlayOpacity,
     recommendedPreset,
     currentTime,
     toggleSound,
@@ -584,28 +578,42 @@ export default function VideoEditor() {
 
             {status === "error" && error && (
               <div
-                role="status"
+                role="alert"
                 className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
               >
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
                 <div className="flex-1">
-                  <p className="font-heading font-bold text-sm">Error</p>
-                  <p className="text-film-600 text-sm mt-1">{error}</p>
+                  <p className="font-heading font-bold text-sm">
+                    {errorInfo?.code ? "Video engine failed to load" : "Error"}
+                  </p>
+                  <p className="text-film-600 text-xs mt-1">{error}</p>
+                  {errorInfo?.troubleshootingUrl && (
+                    <a
+                      href={errorInfo.troubleshootingUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="mt-2 inline-flex text-[11px] font-semibold text-film-600 hover:text-film-700 underline underline-offset-4"
+                    >
+                      Learn more about troubleshooting
+                    </a>
+                  )}
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(error).then(() => {
+                    navigator.clipboard.writeText(
+                      errorInfo?.debugMessage ? `${error}\n\n${errorInfo.debugMessage}` : error
+                    ).then(() => {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
                     }).catch((err) => {
                       console.error("Failed to copy error to clipboard:", err);
                     });
                   }}
-                  className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-sm font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
-                  aria-label="Copy error message to clipboard"
+                  className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-xs font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
+                  aria-label={errorInfo?.debugMessage ? "Copy error details to clipboard" : "Copy error message to clipboard"}
                 >
-                  {copied ? "Copied!" : "Copy error"}
+                  {copied ? "Copied!" : errorInfo?.debugMessage ? "Copy details" : "Copy error"}
                 </button>
                 {!error.includes("Validation Failed") && (
                   <button
@@ -613,7 +621,7 @@ export default function VideoEditor() {
                     onClick={handleExport}
                     className="px-3 py-1.5 bg-[var(--error-bg)] border border-[var(--error-border)] rounded-lg text-sm font-semibold hover:bg-[var(--error-hover)] hover:border-[var(--error)] text-[var(--text)] transition-colors shrink-0 whitespace-nowrap"
                   >
-                    Retry Export
+                    {errorInfo?.code ? "Retry load" : "Retry export"}
                   </button>
                 )}
               </div>

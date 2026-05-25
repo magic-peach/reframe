@@ -131,6 +131,13 @@ function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   }
 }
 
+interface ExportErrorInfo {
+  code?: string;
+  userMessage: string;
+  debugMessage?: string;
+  troubleshootingUrl?: string;
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -158,6 +165,7 @@ export function useVideoEditor() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorInfo, setErrorInfo] = useState<ExportErrorInfo | null>(null);
   const [fileError, setFileError] = useState("");
   const [exportStartedAt, setExportStartedAt] = useState<number | null>(null);
   const exportAbortControllerRef = useRef<AbortController | null>(null);
@@ -175,7 +183,7 @@ export function useVideoEditor() {
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-  setRecipe((prev) => {
+  setRecipe((prev: EditRecipe) => {
     const next = { ...prev, ...patch };
     // GIF has no audio — force keepAudio off
     if (next.format === "gif") {
@@ -247,7 +255,7 @@ export function useVideoEditor() {
         });
 
         if (Object.keys(updatedPatch).length > 0) {
-          setRecipe(prev => ({
+          setRecipe((prev: EditRecipe) => ({
             ...prev,
             ...updatedPatch
           }));
@@ -275,7 +283,7 @@ export function useVideoEditor() {
             const n = Number(val);
             return Number.isFinite(n) && n >= 16 && n <= 7680 ? n : fallback;
           };
-          setRecipe(prev => ({
+          setRecipe((prev: EditRecipe) => ({
             ...prev,
             preset: parsed.preset ?? prev.preset,
             quality: parsed.quality ?? prev.quality,
@@ -355,6 +363,7 @@ export function useVideoEditor() {
     setResult(null);
     setStatus("idle");
     setError(null);
+    setErrorInfo(null);
     setFile(null);
     setVideoMetadata(null);
     if (!selectedFile.type.startsWith("video/")) {
@@ -415,7 +424,7 @@ export function useVideoEditor() {
       if (dimensionCheck === "warning") {
         console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
       }
-      setRecipe((prev) => {
+      setRecipe((prev: EditRecipe) => {
         const suggestedPreset = suggestPreset(width, height);
         const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
 
@@ -453,7 +462,7 @@ export function useVideoEditor() {
       setStatus("loading-engine");
       setProgress(0);
       setError(null);
-      setExportStartedAt(null);
+      setErrorInfo(null);
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
@@ -494,13 +503,30 @@ export function useVideoEditor() {
 
       console.error("export failed:", err);
       if (err instanceof FFmpegLoadError) {
-        setError(err.message);
+        setError(err.userMessage);
+        setErrorInfo({
+          code: err.code,
+          userMessage: err.userMessage,
+          debugMessage: err.context
+            ? `Attempt ${err.context.attempt} of ${err.context.maxAttempts}. Core: ${err.context.coreName}. Retryable: ${err.context.retryable}. ${err.context.originalError ?? ""}`
+            : undefined,
+          troubleshootingUrl: "https://github.com/magic-peach/reframe/blob/main/docs/ffmpeg-troubleshooting.md",
+        });
       } else if (err instanceof Error && err.message.includes('network')) {
         setError('Network error. Check your internet connection and try again.');
+        setErrorInfo({
+          userMessage: 'Network error. Check your internet connection and try again.',
+        });
       } else if (err instanceof Error && err.message.includes('codec')) {
         setError('This video format is not supported. Try converting to MP4 first.');
+        setErrorInfo({
+          userMessage: 'This video format is not supported. Try converting to MP4 first.',
+        });
       } else {
         setError('Export failed. Please try again or use a different video.');
+        setErrorInfo({
+          userMessage: 'Export failed. Please try again or use a different video.',
+        });
       }
       setExportStartedAt(null);
       setStatus("error");
@@ -595,7 +621,7 @@ export function useVideoEditor() {
         return;
       }
 
-      setRecipe((prev) => ({ ...prev, keepAudio: !prev.keepAudio }));
+      setRecipe((prev: EditRecipe) => ({ ...prev, keepAudio: !prev.keepAudio }));
     };
 
     document.addEventListener("keydown", handleMuteShortcut);
@@ -635,7 +661,7 @@ export function useVideoEditor() {
     setStatus("idle");
     setProgress(0);
     setError(null);
-    setExportStartedAt(null);
+    setErrorInfo(null);
   }, []);
 
 
@@ -649,12 +675,7 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
-    setExportStartedAt(null);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
+    setErrorInfo(null);
   }, [result]);
 
 
@@ -687,8 +708,7 @@ export function useVideoEditor() {
     exportStartedAt,
     result,
     error,
-    videoRef,
-    seekTo,
+    errorInfo,
     updateRecipe,
     handleFileSelect,
     fileError,
@@ -714,6 +734,8 @@ export function useVideoEditor() {
     setOverlayOpacity,
     recommendedPreset,
     currentTime,
+    videoRef,
+    seekTo,
     toggleSound,
   };
 }

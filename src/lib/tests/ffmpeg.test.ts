@@ -1,4 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+vi.mock("@ffmpeg/ffmpeg", () => ({
+  FFmpeg: class MockFFmpeg {},
+}));
+
+vi.mock("@ffmpeg/util", () => ({
+  fetchFile: vi.fn(),
+  toBlobURL: vi.fn(async (url: string) => url),
+}));
+
+vi.mock("wasm-feature-detect", () => ({
+  simd: vi.fn(async () => true),
+}));
+
 import { buildAudioFilter } from "../ffmpeg";
 
 describe("buildAudioFilter", () => {

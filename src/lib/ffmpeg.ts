@@ -1,13 +1,38 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
-import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
-
-export class FFmpegLoadError extends Error {}
-
+import { getPresetById } from "./presets";
 const FFMPEG_WORKER_URL =
   typeof window !== "undefined"
     ? new URL("./ffmpeg.worker.ts", import.meta.url)
     : null;
+
+export type FFmpegLoadErrorCode =
+  | "NETWORK_LOAD_FAILED"
+  | "WASM_INSTANTIATION_FAILED"
+  | "FFMPEG_TIMEOUT"
+  | "CDN_UNREACHABLE";
+
+export interface FFmpegLoadErrorContext {
+  attempt?: number;
+  maxAttempts?: number;
+  coreName?: string;
+  retryable?: boolean;
+  originalError?: string;
+}
+
+export class FFmpegLoadError extends Error {
+  code?: FFmpegLoadErrorCode;
+  userMessage: string;
+  context?: FFmpegLoadErrorContext;
+
+  constructor(userMessage: string, code?: FFmpegLoadErrorCode, context?: FFmpegLoadErrorContext) {
+    super(userMessage);
+    this.name = "FFmpegLoadError";
+    this.userMessage = userMessage;
+    this.code = code;
+    this.context = context;
+  }
+}
 
 type SerializedFile = {
   name: string;
@@ -156,10 +181,16 @@ async function ensureWorker() {
   }
 }
 
+
 export async function loadFFmpeg(
-  signal?: AbortSignal,
+  opts?: AbortSignal | { signal?: AbortSignal; retryDelayMs?: number; timeoutMs?: number },
   onProgress?: (percent: number) => void
 ): Promise<void> {
+  const signal: AbortSignal | undefined =
+    opts && typeof (opts as AbortSignal).addEventListener === "function"
+      ? (opts as AbortSignal)
+      : (opts as any)?.signal;
+
   await ensureWorker();
 
   if (workerReady && workerReadyResolve === null) {
@@ -190,12 +221,14 @@ export async function loadFFmpeg(
 
   signal?.addEventListener("abort", onAbort, { once: true });
 
+  let coreName = "ffmpeg-core";
   try {
     await workerReady;
   } finally {
     cleanup();
   }
-}
+  }
+
 
 function cancelPendingExport(reason?: unknown) {
   if (pendingExport) {
