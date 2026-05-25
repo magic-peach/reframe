@@ -19,10 +19,20 @@ import ImageOverlay from "./ImageOverlay"
 
 import { cn } from "@/lib/utils";
 import {
-  Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  Layers,
+  Crop,
+  Scissors,
+  RotateCw,
+  Volume2,
+  SlidersHorizontal,
+  Zap,
+  AlertTriangle,
+  Github,
+  Copy,
+  Keyboard,
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
+import KeyboardShortcutsModal from "./KeyboardShortcutsModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface SectionProps {
@@ -50,93 +60,8 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
   );
 }
 
-/** Inline keyboard hint badge. */
-function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="inline-flex items-center justify-center min-w-[1.5rem] px-1.5 py-0.5 rounded border border-[var(--border)] bg-[var(--bg)] text-[10px] font-mono text-[var(--muted)] leading-none">
-      {children}
-    </kbd>
-  );
-}
 
 /** Collapsible panel that lists all keyboard shortcuts. */
-function KeyboardShortcutsPanel() {
-  const [open, setOpen] = useState(false);
-
-  const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
-  {
-    keys: [
-      <Kbd key="ctrl">Ctrl</Kbd>,
-      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="shift">Shift</Kbd>,
-      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="e">E</Kbd>
-    ],
-    label: "Export video",
-  },
-  {
-    keys: [<Kbd key="m">M</Kbd>],
-    label: "Toggle audio mute",
-  },
-  {
-    keys: [<Kbd key="r">R</Kbd>],
-    label: "Reset all settings",
-  },
-  {
-    keys: [<Kbd key="esc">Esc</Kbd>],
-    label: "Cancel export",
-  },
-  {
-    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
-    label: "Switch preset by index",
-  },
-  {
-    keys: [<Kbd key="question">?</Kbd>],
-    label: "Toggle this panel",
-  },
-];
-
-  return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls="keyboard-shortcuts-list"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[var(--border)] transition-colors duration-150"
-      >
-        <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] flex items-center gap-2">
-          <Kbd>⌨</Kbd>
-          Keyboard Shortcuts
-        </span>
-        <svg
-          aria-hidden="true"
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
-          className={cn("text-[var(--muted)] transition-transform duration-200", open && "rotate-180")}
-        >
-          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-
-      {open && (
-        <ul
-          id="keyboard-shortcuts-list"
-          className="px-4 pb-3 space-y-2 border-t border-[var(--border)]"
-        >
-          {shortcuts.map(({ keys, label }) => (
-            <li key={label} className="flex items-center justify-between gap-3 pt-2">
-              <span className="text-xs text-[var(--muted)]">{label}</span>
-              <span className="flex items-center gap-1 shrink-0">{keys}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 export default function VideoEditor() {
   const {
@@ -162,10 +87,12 @@ export default function VideoEditor() {
     handleExport,
     status,
     cancelExport,
-    onToggleShortcutsModal: () => {},
+    onToggleShortcutsModal: () =>
+      setShortcutsOpen((prev) => !prev),
   });
 
   const [copied, setCopied] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const downloadRef = useRef<HTMLDivElement>(null);
 
@@ -201,10 +128,28 @@ export default function VideoEditor() {
     };
   }, [videoSrc]);
 
+  useEffect(() => {
+  const handleEsc = (e: KeyboardEvent) => {
+    if (e.key === "Escape" && shortcutsOpen) {
+      setShortcutsOpen(false);
+    }
+  };
+
+  window.addEventListener("keydown", handleEsc);
+
+  return () => {
+    window.removeEventListener("keydown", handleEsc);
+  };
+}, [shortcutsOpen]);
+
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
       <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
       <OnboardingTour />
+      <KeyboardShortcutsModal
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {status === "exporting" && `Exporting video: ${progress}%`}
@@ -226,9 +171,19 @@ export default function VideoEditor() {
               Your video, any format
             </p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
-            No login. No ads. 100% private - your video never leaves your device.
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShortcutsOpen(true)}
+              className="p-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:bg-white/5 transition"
+              aria-label="Open keyboard shortcuts"
+            >
+              <Keyboard size={18} />
+            </button>
+          
+            <div className="hidden sm:flex items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
+              No login. No ads. 100% private - your video never leaves your device.
+            </div>
           </div>
         </header>
 
