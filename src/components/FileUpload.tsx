@@ -194,6 +194,7 @@ export default function FileUpload({
     <div
       id="upload-zone"
       role="button"
+      suppressHydrationWarning
       tabIndex={0}
       aria-label="Video upload area. Drag and drop a video file or press Enter to browse."
       onDragOver={(e) => {
