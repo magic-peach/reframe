@@ -1,5 +1,5 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { fetchFile } from "@ffmpeg/util";
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
@@ -58,20 +58,13 @@ export async function loadFFmpeg(
   try {
     ffmpeg.on("progress", handleProgress);
 
-    const isIsolated = typeof self !== "undefined" && self.crossOriginIsolated;
-    const baseURL = isIsolated
-      ? "https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm"
-      : "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
-
+    // Load the engine from CORE_BASE_URL so the SRI hashes in SRI_HASHES
+    // match the actual files being fetched. fetchWithIntegrity verifies each
+    // resource against its sha384 hash before creating the blob URL, aborting
+    // the load if the CDN returns tampered bytes.
     await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-      ...(isIsolated && {
-        workerURL: await toBlobURL(
-          `${baseURL}/ffmpeg-core.worker.js`,
-          "text/javascript"
-        ),
-      }),
+      coreURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await fetchWithIntegrity(`${CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
     }, { signal });
 
     onProgress?.(100);
