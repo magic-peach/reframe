@@ -207,6 +207,8 @@ Learn more: https://nextjs.org/docs/architecture/fast-refresh
 ### 2. FFmpeg Module Changes
 Changes to `ffmpeg.ts` may not hot-reload correctly because FFmpeg initialization and WebAssembly modules can persist in memory.
 
+If exports fail during download or initialization, see [docs/ffmpeg-troubleshooting.md](docs/ffmpeg-troubleshooting.md).
+
 If updates are not reflected:
 
 - Perform a full browser page reload

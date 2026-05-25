@@ -46,7 +46,7 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
 export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
-    result, error, updateRecipe,
+    result, error, errorInfo, updateRecipe,
     handleFileSelect, handleExport, cancelExport, reset, resetSettings,
   } = useVideoEditor();
   const [copied, setCopied] = useState(false);
@@ -240,27 +240,41 @@ export default function VideoEditor() {
             )}
 
             {status === "error" && error && (
-                 <div
-                    role="status"
-                    className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
-                  >
+              <div
+                role="alert"
+                className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
+              >
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
                 <div className="flex-1">
-                  <p className="font-heading font-bold text-sm">Error</p>
+                  <p className="font-heading font-bold text-sm">
+                    {errorInfo?.code ? "Video engine failed to load" : "Error"}
+                  </p>
                   <p className="text-film-600 text-xs mt-1">{error}</p>
+                  {errorInfo?.troubleshootingUrl && (
+                    <a
+                      href={errorInfo.troubleshootingUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="mt-2 inline-flex text-[11px] font-semibold text-film-600 hover:text-film-700 underline underline-offset-4"
+                    >
+                      Learn more about troubleshooting
+                    </a>
+                  )}
                 </div>
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(error).then(() => {
+                    navigator.clipboard.writeText(
+                      errorInfo?.debugMessage ? `${error}\n\n${errorInfo.debugMessage}` : error
+                    ).then(() => {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
                     });
                   }}
                   className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-xs font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
-                  aria-label="Copy error message to clipboard"
+                  aria-label={errorInfo?.debugMessage ? "Copy error details to clipboard" : "Copy error message to clipboard"}
                 >
-                  {copied ? "Copied!" : "Copy error"}
+                  {copied ? "Copied!" : errorInfo?.debugMessage ? "Copy details" : "Copy error"}
                 </button>
                 {!error.includes("Validation Failed") && (
                   <button
@@ -268,7 +282,7 @@ export default function VideoEditor() {
                     onClick={handleExport}
                     className="px-3 py-1.5 bg-red-200 border border-film-200 rounded-lg text-xs font-semibold hover:bg-film-50 hover:border-film-300 transition-colors shrink-0 whitespace-nowrap"
                   >
-                    Retry Export
+                    {errorInfo?.code ? "Retry load" : "Retry export"}
                   </button>
                 )}
               </div>

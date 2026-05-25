@@ -53,6 +53,13 @@ function verifyMagicBytes(file: File): Promise<boolean> {
   });
 }
 
+interface ExportErrorInfo {
+  code?: string;
+  userMessage: string;
+  debugMessage?: string;
+  troubleshootingUrl?: string;
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -61,6 +68,7 @@ export function useVideoEditor() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorInfo, setErrorInfo] = useState<ExportErrorInfo | null>(null);
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
 
@@ -72,6 +80,7 @@ export function useVideoEditor() {
     setResult(null);
     setStatus("idle");
     setError(null);
+    setErrorInfo(null);
     setFile(null);
 
     // LAYER 0: Size check
@@ -131,6 +140,7 @@ export function useVideoEditor() {
       setStatus("loading-engine");
       setProgress(0);
       setError(null);
+      setErrorInfo(null);
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
@@ -155,13 +165,30 @@ export function useVideoEditor() {
 
       console.error("export failed:", err);
       if (err instanceof FFmpegLoadError) {
-        setError(err.message);
+        setError(err.userMessage);
+        setErrorInfo({
+          code: err.code,
+          userMessage: err.userMessage,
+          debugMessage: err.context
+            ? `Attempt ${err.context.attempt} of ${err.context.maxAttempts}. Core: ${err.context.coreName}. Retryable: ${err.context.retryable}. ${err.context.originalError ?? ""}`
+            : undefined,
+          troubleshootingUrl: "https://github.com/magic-peach/reframe/blob/main/docs/ffmpeg-troubleshooting.md",
+        });
       } else if (err instanceof Error && err.message.includes('network')) {
         setError('Network error. Check your internet connection and try again.');
+        setErrorInfo({
+          userMessage: 'Network error. Check your internet connection and try again.',
+        });
       } else if (err instanceof Error && err.message.includes('codec')) {
         setError('This video format is not supported. Try converting to MP4 first.');
+        setErrorInfo({
+          userMessage: 'This video format is not supported. Try converting to MP4 first.',
+        });
       } else {
         setError('Export failed. Please try again or use a different video.');
+        setErrorInfo({
+          userMessage: 'Export failed. Please try again or use a different video.',
+        });
       }
       setStatus("error");
     }
@@ -211,6 +238,7 @@ export function useVideoEditor() {
     setStatus("idle");
     setProgress(0);
     setError(null);
+    setErrorInfo(null);
   }, []);
 
   const resetSettings = useCallback(() => {
@@ -226,6 +254,7 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
+    setErrorInfo(null);
   }, [result]);
 
   // Development-only memory monitoring during export
@@ -251,6 +280,7 @@ export function useVideoEditor() {
     progress,
     result,
     error,
+    errorInfo,
     updateRecipe,
     handleFileSelect,
     handleExport,
