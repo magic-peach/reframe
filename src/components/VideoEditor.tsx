@@ -85,10 +85,10 @@ function AccordionSection({
         aria-expanded={isOpen}
         aria-controls={`${id}-panel`}
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[var(--border)] transition-colors duration-150"
+        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[var(--border)] transition-all duration-200 group rounded-lg"
       >
         <div className="flex items-center gap-2">
-          <span className="text-film-500 opacity-80">{icon}</span>
+          <span className="text-film-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-transform duration-200">{icon}</span>
           <span className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">{title}</span>
         </div>
         <svg
