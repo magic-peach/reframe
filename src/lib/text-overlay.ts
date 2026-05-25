@@ -69,7 +69,8 @@ export function buildTextFilter(
   const escapedText = overlay.text
     .replace(/\\/g, "\\\\")
     .replace(/'/g, "\\'")
-    .replace(/:/g, "\\:");
+    .replace(/:/g, "\\:")
+    .replace(/%/g, "%%");
 
   // Convert percentage position to pixel position
   const pixelX = Math.round((overlay.x / 100) * targetWidth);
