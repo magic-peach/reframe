@@ -4,6 +4,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Preferences } from "@/components/Preferences";
 import ScrollToTop from "@/components/ScrollToTop";
 import BrandLogo from "@/components/BrandLogo";
 
@@ -84,7 +85,10 @@ export default function RootLayout({
                 <BrandLogo size={24} />
                 <h1 className="text-lg font-semibold">Reframe</h1>
               </div>
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <Preferences />
+              </div>
             </header>
             <main id="main-content" tabIndex={-1}>
               {children}

@@ -15,6 +15,8 @@ interface ThemeContextValue {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
+  accentColor: string;
+  setAccentColor: (color: string) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -31,6 +33,7 @@ function getCurrentTheme(): Theme {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(getCurrentTheme);
+  const [accentColor, setAccentColorState] = useState<string>("");
 
   const applyTheme = useCallback(
     (next: Theme, persist = true) => {
@@ -47,8 +50,30 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const applyAccentColor = useCallback((color: string) => {
+    setAccentColorState(color);
+    if (typeof document !== "undefined") {
+      if (color) {
+        document.documentElement.style.setProperty("--accent", color);
+        document.documentElement.style.setProperty("--accent-hover", color);
+        document.documentElement.style.setProperty("--accent-muted", `${color}1f`);
+        localStorage.setItem("accentColor", color);
+      } else {
+        document.documentElement.style.removeProperty("--accent");
+        document.documentElement.style.removeProperty("--accent-hover");
+        document.documentElement.style.removeProperty("--accent-muted");
+        localStorage.removeItem("accentColor");
+      }
+    }
+  }, []);
+
   useEffect(() => {
     setThemeState(getCurrentTheme());
+
+    const savedAccent = localStorage.getItem("accentColor");
+    if (savedAccent) {
+      applyAccentColor(savedAccent);
+    }
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e: MediaQueryListEvent) => {
@@ -58,7 +83,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, [applyTheme]);
+  }, [applyTheme, applyAccentColor]);
 
   const toggleTheme = useCallback(() => {
     applyTheme(theme === "light" ? "dark" : "light");
@@ -70,7 +95,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, accentColor, setAccentColor: applyAccentColor }}>
       {children}
     </ThemeContext.Provider>
   );
