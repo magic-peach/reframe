@@ -1,8 +1,40 @@
-<<<<<<< HEAD
+
+
+Upgrade
+
+Share
+Analyzed the conflicts, saved the conflicted file for resolution; next, I will merge and correct the conflicts to produce a clean TypeScript constants file.
+
+I reviewed the conflict markers in the file. The merge mainly involves adding `RECIPE_VERSION` and some properties; I will remove conflict markers and finalize the merged code.
+
+Merged the import statements and fixed conflict markers. Resolved the recipe object, adding missing properties, and included `version: RECIPE_VERSION`. Task complete.
+
+Lite
+Here is the TypeScript file with the merge conflicts resolved:
+conflicted_file.ts
+Code · 1.57 KB
+View all files in this task
+Task completed
+How was this result?
+Suggested follow-ups
 import type { CompressionMode, EditRecipe } from './types'
-=======
-import type { EditRecipe } from "./types"
->>>>>>> origin/main
+import { RECIPE_VERSION } from "./types"
+
+export const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4] as const;
+
+export interface CompressionModeOption {
+  id: CompressionMode;
+  label: string;
+
+
+
+
+Cloud computers
+New
+
+conflicted_file.ts
+import type { CompressionMode, EditRecipe } from './types'
+import { RECIPE_VERSION } from "./types"
 
 export const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4] as const;
 
@@ -66,10 +98,11 @@ export const DEFAULT_RECIPE: EditRecipe = {
   brightness: 0,
   contrast: 1,
   saturation: 1,
-<<<<<<< HEAD
-};
-=======
   stabilization: false,
+  denoise: false,
   soundOnCompletion: false,
+  normalizeAudio: false,
+  textOverlays: [],
+  version: RECIPE_VERSION,
 };
->>>>>>> origin/main
+Resolving Code Merge Conflicts in TypeScript Files - Manus
