@@ -127,8 +127,8 @@ function KeyboardShortcutsPanel({ onOpenHelpModal }: { onOpenHelpModal: () => vo
       label: "Play / Pause video",
     },
     {
-      keys: [<Kbd key="left">←</Kbd>, <span key="slash" className="text-[var(--muted)] text-[10px]">/</span>, <Kbd key="right">→</Kbd>],
-      label: "Seek backward / forward 5s",
+      keys: [<Kbd key="comma">,</Kbd>, <span key="slash" className="text-[var(--muted)] text-[10px]">/</span>, <Kbd key="period">.</Kbd>],
+      label: "Frame-by-frame backward / forward",
     },
     {
       keys: [<Kbd key="ctrl">Ctrl</Kbd>, <span key="plus1" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="z">Z</Kbd>],
@@ -239,8 +239,8 @@ function ShortcutsHelpModal({ isOpen, onClose }: ShortcutsHelpModalProps) {
       title: "Playback Controls",
       items: [
         { keys: ["Spacebar"], desc: "Play or pause video playback" },
-        { keys: ["←"], desc: "Seek backward by 5 seconds" },
-        { keys: ["→"], desc: "Seek forward by 5 seconds" },
+        { keys: [","], desc: "Step backward 1 frame (1/30s)" },
+        { keys: ["."], desc: "Step forward 1 frame (1/30s)" },
       ],
     },
     {

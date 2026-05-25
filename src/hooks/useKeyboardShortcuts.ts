@@ -115,29 +115,33 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      // 6. Arrow Left Shortcut (Seek backward by 5 seconds)
-      if (e.key === "ArrowLeft") {
+      // 6. Frame-by-frame Step Backward: "," (comma)
+      if (e.key === ",") {
         const video = videoRef.current;
         if (video) {
           e.preventDefault();
           e.stopPropagation();
-          const SEEK_INTERVAL = 5;
-          video.currentTime = Math.max(0, video.currentTime - SEEK_INTERVAL);
+          video.pause();
+          const FRAME_TIME = 1 / 30; // Assuming 30fps standard
+          video.currentTime = Math.max(0, video.currentTime - FRAME_TIME);
         }
         return;
       }
 
-      // 7. Arrow Right Shortcut (Seek forward by 5 seconds)
-      if (e.key === "ArrowRight") {
+      // 7. Frame-by-frame Step Forward: "." (period)
+      if (e.key === ".") {
         const video = videoRef.current;
         if (video) {
           e.preventDefault();
           e.stopPropagation();
-          const SEEK_INTERVAL = 5;
-          video.currentTime = Math.min(video.duration || 0, video.currentTime + SEEK_INTERVAL);
+          video.pause();
+          const FRAME_TIME = 1 / 30; // Assuming 30fps standard
+          video.currentTime = Math.min(video.duration || 0, video.currentTime + FRAME_TIME);
         }
         return;
       }
+
+
 
       switch (e.key) {
         case "m":
