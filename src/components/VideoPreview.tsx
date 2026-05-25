@@ -35,17 +35,51 @@ export default function VideoPreview({
     height: 0,
   });
 
+  const recipeRef = useRef(recipe);
+  useEffect(() => {
+    recipeRef.current = recipe;
+  }, [recipe]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const handleTimeUpdate = () => {
-      setLocalCurrentTime(video.currentTime);
+      const time = video.currentTime;
+      setLocalCurrentTime(time);
+
+      const currentRecipe = recipeRef.current;
+      if (currentRecipe) {
+        const start = currentRecipe.trimStart;
+        const end = currentRecipe.trimEnd ?? video.duration;
+
+        if (!video.paused) {
+          if (time >= end) {
+            video.currentTime = start;
+          } else if (time < start) {
+            video.currentTime = start;
+          }
+        }
+      }
+    };
+
+    const handlePlay = () => {
+      const currentRecipe = recipeRef.current;
+      if (currentRecipe) {
+        const start = currentRecipe.trimStart;
+        const end = currentRecipe.trimEnd ?? video.duration;
+        if (video.currentTime < start || video.currentTime >= end) {
+          video.currentTime = start;
+        }
+      }
     };
 
     video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("play", handlePlay);
+
     return () => {
       video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("play", handlePlay);
     };
   }, [videoRef, file]);
 

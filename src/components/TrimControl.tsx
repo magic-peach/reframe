@@ -14,9 +14,11 @@ interface Props {
   onChange: (patch: Partial<EditRecipe>) => void;
   duration: number;
   file: File | null;
+  currentTime?: number;
+  seekTo?: (time: number) => void;
 }
 
-export default function TrimControl({ recipe, onChange, duration, file }: Props) {
+export default function TrimControl({ recipe, onChange, duration, file, currentTime = 0, seekTo }: Props) {
   const [invalidStart, setStart] = useState(false);
   const [invalidEnd, setEnd] = useState(false);
   const [startErrorMsg, setStartErrorMsg] = useState("");
@@ -50,12 +52,20 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
     const seconds = xToSeconds(clientX);
     if (dragging.current === "start") {
       const clamped = Math.min(seconds, (recipe.trimEnd ?? duration) - 0.1);
-      onChange({ trimStart: Math.max(0, clamped) });
+      const val = Math.max(0, clamped);
+      onChange({ trimStart: val });
+      if (seekTo) {
+        seekTo(val);
+      }
     } else if (dragging.current === "end") {
       const clamped = Math.max(seconds, recipe.trimStart + 0.1);
-      onChange({ trimEnd: Math.min(duration, clamped) });
+      const val = Math.min(duration, clamped);
+      onChange({ trimEnd: val });
+      if (seekTo) {
+        seekTo(val);
+      }
     }
-  }, [xToSeconds, duration, recipe.trimStart, recipe.trimEnd, onChange]);
+  }, [xToSeconds, duration, recipe.trimStart, recipe.trimEnd, onChange, seekTo]);
 
  useEffect(() => {
   const onMove = (e: MouseEvent | TouchEvent) => {
@@ -175,8 +185,114 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
   const inputClass =
     "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
+  const startPct = duration > 0 ? (recipe.trimStart / duration) * 100 : 0;
+  const endPct = duration > 0 ? ((recipe.trimEnd ?? duration) / duration) * 100 : 100;
+  const playheadPct = duration > 0 ? ((currentTime ?? 0) / duration) * 100 : 0;
+
   return (
-    <div id="trim-control" className="space-y-3">
+    <div id="trim-control" className="space-y-4">
+      {duration > 0 && (
+        <div className="space-y-1.5">
+          <span className="font-heading block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Timeline Selection
+          </span>
+          <div
+            ref={trackRef}
+            className="relative w-full h-16 bg-[var(--surface)] border border-[var(--border)] rounded-lg overflow-hidden select-none cursor-ew-resize"
+          >
+            {/* Waveform Background */}
+            <div className="absolute inset-0 pointer-events-none opacity-50">
+              <WaveformCanvas samples={waveform} loading={waveformLoading} hasAudio={hasAudio} />
+            </div>
+
+            {/* Dark Mask for Trimmed-out Left Portion */}
+            <div
+              className="absolute left-0 top-0 bottom-0 bg-black/60 backdrop-blur-[0.5px] pointer-events-none border-r border-white/10"
+              style={{ width: `${startPct}%` }}
+            />
+
+            {/* Dark Mask for Trimmed-out Right Portion */}
+            <div
+              className="absolute right-0 top-0 bottom-0 bg-black/60 backdrop-blur-[0.5px] pointer-events-none border-l border-white/10"
+              style={{ left: `${endPct}%` }}
+            />
+
+            {/* Highlighted Selected Region */}
+            <div
+              className="absolute top-0 bottom-0 border-y-2 border-film-500 bg-film-500/10 pointer-events-none"
+              style={{ left: `${startPct}%`, right: `${100 - endPct}%` }}
+            />
+
+            {/* Start Handle */}
+            <button
+              type="button"
+              role="slider"
+              className="absolute top-0 bottom-0 w-3.5 bg-film-500 border border-white cursor-col-resize z-20 flex items-center justify-center hover:bg-film-400 active:scale-y-105 transition-all shadow-md rounded-r-[4px] focus:outline-none focus:ring-2 focus:ring-film-400"
+              style={{ left: `${startPct}%`, transform: "translateX(-50%)" }}
+              onMouseDown={() => {
+                dragging.current = "start";
+              }}
+              onTouchStart={() => {
+                dragging.current = "start";
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowLeft") {
+                  const val = Math.max(0, recipe.trimStart - 0.1);
+                  onChange({ trimStart: val });
+                  if (seekTo) seekTo(val);
+                } else if (e.key === "ArrowRight") {
+                  const val = Math.min((recipe.trimEnd ?? duration) - 0.1, recipe.trimStart + 0.1);
+                  onChange({ trimStart: val });
+                  if (seekTo) seekTo(val);
+                }
+              }}
+              aria-label="Trim start point handle"
+              aria-valuenow={recipe.trimStart}
+              aria-valuemin={0}
+              aria-valuemax={recipe.trimEnd ?? duration}
+            >
+              <div className="w-[1.5px] h-4 bg-white/70 rounded-full" />
+            </button>
+
+            {/* End Handle */}
+            <button
+              type="button"
+              role="slider"
+              className="absolute top-0 bottom-0 w-3.5 bg-film-500 border border-white cursor-col-resize z-20 flex items-center justify-center hover:bg-film-400 active:scale-y-105 transition-all shadow-md rounded-l-[4px] focus:outline-none focus:ring-2 focus:ring-film-400"
+              style={{ left: `${endPct}%`, transform: "translateX(-50%)" }}
+              onMouseDown={() => {
+                dragging.current = "end";
+              }}
+              onTouchStart={() => {
+                dragging.current = "end";
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowLeft") {
+                  const val = Math.max(recipe.trimStart + 0.1, (recipe.trimEnd ?? duration) - 0.1);
+                  onChange({ trimEnd: val });
+                  if (seekTo) seekTo(val);
+                } else if (e.key === "ArrowRight") {
+                  const val = Math.min(duration, (recipe.trimEnd ?? duration) + 0.1);
+                  onChange({ trimEnd: val });
+                  if (seekTo) seekTo(val);
+                }
+              }}
+              aria-label="Trim end point handle"
+              aria-valuenow={recipe.trimEnd ?? duration}
+              aria-valuemin={recipe.trimStart}
+              aria-valuemax={duration}
+            >
+              <div className="w-[1.5px] h-4 bg-white/70 rounded-full" />
+            </button>
+
+            {/* Red Playhead line */}
+            <div
+              className="absolute top-0 bottom-0 w-[2px] bg-red-500 pointer-events-none shadow-md z-10"
+              style={{ left: `${playheadPct}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-3">
         <div className="flex-1">
