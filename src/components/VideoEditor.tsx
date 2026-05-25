@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
-import { TextOverlay } from "@/lib/types";
+import { TextOverlay, EditRecipe } from "@/lib/types";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
@@ -26,6 +26,15 @@ import {
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import AICopilotTimeline from "./AICopilotTimeline";
+import {
+  SessionState,
+  saveSessionHistory,
+  loadSessionHistory,
+  clearSessionHistory,
+  diffRecipes
+} from "@/lib/sessionHistory";
+import { Sparkles } from "lucide-react";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -225,6 +234,172 @@ export default function VideoEditor() {
 
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+
+  const [controlMode, setControlMode] = useState<"manual" | "ai">("manual");
+  const [history, setHistory] = useState<SessionState[]>([]);
+  const [currentStateIndex, setCurrentStateIndex] = useState(0);
+
+  const isAITriggeredRef = useRef(false);
+  const isInitialLoadRef = useRef(true);
+
+  const fileKey = useMemo(() => (file ? `${file.name}_${file.size}` : ""), [file]);
+
+  // Load/initialize history on file selection or change
+  useEffect(() => {
+    if (!file) {
+      setHistory([]);
+      setCurrentStateIndex(0);
+      isInitialLoadRef.current = true;
+      return;
+    }
+
+    const savedHistory = loadSessionHistory(fileKey);
+    const lastSavedState = savedHistory[savedHistory.length - 1];
+    if (savedHistory.length > 0 && lastSavedState) {
+      setHistory(savedHistory);
+      setCurrentStateIndex(savedHistory.length - 1);
+      isAITriggeredRef.current = true;
+      updateRecipe(lastSavedState.recipe);
+      isInitialLoadRef.current = false;
+    } else {
+      const initialRecipe = JSON.parse(JSON.stringify(recipe));
+      const initialState: SessionState = {
+        id: "state_initial",
+        timestamp: Date.now(),
+        recipe: initialRecipe,
+        actionType: "initial",
+        description: "Original Video Settings",
+        category: "Initial",
+      };
+      const newHistory = [initialState];
+      setHistory(newHistory);
+      setCurrentStateIndex(0);
+      saveSessionHistory(fileKey, newHistory);
+      isInitialLoadRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileKey]);
+
+  // Debounced recording of manual adjustments
+  useEffect(() => {
+    if (!file) return;
+
+    // Check if recipe actually changed from current state
+    const currentState = history[currentStateIndex];
+    if (currentState && JSON.stringify(currentState.recipe) === JSON.stringify(recipe)) {
+      return;
+    }
+
+    if (isInitialLoadRef.current) {
+      isInitialLoadRef.current = false;
+      return;
+    }
+
+    if (isAITriggeredRef.current) {
+      isAITriggeredRef.current = false;
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const lastState = history[history.length - 1];
+      let desc = "Manual Adjustments";
+      if (lastState) {
+        const diffs = diffRecipes(lastState.recipe, recipe);
+        if (diffs.length > 0) {
+          desc = `Manual: ${diffs.map((d) => d.label).join(", ")}`;
+        } else {
+          return; // no actual recipe change
+        }
+      }
+
+      const newState: SessionState = {
+        id: `state_${Date.now()}`,
+        timestamp: Date.now(),
+        recipe: JSON.parse(JSON.stringify(recipe)),
+        actionType: "manual",
+        description: desc,
+        category: "Manual",
+      };
+
+      const newHistory = [...history.slice(0, currentStateIndex + 1), newState];
+      setHistory(newHistory);
+      setCurrentStateIndex(newHistory.length - 1);
+      saveSessionHistory(fileKey, newHistory);
+    }, 1200);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipe, file]);
+
+  const handleNavigateHistory = (index: number) => {
+    const targetState = history[index];
+    if (index >= 0 && index < history.length && targetState) {
+      setCurrentStateIndex(index);
+      isAITriggeredRef.current = true;
+      updateRecipe(targetState.recipe);
+    }
+  };
+
+  const handleAIUpdateRecipe = (
+    newRecipe: EditRecipe,
+    description: string,
+    actionType: SessionState["actionType"],
+    category: SessionState["category"],
+    promptText?: string
+  ) => {
+    isAITriggeredRef.current = true;
+    updateRecipe(newRecipe);
+
+    const newState: SessionState = {
+      id: `state_${Date.now()}`,
+      timestamp: Date.now(),
+      recipe: JSON.parse(JSON.stringify(newRecipe)),
+      actionType,
+      description,
+      category,
+      promptText,
+    };
+
+    const newHistory = [...history.slice(0, currentStateIndex + 1), newState];
+    setHistory(newHistory);
+    setCurrentStateIndex(newHistory.length - 1);
+    saveSessionHistory(fileKey, newHistory);
+  };
+
+  const handleToggleMilestone = (stateId: string, name?: string) => {
+    const newHistory = history.map((state) => {
+      if (state.id === stateId) {
+        return {
+          ...state,
+          isMilestone: !state.isMilestone,
+          milestoneName: name,
+        };
+      }
+      return state;
+    });
+    setHistory(newHistory);
+    saveSessionHistory(fileKey, newHistory);
+  };
+
+  const handleReset = () => {
+    reset();
+    if (fileKey) {
+      clearSessionHistory(fileKey);
+    }
+    setHistory([]);
+    setCurrentStateIndex(0);
+    isInitialLoadRef.current = true;
+  };
+
+  const handleResetSettings = () => {
+    resetSettings();
+    if (fileKey) {
+      clearSessionHistory(fileKey);
+    }
+    setHistory([]);
+    setCurrentStateIndex(0);
+    isInitialLoadRef.current = true;
+  };
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
@@ -254,7 +429,7 @@ export default function VideoEditor() {
     const encoded = btoa(JSON.stringify(recipe));
     const url = new URL(window.location.href);
     url.searchParams.set("settings", encoded);
-    history.replaceState(null, "", url.toString());
+    window.history.replaceState(null, "", url.toString());
     navigator.clipboard.writeText(url.toString()).then(() => {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
@@ -415,170 +590,212 @@ export default function VideoEditor() {
                 "grid grid-cols-1 gap-4",
                 isProcessing && "pointer-events-none opacity-50"
               )}>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
-                  <AccordionSection
-                    id="trim"
-                    icon={<Scissors size={12} />}
-                    title="Trim"
-                    isOpen={openSections.trim}
-                    onToggle={() => toggleSection("trim")}
-                    delay={50}
+                {/* Control Mode Switcher */}
+                <div className="flex border border-[var(--border)] bg-[var(--surface)] p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setControlMode("manual")}
+                    className={cn(
+                      "flex-1 py-2 text-xs font-heading font-extrabold uppercase tracking-wider rounded-lg transition-all text-center",
+                      controlMode === "manual"
+                        ? "bg-[var(--accent)] text-white shadow-sm"
+                        : "text-[var(--muted)] hover:text-[var(--text)]"
+                    )}
                   >
-                    <TrimControl
-                      recipe={recipe}
-                      onChange={updateRecipe}
-                      duration={duration}
-                      file={file}
-                    />
-                  </AccordionSection>
-
-                  <AccordionSection
-                    id="rotation"
-                    icon={<RotateCw size={12} />}
-                    title="Rotation"
-                    isOpen={openSections.rotation}
-                    onToggle={() => toggleSection("rotation")}
-                    delay={100}
+                    🛠️ Manual Controls
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setControlMode("ai")}
+                    className={cn(
+                      "flex-1 py-2 text-xs font-heading font-extrabold uppercase tracking-wider rounded-lg transition-all text-center flex items-center justify-center gap-1.5",
+                      controlMode === "ai"
+                        ? "bg-[var(--accent)] text-white shadow-sm"
+                        : "text-[var(--muted)] hover:text-[var(--text)]"
+                    )}
                   >
-                    <RotateControl recipe={recipe} onChange={updateRecipe} />
-                  </AccordionSection>
-
-                  <AccordionSection
-                    id="text"
-                    icon={<Type size={12} />}
-                    title="Text Overlay"
-                    isOpen={openSections.text}
-                    onToggle={() => toggleSection("text")}
-                    delay={110}
-                  >
-                    <TextControls
-                      recipe={recipe}
-                      onChange={updateRecipe}
-                      selectedTextId={selectedTextId}
-                      onSelectText={setSelectedTextId}
-                    />
-                  </AccordionSection>
+                    <Sparkles size={12} className="animate-pulse" />
+                    AI Copilot & Timeline
+                  </button>
                 </div>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
-                  <AccordionSection
-                    id="audio"
-                    icon={<Volume2 size={12} />}
-                    title="Audio & Speed"
-                    isOpen={openSections.audio}
-                    onToggle={() => toggleSection("audio")}
-                    delay={150}
-                  >
-                    <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
-                  </AccordionSection>
-                  <Section
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Adjustments"
-                    delay={175}
-                  >
-                    <div className="space-y-5">
-                      {/* Brightness */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="brightness-slider">Brightness</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ brightness: 0 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset brightness"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="brightness-slider"
-                          type="range"
-                          min="-1"
-                          max="1"
-                          step="0.1"
-                          value={recipe.brightness}
-                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
-                          aria-label="Adjust brightness"
-                          className="w-full accent-film-600"
+
+                {controlMode === "manual" ? (
+                  <>
+                    <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                      <AccordionSection
+                        id="trim"
+                        icon={<Scissors size={12} />}
+                        title="Trim"
+                        isOpen={openSections.trim}
+                        onToggle={() => toggleSection("trim")}
+                        delay={50}
+                      >
+                        <TrimControl
+                          recipe={recipe}
+                          onChange={updateRecipe}
+                          duration={duration}
+                          file={file}
                         />
-                      </div>
-                      {/* Contrast */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="contrast-slider">Contrast</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ contrast: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-contrast"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="contrast-slider"
-                          type="range"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={recipe.contrast}
-                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
-                          aria-label="Adjust contrast"
-                          className="w-full accent-film-600"
+                      </AccordionSection>
+
+                      <AccordionSection
+                        id="rotation"
+                        icon={<RotateCw size={12} />}
+                        title="Rotation"
+                        isOpen={openSections.rotation}
+                        onToggle={() => toggleSection("rotation")}
+                        delay={100}
+                      >
+                        <RotateControl recipe={recipe} onChange={updateRecipe} />
+                      </AccordionSection>
+
+                      <AccordionSection
+                        id="text"
+                        icon={<Type size={12} />}
+                        title="Text Overlay"
+                        isOpen={openSections.text}
+                        onToggle={() => toggleSection("text")}
+                        delay={110}
+                      >
+                        <TextControls
+                          recipe={recipe}
+                          onChange={updateRecipe}
+                          selectedTextId={selectedTextId}
+                          onSelectText={setSelectedTextId}
                         />
-                      </div>
-                      {/* Saturation */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="saturation-slider">Saturation</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ saturation: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-saturation"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="saturation-slider"
-                          type="range"
-                          min="0"
-                          max="3"
-                          step="0.1"
-                          value={recipe.saturation}
-                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
-                          aria-label="Adjust saturation"
-                          className="w-full accent-film-600"
-                        />
-                      </div>
+                      </AccordionSection>
                     </div>
-                  </Section>
-                  <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
-                    <FormatSelector recipe={recipe} onChange={updateRecipe} />
-                  </Section>
-                  <AccordionSection
-                    id="export"
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Export"
-                    isOpen={openSections.export}
-                    onToggle={() => toggleSection("export")}
-                    delay={200}
-                  >
-                    <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                  </AccordionSection>
-                  <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
-                    <ImageOverlay
-                      overlayFile={overlayFile}
-                      setOverlayFile={setOverlayFile}
-                      overlayPosition={overlayPosition}
-                      setOverlayPosition={setOverlayPosition}
-                      overlaySize={overlaySize}
-                      setOverlaySize={setOverlaySize}
-                      overlayOpacity={overlayOpacity}
-                      setOverlayOpacity={setOverlayOpacity}
-                    />
-                  </Section>
-                </div>
+                    <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                      <AccordionSection
+                        id="audio"
+                        icon={<Volume2 size={12} />}
+                        title="Audio & Speed"
+                        isOpen={openSections.audio}
+                        onToggle={() => toggleSection("audio")}
+                        delay={150}
+                      >
+                        <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
+                      </AccordionSection>
+                      <Section
+                        icon={<SlidersHorizontal size={12} />}
+                        title="Adjustments"
+                        delay={175}
+                      >
+                        <div className="space-y-5">
+                          {/* Brightness */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <label htmlFor="brightness-slider">Brightness</label>
+                              <button
+                                type="button"
+                                onClick={() => updateRecipe({ brightness: 0 })}
+                                className="text-film-500 hover:underline"
+                                aria-label="reset brightness"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                            <input
+                              id="brightness-slider"
+                              type="range"
+                              min="-1"
+                              max="1"
+                              step="0.1"
+                              value={recipe.brightness}
+                              onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
+                              aria-label="Adjust brightness"
+                              className="w-full accent-film-600"
+                            />
+                          </div>
+                          {/* Contrast */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <label htmlFor="contrast-slider">Contrast</label>
+                              <button
+                                type="button"
+                                onClick={() => updateRecipe({ contrast: 1 })}
+                                className="text-film-500 hover:underline"
+                                aria-label="reset-contrast"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                            <input
+                              id="contrast-slider"
+                              type="range"
+                              min="0"
+                              max="2"
+                              step="0.1"
+                              value={recipe.contrast}
+                              onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
+                              aria-label="Adjust contrast"
+                              className="w-full accent-film-600"
+                            />
+                          </div>
+                          {/* Saturation */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <label htmlFor="saturation-slider">Saturation</label>
+                              <button
+                                type="button"
+                                onClick={() => updateRecipe({ saturation: 1 })}
+                                className="text-film-500 hover:underline"
+                                aria-label="reset-saturation"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                            <input
+                              id="saturation-slider"
+                              type="range"
+                              min="0"
+                              max="3"
+                              step="0.1"
+                              value={recipe.saturation}
+                              onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
+                              aria-label="Adjust saturation"
+                              className="w-full accent-film-600"
+                            />
+                          </div>
+                        </div>
+                      </Section>
+                      <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
+                        <FormatSelector recipe={recipe} onChange={updateRecipe} />
+                      </Section>
+                      <AccordionSection
+                        id="export"
+                        icon={<SlidersHorizontal size={12} />}
+                        title="Export"
+                        isOpen={openSections.export}
+                        onToggle={() => toggleSection("export")}
+                        delay={200}
+                      >
+                        <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
+                      </AccordionSection>
+                      <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
+                        <ImageOverlay
+                          overlayFile={overlayFile}
+                          setOverlayFile={setOverlayFile}
+                          overlayPosition={overlayPosition}
+                          setOverlayPosition={setOverlayPosition}
+                          overlaySize={overlaySize}
+                          setOverlaySize={setOverlaySize}
+                          overlayOpacity={overlayOpacity}
+                          setOverlayOpacity={setOverlayOpacity}
+                        />
+                      </Section>
+                    </div>
+                  </>
+                ) : (
+                  <AICopilotTimeline
+                    recipe={recipe}
+                    onUpdateRecipe={handleAIUpdateRecipe}
+                    history={history}
+                    currentStateIndex={currentStateIndex}
+                    onNavigateHistory={handleNavigateHistory}
+                    onToggleMilestone={handleToggleMilestone}
+                  />
+                )}
               </div>
             )}
 
@@ -607,6 +824,39 @@ export default function VideoEditor() {
                 >
                   {copied ? "Copied!" : "Copy error"}
                 </button>
+                {history.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const lastMilestoneIdx = history.map((h) => !!h.isMilestone).lastIndexOf(true);
+                      const targetIdx = lastMilestoneIdx !== -1 ? lastMilestoneIdx : Math.max(0, currentStateIndex - 1);
+                      const targetState = history[targetIdx];
+                      const milestoneState = lastMilestoneIdx !== -1 ? history[lastMilestoneIdx] : undefined;
+                      if (targetState) {
+                        handleNavigateHistory(targetIdx);
+                        const rollbackState: SessionState = {
+                          id: `state_rollback_${Date.now()}`,
+                          timestamp: Date.now(),
+                          recipe: JSON.parse(JSON.stringify(targetState.recipe)),
+                          actionType: "rollback",
+                          description: `Rollback: Restored ${
+                            milestoneState
+                              ? "Milestone '" + milestoneState.milestoneName + "'"
+                              : "Previous Iteration"
+                          }`,
+                          category: "Macro",
+                        };
+                        const newHistory = [...history, rollbackState];
+                        setHistory(newHistory);
+                        setCurrentStateIndex(newHistory.length - 1);
+                        saveSessionHistory(fileKey, newHistory);
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-yellow-500 bg-opacity-20 border border-yellow-500 rounded-lg text-sm font-semibold hover:bg-opacity-30 text-yellow-700 dark:text-yellow-300 transition-colors shrink-0 whitespace-nowrap"
+                  >
+                    Rollback Design
+                  </button>
+                )}
                 {!error.includes("Validation Failed") && (
                   <button
                     type="button"
@@ -621,7 +871,7 @@ export default function VideoEditor() {
 
             {status === "done" && result && (
               <div role="status" className="animate-fade-in" ref={downloadRef}>
-                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
+                <DownloadResult result={result} onReset={handleReset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
               </div>
             )}
           </div>
@@ -673,7 +923,7 @@ export default function VideoEditor() {
                 </button>
                 <button
                   type="button"
-                  onClick={resetSettings}
+                  onClick={handleResetSettings}
                   className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
                 >
                   Reset all settings
