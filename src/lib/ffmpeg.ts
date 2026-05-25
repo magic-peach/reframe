@@ -1,6 +1,7 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { SubtitleItem } from "./subtitles";
 
 export class FFmpegLoadError extends Error {}
 
@@ -25,6 +26,7 @@ type WorkerExportRequest = {
   musicOptions?: BackgroundMusicOptions;
   overlayFile?: SerializedFile;
   overlayOptions?: ImageOverlayOptions;
+  subtitles?: SubtitleItem[];
 };
 
 type WorkerLoadResponse = { type: "ready" };
@@ -211,7 +213,8 @@ export async function exportVideo(
   onProgress: (percent: number) => void,
   signal?: AbortSignal,
   musicOptions?: BackgroundMusicOptions,
-  overlayOptions?: ImageOverlayOptions
+  overlayOptions?: ImageOverlayOptions,
+  subtitles?: SubtitleItem[]
 ): Promise<ExportResult> {
   await loadFFmpeg(signal, onProgress);
 
@@ -283,6 +286,7 @@ export async function exportVideo(
       musicOptions: sanitizedMusicOptions,
       overlayFile: overlayFilePayload,
       overlayOptions: sanitizedOverlayOptions,
+      subtitles,
     } as WorkerExportRequest,
     transfers
   );
