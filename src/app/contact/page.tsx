@@ -6,11 +6,11 @@ export const metadata: Metadata = {
 };
 export default function ContactPage() {
   return (
-    <main className="min-h-screen bg-black text-white p-8">
+    <main className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-8">
       <div className="mb-8">
         <Link 
           href="/" 
-          className="inline-flex items-center text-sm opacity-70 hover:opacity-100 transition-opacity"
+          className="inline-flex items-center text-sm text-[var(--muted)] hover:text-[var(--text)] transition-colors"
         >
           &larr; Back to Reframe
         </Link>
@@ -27,11 +27,11 @@ export default function ContactPage() {
             href="https://github.com/magic-peach/reframe/issues"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-lg font-semibold underline hover:opacity-80 transition-opacity"
+            className="text-lg font-semibold text-[var(--accent)] underline hover:text-[var(--accent-hover)] transition-colors"
           >
             GitHub Issues
           </a>
-          <p className="opacity-70 mt-1">For bug reports and feature requests.</p>
+          <p className="text-[var(--muted)] mt-1">For bug reports and feature requests.</p>
         </div>
 
         <div>
@@ -39,11 +39,11 @@ export default function ContactPage() {
             href="https://github.com/magic-peach/reframe/discussions"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-lg font-semibold underline hover:opacity-80 transition-opacity"
+            className="text-lg font-semibold text-[var(--accent)] underline hover:text-[var(--accent-hover)] transition-colors"
           >
             GitHub Discussions
           </a>
-          <p className="opacity-70 mt-1">For questions, ideas, and general help.</p>
+          <p className="text-[var(--muted)] mt-1">For questions, ideas, and general help.</p>
         </div>
       </div>
     </main>
