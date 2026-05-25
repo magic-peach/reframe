@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn, focusRing } from "@/lib/utils";
 import { ButtonHTMLAttributes, forwardRef } from "react";
 
 interface BaseButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -39,6 +39,7 @@ const BaseButton = forwardRef<HTMLButtonElement | HTMLAnchorElement, BaseButtonP
         className={cn(
           "flex items-center justify-center gap-2 rounded-lg transition-all duration-200",
           "hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100",
+          focusRing,
           variants[variant],
           sizes[size],
           className

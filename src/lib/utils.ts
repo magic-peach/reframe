@@ -6,6 +6,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Visible keyboard focus ring — uses theme tokens from globals.css
+ * (--focus-ring, --focus-ring-glow). Apply to buttons, links, and custom controls.
+ */
+export const focusRing =
+  "outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)] focus-visible:shadow-[0_0_0_4px_var(--focus-ring-glow)]";
+
+/** Focus ring for text fields and selects (slightly tighter offset). */
+export const focusRingInput =
+  "outline-none focus-visible:border-[var(--focus-ring)] focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-[var(--focus-ring)] focus-visible:shadow-[0_0_0_4px_var(--focus-ring-glow)]";
+
 export function formatBytes(bytes: number, decimals = 1) {
   if (bytes === 0) return "0 Bytes";
 

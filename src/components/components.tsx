@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { cn, focusRing, focusRingInput } from "@/lib/utils";
 
 interface CardProps {
   title: string;
@@ -63,16 +64,15 @@ export function Button({ variant = "primary", className = "", children, ...props
 
   return (
     <button
-      className={`
-        inline-flex items-center justify-center gap-2
-        rounded-[var(--radius)] px-4 py-2 text-sm font-medium
-        focus:outline-none focus:ring-2 focus:ring-offset-2
-        focus:ring-offset-[var(--bg)]
-        transition-all duration-200
-        disabled:opacity-50 disabled:cursor-not-allowed
-        ${variants[variant]}
-        ${className}
-      `}
+      className={cn(
+        "inline-flex items-center justify-center gap-2",
+        "rounded-[var(--radius)] px-4 py-2 text-sm font-medium",
+        "transition-all duration-200",
+        "disabled:opacity-50 disabled:cursor-not-allowed",
+        focusRing,
+        variants[variant],
+        className
+      )}
       {...props}
     >
       {children}
@@ -86,13 +86,12 @@ export function Button({ variant = "primary", className = "", children, ...props
 export function Input({ className = "", ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`
-        w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]
-        placeholder:text-[var(--muted)]
-        focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-muted)]
-        transition-all duration-200
-        ${className}
-      `}
+      className={cn(
+        "w-full rounded-[var(--radius)] border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]",
+        "placeholder:text-[var(--muted)] transition-all duration-200",
+        focusRingInput,
+        className
+      )}
       {...props}
     />
   );

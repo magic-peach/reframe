@@ -12,6 +12,8 @@
   --accent: #3b82f6;
   --accent-hover: #1d4ed8;
   --accent-muted: rgba(59, 130, 246, 0.12);
+  --focus-ring: var(--accent);
+  --focus-ring-glow: rgba(59, 130, 246, 0.45);
   --radius: 10px;
   --shadow: 0 2px 12px rgba(15, 23, 42, 0.12);
   --film-600: #e63946;
@@ -33,6 +35,8 @@
   --accent: #4f6ef7;
   --accent-hover: #3a57d4;
   --accent-muted: rgba(79, 110, 247, 0.12);
+  --focus-ring: var(--accent);
+  --focus-ring-glow: rgba(79, 110, 247, 0.55);
   --radius: 10px;
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
   --warning: #fbbf24;
@@ -54,6 +58,8 @@
   --accent: #FFFF00;
   --accent-hover: #FFFF00;
   --accent-muted: rgba(255, 255, 0, 0.22);
+  --focus-ring: var(--accent);
+  --focus-ring-glow: rgba(255, 255, 0, 0.55);
   --radius: 10px;
   --shadow: none;
 
@@ -125,8 +131,8 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-muted);
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 4px var(--focus-ring-glow);
   outline: none;
 }
 
@@ -139,8 +145,33 @@ textarea:focus {
   transition-duration: 200ms;
 }
 
-:focus-visible {
-  outline: 0;
-  box-shadow: 0 0 0 3px var(--accent-muted);
-  border-radius: var(--radius);
+/*
+ * Keyboard focus — rules follow @tailwind utilities so they apply app-wide.
+ * Uses --focus-ring / --focus-ring-glow for light, dark, and high-contrast themes.
+ */
+button:focus-visible:not(:disabled),
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="slider"]:focus-visible,
+[role="tab"]:focus-visible,
+summary:focus-visible,
+label:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--focus-ring-glow);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 0;
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 4px var(--focus-ring-glow);
+}
+
+input[type="range"]:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--focus-ring-glow);
 }

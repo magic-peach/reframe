@@ -391,6 +391,13 @@ export default function ThumbnailStrip({
           z-index: 2;
         }
 
+        .thumb-btn:focus-visible {
+          outline: 2px solid var(--focus-ring);
+          outline-offset: 2px;
+          box-shadow: 0 0 0 4px var(--focus-ring-glow), var(--shadow);
+          z-index: 2;
+        }
+
         .thumb-btn.active {
           outline-color: var(--accent);
           box-shadow: 0 0 0 2px var(--accent), var(--shadow);

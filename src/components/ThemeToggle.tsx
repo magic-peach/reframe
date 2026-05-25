@@ -1,5 +1,6 @@
 "use client";
 
+import { cn, focusRing } from "@/lib/utils";
 import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
@@ -11,17 +12,12 @@ export function ThemeToggle() {
        type="button"
        onClick={toggleTheme}
        aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="
-        relative flex items-center justify-center
-        w-9 h-9 rounded-full
-        bg-[var(--surface)]
-        text-[var(--text)]
-        border border-[var(--border)]
-        hover:border-[var(--accent)] hover:bg-[var(--accent-muted)]
-        focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2
-        focus:ring-offset-[var(--bg)]
-        transition-all duration-200
-      "
+      className={cn(
+        "relative flex items-center justify-center w-9 h-9 rounded-full",
+        "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)]",
+        "hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] transition-all duration-200",
+        focusRing
+      )}
     >
       {isDark ? (
         <svg
