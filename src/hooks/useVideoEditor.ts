@@ -64,6 +64,73 @@ function verifyMagicBytes(file: File): Promise<boolean> {
   });
 }
 
+function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
+  const validations: Array<[boolean, string]> = [
+    [
+      recipe.trimStart < 0,
+      "Trim start time cannot be less than 0 seconds.",
+    ],
+    [
+      recipe.trimEnd !== null && duration > 0 && recipe.trimEnd > duration,
+      `Trim end time cannot exceed the video duration (${Math.floor(duration)}s).`,
+    ],
+    [
+      recipe.trimEnd !== null 
+        ? recipe.trimStart >= recipe.trimEnd 
+        : (duration > 0 && recipe.trimStart >= duration),
+      "Trim start time must be earlier than the end time.",
+    ],
+    [
+      recipe.preset === "custom" && (Number.isNaN(recipe.customWidth) || recipe.customWidth < 16 || recipe.customWidth > 7680),
+      "Width must be between 16px and 7680px.",
+    ],
+    [
+      recipe.preset === "custom" && (Number.isNaN(recipe.customHeight) || recipe.customHeight < 16 || recipe.customHeight > 7680),
+      "Height must be between 16px and 7680px.",
+    ],
+    [
+      !(SPEED_STEPS as readonly number[]).includes(recipe.speed),
+      "Please select a valid playback speed.",
+    ],
+    [
+      recipe.quality < 18 || recipe.quality > 30,
+      "Quality must be between 18 and 30.",
+    ],
+    [
+      recipe.brightness < -1 || recipe.brightness > 1,
+      "Brightness must be between -1 and 1.",
+    ],
+
+    [
+      recipe.contrast < 0 || recipe.contrast > 2,
+      "Contrast must be between 0 and 2.",
+    ],
+
+    [
+      recipe.saturation < 0 || recipe.saturation > 3,
+      "Saturation must be between 0 and 3.",
+    ],
+  ];
+
+  return (
+    validations.find(([condition]) => condition)?.[1] ??
+    null
+  );
+}
+
+function encodeRecipe(recipe: EditRecipe): string {
+  return btoa(JSON.stringify(recipe));
+}
+
+function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
+  try {
+    const decoded = JSON.parse(atob(encoded));
+    return decoded as Partial<EditRecipe>;
+  } catch {
+    return null;
+  }
+}
+
 interface ExportErrorInfo {
   code?: string;
   userMessage: string;
@@ -99,6 +166,8 @@ export function useVideoEditor() {
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errorInfo, setErrorInfo] = useState<ExportErrorInfo | null>(null);
+  const [fileError, setFileError] = useState("");
+  const [exportStartedAt, setExportStartedAt] = useState<number | null>(null);
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);

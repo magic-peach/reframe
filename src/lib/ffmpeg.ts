@@ -1,23 +1,10 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
-import { buildTextFilter } from "./text-overlay";
-
-<<<<<<< HEAD
-const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
-const DEFAULT_LOAD_RETRIES = 3;
-const DEFAULT_RETRY_DELAY_MS = 250;
-const DEFAULT_RETRY_BACKOFF = 2;
-const DEFAULT_LOAD_TIMEOUT_MS = 30000;
-=======
-export class FFmpegLoadError extends Error {}
->>>>>>> upstream/main
-
 const FFMPEG_WORKER_URL =
   typeof window !== "undefined"
     ? new URL("./ffmpeg.worker.ts", import.meta.url)
     : null;
 
-<<<<<<< HEAD
 export type FFmpegLoadErrorCode =
   | "NETWORK_LOAD_FAILED"
   | "WASM_INSTANTIATION_FAILED"
@@ -25,176 +12,27 @@ export type FFmpegLoadErrorCode =
   | "CDN_UNREACHABLE";
 
 export interface FFmpegLoadErrorContext {
-  attempt: number;
-  maxAttempts: number;
-  coreName: string;
-  retryable: boolean;
+  attempt?: number;
+  maxAttempts?: number;
+  coreName?: string;
+  retryable?: boolean;
   originalError?: string;
 }
 
-export interface LoadFFmpegOptions {
-  signal?: AbortSignal;
-  retries?: number;
-  retryDelayMs?: number;
-  retryBackoffFactor?: number;
-  timeoutMs?: number;
-}
-
-/**
- * Error thrown when the FFmpeg WebAssembly core fails to load.
- * This typically happens when the user is offline, the CDN is unreachable (or if the url is wrong),
- * or there are network interruptions during the initialization phase.
- */
 export class FFmpegLoadError extends Error {
-  code: FFmpegLoadErrorCode;
-
+  code?: FFmpegLoadErrorCode;
   userMessage: string;
-
   context?: FFmpegLoadErrorContext;
 
-  constructor(code: FFmpegLoadErrorCode, userMessage: string, context?: FFmpegLoadErrorContext) {
+  constructor(userMessage: string, code?: FFmpegLoadErrorCode, context?: FFmpegLoadErrorContext) {
     super(userMessage);
     this.name = "FFmpegLoadError";
-    this.code = code;
     this.userMessage = userMessage;
+    this.code = code;
     this.context = context;
   }
 }
 
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  if (ms <= 0) return Promise.resolve();
-
-  return new Promise((resolve, reject) => {
-    const timer = globalThis.setTimeout(() => {
-      signal?.removeEventListener("abort", onAbort);
-      resolve();
-    }, ms);
-
-    const onAbort = () => {
-      globalThis.clearTimeout(timer);
-      signal?.removeEventListener("abort", onAbort);
-      reject(new DOMException("Aborted", "AbortError"));
-    };
-
-    if (signal?.aborted) {
-      onAbort();
-      return;
-    }
-
-    signal?.addEventListener("abort", onAbort, { once: true });
-  });
-}
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, signal?: AbortSignal): Promise<T> {
-  if (timeoutMs <= 0 || !Number.isFinite(timeoutMs)) {
-    return promise;
-  }
-
-  return new Promise<T>((resolve, reject) => {
-    const timeoutId = globalThis.setTimeout(() => {
-      signal?.removeEventListener("abort", onAbort);
-      reject(new FFmpegLoadError("FFMPEG_TIMEOUT", "Failed to load the video engine in time."));
-    }, timeoutMs);
-
-    const onAbort = () => {
-      globalThis.clearTimeout(timeoutId);
-      signal?.removeEventListener("abort", onAbort);
-      reject(new DOMException("Aborted", "AbortError"));
-    };
-
-    if (signal?.aborted) {
-      onAbort();
-      return;
-    }
-
-    signal?.addEventListener("abort", onAbort, { once: true });
-
-    promise.then(
-      (value) => {
-        globalThis.clearTimeout(timeoutId);
-        signal?.removeEventListener("abort", onAbort);
-        resolve(value);
-      },
-      (error) => {
-        globalThis.clearTimeout(timeoutId);
-        signal?.removeEventListener("abort", onAbort);
-        reject(error);
-      }
-    );
-  });
-}
-
-function describeError(err: unknown): string {
-  if (err instanceof Error) {
-    return `${err.name}: ${err.message}`;
-  }
-  return typeof err === "string" ? err : "Unknown error";
-}
-
-function classifyLoadFailure(err: unknown): { code: FFmpegLoadErrorCode; userMessage: string; retryable: boolean } {
-  const text = describeError(err).toLowerCase();
-
-  if (text.includes("timeout")) {
-    return {
-      code: "FFMPEG_TIMEOUT",
-      userMessage: "Loading the video engine took too long. Please try again on a more stable connection.",
-      retryable: true,
-    };
-  }
-
-  if (text.includes("network") || text.includes("failed to fetch") || text.includes("fetch")) {
-    return {
-      code: "NETWORK_LOAD_FAILED",
-      userMessage: "Failed to load video processing components. Please check your internet connection and try again.",
-      retryable: true,
-    };
-  }
-
-  if (text.includes("cdn") || text.includes("bloburl") || text.includes("404") || text.includes("503")) {
-    return {
-      code: "CDN_UNREACHABLE",
-      userMessage: "The video engine could not be downloaded right now. Please try again in a moment.",
-      retryable: true,
-    };
-  }
-
-  return {
-    code: "WASM_INSTANTIATION_FAILED",
-    userMessage: "Your browser could not initialize the video engine. Please try a recent version of Chrome, Edge, or Firefox.",
-    retryable: false,
-  };
-}
-
-async function loadFFmpegAttempt(
-  ffmpeg: FFmpeg,
-  signal: AbortSignal | undefined,
-  coreName: string,
-  timeoutMs: number
-): Promise<void> {
-  const loadPromise = ffmpeg.load(
-    {
-      coreURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${CORE_BASE_URL}/${coreName}.wasm`, "application/wasm"),
-    },
-    { signal }
-  );
-
-  await withTimeout(loadPromise, timeoutMs, signal);
-}
-
-export async function loadFFmpeg(signalOrOptions?: AbortSignal | LoadFFmpegOptions): Promise<FFmpeg> {
-  const options: LoadFFmpegOptions =
-    signalOrOptions instanceof AbortSignal || !signalOrOptions
-      ? { signal: signalOrOptions ?? undefined }
-      : signalOrOptions;
-  const signal = options.signal;
-  const retries = options.retries ?? DEFAULT_LOAD_RETRIES;
-  const retryDelayMs = options.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS;
-  const retryBackoffFactor = options.retryBackoffFactor ?? DEFAULT_RETRY_BACKOFF;
-  const timeoutMs = options.timeoutMs ?? DEFAULT_LOAD_TIMEOUT_MS;
-
-  if (ffmpegInstance?.loaded) return ffmpegInstance;
-=======
 type SerializedFile = {
   name: string;
   type: string;
@@ -341,7 +179,7 @@ async function ensureWorker() {
     createWorker();
   }
 }
->>>>>>> upstream/main
+
 
 export async function loadFFmpeg(
   signal?: AbortSignal,
@@ -378,74 +216,13 @@ export async function loadFFmpeg(
   signal?.addEventListener("abort", onAbort, { once: true });
 
   let coreName = "ffmpeg-core";
-
   try {
-<<<<<<< HEAD
-    // Check if the user's browser supports WebAssembly SIMD
-    const isSimdSupported = await simd();
-
-    // Dynamically set the core filename
-    coreName = isSimdSupported ? "ffmpeg-core-simd" : "ffmpeg-core";
-
-    const maxAttempts = Math.max(1, retries);
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      try {
-        await loadFFmpegAttempt(ffmpeg, signal, coreName, timeoutMs);
-        return ffmpeg;
-      } catch (err) {
-        if (err instanceof FFmpegLoadError) {
-          throw err;
-        }
-
-        if (err instanceof DOMException && err.name === "AbortError") {
-          throw err;
-        }
-
-        const failure = classifyLoadFailure(err);
-        const context: FFmpegLoadErrorContext = {
-          attempt,
-          maxAttempts,
-          coreName,
-          retryable: failure.retryable,
-          originalError: describeError(err),
-        };
-
-        if (attempt < maxAttempts && failure.retryable) {
-          console.warn("[FFmpeg] load attempt failed; retrying", {
-            attempt,
-            maxAttempts,
-            code: failure.code,
-            originalError: context.originalError,
-          });
-          await sleep(retryDelayMs * (retryBackoffFactor ** (attempt - 1)), signal);
-          continue;
-        }
-
-        throw new FFmpegLoadError(failure.code, failure.userMessage, context);
-      }
-    }
-
-    const failure = classifyLoadFailure(new Error("Unknown FFmpeg load failure"));
-    throw new FFmpegLoadError(failure.code, failure.userMessage, {
-      attempt: maxAttempts,
-      maxAttempts,
-      coreName,
-      retryable: failure.retryable,
-      originalError: "Unknown FFmpeg load failure",
-    });
-  } catch (err) {
-    if (ffmpegInstance === ffmpeg) {
-      ffmpegInstance = null;
-    }
-    throw err;
-=======
     await workerReady;
   } finally {
     cleanup();
->>>>>>> upstream/main
   }
-}
+  }
+
 
 function cancelPendingExport(reason?: unknown) {
   if (pendingExport) {

@@ -35,42 +35,7 @@ interface SectionProps {
 }
 
 function Section({ icon, title, children, delay = 0 }: SectionProps) {
-  return (
-    <div
-      className="space-y-3 animate-fade-in"
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="flex items-center gap-2">
-        <span className="text-film-500 opacity-80">{icon}</span>
-        <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
-          {title}
-        </h3>
-        <div className="flex-1 h-px bg-[var(--border)]" />
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/** Accordion section with collapsible content. */
-function AccordionSection({
-  id,
-  icon,
-  title,
-  children,
-  isOpen,
-  onToggle,
-  delay = 0,
-}: {
-  id: string;
-  icon: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-  isOpen: boolean;
-  onToggle: () => void;
-  delay?: number;
-}) {
-  return (
+                }
     <div className="animate-fade-in" style={{ animationDelay: `${delay}ms` }}>
       <button
         type="button"
@@ -198,23 +163,35 @@ function KeyboardShortcutsPanel() {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
-<<<<<<< HEAD
-    result, error, errorInfo, updateRecipe,
-    handleFileSelect, handleExport, cancelExport, reset, resetSettings,
-=======
-    result, error, exportStartedAt, updateRecipe,
-    handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
+    file,
+    duration,
+    recipe,
+    status,
+    progress,
+    result,
+    error,
+    errorInfo,
+    exportStartedAt,
+    updateRecipe,
+    handleFileSelect,
+    fileError,
+    handleExport,
+    cancelExport,
+    reset,
+    resetSettings,
     videoRef,
     seekTo,
-    overlayFile, setOverlayFile,
-    overlayPosition, setOverlayPosition,
-    overlaySize, setOverlaySize,
-    overlayOpacity, setOverlayOpacity,
+    overlayFile,
+    setOverlayFile,
+    overlayPosition,
+    setOverlayPosition,
+    overlaySize,
+    setOverlaySize,
+    overlayOpacity,
+    setOverlayOpacity,
     recommendedPreset,
     currentTime,
     toggleSound,
->>>>>>> upstream/main
   } = useVideoEditor();
 
   useKeyboardShortcuts({
@@ -589,16 +566,11 @@ export default function VideoEditor() {
 
             {status === "error" && error && (
               <div
-<<<<<<< HEAD
                 role="alert"
-=======
-                role="status"
->>>>>>> upstream/main
                 className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
               >
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
                 <div className="flex-1">
-<<<<<<< HEAD
                   <p className="font-heading font-bold text-sm">
                     {errorInfo?.code ? "Video engine failed to load" : "Error"}
                   </p>
@@ -613,10 +585,6 @@ export default function VideoEditor() {
                       Learn more about troubleshooting
                     </a>
                   )}
-=======
-                  <p className="font-heading font-bold text-sm">Error</p>
-                  <p className="text-film-600 text-sm mt-1">{error}</p>
->>>>>>> upstream/main
                 </div>
                 <button
                   type="button"
@@ -629,14 +597,9 @@ export default function VideoEditor() {
                     }).catch((err) => {
                       console.error("Failed to copy error to clipboard:", err);
                     });
-                  }}
-<<<<<<< HEAD
+                  }
                   className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-xs font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
                   aria-label={errorInfo?.debugMessage ? "Copy error details to clipboard" : "Copy error message to clipboard"}
-=======
-                  className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-sm font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
-                  aria-label="Copy error message to clipboard"
->>>>>>> upstream/main
                 >
                   {copied ? "Copied!" : errorInfo?.debugMessage ? "Copy details" : "Copy error"}
                 </button>
