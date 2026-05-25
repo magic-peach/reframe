@@ -1,4 +1,4 @@
-import { TextOverlay } from "./types";
+import { TextOverlay, Subtitle } from "./types";
 
 /**
  * Generates a unique ID for a text overlay.
@@ -61,7 +61,7 @@ export function getTextPercentPosition(
  * Escapes special characters and positions text on the output video.
  */
 export function buildTextFilter(
-  overlay: TextOverlay,
+  overlay: TextOverlay | Subtitle,
   targetWidth: number,
   targetHeight: number
 ): string {
@@ -72,18 +72,24 @@ export function buildTextFilter(
     .replace(/:/g, "\\:");
 
   // Convert percentage position to pixel position
-  const pixelX = Math.round((overlay.x / 100) * targetWidth);
-  const pixelY = Math.round((overlay.y / 100) * targetHeight);
+  let pixelX: number | string = Math.round((overlay.x / 100) * targetWidth);
+  let pixelY: number | string = Math.round((overlay.y / 100) * targetHeight);
+  
+  if (overlay.x === -1) {
+    pixelX = '(w-text_w)/2';
+  }
+  
+  let enableClause = "";
+  if ("startTime" in overlay && "endTime" in overlay) {
+    enableClause = `:enable='between(t,${overlay.startTime},${overlay.endTime})'`;
+  }
 
   // Build the drawtext filter with proper escaping
-  // Using 'fontsize' and 'fontcolor' parameters
-  // Note: Font file path may not be available in all environments,
-  // so we rely on the system default font
   return `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:fontweight=${
     overlay.fontWeight === "900"
       ? "bold"
       : overlay.fontWeight === "bold"
       ? "bold"
       : "normal"
-  }`;
+  }${enableClause}`;
 }

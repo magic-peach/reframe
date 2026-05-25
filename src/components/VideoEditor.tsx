@@ -17,6 +17,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import SubtitlesControl from "./SubtitlesControl"
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
@@ -228,6 +229,7 @@ export default function VideoEditor() {
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
+    subtitles: false,
     trim: false,
     rotation: false,
     text: false,
@@ -660,6 +662,17 @@ export default function VideoEditor() {
                   <PresetSelector recipe={recipe} onChange={updateRecipe} />
                   <FramingControl recipe={recipe} onChange={updateRecipe} />
                 </div>
+              </AccordionSection>
+
+              <AccordionSection
+                id="subtitles"
+                icon={<Type size={12} />}
+                title="AI Subtitles"
+                isOpen={openSections.subtitles}
+                onToggle={() => toggleSection("subtitles")}
+                delay={60}
+              >
+                <SubtitlesControl recipe={recipe} onChange={updateRecipe} file={file} duration={duration} />
               </AccordionSection>
 
               <div className="pt-2 flex justify-center items-center gap-6">

@@ -13,6 +13,18 @@ export interface TextOverlay {
   fontWeight: "normal" | "bold" | "900";
 }
 
+export interface Subtitle {
+  id: string;
+  text: string;
+  startTime: number; // in seconds
+  endTime: number; // in seconds
+  x: number; // Percentage (0-100) from left
+  y: number; // Percentage (0-100) from top
+  fontSize: number; // In pixels
+  color: string; // Hex color
+  fontWeight: "normal" | "bold" | "900";
+}
+
 export interface EditRecipe {
   preset: string;
   customWidth: number;
@@ -33,6 +45,7 @@ export interface EditRecipe {
   saturation: number;
   soundOnCompletion: boolean;
   textOverlays: TextOverlay[];
+  subtitles: Subtitle[];
   version: number;
 }
 
@@ -102,6 +115,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
   if (!Array.isArray(v.textOverlays)) return false;
+  if (!Array.isArray(v.subtitles)) return false;
 
   return true;
 }

@@ -23,5 +23,6 @@ export const DEFAULT_RECIPE: EditRecipe = {
   soundOnCompletion: false,
   normalizeAudio: false,
   textOverlays: [],
+  subtitles: [],
   version: RECIPE_VERSION,
 };
