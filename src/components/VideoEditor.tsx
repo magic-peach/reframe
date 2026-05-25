@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
@@ -239,6 +239,22 @@ export default function VideoEditor() {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   const downloadRef = useRef<HTMLDivElement>(null);
 
+  const handleClearUpload = useCallback(() => {
+    if (status === "loading-engine" || status === "exporting") {
+      cancelExport();
+    }
+    reset();
+    setSelectedTextId(null);
+    setOpenSections({
+      resize: true,
+      trim: false,
+      rotation: false,
+      text: false,
+      audio: false,
+      export: false,
+    });
+  }, [reset, cancelExport, status]);
+
   /**
    * Updates a text overlay property and syncs with recipe.
    */
@@ -370,7 +386,13 @@ export default function VideoEditor() {
 
           <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                onClear={handleClearUpload}
+                currentFile={file}
+                fileError={fileError}
+                duration={duration}
+              />
 
               {!file && (
                 <div className="text-center text-[var(--muted)] py-6">

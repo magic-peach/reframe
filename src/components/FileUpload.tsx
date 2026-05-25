@@ -9,6 +9,7 @@ import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
 
 interface Props {
   onFileSelect: (file: File) => void;
+  onClear: () => void;
   currentFile: File | null;
   fileError: string;
   duration: number;
@@ -16,6 +17,7 @@ interface Props {
 
 export default function FileUpload({
   onFileSelect,
+  onClear,
   currentFile,
   fileError,
   duration,
@@ -125,6 +127,13 @@ export default function FileUpload({
     if (file) handleFile(file);
   };
 
+  const handleClear = () => {
+    setError("");
+    setWarning("");
+    if (inputRef.current) inputRef.current.value = "";
+    onClear();
+  };
+
   // ── File info (shown after upload) ───────────────────
   const FileInfo = () => (
     <div className="px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow)]">
@@ -158,14 +167,28 @@ export default function FileUpload({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="text-xs font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide"
-        >
-          Change
-          <span className="text-[var(--muted)] ml-1">(Ctrl+O)</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="text-xs font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide"
+            aria-label="Change video file"
+          >
+            Change
+            <span className="text-[var(--muted)] ml-1">(Ctrl+O)</span>
+          </button>
+          <span className="text-[var(--border)]" aria-hidden="true">
+            |
+          </span>
+          <button
+            type="button"
+            onClick={handleClear}
+            className="text-xs font-semibold uppercase tracking-wide px-2.5 py-1 rounded-md border border-[var(--error-border)] text-[var(--error)] bg-[var(--error-bg)] hover:bg-[var(--error-hover)] transition-colors"
+            aria-label="Clear uploaded video and reset editor"
+          >
+            Clear
+          </button>
+        </div>
       </div>
 
       <p className="text-xs text-[var(--muted)] mt-3 break-words">
