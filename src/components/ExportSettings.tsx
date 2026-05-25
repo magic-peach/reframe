@@ -12,6 +12,8 @@ import {
   formatEstimatedSize,
 } from "@/lib/exportEstimate";
 
+import FilterPresetSelector from "./FilterPresetSelector";
+
 interface Props {
   recipe: EditRecipe;
   duration: number;
@@ -29,8 +31,8 @@ export default function ExportSettings({
     recipe.quality <= 21
       ? "High"
       : recipe.quality <= 25
-      ? "Balanced"
-      : "Small file";
+        ? "Balanced"
+        : "Small file";
 
   const isGif = recipe.format === "gif";
 
@@ -119,25 +121,25 @@ export default function ExportSettings({
         </div>
 
         {!isGif && (
-        <div className="flex items-center justify-between mt-4">
-          <label
-            htmlFor="sound-on-completion"
-            className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
-          >
-            Sound on completion
-          </label>
+          <div className="flex items-center justify-between mt-4">
+            <label
+              htmlFor="sound-on-completion"
+              className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
+            >
+              Sound on completion
+            </label>
 
-          <input
-            id="sound-on-completion"
-            type="checkbox"
-            checked={recipe.soundOnCompletion}
-            onChange={(e) =>
-              onChange({ soundOnCompletion: e.target.checked })
-            }
-            aria-label="Play sound when export completes"
-            className="accent-film-600 cursor-pointer"
-          />
-        </div>
+            <input
+              id="sound-on-completion"
+              type="checkbox"
+              checked={recipe.soundOnCompletion}
+              onChange={(e) =>
+                onChange({ soundOnCompletion: e.target.checked })
+              }
+              aria-label="Play sound when export completes"
+              className="accent-film-600 cursor-pointer"
+            />
+          </div>
         )}
       </div>
 
@@ -235,6 +237,8 @@ export default function ExportSettings({
           </span>
         </div>
       </div>
+
+      <FilterPresetSelector recipe={recipe} onChange={onChange} />
     </>
   );
 }

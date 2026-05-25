@@ -3,12 +3,13 @@ import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { simd } from "wasm-feature-detect";
+import { VIDEO_FILTERS } from "./videoFilters";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 
 // Added from main branch for subresource security verification
 const SRI_HASHES: Record<string, string> = {
-  "ffmpeg-core.js":   "sha384-sKfkiFtvUk+vexk+0EUhEh366190/4WpgUAsUvaxEfyg7+E1Zt5Y5hrsU808g8Q9",
+  "ffmpeg-core.js": "sha384-sKfkiFtvUk+vexk+0EUhEh366190/4WpgUAsUvaxEfyg7+E1Zt5Y5hrsU808g8Q9",
   "ffmpeg-core.wasm": "sha384-U1VDhkPYrM3wTCT4/vjSpSsKqG/UjljYrYCI4hBSJ02svbCkxuCi6U6u/peg5vpW",
 };
 
@@ -132,8 +133,8 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   }
 
   if (recipe.speed !== 1) {
-  const pts = (1 / recipe.speed).toFixed(4);
-  filters.push(`setpts=${pts}*PTS`);
+    const pts = (1 / recipe.speed).toFixed(4);
+    filters.push(`setpts=${pts}*PTS`);
   }
 
   if (recipe.denoise) {
@@ -143,10 +144,18 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   filters.push(
     `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
   );
+  
+  const preset = VIDEO_FILTERS.find(
+    (p) => p.id === recipe.filterPreset
+  );
+
+  if (preset) {
+    filters.push(...preset.ffmpeg);
+  }
   return filters.join(",");
 }
 
- export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
   if (speed <= 0) return "";
   const filters: string[] = [];
 
@@ -161,7 +170,7 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     remaining /= 2.0;
   }
 
- if (Math.abs(remaining - 1.0) > 0.001) {
+  if (Math.abs(remaining - 1.0) > 0.001) {
     filters.push(`atempo=${Number(remaining.toFixed(4))}`);
   }
 
@@ -226,9 +235,9 @@ function buildArguments(
       const scaledW = overlayOptions!.size;
       const alpha = (overlayOptions!.opacity / 100).toFixed(2);
       const posMap: Record<string, string> = {
-        "top-left":     "20:20",
-        "top-right":    "W-w-20:20",
-        "bottom-left":  "20:H-h-20",
+        "top-left": "20:20",
+        "top-right": "W-w-20:20",
+        "bottom-left": "20:H-h-20",
         "bottom-right": "W-w-20:H-h-20",
       };
       const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
@@ -242,7 +251,7 @@ function buildArguments(
       if (hasMusicTrack) {
         const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
         if (hasOriginalAudio) {
-          const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
+          const origVol = (musicOptions!.originalAudioVolume / 100).toFixed(2);
           const origChain = afParts.length > 0
             ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
             : `[0:a]volume=${origVol}[orig]`;
@@ -349,11 +358,11 @@ export async function exportVideo(
     await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
 
     const vf = buildVideoFilter(recipe, targetW, targetH);
-  const audioTrim = buildAudioTrimFilter(recipe);
-  const audioSpeed = buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false);
+    const audioTrim = buildAudioTrimFilter(recipe);
+    const audioSpeed = buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false);
 
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
-  const af = afParts.join(",");
+    const afParts = [audioTrim, audioSpeed].filter(Boolean);
+    const af = afParts.join(",");
     const hasMusicTrack = !!(musicOptions?.file && recipe.keepAudio);
     const musicInputName = `music_input_${sessionId}.mp3`;
     if (hasMusicTrack) {
@@ -488,7 +497,7 @@ export async function exportVideo(
     for (const path of cleanupFiles) {
       try {
         await ffmpeg.deleteFile(path);
-      } catch {}
+      } catch { }
     }
   }
 }

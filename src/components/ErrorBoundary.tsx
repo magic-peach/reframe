@@ -51,10 +51,25 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
                         <h2 className="text-3xl font-bold">
                             Something went wrong
                         </h2>
+                        
+                {/* to see actual error stack/debug info. */}
+                        <div className="space-y-3">
+                            <p className="text-sm opacity-80">
+                                {this.state.error?.message || "An unexpected error occurred."}
+                            </p>
 
-                        <p className="text-sm opacity-80">
-                            {this.state.error?.message || "An unexpected error occurred."}
-                        </p>
+                            {this.state.error?.stack && (
+                                <details className="rounded-lg border p-3 text-left text-xs opacity-80">
+                                    <summary className="cursor-pointer font-semibold">
+                                        Technical Details
+                                    </summary>
+
+                                    <pre className="mt-3 overflow-auto whitespace-pre-wrap break-words">
+                                        {this.state.error.stack}
+                                    </pre>
+                                </details>
+                            )}
+                        </div>
 
                         <div className="flex flex-wrap items-center justify-center gap-3">
                             <button

@@ -33,7 +33,7 @@ export default function ContactPage() {
           </a>
           <p className="opacity-70 mt-1">For bug reports and feature requests.</p>
         </div>
-
+    
         <div>
           <a
             href="https://github.com/magic-peach/reframe/discussions"

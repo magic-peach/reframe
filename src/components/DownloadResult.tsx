@@ -59,8 +59,9 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
     aria-label={soundOnCompletion ? "Mute completion sound" : "Unmute completion sound"}
     className="p-2 rounded-lg border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--bg)] transition-colors"
     title={soundOnCompletion ? "Sound on" : "Sound off"}
-  >
-    {soundOnCompletion ? <Volume2 size={14} /> : <VolumeX size={14} />}
+        >
+          {/* “What happens if I click?” */}
+    {soundOnCompletion ?  <VolumeX size={14} /> : <Volume2 size={14} /> }
   </button>
 </div>
 

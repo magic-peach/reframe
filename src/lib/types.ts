@@ -20,6 +20,7 @@ export interface EditRecipe {
   saturation: number;
   soundOnCompletion: boolean;
   version: number;
+  filterPreset: "none" | "cinematic" | "vintage" | "noir" | 'retro90s';
 }
 
 export type OverlayPosition =
@@ -81,6 +82,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.speed !== "number" || !isFinite(v.speed)) return false;
   if (typeof v.quality !== "number" || !isFinite(v.quality)) return false;
   if (!["mp4", "webm", "mkv", "gif"].includes(v.format)) return false;
+  if (!["none", "cinematic", "vintage", "noir", "retro90s"].includes(v.filterPreset)) return false;
   if (typeof v.stabilization !== "boolean") return false;
   if (typeof v.brightness !== "number" || !isFinite(v.brightness)) return false;
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;

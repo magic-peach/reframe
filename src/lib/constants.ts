@@ -15,6 +15,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   speed: 1,
   quality: 23,
   format: "mp4",
+  filterPreset: "none",
   brightness: 0,
   contrast: 1,
   saturation: 1,
