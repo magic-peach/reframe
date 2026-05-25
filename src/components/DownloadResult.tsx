@@ -135,22 +135,31 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
       </div>
 
       <div className="flex flex-wrap gap-2 pt-2">
-        <a
-          href={isValid ? result.blobUrl : undefined}
-          download={isValid ? filename : undefined}
+        <button
+          type="button"
+          disabled={!isValid}
           className={cn(
             "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
             isValid 
               ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.99] cursor-pointer"
               : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
           )}
-          onClick={(e) => {
-            if (!isValid) e.preventDefault();
+          onClick={() => {
+            if (!isValid) return;
+            const a = document.createElement("a");
+            a.style.display = "none";
+            a.href = result.blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+              document.body.removeChild(a);
+            }, 100);
           }}
         >
           <Download size={15} aria-hidden="true" />
           Download {result.format.toUpperCase()}
-        </a>
+        </button>
         <NativeShareButton 
           file={result.blob}
           fileName={filename}
