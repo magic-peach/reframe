@@ -14,9 +14,11 @@ describe('ThemeToggle', () => {
 
   it('toggles theme and persists choice', async () => {
     render(
-      <ThemeProvider>
-        <ThemeToggle />
-      </ThemeProvider>
+      React.createElement(
+        ThemeProvider,
+        null,
+        React.createElement(ThemeToggle)
+      )
     )
 
     const btn = screen.getByRole('button')
@@ -28,8 +30,9 @@ describe('ThemeToggle', () => {
     expect(document.documentElement.classList.contains('dark')).toBe(true)
     expect(localStorage.getItem('theme')).toBe('dark')
 
-    // Toggle again (dark -> high-contrast) should update storage
+    // Toggle again (dark -> light) should update storage
     await userEvent.click(btn)
-    expect(localStorage.getItem('theme')).toBe('high-contrast')
+    expect(document.documentElement.classList.contains('dark')).toBe(false)
+    expect(localStorage.getItem('theme')).toBe('light')
   })
 })
