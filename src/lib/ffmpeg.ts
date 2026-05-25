@@ -1,4 +1,5 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
+import { buildTextFilter } from "./text-overlay";
 import { getPresetById } from "./presets";
 const FFMPEG_WORKER_URL =
   typeof window !== "undefined"
@@ -182,9 +183,14 @@ async function ensureWorker() {
 
 
 export async function loadFFmpeg(
-  signal?: AbortSignal,
+  opts?: AbortSignal | { signal?: AbortSignal; retryDelayMs?: number; timeoutMs?: number },
   onProgress?: (percent: number) => void
 ): Promise<void> {
+  const signal: AbortSignal | undefined =
+    opts && typeof (opts as AbortSignal).addEventListener === "function"
+      ? (opts as AbortSignal)
+      : (opts as any)?.signal;
+
   await ensureWorker();
 
   if (workerReady && workerReadyResolve === null) {

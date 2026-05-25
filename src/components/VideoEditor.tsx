@@ -32,16 +32,26 @@ interface SectionProps {
   title: string;
   children: React.ReactNode;
   delay?: number;
+  id?: string;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
-function Section({ icon, title, children, delay = 0 }: SectionProps) {
-                }
+function Section({ icon, title, children, delay = 0, id, isOpen, onToggle }: SectionProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const generatedId = useMemo(() => title.replace(/\s+/g, "-").toLowerCase(), [title]);
+  const panelId = id ?? generatedId;
+  const controlled = typeof isOpen === "boolean" && typeof onToggle === "function";
+  const open = controlled ? !!isOpen : internalOpen;
+  const localToggle = controlled ? onToggle! : () => setInternalOpen((v) => !v);
+
+  return (
     <div className="animate-fade-in" style={{ animationDelay: `${delay}ms` }}>
       <button
         type="button"
-        aria-expanded={isOpen}
-        aria-controls={`${id}-panel`}
-        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={`${panelId}-panel`}
+        onClick={localToggle}
         className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[var(--border)] transition-colors duration-150"
       >
         <div className="flex items-center gap-2">
@@ -54,17 +64,17 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
           height="12"
           viewBox="0 0 12 12"
           fill="none"
-          className={cn("text-[var(--muted)] transition-transform duration-200", isOpen && "rotate-180")}
+          className={cn("text-[var(--muted)] transition-transform duration-200", open && "rotate-180")}
         >
           <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
 
       <div
-        id={`${id}-panel`}
+        id={`${panelId}-panel`}
         className={cn(
           "transition-all duration-200",
-          isOpen ? "block" : "hidden"
+          open ? "block" : "hidden"
         )}
       >
         <div className="px-3 pt-3 pb-0">{children}</div>
@@ -72,6 +82,8 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
     </div>
   );
 }
+
+const AccordionSection = Section;
 
 /** Inline keyboard hint badge. */
 function Kbd({ children }: { children: React.ReactNode }) {
@@ -597,7 +609,7 @@ export default function VideoEditor() {
                     }).catch((err) => {
                       console.error("Failed to copy error to clipboard:", err);
                     });
-                  }
+                  }}
                   className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-xs font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
                   aria-label={errorInfo?.debugMessage ? "Copy error details to clipboard" : "Copy error message to clipboard"}
                 >

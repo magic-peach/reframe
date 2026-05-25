@@ -183,7 +183,7 @@ export function useVideoEditor() {
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-  setRecipe((prev) => {
+  setRecipe((prev: EditRecipe) => {
     const next = { ...prev, ...patch };
     // GIF has no audio — force keepAudio off
     if (next.format === "gif") {
@@ -255,7 +255,7 @@ export function useVideoEditor() {
         });
 
         if (Object.keys(updatedPatch).length > 0) {
-          setRecipe(prev => ({
+          setRecipe((prev: EditRecipe) => ({
             ...prev,
             ...updatedPatch
           }));
@@ -283,7 +283,7 @@ export function useVideoEditor() {
             const n = Number(val);
             return Number.isFinite(n) && n >= 16 && n <= 7680 ? n : fallback;
           };
-          setRecipe(prev => ({
+          setRecipe((prev: EditRecipe) => ({
             ...prev,
             preset: parsed.preset ?? prev.preset,
             quality: parsed.quality ?? prev.quality,
@@ -424,7 +424,7 @@ export function useVideoEditor() {
       if (dimensionCheck === "warning") {
         console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
       }
-      setRecipe((prev) => {
+      setRecipe((prev: EditRecipe) => {
         const suggestedPreset = suggestPreset(width, height);
         const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
 
@@ -621,7 +621,7 @@ export function useVideoEditor() {
         return;
       }
 
-      setRecipe((prev) => ({ ...prev, keepAudio: !prev.keepAudio }));
+      setRecipe((prev: EditRecipe) => ({ ...prev, keepAudio: !prev.keepAudio }));
     };
 
     document.addEventListener("keydown", handleMuteShortcut);
@@ -734,6 +734,8 @@ export function useVideoEditor() {
     setOverlayOpacity,
     recommendedPreset,
     currentTime,
+    videoRef,
+    seekTo,
     toggleSound,
   };
 }
