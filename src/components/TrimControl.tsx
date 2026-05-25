@@ -15,9 +15,12 @@ interface Props {
   duration: number;
   file: File | null;
   seekTo?: (time: number) => void;
+  videoRef: React.RefObject<HTMLVideoElement | null>; // Add this
 }
 
-export default function TrimControl({ recipe, onChange, duration, file, seekTo}: Props) {
+
+
+export default function TrimControl({ recipe, onChange, duration, file, seekTo, videoRef}: Props) {
   const [invalidStart, setStart] = useState(false);
   const [invalidEnd, setEnd] = useState(false);
   const [startErrorMsg, setStartErrorMsg] = useState("");
@@ -28,6 +31,37 @@ export default function TrimControl({ recipe, onChange, duration, file, seekTo}:
   const { waveform, isLoading: waveformLoading } = useAudioWaveform(file);
   const hasAudio = waveform.length > 0;
 
+  const [frames, setFrames] = useState<string[]>([]);
+
+useEffect(() => {
+  const video = videoRef.current;
+  if (!video || frames.length > 0) return;
+
+  const captureFrames = async () => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const frameList: string[] = [];
+    const steps = 10;
+    
+    // Temporarily ensure video is ready
+    if (video.readyState < 2) await new Promise(r => video.addEventListener('loadedmetadata', r, {once: true}));
+
+    for (let i = 0; i < steps; i++) {
+      video.currentTime = (i / (steps - 1)) * video.duration;
+      await new Promise(r => setTimeout(r, 150)); 
+      if (ctx) {
+        canvas.width = 100;
+        canvas.height = 64;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        frameList.push(canvas.toDataURL("image/jpeg", 0.6));
+      }
+    }
+    setFrames(frameList);
+  };
+
+  captureFrames();
+}, [videoRef, frames.length]);
+
   useEffect(() => {
     setStartInput(recipe.trimStart.toString());
   }, [recipe.trimStart]);
@@ -37,13 +71,11 @@ export default function TrimControl({ recipe, onChange, duration, file, seekTo}:
   const startPercent = duration > 0 ? Math.min(100, Math.max(0, (recipe.trimStart / duration) * 100)) : 0;
   const endPercent = duration > 0 ? Math.min(100, Math.max(0, (trimEndValue / duration) * 100)) : 100;
 
-  const updateTrimFromPointer = (
+const updateTrimFromPointer = (
     event: PointerEvent<HTMLDivElement>,
     thumb: "start" | "end",
   ) => {
-    if (duration <= 0) {
-      return;
-    }
+    if (duration <= 0) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
     const percent = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
@@ -51,10 +83,13 @@ export default function TrimControl({ recipe, onChange, duration, file, seekTo}:
 
     if (thumb === "start") {
       handleStart(newValue.toString());
-      seekTo?.(newValue);
     } else {
       handleEnd(newValue.toString());
-      seekTo?.(newValue);
+    }
+    
+    // NEW: Force the preview to sync immediately to the new time
+    if (seekTo) {
+      seekTo(newValue);
     }
   };
 
@@ -229,40 +264,39 @@ export default function TrimControl({ recipe, onChange, duration, file, seekTo}:
   return (
     <div id="trim-control" className="space-y-3">
       {/* Waveform — shown while loading or when file is present */}
-      {(file && (waveformLoading || hasAudio)) && (
+      {/* Static Frame Strip across the Trim Bar */}
+      {file && (
         <div
-          className="relative w-full rounded-md overflow-hidden bg-[var(--surface)] touch-none"
+          className="relative w-full h-16 rounded-md overflow-hidden bg-neutral-900 touch-none border border-[var(--border)]"
           onPointerDown={handleTrackPointerDown}
           onPointerMove={handleTrackPointerMove}
           onPointerUp={handleTrackPointerUp}
           onPointerCancel={handleTrackPointerUp}
         >
-          <WaveformCanvas
-            samples={waveform}
-            loading={waveformLoading}
-            hasAudio={hasAudio}
-          />
+          {/* Static Frame Strip */}
+          <div className="absolute inset-0 flex h-full">
+            {frames.length > 0 ? (
+              frames.map((src, i) => (
+                <div 
+                  key={i} 
+                  className="h-full flex-1 border-r border-black/20 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${src})` }}
+                />
+              ))
+            ) : (
+              <div className="w-full h-full animate-pulse bg-neutral-800" />
+            )}
+          </div>
+
+          {/* Selection Overlay (Handles) */}
           {duration > 0 && (
             <div className="pointer-events-none absolute inset-0">
-              <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-[var(--border)]/45" />
-              <div
-                className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-film-400/15 transition-all duration-200 ease-in-out"
-                style={{ left: `${startPercent}%`, width: `${Math.max(0, endPercent - startPercent)}%` }}
+              <div 
+                className="absolute top-0 h-full bg-film-400/30 border-y border-film-400" 
+                style={{ left: `${startPercent}%`, width: `${Math.max(0, endPercent - startPercent)}%` }} 
               />
-              <button
-                type="button"
-                data-thumb="start"
-                aria-label="Drag trim start handle"
-                className={`pointer-events-auto absolute top-1/2 h-6 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-white/20 dark:bg-black/20 border-white/30 dark:border-white/10 shadow-md backdrop-blur-sm transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 ${draggingThumb === "start" ? "shadow-[0_0_0_4px_rgba(255,191,87,0.14)]" : ""}`}
-                style={{ left: `${startPercent}%` }}
-              />
-              <button
-                type="button"
-                data-thumb="end"
-                aria-label="Drag trim end handle"
-                className={`pointer-events-auto absolute top-1/2 h-6 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-white/20 dark:bg-black/20 border-white/30 dark:border-white/10 shadow-md backdrop-blur-sm transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 ${draggingThumb === "end" ? "shadow-[0_0_0_4px_rgba(255,191,87,0.14)]" : ""}`}
-                style={{ left: `${endPercent}%` }}
-              />
+              <button data-thumb="start" className="pointer-events-auto absolute top-0 h-full w-3 -translate-x-1/2 bg-white shadow-lg cursor-ew-resize" style={{ left: `${startPercent}%` }} />
+              <button data-thumb="end" className="pointer-events-auto absolute top-0 h-full w-3 -translate-x-1/2 bg-white shadow-lg cursor-ew-resize" style={{ left: `${endPercent}%` }} />
             </div>
           )}
         </div>
