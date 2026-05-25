@@ -457,7 +457,7 @@ export function useVideoEditor() {
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
-      const ffmpeg = await loadFFmpeg(abortController.signal);
+      await loadFFmpeg(abortController.signal, setProgress);
       if (exportCancelledRef.current) return;
 
       const startedAt = Date.now();
@@ -465,7 +465,6 @@ export function useVideoEditor() {
       setStatus("exporting");
 
       const exportResult = await exportVideo(
-        ffmpeg,
         file,
         recipe,
         setProgress,
@@ -548,13 +547,13 @@ export function useVideoEditor() {
   useEffect(() => {
     const shouldWarn =
       status === "exporting" ||
-      status === "loading-engine" ||
-      status === "done";
+      status === "loading-engine";
 
     if (!shouldWarn) return;
 
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
+      e.returnValue = "";
     };
 
     window.addEventListener("beforeunload", handler);
