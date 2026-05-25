@@ -119,12 +119,15 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
 }
 
 function encodeRecipe(recipe: EditRecipe): string {
-  return btoa(JSON.stringify(recipe));
+  // encodeURIComponent handles the full Unicode range; unescape maps it back to
+  // a Latin-1 string that btoa can safely encode without throwing on emoji or
+  // other non-Latin-1 characters in text overlays.
+  return btoa(unescape(encodeURIComponent(JSON.stringify(recipe))));
 }
 
 function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   try {
-    const decoded = JSON.parse(atob(encoded));
+    const decoded = JSON.parse(decodeURIComponent(escape(atob(encoded))));
     return decoded as Partial<EditRecipe>;
   } catch {
     return null;
