@@ -167,7 +167,7 @@ function buildArguments(
   const audioSpeed = hasOriginalAudio ? buildAudioSpeedFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const audioOutputDuration = getAudioOutputDuration(recipe, videoDuration);
   const audioFade = hasOriginalAudio || hasMusicTrack ? buildAudioFadeFilter(recipe, audioOutputDuration) : "";
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
+  const afParts = [audioTrim, audioSpeed, audioFade].filter(Boolean);
   const af = afParts.join(",");
 
   const musicIdx = 1;
@@ -228,7 +228,7 @@ function buildArguments(
           audioOut = "[aout]";
         }
       } else if (hasOriginalAudio) {
-        filterParts.push(`[0:a]${af}${audioFade ? `,${audioFade}` : ""}[aout]`);
+        filterParts.push(`[0:a]${af}[aout]`);
         audioOut = "[aout]";
       }
     }
@@ -400,7 +400,7 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     postMessage({ type: "progress", percent: Math.min(99, Math.round(progress * 100)) });
   };
 
-  let logListener: ((event: { message: string }) => void) | null = null;
+  let logListener: ((event: { message?: string }) => void) | null = null;
   ffmpeg.on("progress", handleProgress);
 
   try {
@@ -450,8 +450,8 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     }
 
     let missingAudioDetected = false;
-    const logListener = ({ message }: { message: string }) => {
-      const msg = message.toLowerCase();
+    logListener = ({ message }: { message?: string }) => {
+      const msg = (typeof message === "string" ? message : "").toLowerCase();
       if (
         msg.includes("matches no streams") ||
         msg.includes("specifier '0:a'") ||

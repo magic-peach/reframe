@@ -68,7 +68,14 @@ function createWorker(): Worker {
   ffmpegWorker = new Worker(FFMPEG_WORKER_URL, { type: "module" });
   ffmpegWorker.onmessage = handleWorkerMessage;
   ffmpegWorker.onerror = (event) => {
-    const message = event.message || "FFmpeg worker error";
+    const details: string[] = [];
+    if (event.filename) details.push(event.filename);
+    if (typeof event.lineno === "number" && event.lineno > 0) {
+      const col = typeof event.colno === "number" && event.colno > 0 ? `:${event.colno}` : "";
+      details.push(`line ${event.lineno}${col}`);
+    }
+    const base = event.message || "FFmpeg worker error";
+    const message = details.length > 0 ? `${base} (${details.join(" ")})` : base;
     const error = new FFmpegLoadError(message);
     workerReadyReject?.(error);
     pendingExport?.reject(error);
