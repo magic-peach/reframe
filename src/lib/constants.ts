@@ -23,5 +23,10 @@ export const DEFAULT_RECIPE: EditRecipe = {
   soundOnCompletion: false,
   normalizeAudio: false,
   textOverlays: [],
+  subtitleFont: "Inter",
+  subtitleColor: "#ffffff",
+  subtitleSize: 36,
+  subtitleBgType: "outline",
+  subtitleBgColor: "#000000",
   version: RECIPE_VERSION,
 };

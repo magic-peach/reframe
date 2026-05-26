@@ -1,13 +1,14 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
-import { useEffect, useRef, useState, useCallback, RefObject } from "react";
-import { EditRecipe, TextOverlay, SubtitleCue } from "@/lib/types";
+import { useEffect, useRef, useState, useCallback, useMemo, RefObject } from "react";
+import { EditRecipe, TextOverlay } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
 import ComparisonPreview from "./ComparisonPreview";
 import DraggableTextOverlays from "./DraggableTextOverlays";
+import { SubtitleItem } from "@/lib/subtitles";
 
 interface Props {
   file: File | null;
@@ -16,12 +17,7 @@ interface Props {
   selectedTextId?: string | null;
   onSelectText?: (id: string | null) => void;
   onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
-  subtitleCues?: SubtitleCue[];
-  subtitleFontFamily?: string;
-  subtitleFontSize?: "small" | "medium" | "large";
-  subtitleTextColor?: string;
-  subtitleBgOpacity?: number;
-  subtitleHasShadow?: boolean;
+  parsedSubtitles?: SubtitleItem[] | null;
 }
 
 export default function VideoPreview({
@@ -31,23 +27,49 @@ export default function VideoPreview({
   selectedTextId = null,
   onSelectText,
   onUpdateText,
-  subtitleCues = [],
-  subtitleFontFamily = "Inter",
-  subtitleFontSize = "medium",
-  subtitleTextColor = "#ffffff",
-  subtitleBgOpacity = 0.5,
-  subtitleHasShadow = true,
+  parsedSubtitles = null,
 }: Props) {
+  const [localCurrentTime, setLocalCurrentTime] = useState(0);
+  const [containerDimensions, setContainerDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
+      setLocalCurrentTime(video.currentTime);
+    };
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, [videoRef, file]);
+
+  const activeSub = useMemo(() => {
+    if (!parsedSubtitles || parsedSubtitles.length === 0) return null;
+    return parsedSubtitles.find(
+      (sub) => localCurrentTime >= sub.startTime && localCurrentTime <= sub.endTime
+    );
+  }, [parsedSubtitles, localCurrentTime]);
+
+  const scaledFontSize = useMemo(() => {
+    if (!recipe) return 24;
+    const preset = recipe.preset === "custom"
+      ? { width: recipe.customWidth, height: recipe.customHeight }
+      : getPresetById(recipe.preset);
+    const targetH = preset?.height ?? 1080;
+    const scale = containerDimensions.height / targetH;
+    return Math.max(12, Math.round(recipe.subtitleSize * scale));
+  }, [recipe, containerDimensions.height]);
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [containerDimensions, setContainerDimensions] = useState({
-    width: 0,
-    height: 0,
-  });
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
 
@@ -137,23 +159,40 @@ export default function VideoPreview({
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
+  const aspectStyle = useMemo(() => {
+    if (!recipe) return undefined;
+    const preset = recipe.preset === "custom"
+      ? { width: recipe.customWidth, height: recipe.customHeight }
+      : getPresetById(recipe.preset);
+    if (!preset) return undefined;
+    return { aspectRatio: `${preset.width} / ${preset.height}` };
+  }, [recipe]);
+
   /**
-   * Track preview container dimensions for text overlay positioning.
+   * Track preview container dimensions for text overlay positioning using ResizeObserver.
    */
   useEffect(() => {
+    const container = previewContainerRef.current;
+    if (!container) return;
+
     const updateDimensions = () => {
-      if (previewContainerRef.current) {
-        const rect = previewContainerRef.current.getBoundingClientRect();
-        setContainerDimensions({
-          width: rect.width,
-          height: rect.height,
-        });
-      }
+      const rect = container.getBoundingClientRect();
+      setContainerDimensions({
+        width: rect.width,
+        height: rect.height,
+      });
     };
 
     updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
+
+    const observer = new ResizeObserver(() => {
+      updateDimensions();
+    });
+
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   const overlay = (() => {
@@ -200,10 +239,6 @@ export default function VideoPreview({
     }
   })();
 
-  const activeCue = subtitleCues.find(
-    (cue) => currentTime >= cue.startTime && currentTime <= cue.endTime
-  );
-
   if (!file) return null;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -234,7 +269,8 @@ export default function VideoPreview({
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] mx-auto max-h-[60vh] object-contain"
+        style={aspectStyle || { aspectRatio: "16 / 9" }}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"
@@ -251,7 +287,6 @@ export default function VideoPreview({
           controls
           className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
           onLoadedData={() => setIsLoading(false)}
-          onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
           playsInline
           muted={!recipe?.keepAudio}
         >
@@ -291,28 +326,36 @@ export default function VideoPreview({
         )}
 
         {/* Subtitles Overlay */}
-        {!isLoading && activeCue && (
+        {activeSub && recipe && (
           <div
-            className="absolute bottom-[8%] left-1/2 -translate-x-1/2 text-center select-none pointer-events-none px-4 py-1.5 rounded transition-all duration-150 max-w-[85%] whitespace-pre-wrap font-semibold z-10"
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-none text-center select-none z-10 max-w-[85%] font-medium transition-all"
             style={{
-              fontFamily: subtitleFontFamily,
-              fontSize:
-                subtitleFontSize === "small"
-                  ? "14px"
-                  : subtitleFontSize === "large"
-                  ? "28px"
-                  : "20px",
-              color: subtitleTextColor,
-              backgroundColor:
-                subtitleBgOpacity > 0
-                  ? `rgba(0, 0, 0, ${subtitleBgOpacity})`
-                  : "transparent",
-              textShadow: subtitleHasShadow
-                ? "2px 2px 4px rgba(0, 0, 0, 0.8), -1px -1px 0 rgba(0,0,0,0.5), 1px -1px 0 rgba(0,0,0,0.5), -1px 1px 0 rgba(0,0,0,0.5), 1px 1px 0 rgba(0,0,0,0.5)"
-                : "none",
+              bottom: "12%",
+              fontFamily: recipe.subtitleFont === "system-ui" ? "system-ui, sans-serif" : `'${recipe.subtitleFont}', system-ui, sans-serif`,
+              fontSize: `${scaledFontSize}px`,
+              color: recipe.subtitleColor,
+              lineHeight: 1.3,
+              whiteSpace: "pre-line",
+              paintOrder: "stroke fill",
+              ...(recipe.subtitleBgType === "box" && {
+                backgroundColor: `color-mix(in srgb, ${recipe.subtitleBgColor} 75%, transparent)`,
+                padding: "0.25em 0.6em",
+                borderRadius: "0.375em",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+              }),
+              ...(recipe.subtitleBgType === "shadow" && {
+                textShadow: `0 2px 4px rgba(0,0,0,0.5), 0 4px 12px color-mix(in srgb, ${recipe.subtitleBgColor} 60%, transparent)`,
+              }),
+              ...(recipe.subtitleBgType === "outline" && {
+                WebkitTextStroke: `1.5px ${recipe.subtitleBgColor}`,
+                textShadow: "0 2px 4px rgba(0,0,0,0.8)",
+              }),
+              ...(recipe.subtitleBgType === "none" && {
+                textShadow: "0 2px 4px rgba(0,0,0,0.8)",
+              }),
             }}
           >
-            {activeCue.text}
+            {activeSub.text}
           </div>
         )}
 

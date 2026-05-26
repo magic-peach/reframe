@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, SubtitleCue, isValidRecipe } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import { SubtitleItem, parseSRT } from "@/lib/subtitles";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
-const STORAGE_KEY = "reframe:recipe";
+  const STORAGE_KEY = "reframe:recipe";
 
 export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
@@ -22,7 +23,7 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
 
     video.preload = "metadata";
     video.onloadedmetadata = () => {
-      clearTimeout(timeout);
+      clearTimeout(timeout)
       resolve({
         width: video.videoWidth,
         height: video.videoHeight,
@@ -31,7 +32,7 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
       URL.revokeObjectURL(url);
     };
     video.onerror = () => {
-      clearTimeout(timeout);
+      clearTimeout(timeout)
       URL.revokeObjectURL(url);
       reject(new Error("Failed to load video metadata"));
     };
@@ -100,10 +101,12 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       recipe.brightness < -1 || recipe.brightness > 1,
       "Brightness must be between -1 and 1.",
     ],
+
     [
       recipe.contrast < 0 || recipe.contrast > 2,
       "Contrast must be between 0 and 2.",
     ],
+
     [
       recipe.saturation < 0 || recipe.saturation > 3,
       "Saturation must be between 0 and 3.",
@@ -114,39 +117,6 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
     validations.find(([condition]) => condition)?.[1] ??
     null
   );
-}
-
-export function parseSRT(content: string): SubtitleCue[] {
-  const cues: SubtitleCue[] = [];
-  const blocks = content.trim().split(/\r?\n\s*\r?\n/);
-
-  for (const block of blocks) {
-    const lines = block.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
-    if (lines.length < 3) continue;
-
-    const firstLine = lines[0];
-    if (!firstLine) continue;
-    const id = parseInt(firstLine, 10);
-    if (isNaN(id)) continue;
-
-    const secondLine = lines[1];
-    if (!secondLine) continue;
-    const timeMatch = secondLine.match(/(\d{2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{2}):(\d{2}):(\d{2})[,.](\d{3})/);
-    if (!timeMatch) continue;
-
-    const parseTime = (h: string | undefined, m: string | undefined, s: string | undefined, ms: string | undefined) => {
-      if (!h || !m || !s || !ms) return 0;
-      return parseInt(h, 10) * 3600 + parseInt(m, 10) * 60 + parseInt(s, 10) + parseInt(ms, 10) / 1000;
-    };
-
-    const startTime = parseTime(timeMatch[1], timeMatch[2], timeMatch[3], timeMatch[4]);
-    const endTime = parseTime(timeMatch[5], timeMatch[6], timeMatch[7], timeMatch[8]);
-    const text = lines.slice(2).join("\n");
-
-    cues.push({ id, startTime, endTime, text });
-  }
-
-  return cues;
 }
 
 function encodeRecipe(recipe: EditRecipe): string {
@@ -207,24 +177,36 @@ export function useVideoEditor() {
   const [currentTime, setCurrentTime] = useState(0);
 
   const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
-  const [subtitleCues, setSubtitleCues] = useState<SubtitleCue[]>([]);
-  const [subtitleFontFamily, setSubtitleFontFamily] = useState("Inter");
-  const [subtitleFontSize, setSubtitleFontSize] = useState<"small" | "medium" | "large">("medium");
-  const [subtitleTextColor, setSubtitleTextColor] = useState("#ffffff");
-  const [subtitleBgOpacity, setSubtitleBgOpacity] = useState(0.5);
-  const [subtitleHasShadow, setSubtitleHasShadow] = useState(true);
+  const [parsedSubtitles, setParsedSubtitles] = useState<SubtitleItem[] | null>(null);
 
-  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-    setRecipe((prev) => {
-      const next = { ...prev, ...patch };
-      // GIF has no audio — force keepAudio off
-      if (next.format === "gif") {
-        next.keepAudio = false;
-      }
-      return next;
-    });
+  const handleSubtitleSelect = useCallback(async (selectedFile: File) => {
+    if (!selectedFile) return;
+    setSubtitleFile(selectedFile);
+    try {
+      const text = await selectedFile.text();
+      const subs = parseSRT(text);
+      setParsedSubtitles(subs);
+    } catch (err) {
+      console.error("Failed to parse subtitle file:", err);
+      setParsedSubtitles([]);
+    }
   }, []);
 
+  const clearSubtitles = useCallback(() => {
+    setSubtitleFile(null);
+    setParsedSubtitles(null);
+  }, []);
+
+ const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+  setRecipe((prev) => {
+    const next = { ...prev, ...patch };
+    // GIF has no audio — force keepAudio off
+    if (next.format === "gif") {
+      next.keepAudio = false;
+    }
+    return next;
+  });
+}, []);
   const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
     switch (key) {
       case "preset":
@@ -253,6 +235,16 @@ export function useVideoEditor() {
         return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 2;
       case "saturation":
         return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 3;
+      case "subtitleFont":
+        return typeof val === "string";
+      case "subtitleColor":
+        return typeof val === "string";
+      case "subtitleSize":
+        return typeof val === "number" && !isNaN(val) && val >= 10 && val <= 120;
+      case "subtitleBgType":
+        return ["none", "box", "shadow", "outline"].includes(val);
+      case "subtitleBgColor":
+        return typeof val === "string";
       default:
         return true;
     }
@@ -332,25 +324,6 @@ export function useVideoEditor() {
   }, []);
 
   useEffect(() => {
-    if (!subtitleFile) {
-      setSubtitleCues([]);
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      if (text) {
-        setSubtitleCues(parseSRT(text));
-      }
-    };
-    reader.onerror = () => {
-      setSubtitleCues([]);
-    };
-    reader.readAsText(subtitleFile);
-  }, [subtitleFile]);
-
-  useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const params = new URLSearchParams();
@@ -413,12 +386,13 @@ export function useVideoEditor() {
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
     setResult(null);
-    setStatus("idle");
+    setStatus("loading");
     setError(null);
     setFile(null);
     setVideoMetadata(null);
     if (!selectedFile.type.startsWith("video/")) {
       setFileError("Please upload a video file only.");
+      setStatus("idle");
       return;
     }
 
@@ -471,6 +445,7 @@ export function useVideoEditor() {
       setDuration(dur);
       setVideoMetadata({ width, height, duration: dur });
       setFile(selectedFile);
+      setStatus("idle");
 
       if (dimensionCheck === "warning") {
         console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
@@ -541,15 +516,7 @@ export function useVideoEditor() {
           size: overlaySize,
           opacity: overlayOpacity,
         },
-        {
-          file: subtitleFile,
-          cues: subtitleCues,
-          fontFamily: subtitleFontFamily,
-          fontSize: subtitleFontSize,
-          textColor: subtitleTextColor,
-          bgOpacity: subtitleBgOpacity,
-          hasShadow: subtitleHasShadow,
-        }
+        parsedSubtitles ?? undefined
       );
       if (exportCancelledRef.current) return;
 
@@ -558,7 +525,7 @@ export function useVideoEditor() {
         exportDurationMs: Date.now() - startedAt,
       });
       setStatus("done");
-    }  catch (err) {
+     }  catch (err) {
       if (exportCancelledRef.current) return;
 
       console.error("export failed:", err);
@@ -579,7 +546,22 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, status, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration, loopMusic, musicFile, musicVolume, originalAudioVolume, subtitleFile, subtitleCues, subtitleFontFamily, subtitleFontSize, subtitleTextColor, subtitleBgOpacity, subtitleHasShadow]);
+  }, [
+    duration,
+    file,
+    loopMusic,
+    musicFile,
+    musicVolume,
+    originalAudioVolume,
+    overlayFile,
+    overlayOpacity,
+    overlayPosition,
+    overlaySize,
+    recipe,
+    result,
+    status,
+    parsedSubtitles,
+  ]);
 
 
   useEffect(() => {
@@ -659,13 +641,34 @@ export function useVideoEditor() {
     };
   }, [file]);
 
-  useEffect(() => {
-    return () => {
-      if (result?.blobUrl) {
+  useEffect(()=>{
+    return ()=>{
+      if(result?.blobUrl){
         URL.revokeObjectURL(result.blobUrl);
       }
-    };
-  }, [result?.blobUrl]);
+    }
+   },[result?.blobUrl])
+
+  // Reset export status/result/error when recipe or options change after an export/error
+  useEffect(() => {
+    if (status === "done" || status === "error") {
+      setStatus("idle");
+      setResult(null);
+      setError(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    recipe,
+    musicFile,
+    musicVolume,
+    originalAudioVolume,
+    loopMusic,
+    overlayFile,
+    overlayPosition,
+    overlaySize,
+    overlayOpacity,
+    subtitleFile,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -693,6 +696,7 @@ export function useVideoEditor() {
     setExportStartedAt(null);
   }, []);
 
+
   const reset = useCallback(() => {
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setFile(null);
@@ -703,14 +707,9 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
-    setSubtitleFile(null);
-    setSubtitleCues([]);
-    setSubtitleFontFamily("Inter");
-    setSubtitleFontSize("medium");
-    setSubtitleTextColor("#ffffff");
-    setSubtitleBgOpacity(0.5);
-    setSubtitleHasShadow(true);
     setExportStartedAt(null);
+    setSubtitleFile(null);
+    setParsedSubtitles(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -718,16 +717,15 @@ export function useVideoEditor() {
     }
   }, [result]);
 
+
   useEffect(() => {
     localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
   }, [recipe.soundOnCompletion]);
-
   const seekTo = useCallback((time: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
     }
   }, []);
-
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -737,8 +735,8 @@ export function useVideoEditor() {
   },[]);
 
   const toggleSound = useCallback(() => {
-    updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
-  }, [recipe.soundOnCompletion, updateRecipe]);
+  updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
+}, [recipe.soundOnCompletion, updateRecipe]);
 
   return {
     file,
@@ -775,21 +773,11 @@ export function useVideoEditor() {
     overlayOpacity,
     setOverlayOpacity,
     recommendedPreset,
-    subtitleFile,
-    setSubtitleFile,
-    subtitleCues,
-    setSubtitleCues,
-    subtitleFontFamily,
-    setSubtitleFontFamily,
-    subtitleFontSize,
-    setSubtitleFontSize,
-    subtitleTextColor,
-    setSubtitleTextColor,
-    subtitleBgOpacity,
-    setSubtitleBgOpacity,
-    subtitleHasShadow,
-    setSubtitleHasShadow,
     currentTime,
     toggleSound,
+    subtitleFile,
+    parsedSubtitles,
+    handleSubtitleSelect,
+    clearSubtitles,
   };
 }

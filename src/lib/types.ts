@@ -33,6 +33,11 @@ export interface EditRecipe {
   saturation: number;
   soundOnCompletion: boolean;
   textOverlays: TextOverlay[];
+  subtitleFont: string;
+  subtitleColor: string;
+  subtitleSize: number;
+  subtitleBgType: "none" | "box" | "shadow" | "outline";
+  subtitleBgColor: string;
   version: number;
 }
 
@@ -48,24 +53,6 @@ export interface ImageOverlayOptions {
   size: number;
   opacity: number;
 }
-
-export interface SubtitleCue {
-  id: number;
-  startTime: number;
-  endTime: number;
-  text: string;
-}
-
-export interface SubtitleOptions {
-  file: File | null;
-  cues: SubtitleCue[];
-  fontFamily: string;
-  fontSize: "small" | "medium" | "large";
-  textColor: string;
-  bgOpacity: number;
-  hasShadow: boolean;
-}
-
 
 export interface BackgroundMusicOptions {
   file: File | null;
@@ -86,6 +73,7 @@ export interface ExportResult {
 
 export type ExportStatus =
   | "idle"
+  | "loading"
   | "loading-engine"
   | "exporting"
   | "done"
@@ -120,6 +108,11 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
   if (!Array.isArray(v.textOverlays)) return false;
+  if (typeof v.subtitleFont !== "string") return false;
+  if (typeof v.subtitleColor !== "string") return false;
+  if (typeof v.subtitleSize !== "number" || !isFinite(v.subtitleSize)) return false;
+  if (!["none", "box", "shadow", "outline"].includes(v.subtitleBgType)) return false;
+  if (typeof v.subtitleBgColor !== "string") return false;
 
   return true;
 }

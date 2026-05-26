@@ -1,9 +1,7 @@
-import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
-import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions, SubtitleOptions } from "./types";
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { SubtitleItem } from "./subtitles";
 
 export class FFmpegLoadError extends Error {}
 
@@ -28,6 +26,7 @@ type WorkerExportRequest = {
   musicOptions?: BackgroundMusicOptions;
   overlayFile?: SerializedFile;
   overlayOptions?: ImageOverlayOptions;
+  subtitles?: SubtitleItem[];
 };
 
 type WorkerLoadResponse = { type: "ready" };
@@ -214,7 +213,8 @@ export async function exportVideo(
   onProgress: (percent: number) => void,
   signal?: AbortSignal,
   musicOptions?: BackgroundMusicOptions,
-  overlayOptions?: ImageOverlayOptions
+  overlayOptions?: ImageOverlayOptions,
+  subtitles?: SubtitleItem[]
 ): Promise<ExportResult> {
   await loadFFmpeg(signal, onProgress);
 
@@ -286,6 +286,7 @@ export async function exportVideo(
       musicOptions: sanitizedMusicOptions,
       overlayFile: overlayFilePayload,
       overlayOptions: sanitizedOverlayOptions,
+      subtitles,
     } as WorkerExportRequest,
     transfers
   );
@@ -423,55 +424,6 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
   return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
 }
 
-function buildSubtitleFilter(
-  subtitleOptions: SubtitleOptions | undefined,
-  targetW: number,
-  targetH: number,
-  fontFileLoaded: boolean
-): string {
-  if (!subtitleOptions || !subtitleOptions.file || subtitleOptions.cues.length === 0) {
-    return "";
-  }
-
-  const sizeMap = {
-    small: Math.max(16, Math.round(targetH * 0.035)),
-    medium: Math.max(24, Math.round(targetH * 0.05)),
-    large: Math.max(36, Math.round(targetH * 0.07)),
-  };
-  const fontSize = sizeMap[subtitleOptions.fontSize] ?? sizeMap.medium;
-  const marginY = Math.round(targetH * 0.08);
-
-  const filters = subtitleOptions.cues.map((cue) => {
-    const escaped = cue.text
-      .replace(/\\/g, "\\\\")
-      .replace(/'/g, "'\\''")
-      .replace(/:/g, "\\:")
-      .replace(/%/g, "\\%")
-      .replace(/,/g, "\\,")
-      .replace(/\r?\n/g, "\n");
-
-    let f = `drawtext=text='${escaped}':enable='between(t,${cue.startTime},${cue.endTime})':fontsize=${fontSize}:fontcolor=${subtitleOptions.textColor}:x=(w-text_w)/2:y=h-text_h-${marginY}`;
-
-    if (fontFileLoaded) {
-      f += `:fontfile=font.ttf`;
-    }
-
-    if (subtitleOptions.bgOpacity > 0) {
-      const boxColor = `black@${subtitleOptions.bgOpacity}`;
-      const padding = Math.max(4, Math.round(fontSize * 0.25));
-      f += `:box=1:boxcolor=${boxColor}:boxborderw=${padding}`;
-    }
-
-    if (subtitleOptions.hasShadow) {
-      f += `:shadowcolor=black@0.6:shadowx=2:shadowy=2`;
-    }
-
-    return f;
-  });
-
-  return filters.join(",");
-}
-
 function buildArguments(
   recipe: EditRecipe,
   format: "mp4" | "webm" | "mkv" | "gif",
@@ -486,13 +438,9 @@ function buildArguments(
   overlayInputName: string,
   overlayOptions: ImageOverlayOptions | undefined,
   hasOriginalAudio: boolean,
-  hasSubtitles: boolean,
-  subtitleOptions: SubtitleOptions | undefined,
-  fontFileLoaded: boolean,
   videoDuration: number
 ): string[] {
-  let vf = buildVideoFilter(recipe, targetW, targetH);
-  const subF = hasSubtitles ? buildSubtitleFilter(subtitleOptions, targetW, targetH, fontFileLoaded) : "";
+  const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
   const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
@@ -511,7 +459,7 @@ function buildArguments(
     args.push("-i", overlayInputName);
   }
 
-  const needsFilterComplex = hasOverlay || hasMusicTrack || hasSubtitles;
+  const needsFilterComplex = hasOverlay || hasMusicTrack;
   const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
 
   if (needsFilterComplex) {
@@ -534,13 +482,8 @@ function buildArguments(
       };
       const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
       filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
-      filterParts.push(`${videoOut}[logo]overlay=${pos}[logo_vout]`);
-      videoOut = "[logo_vout]";
-    }
-
-    if (hasSubtitles && subF) {
-      filterParts.push(`${videoOut}${subF}[sub_vout]`);
-      videoOut = "[sub_vout]";
+      filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
+      videoOut = "[vout]";
     }
 
     let audioOut = "";
@@ -614,258 +557,6 @@ function buildArguments(
 
   args.push(outputName);
   return args;
-}
-
-export async function exportVideo(
-  ffmpeg: FFmpeg,
-  file: File,
-  recipe: EditRecipe,
-  onProgress: (percent: number) => void,
-  signal?: AbortSignal,
-  musicOptions?: BackgroundMusicOptions,
-  overlayOptions?: ImageOverlayOptions,
-  subtitleOptions?: SubtitleOptions
-): Promise<ExportResult> {
-  const sessionId = buildSessionId();
-  let targetW: number, targetH: number;
-  if (recipe.preset === "custom") {
-    targetW = recipe.customWidth;
-    targetH = recipe.customHeight;
-  } else {
-    const preset = getPresetById(recipe.preset);
-    targetW = preset?.width ?? 1920;
-    targetH = preset?.height ?? 1080;
-  }
-
-  targetW = Math.round(targetW / 2) * 2;
-  targetH = Math.round(targetH / 2) * 2;
-
-  const ext = file.name.split(".").pop() ?? "mp4";
-  const inputName = `input_${sessionId}.${ext}`;
-
-  const getOutputConfig = (format: string) => {
-    switch (format) {
-      case "webm":
-        return { filename: `output_${sessionId}.webm`, mimeType: "video/webm" };
-      case "mkv":
-        return { filename: `output_${sessionId}.mkv`, mimeType: "video/x-matroska" };
-      case "gif":
-        return { filename: `output_${sessionId}.gif`, mimeType: "image/gif" };
-      default:
-        return { filename: `output_${sessionId}.mp4`, mimeType: "video/mp4" };
-    }
-  };
-
-  const { filename: outputName, mimeType } = getOutputConfig(recipe.format);
-  const fallbackOutputName = `fallback_${sessionId}.webm`;
-  const paletteName = `palette_${sessionId}.png`;
-  const cleanupFiles = new Set<string>([inputName, outputName, fallbackOutputName, paletteName]);
-
-  const handleProgress = ({ progress }: { progress: number }) => {
-    onProgress(Math.min(99, Math.round(progress * 100)));
-  };
-
-  // Read actual video duration via HTMLVideoElement so we can correctly
-  // compute output duration when trimEnd is null (no trim set by user).
-  // Falls back to trimEnd if metadata loading fails.
-  const videoDuration = await new Promise<number>((resolve) => {
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      URL.revokeObjectURL(video.src);
-      resolve(video.duration);
-    };
-    video.onerror = () => {
-      // Safe fallback: use trimEnd if available, otherwise 0 which
-      // will produce no -t argument and leave duration uncapped.
-      resolve(recipe.trimEnd ?? 0);
-    };
-    video.src = URL.createObjectURL(file);
-  });
-
-  try {
-    await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
-
-    const hasSubtitles = !!(subtitleOptions?.file && subtitleOptions.cues.length > 0);
-    let fontFileLoaded = false;
-    if (hasSubtitles) {
-      const fontUrls: Record<string, string> = {
-        "Inter": "https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_fvQtMwCp5GP3JT.ttf",
-        "Roboto": "https://fonts.gstatic.com/s/roboto/v32/KFOmCnqEu92Fr1Mu4mxK.ttf",
-        "Outfit": "https://fonts.gstatic.com/s/outfit/v11/q35yD1V9e3qxF37b9dQ.ttf",
-        "Playfair Display": "https://fonts.gstatic.com/s/playfairdisplay/v37/nuFvD-vYSZ27K9oF456vUTupHzU0GZ71qtQ.ttf",
-      };
-      const fontUrl = fontUrls[subtitleOptions!.fontFamily] ?? fontUrls["Inter"];
-
-      try {
-        const fontData = await fetchFile(fontUrl);
-        await ffmpeg.writeFile("font.ttf", fontData, { signal });
-        cleanupFiles.add("font.ttf");
-        fontFileLoaded = true;
-      } catch (err) {
-        console.error("Failed to load custom font, falling back to basic font", err);
-      }
-    }
-
-    const vf = buildVideoFilter(recipe, targetW, targetH);
-  const audioTrim = buildAudioTrimFilter(recipe);
-  const audioSpeed = buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false);
-
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
-  const af = afParts.join(",");
-    const hasMusicTrack = !!(musicOptions?.file && recipe.keepAudio);
-    const musicInputName = `music_input_${sessionId}.mp3`;
-    if (hasMusicTrack) {
-      await ffmpeg.writeFile(musicInputName, await fetchFile(musicOptions!.file!), { signal });
-      cleanupFiles.add(musicInputName);
-    }
-
-    const hasOverlay = !!overlayOptions?.file;
-    const overlayExt = overlayOptions?.file?.name.split(".").pop() ?? "png";
-    const overlayInputName = `overlay_${sessionId}.${overlayExt}`;
-    if (hasOverlay) {
-      await ffmpeg.writeFile(overlayInputName, await fetchFile(overlayOptions!.file!), { signal });
-      cleanupFiles.add(overlayInputName);
-    }
-
-    ffmpeg.on("progress", handleProgress);
-
-    // ── Two-pass GIF export ──────────────────────────────────────────────────
-    if (recipe.format === "gif") {
-      const vf = buildVideoFilter(recipe, targetW, targetH);
-      const vfWithPalette = vf ? `${vf},palettegen` : "palettegen";
-      const vfWithPaletteUse = vf
-        ? `[0:v]${vf}[x];[x][1:v]paletteuse`
-        : "[0:v][1:v]paletteuse";
-
-      // Add explicit output duration when speed != 1 to prevent slight duration
-      // overshoot caused by encoder/filter pipeline frame flush at stream end.
-      // Applied to both passes so palette and render are bounded identically.
-      const gifDurationArgs: string[] =
-        recipe.speed !== 1
-          ? (() => {
-              const sourceDuration =
-                (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
-              const outputDuration = sourceDuration / recipe.speed;
-              return ["-t", outputDuration.toFixed(6)];
-            })()
-          : [];
-
-      // Pass 1: generate colour palette
-      const pass1Code = await ffmpeg.exec(
-        ["-i", inputName, "-vf", vfWithPalette, ...gifDurationArgs, "-y", paletteName],
-        undefined,
-        { signal }
-      );
-      if (pass1Code !== 0) throw new Error("GIF palette generation failed");
-
-      // Pass 2: render GIF using the palette
-      const pass2Code = await ffmpeg.exec(
-        ["-i", inputName, "-i", paletteName, "-lavfi", vfWithPaletteUse, ...gifDurationArgs, "-y", outputName],
-        undefined,
-        { signal }
-      );
-      if (pass2Code !== 0) throw new Error("GIF export failed");
-
-      const data = await ffmpeg.readFile(outputName, undefined, { signal });
-      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "image/gif" });
-
-      ffmpeg.off("progress", handleProgress);
-      onProgress(100);
-      return {
-        blobUrl: URL.createObjectURL(blob),
-        blob,
-        size: blob.size,
-        width: targetW,
-        height: targetH,
-        format: "gif" as const,
-      };
-    }
-    // ────────────────────────────────────────────────────────────────────────
-
-    let missingAudioDetected = false;
-    const logListener = ({ message }: { message: string }) => {
-      const msg = message.toLowerCase();
-      if (
-        msg.includes("matches no streams") ||
-        msg.includes("specifier '0:a'") ||
-        msg.includes("input pad 0 on filter src")
-      ) {
-        missingAudioDetected = true;
-      }
-    };
-    ffmpeg.on("log", logListener);
-
-    // Attempt 1: Process with standard audio streams
-    let args = buildArguments(
-      recipe, recipe.format, outputName, inputName, targetW, targetH,
-      hasMusicTrack, musicInputName, musicOptions,
-      hasOverlay, overlayInputName, overlayOptions, true,
-      hasSubtitles, subtitleOptions, fontFileLoaded, videoDuration
-    );
-
-    let exitCode = await ffmpeg.exec(args, undefined, { signal });
-
-    // Attempt 2: Auto-recover if the file has no original audio track
-    if (exitCode !== 0 && missingAudioDetected) {
-      missingAudioDetected = false;
-      args = buildArguments(
-        recipe, recipe.format, outputName, inputName, targetW, targetH,
-        hasMusicTrack, musicInputName, musicOptions,
-        hasOverlay, overlayInputName, overlayOptions, false,
-        hasSubtitles, subtitleOptions, fontFileLoaded, videoDuration
-      );
-      exitCode = await ffmpeg.exec(args, undefined, { signal });
-    }
-
-    // Fallback Attempt 3: Switch codecs to WebM if container errors happen
-    if (exitCode !== 0) {
-      args = buildArguments(
-        recipe, "webm", fallbackOutputName, inputName, targetW, targetH,
-        hasMusicTrack, musicInputName, musicOptions,
-        hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected,
-        hasSubtitles, subtitleOptions, fontFileLoaded, videoDuration
-      );
-
-      const fallbackCode = await ffmpeg.exec(args, undefined, { signal });
-      if (fallbackCode !== 0) throw new Error("Export failed");
-
-      const data = await ffmpeg.readFile(fallbackOutputName, undefined, { signal });
-      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
-
-      ffmpeg.off("log", logListener);
-      onProgress(100);
-      return {
-        blobUrl: URL.createObjectURL(blob),
-        blob,
-        size: blob.size,
-        width: targetW,
-        height: targetH,
-        format: "webm",
-      };
-    }
-
-    const data = await ffmpeg.readFile(outputName, undefined, { signal });
-    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: mimeType });
-
-    ffmpeg.off("log", logListener);
-    onProgress(100);
-    return {
-      blobUrl: URL.createObjectURL(blob),
-      blob,
-      size: blob.size,
-      width: targetW,
-      height: targetH,
-      format: recipe.format as "mp4" | "webm" | "mkv",
-    };
-  } finally {
-    ffmpeg.off("progress", handleProgress);
-    for (const path of cleanupFiles) {
-      try {
-        await ffmpeg.deleteFile(path);
-      } catch {}
-    }
-  }
 }
 
 export function formatBytes(bytes: number): string {
