@@ -13,6 +13,16 @@ import { cn } from "@/lib/utils";
 const SHARE_TWEET_TEXT =
   "I just edited my video with @reframevideo — free browser-based video editor! Check it out: https://github.com/magic-peach/reframe";
 
+function formatExportDuration(ms: number): string {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (minutes === 0) return `${seconds} sec`;
+  if (seconds === 0) return `${minutes} min`;
+  return `${minutes} min ${seconds} sec`;
+}
+
 interface Props {
   result?: ExportResult | null;
   batchResults?: ExportResult[] | null;
@@ -38,10 +48,15 @@ export default function DownloadResult({
   const filename = result ? `${name.trim() || "untitled"}.${result.format}` : "";
   const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(SHARE_TWEET_TEXT)}`;
 
+  const [soundError, setSoundError] = useState(false);
+
   useEffect(() => {
     if (soundOnCompletion && (result || isBatch)) {
       const audio = new Audio("/sounds/export-complete.mp3");
-      audio.play().catch((err) => console.error(err));
+      audio.play().catch((error) => {
+        console.error("Failed to play completion sound:", error);
+        setSoundError(true);
+      });
     }
   }, [soundOnCompletion, result, isBatch]);
 
@@ -166,6 +181,10 @@ export default function DownloadResult({
   </button>
 </div>
 
+  {soundError && (
+    <p className="text-xs text-[var(--muted)]">Completion sound could not be played on this device.</p>
+  )}
+
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">Resolution</p>
@@ -175,6 +194,12 @@ export default function DownloadResult({
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">File size</p>
           <p className="font-heading font-bold text-[var(--text)]">{formatBytes(result.size)}</p>
         </div>
+        {typeof result.exportDurationMs === "number" && (
+          <div className="col-span-2 bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
+            <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">Export time</p>
+            <p className="font-heading font-bold text-[var(--text)]">Exported in {formatExportDuration(result.exportDurationMs)}</p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-1.5 pt-2">
@@ -182,7 +207,7 @@ export default function DownloadResult({
           <label htmlFor="filename-input" className="text-[var(--muted)] font-heading font-semibold uppercase tracking-wider">
             Filename
           </label>
-          <span className={cn("transition-colors", name.length >= 100 ? "text-red-500 font-medium" : "text-[var(--muted)]")}>
+          <span className={cn("transition-colors", name.length >= 100 ? "text-[var(--error)] font-medium" : "text-[var(--muted)]")}>
             {100 - name.length} chars remaining
           </span>
         </div>
@@ -195,7 +220,7 @@ export default function DownloadResult({
             maxLength={100}
             className={cn(
               "flex-1 px-3 py-2.5 bg-[var(--bg)] border rounded-lg text-sm transition-colors text-[var(--text)] placeholder:text-[var(--muted)]",
-              !isValid && name.length > 0 ? "border-red-500 focus:outline-red-500 focus:ring-1 focus:ring-red-500" : "border-[var(--border)] focus:outline-film-500"
+              !isValid && name.length > 0 ? "border-[var(--error)] focus:outline-[var(--error)] focus:ring-1 focus:ring-[var(--error)]" : "border-[var(--border)] focus:outline-[var(--accent)]"
             )}
             placeholder="Enter filename"
           />
@@ -204,7 +229,7 @@ export default function DownloadResult({
           </span>
         </div>
         {!isValid && name.length > 0 && (
-          <p className="text-xs text-red-500 px-1 flex items-center gap-1.5 mt-1 animate-fade-in">
+          <p className="text-xs text-[var(--error)] px-1 flex items-center gap-1.5 mt-1 animate-fade-in">
             <AlertCircle size={12} />
             Filename contains invalid characters (\ / : * ? &quot; &lt; &gt; |)
           </p>
@@ -218,7 +243,7 @@ export default function DownloadResult({
           className={cn(
             "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
             isValid 
-              ? "bg-film-600 text-white hover:bg-film-700 hover:scale-[1.01] active:scale-[0.99] cursor-pointer" 
+              ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.99] cursor-pointer"
               : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
           )}
           onClick={(e) => {
@@ -238,7 +263,7 @@ export default function DownloadResult({
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Preview video in new tab"
-          className="flex items-center justify-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] transition-colors"
         >
           Preview
         </a>
@@ -247,7 +272,7 @@ export default function DownloadResult({
           title="Reset and upload a new video"
           aria-label="Upload a new video"
           onClick={handleReset}
-          className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:bg-[var(--bg)] transition-colors"
+          className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] transition-colors"
         >
           <RotateCcw size={14} aria-hidden="true" />
           New
@@ -257,7 +282,7 @@ export default function DownloadResult({
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Share on X (opens in a new tab)"
-          className="flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 border border-[var(--border)] text-[var(--text)] text-sm font-heading font-bold uppercase tracking-wide rounded-lg hover:bg-[var(--bg)] transition-colors"
+          className="flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 border border-[var(--border)] text-[var(--text)] text-sm font-heading font-bold uppercase tracking-wide rounded-lg hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] transition-colors"
         >
           <Share2 size={15} aria-hidden="true" />
           Share on X

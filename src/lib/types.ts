@@ -1,5 +1,18 @@
 export const RECIPE_VERSION = 1;
 
+/**
+ * Text overlay data structure for rendering custom text on videos.
+ */
+export interface TextOverlay {
+  id: string;
+  text: string;
+  x: number; // Percentage (0-100) from left
+  y: number; // Percentage (0-100) from top
+  fontSize: number; // In pixels
+  color: string; // Hex color
+  fontWeight: "normal" | "bold" | "900";
+}
+
 export interface EditRecipe {
   preset: string;
   customWidth: number;
@@ -19,6 +32,7 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  textOverlays: TextOverlay[];
   version: number;
 }
 
@@ -48,9 +62,10 @@ export interface ExportResult {
   size: number;
   width: number;
   height: number;
-  format: "mp4" | "webm" | "mkv" | "gif"; // merged: gif from main + filename/presetId from feat/batch-export
+  format: "mp4" | "webm" | "mkv" | "gif";
   filename?: string;
   presetId?: string;
+  exportDurationMs?: number;
 }
 
 export type ExportStatus =
@@ -67,16 +82,12 @@ export interface BatchExportProgress {
   filename: string;
 }
 
-export const MAX_FILE_SIZE =
-  2 * 1024 * 1024 * 1024;
-
-export const WARNING_FILE_SIZE =
-  500 * 1024 * 1024; // 500MB
+export const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
+export const WARNING_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
 export function isValidRecipe(value: unknown): value is EditRecipe {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
-
   if (typeof v.version !== "number" || v.version !== RECIPE_VERSION) return false;
   if (typeof v.preset !== "string") return false;
   if (typeof v.customWidth !== "number" || !isFinite(v.customWidth)) return false;
@@ -95,6 +106,6 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
-
+  if (!Array.isArray(v.textOverlays)) return false;
   return true;
 }

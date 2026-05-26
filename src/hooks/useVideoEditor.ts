@@ -164,6 +164,19 @@ function validateRecipe(recipe: EditRecipe, duration: number): string | null {
   );
 }
 
+function encodeRecipe(recipe: EditRecipe): string {
+  return btoa(JSON.stringify(recipe));
+}
+
+function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
+  try {
+    const decoded = JSON.parse(atob(encoded));
+    return decoded as Partial<EditRecipe>;
+  } catch {
+    return null;
+  }
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -172,11 +185,20 @@ export function useVideoEditor() {
     height: number;
     duration: number;
   } | null>(null);
-  const [recipe, setRecipe] = useState({
-    ...DEFAULT_RECIPE,
-    soundOnCompletion:
-      typeof window !== "undefined" &&
-      localStorage.getItem("soundOnCompletion") === "true",
+  const [recipe, setRecipe] = useState<EditRecipe>(() => {
+    if (typeof window === "undefined") return { ...DEFAULT_RECIPE };
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get("settings");
+    if (encoded) {
+      const decoded = decodeRecipe(encoded);
+      if (decoded) return { ...DEFAULT_RECIPE, ...decoded };
+    }
+    return {
+      ...DEFAULT_RECIPE,
+      soundOnCompletion:
+        typeof window !== "undefined" &&
+        localStorage.getItem("soundOnCompletion") === "true",
+    };
   });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
@@ -184,6 +206,7 @@ export function useVideoEditor() {
   const [batchResults, setBatchResults] = useState<ExportResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
+  const [exportStartedAt, setExportStartedAt] = useState<number | null>(null);
   const [batchMode, setBatchMode] = useState(false);
   const [batchPresetIds, setBatchPresetIds] = useState<string[]>(() =>
     defaultBatchPresetIds(DEFAULT_RECIPE.preset)
@@ -203,10 +226,8 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
 
-  // From main: tracks playhead position for ThumbnailStrip
   const [currentTime, setCurrentTime] = useState(0);
 
-  // Merged: GIF audio fix from main + batch preset sync logic from feat/batch-export
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
     setRecipe((prev) => {
       const next = { ...prev, ...patch };
@@ -218,7 +239,6 @@ export function useVideoEditor() {
     });
   }, []);
 
-  // From feat/batch-export: syncs recipe preset when toggling batch mode off
   const setBatchModeWrapped = useCallback((enabled: boolean) => {
     if (enabled) {
       setBatchMode(true);
@@ -499,9 +519,7 @@ export function useVideoEditor() {
 
   const handleExport = useCallback(async () => {
     if (!file) return;
-    if (status === "loading-engine" || status === "exporting") {
-      return;
-    }
+    if (status === "loading-engine" || status === "exporting") return;
 
     const validationError = validateRecipe(recipe, duration);
     if (validationError) {
@@ -526,6 +544,7 @@ export function useVideoEditor() {
     setBatchResults(null);
     setError(null);
     setBatchProgress(null);
+    setExportStartedAt(null);
 
     const musicOpts = {
       file: musicFile,
@@ -546,14 +565,15 @@ export function useVideoEditor() {
       setStatus("loading-engine");
       setProgress(0);
 
-      const ffmpeg = await loadFFmpeg(abortController.signal);
+      await loadFFmpeg(abortController.signal, setProgress);
       if (exportCancelledRef.current) return;
 
+      const startedAt = Date.now();
+      setExportStartedAt(startedAt);
       setStatus("exporting");
 
       if (!batchMode) {
         const exportResult = await exportVideo(
-          ffmpeg,
           file,
           recipe,
           setProgress,
@@ -569,11 +589,17 @@ export function useVideoEditor() {
           exportResult.height,
           exportResult.format
         );
-        setResult({ ...exportResult, filename, presetId: recipe.preset });
+        setResult({
+          ...exportResult,
+          filename,
+          presetId: recipe.preset,
+          exportDurationMs: Date.now() - startedAt,
+        });
         setStatus("done");
         return;
       }
 
+      // Batch mode: export each preset in sequence
       for (let i = 0; i < batchPresetIds.length; i++) {
         if (abortController.signal.aborted || exportCancelledRef.current) break;
 
@@ -604,7 +630,6 @@ export function useVideoEditor() {
         setProgress(0);
 
         const exportResult = await exportVideo(
-          ffmpeg,
           file,
           recipeForJob,
           setProgress,
@@ -619,7 +644,12 @@ export function useVideoEditor() {
           exportResult.height,
           exportResult.format
         );
-        completed.push({ ...exportResult, filename, presetId });
+        completed.push({
+          ...exportResult,
+          filename,
+          presetId,
+          exportDurationMs: Date.now() - startedAt,
+        });
       }
 
       if (exportCancelledRef.current || abortController.signal.aborted) {
@@ -661,6 +691,7 @@ export function useVideoEditor() {
       } else {
         setError('Export failed. Please try again or use a different video.');
       }
+      setExportStartedAt(null);
       setStatus("error");
     } finally {
       setBatchProgress(null);
@@ -668,7 +699,24 @@ export function useVideoEditor() {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [file, recipe, result, batchResults, batchMode, batchPresetIds, status, musicFile, musicVolume, originalAudioVolume, loopMusic, overlayFile, overlayPosition, overlaySize, overlayOpacity, duration]);
+  }, [
+    file,
+    recipe,
+    result,
+    batchResults,
+    batchMode,
+    batchPresetIds,
+    status,
+    duration,
+    musicFile,
+    musicVolume,
+    originalAudioVolume,
+    loopMusic,
+    overlayFile,
+    overlayPosition,
+    overlaySize,
+    overlayOpacity,
+  ]);
 
   useEffect(() => {
     if (status === "exporting") {
@@ -690,13 +738,13 @@ export function useVideoEditor() {
   useEffect(() => {
     const shouldWarn =
       status === "exporting" ||
-      status === "loading-engine" ||
-      status === "done";
+      status === "loading-engine";
 
     if (!shouldWarn) return;
 
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
+      e.returnValue = "";
     };
 
     window.addEventListener("beforeunload", handler);
@@ -778,6 +826,7 @@ export function useVideoEditor() {
     setStatus("idle");
     setProgress(0);
     setError(null);
+    setExportStartedAt(null);
   }, []);
 
   const acknowledgeCancelled = useCallback(() => {
@@ -799,6 +848,7 @@ export function useVideoEditor() {
     setBatchMode(false);
     setBatchPresetIds(defaultBatchPresetIds(DEFAULT_RECIPE.preset));
     setError(null);
+    setExportStartedAt(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -822,7 +872,7 @@ export function useVideoEditor() {
     const handleTimeUpdate = () => setCurrentTime(video.currentTime);
     video.addEventListener("timeupdate", handleTimeUpdate);
     return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  });
+  }, []);
 
   const toggleSound = useCallback(() => {
     updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
@@ -834,6 +884,7 @@ export function useVideoEditor() {
     recipe,
     status,
     progress,
+    exportStartedAt,
     result,
     batchResults,
     error,
