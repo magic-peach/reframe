@@ -39,10 +39,15 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
 
   const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(SHARE_TWEET_TEXT)}`;
 
+  const [soundError, setSoundError] = useState(false);
+
   useEffect(() => {
     if (soundOnCompletion) {
       const audio = new Audio("/sounds/export-complete.mp3");
-      audio.play().catch((err) => console.error(err));
+      audio.play().catch((error) => {
+        console.error("Failed to play completion sound:", error);
+        setSoundError(true);
+      });
     }
   }, [soundOnCompletion]);
   const handleReset = () => {
@@ -73,6 +78,10 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
     {soundOnCompletion ? <Volume2 size={14} /> : <VolumeX size={14} />}
   </button>
 </div>
+
+  {soundError && (
+    <p className="text-xs text-[var(--muted)]">Completion sound could not be played on this device.</p>
+  )}
 
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">

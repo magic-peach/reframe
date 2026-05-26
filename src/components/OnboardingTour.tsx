@@ -293,30 +293,38 @@ export default function OnboardingTour() {
     }
 
     let retryCount = 0;
-    const maxRetries = 10; // Retry up to 10 times (5 seconds total with 500ms delays)
+    const maxRetries = 10; // Retry up to ~5s with 500ms delays
     let retryTimer: number | null = null;
+    let cancelled = false;
 
     const tryMeasure = () => {
-      measureTarget(currentStep.targetId).then((rect) => {
-        if (rect) {
-          setTargetRect(rect);
-          setTimeout(() => tooltipRef.current?.focus(), 50);
-          retryCount = 0; // Reset on success
-        } else if (retryCount < maxRetries) {
-          // Keep retrying without auto-skipping
-          retryCount++;
-          retryTimer = window.setTimeout(tryMeasure, 500);
-        }
-        // If max retries exceeded, just stay on current step and wait for user interaction
-      });
+      measureTarget(currentStep.targetId)
+        .then((rect) => {
+          if (cancelled) return;
+          if (rect) {
+            setTargetRect(rect);
+            setTimeout(() => tooltipRef.current?.focus(), 50);
+            retryCount = 0;
+          } else if (retryCount < maxRetries) {
+            retryCount++;
+            retryTimer = window.setTimeout(tryMeasure, 500);
+          } else {
+            // If we've retried enough, fallback to advancing or dismissing
+            if (stepIndex < TOUR_STEPS.length - 1) setStepIndex((i) => i + 1);
+            else dismiss();
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to measure tour target:", error);
+          dismiss();
+        });
     };
 
     tryMeasure();
 
     return () => {
-      if (retryTimer !== null) {
-        clearTimeout(retryTimer);
-      }
+      cancelled = true;
+      if (retryTimer !== null) clearTimeout(retryTimer);
     };
   }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
 
