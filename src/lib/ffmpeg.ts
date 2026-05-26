@@ -59,6 +59,8 @@ let pendingExport: {
   reject: (reason: unknown) => void;
 } | null = null;
 let pendingProgress: ((percent: number) => void) | null = null;
+let ffmpegMain: any = null;
+let useMainThreadFallback = false;
 
 function createWorker(): Worker {
   if (!FFMPEG_WORKER_URL) {
@@ -167,40 +169,67 @@ export async function loadFFmpeg(
   signal?: AbortSignal,
   onProgress?: (percent: number) => void
 ): Promise<void> {
-  await ensureWorker();
+  // Try to initialize worker first; if that fails, fall back to main-thread ffmpeg.
+  try {
+    await ensureWorker();
 
-  if (workerReady && workerReadyResolve === null) {
+    if (workerReady && workerReadyResolve === null) {
+      onProgress?.(100);
+      return;
+    }
+
+    if (!workerReady) {
+      ffmpegWorker!.postMessage({ type: "load" });
+    }
+
+    pendingProgress = onProgress ?? null;
+
+    if (signal?.aborted) {
+      ffmpegWorker?.postMessage({ type: "cancel" });
+      throw new DOMException("Aborted", "AbortError");
+    }
+
+    const cleanup = () => {
+      signal?.removeEventListener("abort", onAbort);
+    };
+
+    const onAbort = () => {
+      ffmpegWorker?.postMessage({ type: "cancel" });
+      workerReadyReject?.(new DOMException("Aborted", "AbortError"));
+      cleanup();
+    };
+
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    try {
+      await workerReady;
+      return;
+    } finally {
+      cleanup();
+    }
+  } catch (err) {
+    // Worker bootstrap failed — attempt main-thread fallback.
+    console.warn("FFmpeg worker failed to initialize, falling back to main-thread FFmpeg:", err);
+    useMainThreadFallback = true;
+    pendingProgress = onProgress ?? null;
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    // Lazy load main-thread ffmpeg
+    if (!ffmpegMain) {
+      const mod = await import("@ffmpeg/ffmpeg");
+      const FFmpeg = mod.FFmpeg ?? mod.default ?? mod;
+      ffmpegMain = new FFmpeg();
+      const handleProgress = ({ progress }: { progress: number }) => {
+        onProgress?.(Math.round(progress * 100));
+      };
+      ffmpegMain.on("progress", handleProgress);
+      try {
+        await ffmpegMain.load();
+      } finally {
+        ffmpegMain.off("progress", handleProgress);
+      }
+    }
     onProgress?.(100);
     return;
-  }
-
-  if (!workerReady) {
-    ffmpegWorker!.postMessage({ type: "load" });
-  }
-
-  pendingProgress = onProgress ?? null;
-
-  if (signal?.aborted) {
-    ffmpegWorker?.postMessage({ type: "cancel" });
-    throw new DOMException("Aborted", "AbortError");
-  }
-
-  const cleanup = () => {
-    signal?.removeEventListener("abort", onAbort);
-  };
-
-  const onAbort = () => {
-    ffmpegWorker?.postMessage({ type: "cancel" });
-    workerReadyReject?.(new DOMException("Aborted", "AbortError"));
-    cleanup();
-  };
-
-  signal?.addEventListener("abort", onAbort, { once: true });
-
-  try {
-    await workerReady;
-  } finally {
-    cleanup();
   }
 }
 
@@ -221,6 +250,11 @@ export async function exportVideo(
   overlayOptions?: ImageOverlayOptions
 ): Promise<ExportResult> {
   await loadFFmpeg(signal, onProgress);
+
+  // If worker failed to initialize, use basic main-thread fallback for simple exports
+  if (useMainThreadFallback) {
+    return await simpleMainExport(file, recipe, onProgress, signal);
+  }
 
   if (!ffmpegWorker) {
     throw new Error("FFmpeg worker is not available.");
@@ -299,6 +333,60 @@ export async function exportVideo(
   } finally {
     signal?.removeEventListener("abort", onAbort);
   }
+}
+
+async function simpleMainExport(
+  file: File,
+  recipe: EditRecipe,
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal
+): Promise<ExportResult> {
+  if (!ffmpegMain) throw new Error("Main-thread FFmpeg is not loaded");
+
+  // Only support simple remux (no filters/transforms) in fallback.
+  const requiresProcessing =
+    recipe.speed !== 1 ||
+    recipe.trimStart !== 0 ||
+    recipe.trimEnd !== null ||
+    (recipe.textOverlays && recipe.textOverlays.length > 0) ||
+    recipe.stabilization ||
+    recipe.rotate !== 0 ||
+    recipe.denoise ||
+    recipe.brightness !== 0 ||
+    recipe.contrast !== 1 ||
+    recipe.saturation !== 1 ||
+    !recipe.keepAudio;
+
+  if (requiresProcessing) {
+    throw new Error("Worker failed and fallback cannot perform complex edits. Please retry or use worker-enabled environment.");
+  }
+
+  const sessionId = buildSessionId();
+  const ext = file.name.split(".").pop() ?? "mp4";
+  const inputName = `input_${sessionId}.${ext}`;
+  const outputName = `output_${sessionId}.mp4`;
+
+  const array = new Uint8Array(await file.arrayBuffer());
+  await ffmpegMain.writeFile(inputName, array);
+
+  // Exec a simple remux (copy codecs)
+  const args = ["-i", inputName, "-c", "copy", "-y", outputName];
+
+  const code = await ffmpegMain.exec(args, undefined, { signal });
+  if (code !== 0) throw new Error("Fallback export failed");
+
+  const data = await ffmpegMain.readFile(outputName, undefined, { signal });
+  const payload = (data as Uint8Array).buffer as ArrayBuffer;
+
+  const blob = new Blob([payload], { type: "video/mp4" });
+  return {
+    blobUrl: URL.createObjectURL(blob),
+    blob,
+    size: payload.byteLength,
+    width: 0,
+    height: 0,
+    format: "mp4",
+  };
 }
 
 async function getVideoDuration(file: File): Promise<number> {
