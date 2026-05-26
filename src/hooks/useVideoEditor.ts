@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe, RECIPE_VERSION } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import { validateSegments, hasMultiSegments } from "@/lib/trim-segments";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
@@ -112,10 +113,16 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
     ],
   ];
 
-  return (
-    validations.find(([condition]) => condition)?.[1] ??
-    null
-  );
+  const basicError = validations.find(([condition]) => condition)?.[1] ?? null;
+  if (basicError) return basicError;
+
+  // Multi-segment validation
+  if (hasMultiSegments(recipe.trimSegments ?? [])) {
+    const segError = validateSegments(recipe.trimSegments!, duration);
+    if (segError) return segError;
+  }
+
+  return null;
 }
 
 function encodeRecipe(recipe: EditRecipe): string {
@@ -141,6 +148,10 @@ function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
     ...recipe,
     // Ensure textOverlays is always an array
     textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
+    // Ensure trimSegments is always an array (v1 recipes don't have it)
+    trimSegments: Array.isArray(recipe.trimSegments) ? recipe.trimSegments : [],
+    // Bump version to current
+    version: RECIPE_VERSION,
   };
 }
 
@@ -250,6 +261,12 @@ export function useVideoEditor() {
               parsedVal = parseFloat(paramVal);
             } else if (defaultType === "boolean") {
               parsedVal = paramVal === "true";
+            } else if (defaultType === "object" && paramVal !== "null") {
+              try {
+                parsedVal = JSON.parse(paramVal);
+              } catch {
+                parsedVal = DEFAULT_RECIPE[key];
+              }
             } else {
               parsedVal = paramVal === "null" ? null : paramVal;
             }
@@ -315,7 +332,11 @@ export function useVideoEditor() {
         const defaultVal = DEFAULT_RECIPE[key];
 
         if (currentVal !== defaultVal) {
-          params.set(key, currentVal === null ? "null" : String(currentVal));
+          if (typeof currentVal === "object" && currentVal !== null) {
+            params.set(key, JSON.stringify(currentVal));
+          } else {
+            params.set(key, currentVal === null ? "null" : String(currentVal));
+          }
         }
       });
 
@@ -437,6 +458,7 @@ export function useVideoEditor() {
           ...prev,
           trimStart: 0,
           trimEnd: null,
+          trimSegments: [],
           ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
         };
       });

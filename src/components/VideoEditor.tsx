@@ -397,6 +397,7 @@ export default function VideoEditor() {
                       currentTime={currentTime}
                       trimStart={recipe.trimStart ?? 0}
                       trimEnd={recipe.trimEnd ?? duration}
+                      trimSegments={recipe.trimSegments}
                       onSeek={seekTo}
                       intervalSeconds={intervalSeconds}
                     />
@@ -429,6 +430,7 @@ export default function VideoEditor() {
                       onChange={updateRecipe}
                       duration={duration}
                       file={file}
+                      currentTime={currentTime}
                     />
                   </AccordionSection>
 

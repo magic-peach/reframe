@@ -10,6 +10,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   framing: "fit",
   trimStart: 0,
   trimEnd: null,
+  trimSegments: [],
   rotate: 0,
   keepAudio: true,
   speed: 1,

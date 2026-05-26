@@ -1,4 +1,14 @@
-export const RECIPE_VERSION = 1;
+export const RECIPE_VERSION = 2;
+
+/**
+ * A single "keep" segment for multi-segment trimming.
+ * Each segment defines a continuous time range to preserve in the output.
+ */
+export interface TrimSegment {
+  id: string;
+  start: number; // Start time in seconds
+  end: number;   // End time in seconds
+}
 
 /**
  * Text overlay data structure for rendering custom text on videos.
@@ -22,6 +32,7 @@ export interface EditRecipe {
   framing: "fit" | "fill";
   trimStart: number;
   trimEnd: number | null;
+  trimSegments: TrimSegment[];
   rotate: 0 | 90 | 180 | 270;
   keepAudio: boolean;
   normalizeAudio: boolean;
@@ -81,17 +92,39 @@ export const MAX_FILE_SIZE =
 export const WARNING_FILE_SIZE =
   500 * 1024 * 1024; // 500MB
 
+/**
+ * Validates that trimSegments are well-formed:
+ * - Each segment has valid id, start, end
+ * - start < end
+ * - Segments are sorted and non-overlapping
+ */
+function isValidTrimSegments(segments: unknown): segments is TrimSegment[] {
+  if (!Array.isArray(segments)) return false;
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    if (!seg || typeof seg !== "object") return false;
+    if (typeof seg.id !== "string") return false;
+    if (typeof seg.start !== "number" || !isFinite(seg.start) || seg.start < 0) return false;
+    if (typeof seg.end !== "number" || !isFinite(seg.end)) return false;
+    if (seg.start >= seg.end) return false;
+    if (i > 0 && seg.start < segments[i - 1].end) return false;
+  }
+  return true;
+}
+
 export function isValidRecipe(value: unknown): value is EditRecipe {
   if (!value || typeof value !== "object") return false;
   const v = value as any;
 
-  if (typeof v.version !== "number" || v.version !== RECIPE_VERSION) return false;
+  // Accept both v1 and v2 recipes
+  if (typeof v.version !== "number" || (v.version !== RECIPE_VERSION && v.version !== 1)) return false;
   if (typeof v.preset !== "string") return false;
   if (typeof v.customWidth !== "number" || !isFinite(v.customWidth)) return false;
   if (typeof v.customHeight !== "number" || !isFinite(v.customHeight)) return false;
   if (v.framing !== "fit" && v.framing !== "fill") return false;
   if (typeof v.trimStart !== "number" || !isFinite(v.trimStart)) return false;
   if (!(v.trimEnd === null || (typeof v.trimEnd === "number" && isFinite(v.trimEnd)))) return false;
+  if (v.trimSegments !== undefined && !isValidTrimSegments(v.trimSegments)) return false;
   if (![0, 90, 180, 270].includes(v.rotate)) return false;
   if (typeof v.keepAudio !== "boolean") return false;
   if (typeof v.normalizeAudio !== "boolean") return false;

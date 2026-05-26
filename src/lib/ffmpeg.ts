@@ -1,6 +1,7 @@
-import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
+import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions, TrimSegment } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { hasMultiSegments } from "./trim-segments";
 
 export class FFmpegLoadError extends Error {}
 
@@ -325,10 +326,16 @@ function buildSessionId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+/**
+ * Builds video filters for single-trim or no-trim mode.
+ * When multi-segment mode is active, trim is handled by buildMultiSegmentFilterComplex instead.
+ */
 export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
+  const isMultiSeg = hasMultiSegments(recipe.trimSegments ?? []);
 
-  if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
+  // Skip trim in multi-segment mode — it's handled by the concat pipeline
+  if (!isMultiSeg && (recipe.trimStart > 0 || recipe.trimEnd !== null)) {
     const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
     filters.push(`trim=start=${recipe.trimStart}:end=${end}`);
   }
@@ -359,7 +366,7 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
 
   // Normalize timestamps only when needed — trim or speed change both
   // require a clean 0-based timeline to produce correct output duration.
-  if (recipe.trimStart > 0 || recipe.trimEnd !== null || recipe.speed !== 1) {
+  if (!isMultiSeg && (recipe.trimStart > 0 || recipe.trimEnd !== null || recipe.speed !== 1)) {
     filters.push("setpts=PTS-STARTPTS");
   }
 
@@ -417,9 +424,133 @@ export function buildAudioFilter(speed: number, normalizeAudio: boolean): string
 }
 
 function buildAudioTrimFilter(recipe: EditRecipe): string {
+  // Skip in multi-segment mode
+  if (hasMultiSegments(recipe.trimSegments ?? [])) return "";
   if (recipe.trimStart === 0 && recipe.trimEnd === null) return "";
   const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
   return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
+}
+
+/**
+ * Builds the post-concat video filter chain.
+ * These filters are applied to the concatenated output stream.
+ */
+function buildPostConcatVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
+  const filters: string[] = [];
+
+  if (recipe.stabilization) filters.push("deshake");
+
+  if (recipe.rotate === 90) filters.push("transpose=1");
+  else if (recipe.rotate === 180) filters.push("transpose=1,transpose=1");
+  else if (recipe.rotate === 270) filters.push("transpose=2");
+
+  if (recipe.framing === "fit") {
+    filters.push(
+      `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
+      `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
+    );
+  } else {
+    filters.push(
+      `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
+      `crop=${targetW}:${targetH}`
+    );
+  }
+
+  if (recipe.speed !== 1) {
+    filters.push("setpts=PTS-STARTPTS");
+    const pts = (1 / recipe.speed).toFixed(4);
+    filters.push(`setpts=${pts}*PTS`);
+  }
+
+  if (recipe.denoise) filters.push("hqdn3d=1.5:1.5:6:6");
+
+  const needsEq = recipe.brightness !== 0 || recipe.contrast !== 1 || recipe.saturation !== 1;
+  if (needsEq) {
+    filters.push(`eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`);
+  }
+
+  const textOverlays = recipe.textOverlays || [];
+  textOverlays.forEach((overlay) => {
+    filters.push(buildTextFilter(overlay, targetW, targetH));
+  });
+
+  return filters.join(",");
+}
+
+/**
+ * Builds a filter_complex string for multi-segment concatenation.
+ *
+ * Strategy:
+ * 1. For each segment, create a trim+setpts chain (video) and atrim+asetpts chain (audio)
+ * 2. Concat all segments together
+ * 3. Apply post-processing (scale, rotate, eq, speed, text) on the concat output
+ *
+ * Example for 2 segments:
+ *   [0:v]trim=0:15,setpts=PTS-STARTPTS[v0];
+ *   [0:v]trim=20:60,setpts=PTS-STARTPTS[v1];
+ *   [0:a]atrim=0:15,asetpts=PTS-STARTPTS[a0];
+ *   [0:a]atrim=20:60,asetpts=PTS-STARTPTS[a1];
+ *   [v0][a0][v1][a1]concat=n=2:v=1:a=1[vcombined][acombined];
+ *   [vcombined]scale=...,setpts=...[vout]
+ */
+export function buildMultiSegmentFilterComplex(
+  recipe: EditRecipe,
+  segments: TrimSegment[],
+  targetW: number,
+  targetH: number,
+  includeAudio: boolean
+): { filterComplex: string; videoOut: string; audioOut: string } {
+  const sorted = [...segments].sort((a, b) => a.start - b.start);
+  const n = sorted.length;
+  const parts: string[] = [];
+
+  // Step 1: Per-segment trim chains
+  for (let i = 0; i < sorted.length; i++) {
+    const seg = sorted[i];
+    if (!seg) continue;
+    parts.push(`[0:v]trim=start=${seg.start}:end=${seg.end},setpts=PTS-STARTPTS[v${i}]`);
+    if (includeAudio) {
+      parts.push(`[0:a]atrim=start=${seg.start}:end=${seg.end},asetpts=PTS-STARTPTS[a${i}]`);
+    }
+  }
+
+  // Step 2: Concat
+  let concatInputs = "";
+  for (let i = 0; i < n; i++) {
+    concatInputs += `[v${i}]`;
+    if (includeAudio) concatInputs += `[a${i}]`;
+  }
+
+  const audioStreams = includeAudio ? 1 : 0;
+  if (includeAudio) {
+    parts.push(`${concatInputs}concat=n=${n}:v=1:a=${audioStreams}[vcombined][acombined]`);
+  } else {
+    parts.push(`${concatInputs}concat=n=${n}:v=1:a=0[vcombined]`);
+  }
+
+  // Step 3: Post-processing on the concat output
+  const postFilters = buildPostConcatVideoFilter(recipe, targetW, targetH);
+  let videoOut = "[vcombined]";
+  if (postFilters) {
+    parts.push(`[vcombined]${postFilters}[vout]`);
+    videoOut = "[vout]";
+  }
+
+  // Audio post-processing (speed)
+  let audioOut = includeAudio ? "[acombined]" : "";
+  if (includeAudio) {
+    const audioSpeed = buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false);
+    if (audioSpeed) {
+      parts.push(`[acombined]${audioSpeed}[aout]`);
+      audioOut = "[aout]";
+    }
+  }
+
+  return {
+    filterComplex: parts.join(";"),
+    videoOut,
+    audioOut,
+  };
 }
 
 function buildArguments(
@@ -438,14 +569,7 @@ function buildArguments(
   hasOriginalAudio: boolean,
   videoDuration: number
 ): string[] {
-  const vf = buildVideoFilter(recipe, targetW, targetH);
-  const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
-  const af = afParts.join(",");
-
-  const musicIdx = 1;
-  const overlayIdx = hasMusicTrack ? 2 : 1;
+  const isMultiSeg = hasMultiSegments(recipe.trimSegments ?? []);
 
   const args: string[] = [];
   args.push("-i", inputName);
@@ -457,17 +581,47 @@ function buildArguments(
     args.push("-i", overlayInputName);
   }
 
-  const needsFilterComplex = hasOverlay || hasMusicTrack;
   const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
 
-  if (needsFilterComplex) {
-    const filterParts: string[] = [];
-    let videoOut = "[0:v]";
+  // ── Multi-segment concat path ──
+  if (isMultiSeg) {
+    const segments = recipe.trimSegments!;
+    const multiSeg = buildMultiSegmentFilterComplex(
+      recipe,
+      segments,
+      targetW,
+      targetH,
+      shouldKeepAudio && hasOriginalAudio
+    );
 
-    if (vf) {
-      filterParts.push(`[0:v]${vf}[vbase]`);
-      videoOut = "[vbase]";
+    args.push("-filter_complex", multiSeg.filterComplex);
+    args.push("-map", multiSeg.videoOut);
+
+    if (!shouldKeepAudio) {
+      args.push("-an");
+    } else if (multiSeg.audioOut) {
+      args.push("-map", multiSeg.audioOut);
     }
+  } else {
+    // ── Original single-trim path (unchanged) ──
+    const vf = buildVideoFilter(recipe, targetW, targetH);
+    const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
+    const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+    const afParts = [audioTrim, audioSpeed].filter(Boolean);
+    const af = afParts.join(",");
+
+    const musicIdx = 1;
+    const overlayIdx = hasMusicTrack ? 2 : 1;
+    const needsFilterComplex = hasOverlay || hasMusicTrack;
+
+    if (needsFilterComplex) {
+      const filterParts: string[] = [];
+      let videoOut = "[0:v]";
+
+      if (vf) {
+        filterParts.push(`[0:v]${vf}[vbase]`);
+        videoOut = "[vbase]";
+      }
 
 if (hasOverlay) {
   const scaledW = overlayOptions!.size;
@@ -495,47 +649,48 @@ interface PositionCoords {
   videoOut = "[vout]";
 }
 
-    let audioOut = "";
-    if (shouldKeepAudio) {
-      if (hasMusicTrack) {
-        const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
-        if (hasOriginalAudio) {
-          const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
-          const origChain = afParts.length > 0
-            ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
-            : `[0:a]volume=${origVol}[orig]`;
-          filterParts.push(origChain);
-          filterParts.push(`[${musicIdx}:a]volume=${musicVol}[music]`);
-          filterParts.push(`[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
-          audioOut = "[aout]";
-        } else {
-          filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
+      let audioOut = "";
+      if (shouldKeepAudio) {
+        if (hasMusicTrack) {
+          const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
+          if (hasOriginalAudio) {
+            const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
+            const origChain = afParts.length > 0
+              ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
+              : `[0:a]volume=${origVol}[orig]`;
+            filterParts.push(origChain);
+            filterParts.push(`[${musicIdx}:a]volume=${musicVol}[music]`);
+            filterParts.push(`[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
+            audioOut = "[aout]";
+          } else {
+            filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
+            audioOut = "[aout]";
+          }
+        } else if (hasOriginalAudio && af) {
+          filterParts.push(`[0:a]${af}[aout]`);
           audioOut = "[aout]";
         }
-      } else if (hasOriginalAudio && af) {
-        filterParts.push(`[0:a]${af}[aout]`);
-        audioOut = "[aout]";
       }
-    }
 
-    if (filterParts.length > 0) {
-      args.push("-filter_complex", filterParts.join(";"));
-    }
-    args.push("-map", videoOut === "[0:v]" ? "0:v" : videoOut);
+      if (filterParts.length > 0) {
+        args.push("-filter_complex", filterParts.join(";"));
+      }
+      args.push("-map", videoOut === "[0:v]" ? "0:v" : videoOut);
 
-    if (!shouldKeepAudio) {
-      args.push("-an");
-    } else if (audioOut) {
-      args.push("-map", audioOut);
-    } else if (hasOriginalAudio) {
-      args.push("-map", "0:a");
-    }
-  } else {
-    if (vf) args.push("-vf", vf);
-    if (!shouldKeepAudio) {
-      args.push("-an");
-    } else if (af && hasOriginalAudio) {
-      args.push("-af", af);
+      if (!shouldKeepAudio) {
+        args.push("-an");
+      } else if (audioOut) {
+        args.push("-map", audioOut);
+      } else if (hasOriginalAudio) {
+        args.push("-map", "0:a");
+      }
+    } else {
+      if (vf) args.push("-vf", vf);
+      if (!shouldKeepAudio) {
+        args.push("-an");
+      } else if (af && hasOriginalAudio) {
+        args.push("-af", af);
+      }
     }
   }
 
@@ -559,7 +714,12 @@ interface PositionCoords {
   // Add explicit output duration when speed != 1 to prevent slight duration
   // overshoot caused by encoder/filter pipeline frame flush at stream end.
   if (recipe.speed !== 1) {
-    const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
+    let sourceDuration: number;
+    if (isMultiSeg) {
+      sourceDuration = recipe.trimSegments!.reduce((sum, seg) => sum + (seg.end - seg.start), 0);
+    } else {
+      sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
+    }
     const outputDuration = sourceDuration / recipe.speed;
     args.push("-t", outputDuration.toFixed(6));
   }

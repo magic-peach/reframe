@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { TrimSegment } from "@/lib/types";
+import { hasMultiSegments } from "@/lib/trim-segments";
 
 interface Thumbnail {
   time: number;
@@ -14,6 +16,7 @@ interface ThumbnailStripProps {
   currentTime: number;
   trimStart?: number;
   trimEnd?: number;
+  trimSegments?: TrimSegment[];
   onSeek: (time: number) => void;
   intervalSeconds?: number;
 }
@@ -24,6 +27,7 @@ export default function ThumbnailStrip({
   currentTime,
   trimStart = 0,
   trimEnd,
+  trimSegments = [],
   onSeek,
   intervalSeconds = 5,
 }: ThumbnailStripProps) {
@@ -207,8 +211,14 @@ export default function ThumbnailStrip({
           <div className="strip-inner">
             {thumbnails.map((thumb, i) => {
               const isActive = i === activeIndex;
-              const inTrimRange =
-                thumb.time >= trimStart && thumb.time <= effectiveTrimEnd;
+              
+              let inTrimRange = false;
+              if (hasMultiSegments(trimSegments)) {
+                inTrimRange = trimSegments.some(seg => thumb.time >= seg.start && thumb.time <= seg.end);
+              } else {
+                inTrimRange = thumb.time >= trimStart && thumb.time <= effectiveTrimEnd;
+              }
+
               const isHovered = hoveredIndex === i;
 
               return (
