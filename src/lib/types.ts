@@ -38,11 +38,12 @@ export interface EditRecipe {
   version: number;
 }
 
-export type OverlayPosition =
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-right";
+export type OverlayPosition = 
+  | "top-left" 
+  | "top-right" 
+  | "bottom-left" 
+  | "bottom-right" 
+  | { x: number; y: number };
 
 export interface ImageOverlayOptions {
   file: File | null;

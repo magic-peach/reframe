@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, isValidRecipe } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
@@ -184,7 +184,7 @@ export function useVideoEditor() {
   const [loopMusic, setLoopMusic] = useState(false);
 
   const [overlayFile, setOverlayFile] = useState<File | null>(null);
-  const [overlayPosition, setOverlayPosition] = useState<OverlayPosition>("bottom-right");
+  const [overlayPosition, setOverlayPosition] = useState<{ x: number; y: number }>({ x: 85, y: 5 });
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);

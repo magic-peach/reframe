@@ -1,24 +1,23 @@
 import Image from "next/image";
 import { useRef, useState, useEffect } from "react";
-import { OverlayPosition } from "@/lib/types";
 import { ArrowUpLeft, ArrowUpRight, ArrowDownLeft, ArrowDownRight, Upload, Trash2, FileImage } from "lucide-react";
 
 interface ImageOverlayPanelProps {
   overlayFile: File | null;
   setOverlayFile: (file: File | null) => void;
-  overlayPosition: OverlayPosition;
-  setOverlayPosition: (p: OverlayPosition) => void;
+  overlayPosition: { x: number; y: number };
+  setOverlayPosition: (p: { x: number; y: number }) => void;
   overlaySize: number;
   setOverlaySize: (v: number) => void;
   overlayOpacity: number;
   setOverlayOpacity: (v: number) => void;
 }
 
-const POSITIONS: { value: OverlayPosition; icon: React.ReactNode; label: string }[] = [
-  { value: "top-left",     icon: <ArrowUpLeft size={11} />,  label: "TL" },
-  { value: "top-right",    icon: <ArrowUpRight size={11} />, label: "TR" },
-  { value: "bottom-left",  icon: <ArrowDownLeft size={11} />, label: "BL" },
-  { value: "bottom-right", icon: <ArrowDownRight size={11} />, label: "BR" },
+const POSITIONS: { value: { x: number; y: number }; icon: React.ReactNode; label: string }[] = [
+  { value: { x: 5, y: 5 },   icon: <ArrowUpLeft size={11} />,  label: "TL" },
+  { value: { x: 85, y: 5 },  icon: <ArrowUpRight size={11} />, label: "TR" },
+  { value: { x: 5, y: 85 },  icon: <ArrowDownLeft size={11} />, label: "BL" },
+  { value: { x: 85, y: 85 }, icon: <ArrowDownRight size={11} />, label: "BR" },
 ];
 
 export default function ImageOverlayPanel({
@@ -57,6 +56,10 @@ export default function ImageOverlayPanel({
   const isFaintOpacity = overlayOpacity <= 35;
   const isMediumOpacity = overlayOpacity > 35 && overlayOpacity <= 75;
   const isSolidOpacity = overlayOpacity > 75;
+
+  const isPositionActive = (val: { x: number; y: number }) => {
+    return overlayPosition.x === val.x && overlayPosition.y === val.y;
+  };
 
   return (
     <div className="w-full text-[11px] text-[var(--text)] space-y-3">
@@ -140,16 +143,16 @@ export default function ImageOverlayPanel({
             <div className="grid grid-cols-4 gap-1 flex-1">
               {POSITIONS.map(({ value, icon, label }) => (
                 <button
-                  key={value}
+                  key={`${value.x}-${value.y}`}
                   type="button"
                   onClick={() => setOverlayPosition(value)}
                   className={`rounded border py-0.5 text-center text-[10px] transition flex items-center justify-center gap-0.5 ${
-                    overlayPosition === value
+                    isPositionActive(value)
                       ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
                       : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
                   }`}
                 >
-                  <span className={overlayPosition === value ? "text-[var(--accent)]" : "text-[var(--muted)]"}>
+                  <span className={isPositionActive(value) ? "text-[var(--accent)]" : "text-[var(--muted)]"}>
                     {icon}
                   </span>
                   <span>{label}</span>

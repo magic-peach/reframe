@@ -436,13 +436,19 @@ return () => {
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview
-                    file={file}
-                    recipe={recipe}
-                    videoRef={videoRef}
-                    selectedTextId={selectedTextId}
-                    onSelectText={setSelectedTextId}
-                    onUpdateText={handleUpdateTextOverlay}
+                  <VideoPreview 
+                    file={file} 
+                    recipe={recipe} 
+                    videoRef={videoRef} 
+                    selectedTextId={selectedTextId} 
+                    onSelectText={setSelectedTextId} 
+                    onUpdateText={handleUpdateTextOverlay} 
+                    overlayFile={overlayFile} 
+                    overlayPosition={overlayPosition} 
+                    overlaySize={overlaySize} 
+                    setOverlaySize={setOverlaySize} 
+                    overlayOpacity={overlayOpacity} 
+                    setOverlayPosition={setOverlayPosition} 
                   />
 
                   <div className="mt-3">
