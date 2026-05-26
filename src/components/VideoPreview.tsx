@@ -308,7 +308,7 @@ export default function VideoPreview({
           />
         )}
 
-        {/* The WYSIWYG Inner Canvas Boundary */}
+        {/* THE WYSIWYG Inner Canvas Boundary */}
         <div
           ref={innerCanvasRef}
           className="absolute flex items-center justify-center overflow-hidden ring-1 ring-white/10 shadow-2xl bg-black select-none"
