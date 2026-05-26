@@ -3,6 +3,7 @@
 import { TextOverlay, EditRecipe } from "@/lib/types";
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import { getTextPixelPosition, getTextPercentPosition } from "@/lib/text-overlay";
+import { getFontFamily, ensureFontLoaded } from "@/utils/fontLoader";
 
 interface DraggableTextOverlaysProps {
   recipe?: EditRecipe;
@@ -29,13 +30,18 @@ export default function DraggableTextOverlays({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>("");
+  const [fontUpdateTrigger, setFontUpdateTrigger] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const editInputRef = useRef<HTMLDivElement>(null);
 
   /**
    * Memoize text overlays to prevent unnecessary dependency changes.
+   * Always ensures textOverlays is an array, even if recipe is malformed.
    */
-  const textOverlays = useMemo(() => recipe?.textOverlays || [], [recipe?.textOverlays]);
+  const textOverlays = useMemo(() => {
+    const overlays = recipe?.textOverlays;
+    return Array.isArray(overlays) ? overlays : [];
+  }, [recipe?.textOverlays]);
 
   /**
    * Handles the start of a drag operation.
@@ -150,6 +156,43 @@ export default function DraggableTextOverlays({
   }, [draggingId, dragOffset, containerWidth, containerHeight, onUpdateText]);
 
   /**
+   * Ensure custom fonts are loaded when overlays render.
+   * This prevents fallback font flashing and ensures preview accuracy.
+   * Runs whenever overlays change to keep fonts fresh.
+   * Also triggers re-render to ensure font changes are visible immediately.
+   */
+  useEffect(() => {
+    const loadFonts = async () => {
+      // Collect unique fonts from all overlays
+      const fontsToLoad = new Set<string>();
+      textOverlays.forEach((overlay) => {
+        if (overlay.fontFamily) {
+          fontsToLoad.add(overlay.fontFamily);
+        }
+      });
+
+      // Load all fonts in parallel
+      if (fontsToLoad.size > 0) {
+        await Promise.all(
+          Array.from(fontsToLoad).map((fontName) =>
+            ensureFontLoaded(fontName, 16)
+          )
+        );
+        // Trigger re-render after fonts are loaded
+        // This ensures font changes are visible immediately
+        setFontUpdateTrigger((prev) => prev + 1);
+      }
+    };
+
+    if (textOverlays.length > 0) {
+      loadFonts().catch((err) => {
+        // Silently handle font loading errors
+        console.warn("Error loading fonts:", err);
+      });
+    }
+  }, [textOverlays]);
+
+  /**
    * Focus edit input when entering edit mode.
    */
   useEffect(() => {
@@ -189,7 +232,7 @@ export default function DraggableTextOverlays({
 
         return (
           <div
-            key={overlay.id}
+            key={`${overlay.id}-${fontUpdateTrigger}`}
             role="button"
             tabIndex={0}
             onMouseDown={(e) => handleMouseDown(e, overlay.id)}
@@ -217,6 +260,7 @@ export default function DraggableTextOverlays({
               transform: "translate(-50%, -50%)",
               fontSize: `${overlay.fontSize}px`,
               color: overlay.color,
+              fontFamily: getFontFamily(overlay.fontFamily),
               fontWeight:
                 overlay.fontWeight === "900"
                   ? 900
@@ -240,6 +284,7 @@ export default function DraggableTextOverlays({
                 style={{
                   color: overlay.color,
                   fontSize: `${overlay.fontSize}px`,
+                  fontFamily: getFontFamily(overlay.fontFamily),
                   fontWeight:
                     overlay.fontWeight === "900"
                       ? 900

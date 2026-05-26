@@ -131,6 +131,19 @@ function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   }
 }
 
+/**
+ * Migrates old recipes to include missing properties from newer versions.
+ * Ensures backwards compatibility when loading recipes created with older versions.
+ */
+function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
+  return {
+    ...DEFAULT_RECIPE,
+    ...recipe,
+    // Ensure textOverlays is always an array
+    textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
+  };
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -145,14 +158,15 @@ export function useVideoEditor() {
     const encoded = params.get("settings");
     if (encoded) {
       const decoded = decodeRecipe(encoded);
-      if (decoded) return { ...DEFAULT_RECIPE, ...decoded };
+      if (decoded) {
+        return migrateRecipe(decoded);
+      }
     }
-    return {
-      ...DEFAULT_RECIPE,
+    return migrateRecipe({
       soundOnCompletion:
         typeof window !== "undefined" &&
         localStorage.getItem("soundOnCompletion") === "true",
-    };
+    });
   });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
