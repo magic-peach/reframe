@@ -21,8 +21,8 @@ import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
 import {
-  Layers, Crop, Scissors, RotateCw, Volume2, Type,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  Layers, RotateCw, Volume2, Type,
+  SlidersHorizontal, Zap, AlertTriangle, Copy
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -324,85 +324,58 @@ export default function VideoEditor() {
         {status === "error" && `Export failed: ${error}`}
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
-        <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
+      <div className="mx-auto flex-1 w-full px-3 py-4">
+        <header className="mb-4 animate-fade-in">
+          <div className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-heading font-bold uppercase tracking-widest text-film-600">
+                Studio
+              </p>
+              <h1 className="text-xl font-display tracking-widest text-[var(--text)]">
+                Reframe Editor
+              </h1>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-heading font-semibold uppercase tracking-widest text-[var(--muted)]">
+              <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+              Private browser render
+              {file && <span className="hidden sm:inline text-[var(--border)]">|</span>}
+              {file && <span>{exportSummary}</span>}
+            </div>
+          </div>
+        </header>
         <div
-          className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
-          style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
-          aria-label="Reframe — video editor"
+          className={cn(
+            "grid grid-cols-1 gap-5",
+            file ? "xl:grid-cols-[320px_minmax(0,1fr)_340px]" : "max-w-5xl mx-auto"
+          )}
         >
-        <h1
-          className="font-display leading-none tracking-widest2 text-[var(--text)] break-words text-center transition-all"
-          style={{ fontSize: 'clamp(2rem,10vw,4rem)', viewTransitionName: 'reframe-text' }}
-        >
-          REFRAME
-        </h1>
-        <p
-          className="font-heading text-[var(--muted)] uppercase tracking-widest text-center"
-          style={{
-            fontSize: 'clamp(0.7rem,2vw,0.875rem)',
-            marginTop: 'clamp(0.25rem,1vw,0.5rem)',
-          }}
-        >
-          Your video, any format
-        </p>
-    <div
-      className="flex md:hidden items-center justify-center gap-2 font-heading font-semibold uppercase tracking-widest text-[var(--muted)] border-t border-[var(--border)]"
-      style={{
-        fontSize: 'clamp(0.6rem,1.5vw,0.75rem)',
-        marginTop: 'clamp(0.5rem,2vw,0.75rem)',
-        paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
-      }}
-    >
-      <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-      No login. No ads. 100% private.
-    </div>
-  </div>  
-  <div
-    className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
-    style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
-  >
-    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-    No login. No ads. 100% private - your video never leaves your device.
-  </div>
-    </header>
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
-          <div className="space-y-4 min-w-0">
-            <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in">
+          <aside
+            className={cn(
+              "space-y-4 min-w-0 transition-opacity duration-300 xl:sticky xl:top-24 xl:self-start",
+              isProcessing && "pointer-events-none opacity-50"
+            )}
+          >
+            <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in shadow-sm">
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
-                <div className="text-center text-[var(--muted)] py-6">
-                  <p>Upload a video to get started</p>
-                  <p className="text-sm">Supports MP4, MOV, WebM and more</p>
-                </div>
-              )}
-
-              {file && (
-                <div className="mt-4 animate-fade-in">
-                  <VideoPreview
-                    file={file}
-                    recipe={recipe}
-                    videoRef={videoRef}
-                    selectedTextId={selectedTextId}
-                    onSelectText={setSelectedTextId}
-                    onUpdateText={handleUpdateTextOverlay}
-                  />
-
-                  <div className="mt-3">
-                    <ThumbnailStrip
-                      videoSrc={videoSrc}
-                      duration={duration}
-                      currentTime={currentTime}
-                      trimStart={recipe.trimStart ?? 0}
-                      trimEnd={recipe.trimEnd ?? duration}
-                      onSeek={seekTo}
-                      intervalSeconds={intervalSeconds}
-                    />
+                <div className="grid gap-3 border-t border-[var(--border)] mt-3 pt-3 text-[var(--muted)] sm:grid-cols-3">
+                  <div className="rounded-lg bg-[var(--bg)] border border-[var(--border)] px-3 py-2">
+                    <p className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--text)]">Import</p>
+                    <p className="text-xs mt-1">MP4, MOV, AVI, MKV, WebM</p>
+                  </div>
+                  <div className="rounded-lg bg-[var(--bg)] border border-[var(--border)] px-3 py-2">
+                    <p className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--text)]">Edit</p>
+                    <p className="text-xs mt-1">Trim, crop, text, audio, color</p>
+                  </div>
+                  <div className="rounded-lg bg-[var(--bg)] border border-[var(--border)] px-3 py-2">
+                    <p className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--text)]">Export</p>
+                    <p className="text-xs mt-1">Runs privately in your browser</p>
                   </div>
                 </div>
               )}
+
             </div>
 
             {file && file.size > 100 * 1024 * 1024 && (
@@ -415,21 +388,26 @@ export default function VideoEditor() {
                 "grid grid-cols-1 gap-4",
                 isProcessing && "pointer-events-none opacity-50"
               )}>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 shadow-sm">
                   <AccordionSection
-                    id="trim"
-                    icon={<Scissors size={12} />}
-                    title="Trim"
-                    isOpen={openSections.trim}
-                    onToggle={() => toggleSection("trim")}
-                    delay={50}
+                    id="resize"
+                    icon={<Layers size={12} />}
+                    title="Canvas & Resize"
+                    isOpen={openSections.resize}
+                    onToggle={() => toggleSection("resize")}
+                    delay={25}
                   >
-                    <TrimControl
-                      recipe={recipe}
-                      onChange={updateRecipe}
-                      duration={duration}
-                      file={file}
-                    />
+                    {recommendedPreset && (
+                      <div className="mb-4 rounded-lg border border-film-200 bg-film-50 p-3 text-sm text-film-700">
+                        <p>
+                          Detected {recommendedPreset.label.replace(/\s/g, "")}. Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()}.
+                        </p>
+                      </div>
+                    )}
+                    <div className="space-y-3">
+                      <PresetSelector recipe={recipe} onChange={updateRecipe} />
+                      <FramingControl recipe={recipe} onChange={updateRecipe} />
+                    </div>
                   </AccordionSection>
 
                   <AccordionSection
@@ -458,191 +436,76 @@ export default function VideoEditor() {
                       onSelectText={setSelectedTextId}
                     />
                   </AccordionSection>
-                  <details className="group">
-                  <summary className="flex items-center gap-2 cursor-pointer select-none list-none
-                      text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] py-1">
-                      <span className="text-film-500 opacity-80 transition-transform duration-200 group-open:rotate-90">›</span>
-                      Advanced settings
-                      <div className="flex-1 h-px bg-[var(--border)]" />
-                    </summary>
-
-                    <div className="mt-4 space-y-4">
-                      <AccordionSection
-                        id="rotation"
-                        icon={<RotateCw size={12} />}
-                        title="Rotation"
-                        isOpen={openSections.rotation}
-                        onToggle={() => toggleSection("rotation")}
-                      >
-                        <RotateControl recipe={recipe} onChange={updateRecipe} />
-                      </AccordionSection>
-
-                      <AccordionSection
-                        id="export"
-                        icon={<SlidersHorizontal size={12} />}
-                        title="Export"
-                        isOpen={openSections.export}
-                        onToggle={() => toggleSection("export")}
-                      >
-                        <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                      </AccordionSection>
-                    </div>
-                  </details>
-                </div>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
-                  <AccordionSection
-                    id="audio"
-                    icon={<Volume2 size={12} />}
-                    title="Audio & Speed"
-                    isOpen={openSections.audio}
-                    onToggle={() => toggleSection("audio")}
-                    delay={150}
-                  >
-                    <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
-                  </AccordionSection>
-                  <Section
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Adjustments"
-                    delay={175}
-                  >
-                    <div className="space-y-5">
-                      {/* Brightness */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="brightness-slider">Brightness</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ brightness: 0 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset brightness"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="brightness-slider"
-                          type="range"
-                          min="-1"
-                          max="1"
-                          step="0.1"
-                          value={recipe.brightness}
-                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
-                          aria-label="Adjust brightness"
-                          className="w-full accent-film-600"
-                        />
-                      </div>
-                      {/* Contrast */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="contrast-slider">Contrast</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ contrast: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-contrast"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="contrast-slider"
-                          type="range"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={recipe.contrast}
-                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
-                          aria-label="Adjust contrast"
-                          className="w-full accent-film-600"
-                        />
-                      </div>
-                      {/* Saturation */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="saturation-slider">Saturation</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ saturation: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-saturation"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="saturation-slider"
-                          type="range"
-                          min="0"
-                          max="3"
-                          step="0.1"
-                          value={recipe.saturation}
-                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
-                          aria-label="Adjust saturation"
-                          className="w-full accent-film-600"
-                        />
-                      </div>
-                    </div>
-                  </Section>
-                  <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
-                    <FormatSelector recipe={recipe} onChange={updateRecipe} />
-                  </Section>
-                  <AccordionSection
-                    id="export"
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Export"
-                    isOpen={openSections.export}
-                    onToggle={() => toggleSection("export")}
-                    delay={200}
-                  >
-                    <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                  </AccordionSection>
-                  <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
-                    <ImageOverlay
-                      overlayFile={overlayFile}
-                      setOverlayFile={setOverlayFile}
-                      overlayPosition={overlayPosition}
-                      setOverlayPosition={setOverlayPosition}
-                      overlaySize={overlaySize}
-                      setOverlaySize={setOverlaySize}
-                      overlayOpacity={overlayOpacity}
-                      setOverlayOpacity={setOverlayOpacity}
-                    />
-                  </Section>
-                  <details className="group">
-                  <summary className="flex items-center gap-2 cursor-pointer select-none list-none
-                    text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] py-1">
-                    <span className="text-film-500 opacity-80 transition-transform duration-200 group-open:rotate-90">›</span>
-                    Advanced settings
-                    <div className="flex-1 h-px bg-[var(--border)]" />
-                  </summary>
-
-                  <div className="mt-4 space-y-4">
-                    <AccordionSection
-                      id="rotation"
-                      icon={<RotateCw size={12} />}
-                      title="Rotation"
-                      isOpen={openSections.rotation}
-                      onToggle={() => toggleSection("rotation")}
-                    >
-                      <RotateControl recipe={recipe} onChange={updateRecipe} />
-                    </AccordionSection>
-
-                    <AccordionSection
-                      id="export"
-                      icon={<SlidersHorizontal size={12} />}
-                      title="Export"
-                      isOpen={openSections.export}
-                      onToggle={() => toggleSection("export")}
-                    >
-                      <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                    </AccordionSection>
-                  </div>
-                </details>
                 </div>
               </div>
             )}
+          </aside>
 
-            {status === "error" && error && (
+          {file && (
+            <main className="space-y-4 min-w-0">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 shadow-sm animate-fade-in">
+                <div className="mb-3 flex items-center justify-between gap-3 px-1">
+                  <div>
+                    <p className="text-[10px] font-heading font-bold uppercase tracking-widest text-film-600">
+                      Program Monitor
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">
+                      Center preview
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
+                    {recipe.framing} view
+                  </div>
+                </div>
+                <VideoPreview
+                  file={file}
+                  recipe={recipe}
+                  videoRef={videoRef}
+                  selectedTextId={selectedTextId}
+                  onSelectText={setSelectedTextId}
+                  onUpdateText={handleUpdateTextOverlay}
+                />
+              </div>
+
+              <div
+                className={cn(
+                  "rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm animate-fade-in",
+                  isProcessing && "pointer-events-none opacity-50"
+                )}
+              >
+                <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-[10px] font-heading font-bold uppercase tracking-widest text-film-600">
+                      Timeline & Audio Graph
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">
+                      Trim handles, thumbnails, and waveform
+                    </p>
+                  </div>
+                  <p className="text-xs font-mono text-[var(--muted)]">
+                    {currentTime.toFixed(1)}s / {duration.toFixed(1)}s
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <ThumbnailStrip
+                    videoSrc={videoSrc}
+                    duration={duration}
+                    currentTime={currentTime}
+                    trimStart={recipe.trimStart ?? 0}
+                    trimEnd={recipe.trimEnd ?? duration}
+                    onSeek={seekTo}
+                    intervalSeconds={intervalSeconds}
+                  />
+                  <TrimControl
+                    recipe={recipe}
+                    onChange={updateRecipe}
+                    duration={duration}
+                    file={file}
+                  />
+                </div>
+              </div>
+
+              {status === "error" && error && (
               <div
                 role="status"
                 className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
@@ -677,104 +540,201 @@ export default function VideoEditor() {
                   </button>
                 )}
               </div>
-            )}
+              )}
 
-            {status === "done" && result && (
+              {status === "done" && result && (
               <div role="status" className="animate-fade-in" ref={downloadRef}>
                 <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
               </div>
-            )}
-          </div>
+              )}
+            </main>
+          )}
 
-          <div className={cn(
-            "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
-            (isProcessing || !file) && "pointer-events-none opacity-50"
-          )}>
-            {!file && (
-              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 animate-fade-in">
-                <p className="text-[10px] font-heading font-bold text-film-600 uppercase tracking-widest">
-                  Getting Started
-                </p>
-                <p className="text-xs text-[var(--muted)] mt-1">
-                  Upload a video file to enable these export settings.
-                </p>
-              </div>
-            )}
-            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
-              <AccordionSection
-                id="resize"
-                icon={<Layers size={12} />}
-                title="Resize & Aspect Ratio"
-                isOpen={openSections.resize}
-                onToggle={() => toggleSection("resize")}
-                delay={50}
-              >
-                {recommendedPreset && (
-                  <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
-                    <p>
-                      We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()} ({recommendedPreset.label.replace(/\s/g, "")})
-                    </p>
-                  </div>
-                )}
-                <div className="space-y-3">
-                  <PresetSelector recipe={recipe} onChange={updateRecipe} />
-                  <FramingControl recipe={recipe} onChange={updateRecipe} />
-                </div>
-              </AccordionSection>
-
-              <div className="pt-2 flex justify-center items-center gap-6">
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer"
-                >
-                  <Copy size={12} />
-                  {shareCopied ? "Copied!" : "Copy Link"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetSettings}
-                  className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
-                >
-                  Reset all settings
-                </button>
-              </div>
-            </div>
-
-            <KeyboardShortcutsPanel />
-
-            {file && (
-              <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)] leading-relaxed">
-                {exportSummary}
-              </p>
-            )}
-
-            <button
-              id="export-button"
-              type="button"
-              onClick={handleExport}
-                disabled={!file || isProcessing}
-                aria-label='Export video'
-                aria-disabled={!file || isProcessing ? "true" : undefined}
-                title={!file ? "Upload a video to enable export" : undefined}
+          {file && (
+            <aside
               className={cn(
-                "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
-                "font-display text-2xl tracking-widest transition-all duration-200",
-                file && !isProcessing
-                  ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+                "space-y-4 transition-opacity duration-300 sticky top-8 self-start",
+                isProcessing && "pointer-events-none opacity-50"
               )}
             >
-             <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
-              {isProcessing ? "PROCESSING" : "EXPORT"}
-            </button>
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm animate-fade-in">
+                <p className="text-[10px] font-heading font-bold text-film-600 uppercase tracking-widest">
+                  Render Queue
+                </p>
+                <p className="mt-2 text-xs text-[var(--muted)] leading-relaxed">
+                  {exportSummary}
+                </p>
+                <div className="mt-4 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 transition-all cursor-pointer"
+                  >
+                    <Copy size={12} />
+                    {shareCopied ? "Copied!" : "Copy Link"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetSettings}
+                    className="text-xs font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-70 hover:opacity-100"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
 
-            {file && !isProcessing && (
-              <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
-                {isMac ? "⌘" : "Ctrl"} + Enter to export
-              </p>
-            )}
-          </div>
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 space-y-5 shadow-sm animate-fade-in">
+                <AccordionSection
+                  id="audio"
+                  icon={<Volume2 size={12} />}
+                  title="Audio & Speed"
+                  isOpen={openSections.audio}
+                  onToggle={() => toggleSection("audio")}
+                  delay={150}
+                >
+                  <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
+                </AccordionSection>
+
+                <Section
+                  icon={<SlidersHorizontal size={12} />}
+                  title="Adjustments"
+                  delay={175}
+                >
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <label htmlFor="brightness-slider">Brightness</label>
+                        <button
+                          type="button"
+                          onClick={() => updateRecipe({ brightness: 0 })}
+                          className="text-film-500 hover:underline"
+                          aria-label="reset brightness"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                      <input
+                        id="brightness-slider"
+                        type="range"
+                        min="-1"
+                        max="1"
+                        step="0.1"
+                        value={recipe.brightness}
+                        onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
+                        aria-label="Adjust brightness"
+                        className="w-full accent-film-600"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <label htmlFor="contrast-slider">Contrast</label>
+                        <button
+                          type="button"
+                          onClick={() => updateRecipe({ contrast: 1 })}
+                          className="text-film-500 hover:underline"
+                          aria-label="reset-contrast"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                      <input
+                        id="contrast-slider"
+                        type="range"
+                        min="0"
+                        max="2"
+                        step="0.1"
+                        value={recipe.contrast}
+                        onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
+                        aria-label="Adjust contrast"
+                        className="w-full accent-film-600"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <label htmlFor="saturation-slider">Saturation</label>
+                        <button
+                          type="button"
+                          onClick={() => updateRecipe({ saturation: 1 })}
+                          className="text-film-500 hover:underline"
+                          aria-label="reset-saturation"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                      <input
+                        id="saturation-slider"
+                        type="range"
+                        min="0"
+                        max="3"
+                        step="0.1"
+                        value={recipe.saturation}
+                        onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
+                        aria-label="Adjust saturation"
+                        className="w-full accent-film-600"
+                      />
+                    </div>
+                  </div>
+                </Section>
+
+                <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
+                  <FormatSelector recipe={recipe} onChange={updateRecipe} />
+                </Section>
+
+                <AccordionSection
+                  id="export"
+                  icon={<SlidersHorizontal size={12} />}
+                  title="Export"
+                  isOpen={openSections.export}
+                  onToggle={() => toggleSection("export")}
+                  delay={200}
+                >
+                  <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
+                </AccordionSection>
+
+                <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
+                  <ImageOverlay
+                    overlayFile={overlayFile}
+                    setOverlayFile={setOverlayFile}
+                    overlayPosition={overlayPosition}
+                    setOverlayPosition={setOverlayPosition}
+                    overlaySize={overlaySize}
+                    setOverlaySize={setOverlaySize}
+                    overlayOpacity={overlayOpacity}
+                    setOverlayOpacity={setOverlayOpacity}
+                  />
+                </Section>
+              </div>
+
+              <KeyboardShortcutsPanel />
+
+              <button
+                id="export-button"
+                type="button"
+                onClick={handleExport}
+                disabled={isProcessing}
+                aria-label="Export video"
+                aria-disabled={isProcessing ? "true" : undefined}
+                className={cn(
+                  "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
+                  "font-display text-2xl tracking-widest transition-all duration-200",
+                  !isProcessing
+                    ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
+                    : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+                )}
+              >
+                <Zap size={20} className={cn(!isProcessing && "animate-pulse")} />
+                {isProcessing ? "PROCESSING" : "EXPORT"}
+              </button>
+
+              {!isProcessing && (
+                <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
+                  {isMac ? "⌘" : "Ctrl"} + Enter to export
+                </p>
+              )}
+            </aside>
+          )}
         </div>
       </div>
     </div>

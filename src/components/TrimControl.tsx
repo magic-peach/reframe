@@ -177,6 +177,12 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
   return (
     <div id="trim-control" className="space-y-3">
+      <WaveformCanvas
+        samples={waveform}
+        loading={waveformLoading}
+        hasAudio={hasAudio}
+      />
+
       {duration > 0 && (
         <div
           role="toolbar"
