@@ -4,10 +4,6 @@ import { buildTextFilter } from "./text-overlay";
 
 export class FFmpegLoadError extends Error {}
 
-const FFMPEG_WORKER_URL =
-  typeof window !== "undefined"
-    ? new URL("./ffmpeg.worker.ts", import.meta.url)
-    : null;
 
 type SerializedFile = {
   name: string;
@@ -61,11 +57,13 @@ let pendingExport: {
 let pendingProgress: ((percent: number) => void) | null = null;
 
 function createWorker(): Worker {
-  if (!FFMPEG_WORKER_URL) {
+  if (typeof window === "undefined") {
     throw new Error("Web Workers are not available in this environment.");
   }
 
-  ffmpegWorker = new Worker(FFMPEG_WORKER_URL, { type: "module" });
+  // MUST be strictly inline for Next.js/Webpack to detect and compile the worker chunk
+  ffmpegWorker = new Worker(new URL("./ffmpeg.worker.ts", import.meta.url), { type: "module" });
+  
   ffmpegWorker.onmessage = handleWorkerMessage;
   ffmpegWorker.onerror = (event) => {
     const message = event.message || "FFmpeg worker error";
@@ -160,6 +158,9 @@ export async function loadFFmpeg(
   signal?: AbortSignal,
   onProgress?: (percent: number) => void
 ): Promise<void> {
+  // 1. Capture if the worker is uninitialized before ensureWorker runs
+  const isFirstLoad = !ffmpegWorker; 
+  
   await ensureWorker();
 
   if (workerReady && workerReadyResolve === null) {
@@ -167,7 +168,8 @@ export async function loadFFmpeg(
     return;
   }
 
-  if (!workerReady) {
+  // 2. Use the captured flag to securely trigger the worker's internal load phase
+  if (isFirstLoad) {
     ffmpegWorker!.postMessage({ type: "load" });
   }
 
@@ -467,20 +469,31 @@ function buildArguments(
       videoOut = "[vbase]";
     }
 
-    if (hasOverlay) {
-      const scaledW = overlayOptions!.size;
-      const alpha = (overlayOptions!.opacity / 100).toFixed(2);
-      const posMap: Record<string, string> = {
-        "top-left":     "20:20",
-        "top-right":    "W-w-20:20",
-        "bottom-left":  "20:H-h-20",
-        "bottom-right": "W-w-20:H-h-20",
-      };
-      const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
-      filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
-      filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
-      videoOut = "[vout]";
-    }
+if (hasOverlay) {
+  const scaledW = overlayOptions!.size;
+  const alpha = (overlayOptions!.opacity / 100).toFixed(2);
+  const posMap: Record<string, string> = {
+    "top-left":     "20:20",
+    "top-right":    "main_w-w-20:20",
+    "bottom-left":  "20:main_h-h-20",
+    "bottom-right": "main_w-w-20:main_h-h-20",
+  };
+
+interface PositionCoords {
+    x: number;
+    y: number;
+  }
+
+  const pos = typeof overlayOptions?.position === "string"
+    ? (posMap[overlayOptions.position] ?? "main_w-w-20:main_h-h-20")
+    : overlayOptions?.position
+    ? `(main_w)*${(overlayOptions.position as PositionCoords).x}/100:(main_h)*${(overlayOptions.position as PositionCoords).y}/100`
+    : "main_w-w-20:main_h-h-20";
+
+  filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
+  filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
+  videoOut = "[vout]";
+}
 
     let audioOut = "";
     if (shouldKeepAudio) {
