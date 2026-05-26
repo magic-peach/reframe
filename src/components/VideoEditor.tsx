@@ -198,7 +198,7 @@ function KeyboardShortcutsPanel() {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
+    file, setFile, clips, setClips, handleMultipleFilesSelect, duration, recipe, status, progress,
     result, error, exportStartedAt, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
     videoRef,
@@ -370,7 +370,111 @@ export default function VideoEditor() {
 
           <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
+              <FileUpload onFileSelect={handleFileSelect} onMultipleFileSelect={handleMultipleFilesSelect} currentFile={file} fileError={fileError} duration={duration} />
+              
+              {clips.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <h3 className="text-sm font-semibold text-[var(--text)]">
+                  Selected Clips
+                </h3>
+
+
+                {clips.map((clip, index) => (
+                  <div
+                    key={index}
+                    className={cn(
+                      "rounded-lg border p-3 flex items-center justify-between transition-colors",
+                      file === clip
+                        ? "border-film-500 bg-film-50"
+                        : "border-[var(--border)] bg-[var(--bg)]"
+                    )}
+                  >
+                    {/* Clickable preview area */}
+                    <button
+                     type="button"
+                    onClick={() => handleFileSelect(clip)}
+                    className="flex-1 cursor-pointer truncate text-left"
+                    >
+                      <span className="text-sm truncate block">
+                        {index + 1}. {clip.name}
+                      </span>
+
+                      {file === clip && (
+                        <p className="text-xs text-film-500 mt-1">
+                          Previewing
+                        </p>
+                      )}
+                    </button>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 ml-3 shrink-0">
+                      {/* Move Up */}
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={(e) => {
+                          e.stopPropagation()
+
+                          const updated = [...clips]
+
+                          const temp = updated[index]!
+                          updated[index] = updated[index - 1]!
+                          updated[index - 1] = temp
+                          setClips(updated)
+                        }}
+                        className="px-2 py-1 rounded border border-[var(--border)] text-xs disabled:opacity-40 hover:border-film-400 transition-colors"
+                      >
+                        ↑
+                      </button>
+
+                      {/* Move Down */}
+                      <button
+                        type="button"
+                        disabled={index === clips.length - 1}
+                        onClick={(e) => {
+                          e.stopPropagation()
+
+                          const updated = [...clips]
+                          const temp = updated[index]!
+                          updated[index] = updated[index + 1]!
+                          updated[index + 1] = temp
+
+                          setClips(updated)
+                        }}
+                        className="px-2 py-1 rounded border border-[var(--border)] text-xs disabled:opacity-40 hover:border-film-400 transition-colors"
+                      >
+                        ↓
+                      </button>
+
+                      {/* Remove */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+
+                          const updated = clips.filter((_, i) => i !== index)
+
+                          setClips(updated)
+
+                          // If removed clip is current preview
+                          if (clip === file) {
+                            if (updated.length > 0) {
+                              handleFileSelect(updated[0]!)
+                            } else {
+                              reset()
+                            }
+                          }
+                        }}
+                        className="px-2 py-1 rounded border border-red-400 text-xs text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+              </div>
+            )}
 
               {!file && (
                 <div className="text-center text-[var(--muted)] py-6">
@@ -382,6 +486,7 @@ export default function VideoEditor() {
               {file && (
                 <div className="mt-4 animate-fade-in">
                   <VideoPreview
+                    key={`${file?.name}-${file?.size}`}
                     file={file}
                     recipe={recipe}
                     videoRef={videoRef}

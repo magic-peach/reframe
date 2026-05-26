@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
-import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
+import { loadFFmpeg, mergeVideos ,exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
 
@@ -146,6 +146,7 @@ function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
 
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
+  const [clips, setClips] = useState<File[]>([])
   const [duration, setDuration] = useState<number>(0);
   const [videoMetadata, setVideoMetadata] = useState<{
     width: number;
@@ -446,6 +447,28 @@ export function useVideoEditor() {
     }
   }, []);
 
+  const handleMultipleFilesSelect = useCallback(
+  async (selectedFiles: FileList | null) => {
+    if (!selectedFiles) return
+
+    const filesArray = Array.from(selectedFiles)
+
+    const validFiles = filesArray.filter((file) =>
+      file.type.startsWith("video/")
+    )
+
+    if (validFiles.length === 0) {
+      setFileError("Please upload valid video files.")
+      return
+    }
+
+    setClips(validFiles)
+    await handleFileSelect(validFiles[0]!)
+    setFileError("")
+  },
+  [handleFileSelect]
+)
+
   const handleExport = useCallback(async () => {
     if (!file) return;
     if (status === "loading-engine" || status === "exporting") {
@@ -477,6 +500,21 @@ export function useVideoEditor() {
       const startedAt = Date.now();
       setExportStartedAt(startedAt);
       setStatus("exporting");
+
+      if (clips.length > 1) {
+        
+        const mergedResult = await mergeVideos(
+          clips,
+          setProgress,
+          abortController.signal
+        )
+
+        if (exportCancelledRef.current) return
+
+        setResult(mergedResult)
+        setStatus("done")
+        return
+      }
 
       const exportResult = await exportVideo(
         file,
@@ -525,20 +563,21 @@ export function useVideoEditor() {
       }
     }
   }, [
-    duration,
-    file,
-    loopMusic,
-    musicFile,
-    musicVolume,
-    originalAudioVolume,
-    overlayFile,
-    overlayOpacity,
-    overlayPosition,
-    overlaySize,
-    recipe,
-    result,
-    status,
-  ]);
+  file,
+  clips,
+  recipe,
+  result,
+  status,
+  overlayFile,
+  overlayPosition,
+  overlaySize,
+  overlayOpacity,
+  duration,
+  loopMusic,
+  musicFile,
+  musicVolume,
+  originalAudioVolume,
+]);
 
 
   useEffect(() => {
@@ -656,6 +695,7 @@ export function useVideoEditor() {
   const reset = useCallback(() => {
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setFile(null);
+    setClips([]);
     setVideoMetadata(null);
     setDuration(0);
     setRecipe(DEFAULT_RECIPE);
@@ -694,6 +734,10 @@ export function useVideoEditor() {
 
   return {
     file,
+    setFile,
+    clips,
+    setClips,
+    handleMultipleFilesSelect,
     duration,
     recipe,
     status,
