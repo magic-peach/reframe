@@ -1,7 +1,7 @@
 "use client";
 
 import { EditRecipe } from "@/lib/types"
-import { SPEED_STEPS } from "@/lib/constants";
+import { AUDIO_FADE_MAX_SECONDS, SPEED_STEPS } from "@/lib/constants";
 import { Volume2, VolumeX, Gauge, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,15 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
     return "Very Fast";
   };
 
-  const isModified = recipe.speed !== 1 || !recipe.keepAudio;
+  const isModified =
+    recipe.speed !== 1 ||
+    !recipe.keepAudio ||
+    recipe.normalizeAudio ||
+    recipe.audioFadeIn > 0 ||
+    recipe.audioFadeOut > 0;
+
+  const fadeDescription = (value: number) =>
+    value === 0 ? "Off" : `${value.toFixed(1)}s`;
 
   return (
     <div className="space-y-4">
@@ -30,7 +38,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           <button
             type="button"
             aria-label="Reset audio settings to default"
-            onClick={() => onChange({ speed: 1, keepAudio: true })}
+            onClick={() => onChange({ speed: 1, keepAudio: true, normalizeAudio: false, audioFadeIn: 0, audioFadeOut: 0 })}
             className="text-sm font-heading font-semibold uppercase tracking-wider text-film-600 hover:text-film-700 hover:underline transition-all duration-150"
           >
             Reset to Default
@@ -145,11 +153,67 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
         </button>
       )}
 
+      {recipe.keepAudio && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="audio-fade-in" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+                Fade in
+              </label>
+              <div className="text-right">
+                <span className="text-sm font-heading font-bold text-film-600 block">
+                  {fadeDescription(recipe.audioFadeIn)}
+                </span>
+                <span className="text-[10px] text-[var(--muted)]">0 to {AUDIO_FADE_MAX_SECONDS}s</span>
+              </div>
+            </div>
+            <input
+              id="audio-fade-in"
+              type="range"
+              min={0}
+              max={AUDIO_FADE_MAX_SECONDS}
+              step={0.1}
+              value={recipe.audioFadeIn}
+              onChange={(e) => onChange({ audioFadeIn: Number(e.target.value) })}
+              aria-label="Adjust audio fade in"
+              aria-valuetext={`${fadeDescription(recipe.audioFadeIn)} fade in`}
+              className="w-full h-11 accent-film-600 cursor-pointer"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="audio-fade-out" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+                Fade out
+              </label>
+              <div className="text-right">
+                <span className="text-sm font-heading font-bold text-film-600 block">
+                  {fadeDescription(recipe.audioFadeOut)}
+                </span>
+                <span className="text-[10px] text-[var(--muted)]">0 to {AUDIO_FADE_MAX_SECONDS}s</span>
+              </div>
+            </div>
+            <input
+              id="audio-fade-out"
+              type="range"
+              min={0}
+              max={AUDIO_FADE_MAX_SECONDS}
+              step={0.1}
+              value={recipe.audioFadeOut}
+              onChange={(e) => onChange({ audioFadeOut: Number(e.target.value) })}
+              aria-label="Adjust audio fade out"
+              aria-valuetext={`${fadeDescription(recipe.audioFadeOut)} fade out`}
+              className="w-full h-11 accent-film-600 cursor-pointer"
+            />
+          </div>
+        </div>
+      )}
+
       {recipe.keepAudio && (recipe.trimStart !== 0 || recipe.trimEnd !== null) && (
         <div role="note" className="mt-3 p-3 bg-[var(--accent-muted)] border border-[var(--border)] rounded text-sm text-[var(--text)] leading-relaxed flex items-start gap-2 animate-fade-in">
           <AlertTriangle size={12} aria-hidden="true" className="shrink-0 mt-0.5" />
           <p>
-            Note: If audio doesn&apos;t start within the selected range, the output will be silent.
+            Note: If audio doesn&apos;t start within the selected range, the output will be silent. Fades are applied after trim and speed changes.
           </p>
         </div>
       )}

@@ -3,6 +3,12 @@ import { toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import {
+  buildAudioFadeFilter,
+  buildAudioSpeedFilter,
+  buildAudioTrimFilter,
+  getAudioOutputDuration,
+} from "./audio-filters";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 const MT_CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm";
@@ -140,36 +146,6 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
   return filters.join(",");
 }
 
-function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
-  if (speed <= 0) return "";
-  const filters: string[] = [];
-
-  let remaining = speed;
-  while (remaining < 0.5) {
-    filters.push("atempo=0.5");
-    remaining /= 0.5;
-  }
-
-  while (remaining > 2.0) {
-    filters.push("atempo=2.0");
-    remaining /= 2.0;
-  }
-
-  if (Math.abs(remaining - 1.0) > 0.001) {
-    filters.push(`atempo=${Number(remaining.toFixed(4))}`);
-  }
-
-  if (normalizeAudio) filters.push("loudnorm=I=-14:TP=-1.5:LRA=11");
-
-  return filters.join(",");
-}
-
-function buildAudioTrimFilter(recipe: EditRecipe): string {
-  if (recipe.trimStart === 0 && recipe.trimEnd === null) return "";
-  const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
-  return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
-}
-
 function buildArguments(
   recipe: EditRecipe,
   format: "mp4" | "webm" | "mkv" | "gif",
@@ -188,7 +164,9 @@ function buildArguments(
 ): string[] {
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+  const audioSpeed = hasOriginalAudio ? buildAudioSpeedFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+  const audioOutputDuration = getAudioOutputDuration(recipe, videoDuration);
+  const audioFade = hasOriginalAudio || hasMusicTrack ? buildAudioFadeFilter(recipe, audioOutputDuration) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
@@ -243,14 +221,14 @@ function buildArguments(
             : `[0:a]volume=${origVol}[orig]`;
           filterParts.push(origChain);
           filterParts.push(`[${musicIdx}:a]volume=${musicVol}[music]`);
-          filterParts.push(`[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
+          filterParts.push(`[orig][music]amix=inputs=2:duration=first:dropout_transition=0${audioFade ? `,${audioFade}` : ""}[aout]`);
           audioOut = "[aout]";
         } else {
-          filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
+          filterParts.push(`[${musicIdx}:a]volume=${musicVol}${audioFade ? `,${audioFade}` : ""}[aout]`);
           audioOut = "[aout]";
         }
-      } else if (hasOriginalAudio && af) {
-        filterParts.push(`[0:a]${af}[aout]`);
+      } else if (hasOriginalAudio) {
+        filterParts.push(`[0:a]${af}${audioFade ? `,${audioFade}` : ""}[aout]`);
         audioOut = "[aout]";
       }
     }

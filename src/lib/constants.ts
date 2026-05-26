@@ -12,6 +12,9 @@ export const DEFAULT_RECIPE: EditRecipe = {
   trimEnd: null,
   rotate: 0,
   keepAudio: true,
+  normalizeAudio: false,
+  audioFadeIn: 0,
+  audioFadeOut: 0,
   speed: 1,
   quality: 23,
   format: "mp4",
@@ -21,7 +24,8 @@ export const DEFAULT_RECIPE: EditRecipe = {
   stabilization: false,
   denoise: false,
   soundOnCompletion: false,
-  normalizeAudio: false,
   textOverlays: [],
   version: RECIPE_VERSION,
 };
+
+export const AUDIO_FADE_MAX_SECONDS = 5;

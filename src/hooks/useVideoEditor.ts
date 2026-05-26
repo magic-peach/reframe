@@ -131,6 +131,12 @@ function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   }
 }
 
+function normalizeRecipe(candidate: unknown): EditRecipe | null {
+  if (!candidate || typeof candidate !== "object") return null;
+  const merged = { ...DEFAULT_RECIPE, ...(candidate as Record<string, unknown>) };
+  return isValidRecipe(merged) ? merged : null;
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -145,8 +151,21 @@ export function useVideoEditor() {
     const encoded = params.get("settings");
     if (encoded) {
       const decoded = decodeRecipe(encoded);
-      if (decoded) return { ...DEFAULT_RECIPE, ...decoded };
+      const normalized = decoded ? normalizeRecipe(decoded) : null;
+      if (normalized) return normalized;
     }
+
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const normalized = normalizeRecipe(parsed);
+        if (normalized) return normalized;
+      }
+    } catch {
+      // ignore and fall back to defaults / legacy settings below
+    }
+
     return {
       ...DEFAULT_RECIPE,
       soundOnCompletion:
@@ -200,6 +219,9 @@ export function useVideoEditor() {
         return val === null || (typeof val === "number" && !isNaN(val) && val >= 0);
       case "rotate":
         return val === 0 || val === 90 || val === 180 || val === 270;
+      case "audioFadeIn":
+      case "audioFadeOut":
+        return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 5;
       case "speed":
         return typeof val === "number" && !isNaN(val) && [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4].includes(val);
       case "quality":
@@ -258,8 +280,9 @@ export function useVideoEditor() {
           const raw = localStorage.getItem(STORAGE_KEY);
           if (raw) {
             const parsed = JSON.parse(raw);
-            if (isValidRecipe(parsed)) {
-              setRecipe(parsed);
+            const normalized = normalizeRecipe(parsed);
+            if (normalized) {
+              setRecipe(normalized);
               return;
             }
           }

@@ -23,6 +23,8 @@ export interface EditRecipe {
   rotate: 0 | 90 | 180 | 270;
   keepAudio: boolean;
   normalizeAudio: boolean;
+  audioFadeIn: number;
+  audioFadeOut: number;
   speed: number;
   quality: number;
   format: "mp4" | "webm" | "mkv" | "gif";
@@ -93,6 +95,8 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (![0, 90, 180, 270].includes(v.rotate)) return false;
   if (typeof v.keepAudio !== "boolean") return false;
   if (typeof v.normalizeAudio !== "boolean") return false;
+  if (typeof v.audioFadeIn !== "number" || !isFinite(v.audioFadeIn) || v.audioFadeIn < 0 || v.audioFadeIn > 5) return false;
+  if (typeof v.audioFadeOut !== "number" || !isFinite(v.audioFadeOut) || v.audioFadeOut < 0 || v.audioFadeOut > 5) return false;
   if (typeof v.speed !== "number" || !isFinite(v.speed)) return false;
   if (typeof v.quality !== "number" || !isFinite(v.quality)) return false;
   if (!["mp4", "webm", "mkv", "gif"].includes(v.format)) return false;
