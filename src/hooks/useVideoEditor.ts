@@ -131,10 +131,23 @@ function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   }
 }
 
+/**
+ * Migrates old recipes to include missing properties from newer versions.
+ * Ensures backwards compatibility when loading recipes created with older versions.
+ */
+function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
+  return {
+    ...DEFAULT_RECIPE,
+    ...recipe,
+    // Ensure textOverlays is always an array
+    textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
+  };
+}
+
 function normalizeRecipe(candidate: unknown): EditRecipe | null {
   if (!candidate || typeof candidate !== "object") return null;
-  const merged = { ...DEFAULT_RECIPE, ...(candidate as Record<string, unknown>) };
-  return isValidRecipe(merged) ? merged : null;
+  const migrated = migrateRecipe(candidate as Partial<EditRecipe>);
+  return isValidRecipe(migrated) ? migrated : null;
 }
 
 export function useVideoEditor() {
@@ -153,6 +166,7 @@ export function useVideoEditor() {
       const decoded = decodeRecipe(encoded);
       const normalized = decoded ? normalizeRecipe(decoded) : null;
       if (normalized) return normalized;
+
     }
 
     try {
@@ -166,12 +180,11 @@ export function useVideoEditor() {
       // ignore and fall back to defaults / legacy settings below
     }
 
-    return {
-      ...DEFAULT_RECIPE,
+    return migrateRecipe({
       soundOnCompletion:
         typeof window !== "undefined" &&
         localStorage.getItem("soundOnCompletion") === "true",
-    };
+    });
   });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);

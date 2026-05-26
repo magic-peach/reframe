@@ -11,6 +11,8 @@ export interface TextOverlay {
   fontSize: number; // In pixels
   color: string; // Hex color
   fontWeight: "normal" | "bold" | "900";
+  fontFamily?: string; // Font family name (e.g., "Arial", "Inter", "CustomFont")
+  fontPath?: string; // Path/URL to custom font file for export
 }
 
 export interface EditRecipe {
