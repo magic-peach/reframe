@@ -479,7 +479,7 @@ export function useVideoEditor() {
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
-      await loadFFmpeg(abortController.signal, setProgress);
+      const ffmpeg = await loadFFmpeg(abortController.signal, setProgress);
       if (exportCancelledRef.current) return;
 
       const startedAt = Date.now();
@@ -487,6 +487,7 @@ export function useVideoEditor() {
       setStatus("exporting");
 
       const exportResult = await exportVideo(
+        ffmpeg,
         file,
         recipe,
         setProgress,
