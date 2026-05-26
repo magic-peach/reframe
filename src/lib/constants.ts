@@ -24,5 +24,6 @@ export const DEFAULT_RECIPE: EditRecipe = {
   soundOnCompletion: false,
   normalizeAudio: false,
   jumpCutSegments: undefined,
+  textOverlays: [],
   version: RECIPE_VERSION,
 };

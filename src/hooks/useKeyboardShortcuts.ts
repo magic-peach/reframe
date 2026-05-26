@@ -37,7 +37,7 @@ export function useKeyboardShortcuts({
 
       if (isCtrlOrCmd && e.shiftKey && e.key === "E") {
         e.preventDefault();
-        e.stopPropagation();   // ← add this
+        e.stopPropagation();
         if (file && status === "idle") handleExport();
         return;
       }

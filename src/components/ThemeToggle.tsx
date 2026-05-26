@@ -1,9 +1,30 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Toggle theme"
+        className="
+          relative flex items-center justify-center
+          w-9 h-9 rounded-full
+          bg-[var(--surface)]
+          border border-[var(--border)]
+        "
+      />
+    );
+  }
+
   const isDark = theme === "dark";
 
   return (
@@ -17,9 +38,10 @@ export function ThemeToggle() {
         bg-[var(--surface)]
         text-[var(--text)]
         border border-[var(--border)]
-        hover:opacity-90
-        focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-        transition-colors duration-200
+        hover:border-[var(--accent)] hover:bg-[var(--accent-muted)]
+        focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2
+        focus:ring-offset-[var(--bg)]
+        transition-all duration-200
       "
     >
       {isDark ? (

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
+import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
@@ -9,16 +10,18 @@ import PresetSelector from "./PresetSelector";
 import FramingControl from "./FramingControl";
 import TrimControl from "./TrimControl";
 import RotateControl from "./RotateControl";
+import TextControls from "./TextControls";
 import AudioSpeedControl from "./AudioSpeedControl";
 import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
 import {
-  Layers, Crop, Scissors, RotateCw, Volume2,
+  Layers, Crop, Scissors, RotateCw, Volume2, Type,
   SlidersHorizontal, Zap, AlertTriangle, Github, Copy
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
@@ -67,17 +70,6 @@ function AccordionSection({
   onToggle: () => void;
   delay?: number;
 }) {
-  const contentRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!contentRef.current) return;
-    if (isOpen) {
-      contentRef.current.style.maxHeight = `${contentRef.current.scrollHeight}px`;
-    } else {
-      contentRef.current.style.maxHeight = `0px`;
-    }
-  }, [isOpen]);
-
   return (
     <div className="animate-fade-in" style={{ animationDelay: `${delay}ms` }}>
       <button
@@ -105,9 +97,10 @@ function AccordionSection({
 
       <div
         id={`${id}-panel`}
-        ref={contentRef}
-        className="overflow-hidden transition-all duration-200"
-        style={{ maxHeight: isOpen ? undefined : 0 }}
+        className={cn(
+          "transition-all duration-200",
+          isOpen ? "block" : "hidden"
+        )}
       >
         <div className="px-3 pt-3 pb-0">{children}</div>
       </div>
@@ -206,7 +199,7 @@ function KeyboardShortcutsPanel() {
 export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
-    result, error, updateRecipe,
+    result, error, exportStartedAt, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
     videoRef,
     seekTo,
@@ -232,10 +225,12 @@ export default function VideoEditor() {
 
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
     trim: false,
     rotation: false,
+    text: false,
     audio: false,
     export: false,
   });
@@ -244,9 +239,23 @@ export default function VideoEditor() {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   const downloadRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * Updates a text overlay property and syncs with recipe.
+   */
+  const handleUpdateTextOverlay = (id: string, updates: Partial<TextOverlay>) => {
+    const updatedOverlays = (recipe.textOverlays || []).map((overlay) =>
+      overlay.id === id ? { ...overlay, ...updates } : overlay
+    );
+    updateRecipe({ textOverlays: updatedOverlays });
+  };
+
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    const encoded = btoa(JSON.stringify(recipe));
+    const url = new URL(window.location.href);
+    url.searchParams.set("settings", encoded);
+    history.replaceState(null, "", url.toString());
+    navigator.clipboard.writeText(url.toString()).then(() => {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
     });
@@ -265,10 +274,33 @@ export default function VideoEditor() {
   const isProcessing = status === "loading-engine" || status === "exporting";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
+  const intervalSeconds = useMemo(() => {
+    if (duration <= 30) return 2;
+    if (duration <= 120) return 5;
+    if (duration <= 300) return 15;
+    return 30;
+  }, [duration]);
+
   const videoSrc = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
     [file]
   );
+
+  const exportSummary = useMemo(() => {
+    const preset = getPresetById(recipe.preset);
+    const width = recipe.preset === "custom" ? recipe.customWidth : (preset?.width ?? recipe.customWidth);
+    const height = recipe.preset === "custom" ? recipe.customHeight : (preset?.height ?? recipe.customHeight);
+
+    const framingLabel = recipe.framing === "fit" ? "Fit" : "Fill";
+    const speedLabel = `${recipe.speed}× speed`;
+    const qualityLabel = recipe.quality <= 21
+      ? "High"
+      : recipe.quality <= 25
+      ? "Balanced"
+      : "Small file";
+
+    return `Exporting to ${width}×${height} ${recipe.format.toUpperCase()} • ${framingLabel} • ${speedLabel} • Quality: ${qualityLabel}`;
+  }, [recipe]);
 
   useEffect(() => {
     return () => {
@@ -278,7 +310,12 @@ export default function VideoEditor() {
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
-      <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
+      <ExportOverlay
+        status={status}
+        progress={progress}
+        exportStartedAt={exportStartedAt}
+        onCancel={cancelExport}
+      />
       <OnboardingTour />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
@@ -344,7 +381,14 @@ export default function VideoEditor() {
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} recipe={recipe} videoRef={videoRef} />
+                  <VideoPreview
+                    file={file}
+                    recipe={recipe}
+                    videoRef={videoRef}
+                    selectedTextId={selectedTextId}
+                    onSelectText={setSelectedTextId}
+                    onUpdateText={handleUpdateTextOverlay}
+                  />
 
                   <div className="mt-3">
                     <ThumbnailStrip
@@ -354,6 +398,7 @@ export default function VideoEditor() {
                       trimStart={recipe.trimStart ?? 0}
                       trimEnd={recipe.trimEnd ?? duration}
                       onSeek={seekTo}
+                      intervalSeconds={intervalSeconds}
                     />
                   </div>
                 </div>
@@ -396,6 +441,22 @@ export default function VideoEditor() {
                     delay={100}
                   >
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
+                  </AccordionSection>
+
+                  <AccordionSection
+                    id="text"
+                    icon={<Type size={12} />}
+                    title="Text Overlay"
+                    isOpen={openSections.text}
+                    onToggle={() => toggleSection("text")}
+                    delay={110}
+                  >
+                    <TextControls
+                      recipe={recipe}
+                      onChange={updateRecipe}
+                      selectedTextId={selectedTextId}
+                      onSelectText={setSelectedTextId}
+                    />
                   </AccordionSection>
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
@@ -537,6 +598,8 @@ export default function VideoEditor() {
                     navigator.clipboard.writeText(error).then(() => {
                       setCopied(true);
                       setTimeout(() => setCopied(false), 2000);
+                    }).catch((err) => {
+                      console.error("Failed to copy error to clipboard:", err);
                     });
                   }}
                   className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-sm font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
@@ -564,11 +627,11 @@ export default function VideoEditor() {
           </div>
 
           <div className={cn(
-            "space-y-5 transition-opacity duration-300",
+            "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
             (isProcessing || !file) && "pointer-events-none opacity-50"
           )}>
             {!file && (
-              <div className="bg-film-50 dark:bg-film-900/10 border border-film-100 dark:border-film-900/20 rounded-xl p-4 animate-fade-in">
+              <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 animate-fade-in">
                 <p className="text-[10px] font-heading font-bold text-film-600 uppercase tracking-widest">
                   Getting Started
                 </p>
@@ -593,13 +656,13 @@ export default function VideoEditor() {
                     </p>
                   </div>
                 )}
-                <PresetSelector recipe={recipe} onChange={updateRecipe} />
-                <div className="mt-3">
+                <div className="space-y-3">
+                  <PresetSelector recipe={recipe} onChange={updateRecipe} />
                   <FramingControl recipe={recipe} onChange={updateRecipe} />
                 </div>
               </AccordionSection>
 
-              <div className="pt-2 flex justify-between items-center">
+              <div className="pt-2 flex justify-center items-center gap-6">
                 <button
                   type="button"
                   onClick={handleCopyLink}
@@ -620,6 +683,12 @@ export default function VideoEditor() {
 
             <KeyboardShortcutsPanel />
 
+            {file && (
+              <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)] leading-relaxed">
+                {exportSummary}
+              </p>
+            )}
+
             <button
               id="export-button"
               type="button"
@@ -632,7 +701,7 @@ export default function VideoEditor() {
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
-                  ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
+                  ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >

@@ -1,4 +1,5 @@
 import { TextOverlay } from "./types";
+import { getFFmpegFontArg } from "@/utils/fontLoader";
 
 /**
  * Generates a unique ID for a text overlay.
@@ -59,6 +60,7 @@ export function getTextPercentPosition(
 /**
  * Generates a drawText FFmpeg filter for a single text overlay.
  * Escapes special characters and positions text on the output video.
+ * Includes font family and custom font file support.
  */
 export function buildTextFilter(
   overlay: TextOverlay,
