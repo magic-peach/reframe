@@ -154,18 +154,76 @@ export function useVideoEditor() {
   } | null>(null);
   const [recipe, setRecipe] = useState<EditRecipe>(() => {
     if (typeof window === "undefined") return { ...DEFAULT_RECIPE };
+
+    let savedRecipe: Partial<EditRecipe> = {};
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (isValidRecipe(parsed)) {
+          savedRecipe = parsed;
+        }
+      } else {
+        const legacySaved = localStorage.getItem("reframe-settings");
+        if (legacySaved) {
+          const parsed = JSON.parse(legacySaved);
+          const sanitizeDimension = (val: unknown, fallback: number): number => {
+            const n = Number(val);
+            return Number.isFinite(n) && n >= 16 && n <= 7680 ? n : fallback;
+          };
+          savedRecipe = {
+            preset: parsed.preset,
+            quality: parsed.quality,
+            speed: parsed.speed,
+            customWidth: parsed.customWidth ? sanitizeDimension(parsed.customWidth, DEFAULT_RECIPE.customWidth) : undefined,
+            customHeight: parsed.customHeight ? sanitizeDimension(parsed.customHeight, DEFAULT_RECIPE.customHeight) : undefined,
+          };
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     const params = new URLSearchParams(window.location.search);
+    
+    // Legacy support for base64 encoded settings
     const encoded = params.get("settings");
     if (encoded) {
       const decoded = decodeRecipe(encoded);
       if (decoded) {
-        return migrateRecipe(decoded);
+        return migrateRecipe({ ...savedRecipe, ...decoded });
       }
     }
+
+    // Read individual params from "Copy Link" functionality
+    const parsedParams: Partial<EditRecipe> = {};
+    if (params.has("preset")) parsedParams.preset = params.get("preset") as string;
+    if (params.has("framing")) parsedParams.framing = params.get("framing") as "fit" | "fill";
+    if (params.has("trimStart")) parsedParams.trimStart = Number(params.get("trimStart"));
+    if (params.has("trimEnd")) parsedParams.trimEnd = params.get("trimEnd") === "null" ? null : Number(params.get("trimEnd"));
+    if (params.has("speed")) parsedParams.speed = Number(params.get("speed"));
+    if (params.has("rotate")) parsedParams.rotate = Number(params.get("rotate")) as 0 | 90 | 180 | 270;
+    if (params.has("quality")) parsedParams.quality = Number(params.get("quality"));
+    if (params.has("keepAudio")) parsedParams.keepAudio = params.get("keepAudio") === "true";
+    if (params.has("format")) parsedParams.format = params.get("format") as "mp4" | "webm" | "mkv" | "gif";
+    if (params.has("brightness")) parsedParams.brightness = Number(params.get("brightness"));
+    if (params.has("contrast")) parsedParams.contrast = Number(params.get("contrast"));
+    if (params.has("saturation")) parsedParams.saturation = Number(params.get("saturation"));
+
+    Object.keys(parsedParams).forEach(key => {
+      const k = key as keyof EditRecipe;
+      if (parsedParams[k] === undefined || (typeof parsedParams[k] === 'number' && isNaN(parsedParams[k] as number))) {
+        delete parsedParams[k];
+      }
+    });
+
+    const soundOnCompletion = localStorage.getItem("soundOnCompletion") === "true";
+
     return migrateRecipe({
-      soundOnCompletion:
-        typeof window !== "undefined" &&
-        localStorage.getItem("soundOnCompletion") === "true",
+      ...DEFAULT_RECIPE,
+      ...savedRecipe,
+      ...parsedParams,
+      soundOnCompletion,
     });
   });
   const [status, setStatus] = useState<ExportStatus>("idle");
@@ -231,107 +289,6 @@ export function useVideoEditor() {
     }
   };
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
-      const hasRecipeParams = recipeKeys.some(key => params.has(key));
-
-      if (hasRecipeParams) {
-        const updatedPatch: Partial<EditRecipe> = {};
-        recipeKeys.forEach((key) => {
-          const paramVal = params.get(key);
-          if (paramVal !== null) {
-            const defaultType = typeof DEFAULT_RECIPE[key];
-            let parsedVal: any;
-
-            if (defaultType === "number") {
-              parsedVal = parseFloat(paramVal);
-            } else if (defaultType === "boolean") {
-              parsedVal = paramVal === "true";
-            } else {
-              parsedVal = paramVal === "null" ? null : paramVal;
-            }
-
-            if (isValidValue(key, parsedVal)) {
-              (updatedPatch as any)[key] = parsedVal;
-            }
-          }
-        });
-
-        if (Object.keys(updatedPatch).length > 0) {
-          setRecipe(prev => ({
-            ...prev,
-            ...updatedPatch
-          }));
-        }
-      } else {
-        // Try full recipe restore first (new key)
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (isValidRecipe(parsed)) {
-              setRecipe(parsed);
-              return;
-            }
-          }
-        } catch {
-          // ignore parse/validation errors and fall back to legacy
-        }
-
-        // Legacy partial settings (keep for backward compatibility)
-        const saved = localStorage.getItem("reframe-settings");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          const sanitizeDimension = (val: unknown, fallback: number): number => {
-            const n = Number(val);
-            return Number.isFinite(n) && n >= 16 && n <= 7680 ? n : fallback;
-          };
-          setRecipe(prev => ({
-            ...prev,
-            preset: parsed.preset ?? prev.preset,
-            quality: parsed.quality ?? prev.quality,
-            speed: parsed.speed ?? prev.speed,
-            customWidth: sanitizeDimension(parsed.customWidth, prev.customWidth),
-            customHeight: sanitizeDimension(parsed.customHeight, prev.customHeight),
-          }));
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const params = new URLSearchParams();
-      const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
-
-      recipeKeys.forEach((key) => {
-        const currentVal = recipe[key];
-        const defaultVal = DEFAULT_RECIPE[key];
-
-        if (currentVal !== defaultVal) {
-          params.set(key, currentVal === null ? "null" : String(currentVal));
-        }
-      });
-
-      const newQuery = params.toString();
-      const currentQuery = window.location.search.replace(/^\?/, "");
-
-      if (newQuery !== currentQuery) {
-        const newUrl = newQuery
-          ? `${window.location.pathname}?${newQuery}`
-          : window.location.pathname;
-        window.history.replaceState(null, "", newUrl);
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, [recipe]);
 
   useEffect(() => {
     try {

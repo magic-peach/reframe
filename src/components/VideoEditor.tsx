@@ -251,11 +251,24 @@ export default function VideoEditor() {
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
-    const encoded = btoa(JSON.stringify(recipe));
-    const url = new URL(window.location.href);
-    url.searchParams.set("settings", encoded);
-    history.replaceState(null, "", url.toString());
-    navigator.clipboard.writeText(url.toString()).then(() => {
+    const params = new URLSearchParams();
+
+    if (recipe.preset !== "vertical-9-16") params.set('preset', recipe.preset);
+    if (recipe.framing !== "fit") params.set('framing', recipe.framing);
+    if (recipe.trimStart !== 0) params.set('trimStart', String(recipe.trimStart));
+    if (recipe.trimEnd !== null) params.set('trimEnd', String(recipe.trimEnd));
+    if (recipe.speed !== 1) params.set('speed', String(recipe.speed));
+    if (recipe.rotate !== 0) params.set('rotate', String(recipe.rotate));
+    if (recipe.quality !== 23) params.set('quality', String(recipe.quality));
+    if (recipe.keepAudio !== true) params.set('keepAudio', String(recipe.keepAudio));
+    if (recipe.format !== "mp4") params.set('format', recipe.format);
+    if (recipe.brightness !== 0) params.set('brightness', String(recipe.brightness));
+    if (recipe.contrast !== 1) params.set('contrast', String(recipe.contrast));
+    if (recipe.saturation !== 1) params.set('saturation', String(recipe.saturation));
+
+    const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    history.replaceState(null, "", shareUrl);
+    navigator.clipboard.writeText(shareUrl).then(() => {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
     });
@@ -722,22 +735,29 @@ export default function VideoEditor() {
                 </div>
               </AccordionSection>
 
-              <div className="pt-2 flex justify-center items-center gap-6">
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer"
-                >
-                  <Copy size={12} />
-                  {shareCopied ? "Copied!" : "Copy Link"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetSettings}
-                  className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
-                >
-                  Reset all settings
-                </button>
+              <div className="pt-2 flex flex-col justify-center items-center gap-2">
+                <div className="flex justify-center items-center gap-6">
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer"
+                  >
+                    <Copy size={12} />
+                    {shareCopied ? "Copied!" : "Copy Link"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetSettings}
+                    className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+                  >
+                    Reset all settings
+                  </button>
+                </div>
+                {shareCopied && (
+                  <span className="text-[10px] text-green-500 animate-fade-in font-heading uppercase tracking-widest text-center mt-1">
+                    ✓ Link copied with your settings!
+                  </span>
+                )}
               </div>
             </div>
 
