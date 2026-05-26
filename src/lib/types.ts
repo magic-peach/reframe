@@ -1,4 +1,4 @@
-export const RECIPE_VERSION = 1;
+export const RECIPE_VERSION = 2;
 
 /**
  * Text overlay data structure for rendering custom text on videos.
@@ -35,6 +35,16 @@ export interface EditRecipe {
   saturation: number;
   soundOnCompletion: boolean;
   textOverlays: TextOverlay[];
+  /**
+   * Crop selection box in the 16:9 preview container coordinate space.
+   * Values are normalized to [0..1] where:
+   * - x/y are the top-left corner
+   * - w/h are the box size
+   */
+  cropBoxX: number;
+  cropBoxY: number;
+  cropBoxW: number;
+  cropBoxH: number;
   version: number;
 }
 
@@ -104,6 +114,14 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
   if (!Array.isArray(v.textOverlays)) return false;
+
+  for (const key of ["cropBoxX", "cropBoxY", "cropBoxW", "cropBoxH"] as const) {
+    if (typeof v[key] !== "number" || !isFinite(v[key])) return false;
+  }
+  if (v.cropBoxW <= 0 || v.cropBoxH <= 0 || v.cropBoxW > 1 || v.cropBoxH > 1) return false;
+  if (v.cropBoxX < 0 || v.cropBoxY < 0) return false;
+  if (v.cropBoxX + v.cropBoxW > 1.0001) return false;
+  if (v.cropBoxY + v.cropBoxH > 1.0001) return false;
 
   return true;
 }

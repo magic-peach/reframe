@@ -1,6 +1,7 @@
 import { DEFAULT_RECIPE } from "./constants";
 import { getPresetById } from "./presets";
 import { EditRecipe } from "./types";
+import { PREVIEW_CONTAINER_WIDTH, PREVIEW_CONTAINER_HEIGHT } from "./crop-frame";
 
 export interface FrameExportSize {
   width: number;
@@ -88,18 +89,76 @@ export async function captureFrameAsPng(
   ctx.fillRect(0, 0, width, height);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.save();
-  ctx.translate(width / 2, height / 2);
-  ctx.rotate(rotation);
-  ctx.scale(scale, scale);
-  ctx.drawImage(
-    video,
-    -video.videoWidth / 2,
-    -video.videoHeight / 2,
-    video.videoWidth,
-    video.videoHeight
-  );
-  ctx.restore();
+
+  // Fit mode keeps the existing scale+letterbox behavior.
+  if (recipe.framing === "fit") {
+    ctx.save();
+    ctx.translate(width / 2, height / 2);
+    ctx.rotate(rotation);
+    ctx.scale(scale, scale);
+    ctx.drawImage(
+      video,
+      -video.videoWidth / 2,
+      -video.videoHeight / 2,
+      video.videoWidth,
+      video.videoHeight
+    );
+    ctx.restore();
+  } else {
+    // Fill mode: rotate the source, crop according to the user selection box,
+    // then scale the crop to the requested output size.
+    const rotatedW = recipe.rotate === 90 || recipe.rotate === 270 ? video.videoHeight : video.videoWidth;
+    const rotatedH = recipe.rotate === 90 || recipe.rotate === 270 ? video.videoWidth : video.videoHeight;
+
+    const rotCanvas = document.createElement("canvas");
+    rotCanvas.width = rotatedW;
+    rotCanvas.height = rotatedH;
+    const rotCtx = rotCanvas.getContext("2d");
+    if (!rotCtx) {
+      throw new Error("Canvas export is not supported in this browser.");
+    }
+
+    rotCtx.fillStyle = "#000000";
+    rotCtx.fillRect(0, 0, rotatedW, rotatedH);
+    rotCtx.imageSmoothingEnabled = true;
+    rotCtx.imageSmoothingQuality = "high";
+
+    rotCtx.save();
+    rotCtx.translate(rotatedW / 2, rotatedH / 2);
+    rotCtx.rotate(rotation);
+    rotCtx.drawImage(
+      video,
+      -video.videoWidth / 2,
+      -video.videoHeight / 2,
+      video.videoWidth,
+      video.videoHeight
+    );
+    rotCtx.restore();
+
+    const vcw = PREVIEW_CONTAINER_WIDTH;
+    const vch = PREVIEW_CONTAINER_HEIGHT;
+    const sc = Math.max(vcw / rotatedW, vch / rotatedH);
+    const left = (vcw - rotatedW * sc) / 2;
+    const top = (vch - rotatedH * sc) / 2;
+
+    const boxX = recipe.cropBoxX * vcw;
+    const boxY = recipe.cropBoxY * vch;
+    const boxW = recipe.cropBoxW * vcw;
+    const boxH = recipe.cropBoxH * vch;
+
+    const cropX = Math.floor((boxX - left) / sc);
+    const cropY = Math.floor((boxY - top) / sc);
+    const cropW = Math.floor(boxW / sc);
+    const cropH = Math.floor(boxH / sc);
+
+    // Clamp for safety.
+    const cx = Math.max(0, Math.min(rotatedW - 1, cropX));
+    const cy = Math.max(0, Math.min(rotatedH - 1, cropY));
+    const cw = Math.max(1, Math.min(rotatedW - cx, cropW));
+    const ch = Math.max(1, Math.min(rotatedH - cy, cropH));
+
+    ctx.drawImage(rotCanvas, cx, cy, cw, ch, 0, 0, width, height);
+  }
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((result) => {

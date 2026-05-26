@@ -141,6 +141,8 @@ function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
     ...recipe,
     // Ensure textOverlays is always an array
     textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
+    // Always bump to current recipe schema version.
+    version: DEFAULT_RECIPE.version,
   };
 }
 
@@ -226,6 +228,12 @@ export function useVideoEditor() {
         return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 2;
       case "saturation":
         return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 3;
+      case "cropBoxX":
+      case "cropBoxY":
+        return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 1;
+      case "cropBoxW":
+      case "cropBoxH":
+        return typeof val === "number" && !isNaN(val) && val > 0 && val <= 1;
       default:
         return true;
     }
