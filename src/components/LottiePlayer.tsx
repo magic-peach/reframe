@@ -36,6 +36,10 @@ export default function LottiePlayer({
         autoplay,
         animationData,
       });
+    }).catch((error) => {
+      if (!cancelled) {
+        console.error("Failed to load Lottie animation:", error);
+      }
     });
 
     return () => {

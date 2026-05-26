@@ -217,14 +217,14 @@ export default function VideoPreview({
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
+        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"
       >
         {isLoading && (
           <div
-            className="absolute inset-0 animate-pulse bg-gray-700 rounded-xl transition-opacity duration-300"
+            className="absolute inset-0 animate-pulse bg-[var(--surface)] rounded-xl transition-opacity duration-300"
             aria-label="Loading video preview"
           />
         )}
@@ -246,18 +246,18 @@ export default function VideoPreview({
             {overlay.mode === "fit" ? (
               // Letterbox: semi-transparent bars outside the content area
               <>
-                <div className="absolute left-0 right-0 top-0 bg-black/50" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-black/50" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-black/50" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-black/50" style={{ width: overlay.barRight }} />
+                <div className="absolute left-0 right-0 top-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ height: overlay.barTop }} />
+                <div className="absolute left-0 right-0 bottom-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ height: overlay.barBottom }} />
+                <div className="absolute top-0 bottom-0 left-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ width: overlay.barLeft }} />
+                <div className="absolute top-0 bottom-0 right-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ width: overlay.barRight }} />
               </>
             ) : (
               // Fill/crop: dashed border around the surviving area, dimmed outside
               <>
-                <div className="absolute left-0 right-0 top-0 bg-red-900/50" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-red-900/50" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-red-900/50" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-red-900/50" style={{ width: overlay.barRight }} />
+                <div className="absolute left-0 right-0 top-0 bg-[var(--error-bg)]" style={{ height: overlay.barTop }} />
+                <div className="absolute left-0 right-0 bottom-0 bg-[var(--error-bg)]" style={{ height: overlay.barBottom }} />
+                <div className="absolute top-0 bottom-0 left-0 bg-[var(--error-bg)]" style={{ width: overlay.barLeft }} />
+                <div className="absolute top-0 bottom-0 right-0 bg-[var(--error-bg)]" style={{ width: overlay.barRight }} />
                 <div
                   className="absolute border-2 border-dashed border-film-400"
                   style={{
@@ -291,8 +291,8 @@ export default function VideoPreview({
             onClick={() => setShowOverlay((v) => !v)}
             className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
               showOverlay
-                ? "bg-film-600 text-white"
-                : "bg-black/60 text-white/70 hover:bg-black/80"
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
             }`}
             aria-pressed={showOverlay}
             aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
@@ -309,8 +309,8 @@ export default function VideoPreview({
             onClick={() => setShowComparison((v) => !v)}
             className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
               showComparison
-                ? "bg-film-600 text-white"
-                : "bg-black/60 text-white/70 hover:bg-black/80"
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
             }`}
             aria-pressed={showComparison}
             aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
@@ -325,7 +325,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={handleGrabFrame}
-            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-black/60 text-white/70 hover:bg-black/80 flex items-center gap-1"
+            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
             aria-label="Grab frame as PNG"
             title="Download current frame as PNG"
           >
