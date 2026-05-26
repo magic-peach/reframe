@@ -10,7 +10,11 @@ on:
 
 jobs:
   claude-pr-review:
-    if: github.event_name == 'pull_request'
+    if: |
+      github.event_name == 'pull_request' &&
+      (github.event.pull_request.author_association == 'OWNER' ||
+       github.event.pull_request.author_association == 'MEMBER' ||
+       github.event.pull_request.author_association == 'COLLABORATOR')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -19,7 +23,7 @@ jobs:
       statuses: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -31,6 +35,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_non_write_users: "*"
           trigger_phrase: ""
           direct_prompt: |
             You are the automated manager for magic-peach/reframe, a GSSoC'26 open-source project.
@@ -63,13 +68,14 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Claude Issue Triage
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_non_write_users: "*"
           trigger_phrase: ""
           direct_prompt: |
             You are the automated manager for magic-peach/reframe, a GSSoC'26 open-source project.
@@ -111,13 +117,14 @@ jobs:
       issues: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Claude Discussion Reply
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_non_write_users: "*"
           trigger_phrase: ""
           direct_prompt: |
             You are the automated manager for magic-peach/reframe, a GSSoC'26 open-source project.
