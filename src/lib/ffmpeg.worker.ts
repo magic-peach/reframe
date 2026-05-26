@@ -309,8 +309,13 @@ interface PositionCoords {
 
   if (recipe.speed !== 1) {
     const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
-    const outputDuration = sourceDuration / recipe.speed;
-    args.push("-t", outputDuration.toFixed(6));
+    // Skip -t when sourceDuration <= 0 (happens when video metadata fails to
+    // load and videoDuration falls back to 0). Passing -t 0 to FFmpeg produces
+    // a zero-length output file; omitting it lets FFmpeg encode the full stream.
+    if (sourceDuration > 0) {
+      const outputDuration = sourceDuration / recipe.speed;
+      args.push("-t", outputDuration.toFixed(6));
+    }
   }
 
   args.push(outputName);
@@ -450,6 +455,9 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
       const gifDurationArgs = recipe.speed !== 1
         ? (() => {
             const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
+            // Skip -t when sourceDuration <= 0 (metadata load failure fallback)
+            // to avoid producing a zero-length GIF.
+            if (sourceDuration <= 0) return [];
             const outputDuration = sourceDuration / recipe.speed;
             return ["-t", outputDuration.toFixed(6)];
           })()
