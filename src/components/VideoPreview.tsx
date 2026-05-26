@@ -16,6 +16,12 @@ interface Props {
   selectedTextId?: string | null;
   onSelectText?: (id: string | null) => void;
   onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
+  overlayFile?: File | null;
+  overlayPosition?: { x: number; y: number };
+  overlaySize?: number;
+  overlayOpacity?: number;
+  setOverlayPosition?: (p: { x: number; y: number }) => void;
+  setOverlaySize?: (size: number) => void;
   // Phase 1 MVP: Multi-track support
   multiTrackState?: MultiTrackEditorState | null;
   multiTrackVideoRefs?: Record<string, RefObject<HTMLVideoElement | null>>;
@@ -28,25 +34,84 @@ export default function VideoPreview({
   selectedTextId = null,
   onSelectText,
   onUpdateText,
+  overlayFile,
+  overlayPosition,
+  overlaySize = 250,
+  overlayOpacity = 100,
   multiTrackState,
   multiTrackVideoRefs,
 }: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showGridOverlay, setShowGridOverlay] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0,
   });
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const innerCanvasRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
-  
+
   // Phase 1 MVP: Multi-track URL management
   const multiTrackUrlRefs = useRef<Record<string, string | null>>({});
 
+  const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Listen to video media updates to safely drive the custom timeline bar on the client side
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+    const handleDurationChange = () => setDuration(video.duration || 0);
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("durationchange", handleDurationChange);
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
+
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("durationchange", handleDurationChange);
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+    };
+  }, [file, videoRef]);
+
+  const formatTime = (secs: number) => {
+    if (isNaN(secs) || !isFinite(secs)) return "00:00";
+    const m = Math.floor(secs / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = Math.floor(secs % 60)
+      .toString()
+      .padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
+  // Handle local memory compilation for overlay source files safely
+  useEffect(() => {
+    if (!overlayFile) {
+      setOverlayUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(overlayFile);
+    setOverlayUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [overlayFile]);
+
+  /** Capture the current video frame and download it as a PNG. */
   const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
     if (!video || video.readyState < 2) return;
@@ -61,7 +126,6 @@ export default function VideoPreview({
 
     canvas.toBlob((blob) => {
       if (!blob) return;
-
       const totalSec = Math.floor(video.currentTime);
       const mins = String(Math.floor(totalSec / 60)).padStart(2, "0");
       const secs = String(totalSec % 60).padStart(2, "0");
@@ -83,10 +147,6 @@ export default function VideoPreview({
     setIsLoading(true);
     const id = ++lastId.current;
     const url = URL.createObjectURL(file);
-
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
-    }
     urlRef.current = url;
 
     const video = videoRef.current;
@@ -97,25 +157,22 @@ export default function VideoPreview({
 
     const handleLoaded = () => {
       if (lastId.current !== id) return;
-      video.play().catch(() => {});
+      video.play().catch(() => { });
     };
 
     onLoadedRef.current = handleLoaded;
-
-    video.addEventListener("loadeddata", handleLoaded);
+    video.addEventListener("loadedmetadata", handleLoaded); // Optimized to prevent race-condition load locks
 
     return () => {
       if (onLoadedRef.current) {
-        video.removeEventListener("loadeddata", onLoadedRef.current);
+        video.removeEventListener("loadedmetadata", onLoadedRef.current);
         onLoadedRef.current = null;
       }
-
       if (video) {
         video.pause();
         video.removeAttribute("src");
         video.load();
       }
-
       if (urlRef.current === url) {
         URL.revokeObjectURL(urlRef.current);
         urlRef.current = null;
@@ -145,7 +202,7 @@ export default function VideoPreview({
       videoRef.current.load();
 
       // Auto-play for preview
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play().catch(() => { });
     });
 
     return () => {
@@ -167,9 +224,7 @@ export default function VideoPreview({
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
-  /**
-   * Track preview container dimensions for text overlay positioning.
-   */
+  /** Track preview container dimensions for text overlay positioning. */
   useEffect(() => {
     const updateDimensions = () => {
       if (previewContainerRef.current) {
@@ -186,51 +241,34 @@ export default function VideoPreview({
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  const overlay = (() => {
-    if (!recipe || !showOverlay) return null;
-
-    const preset = recipe.preset === "custom"
+  // --- Absolute WYSIWYG Canvas Math ---
+  const activePreset = recipe
+    ? recipe.preset === "custom"
       ? { width: recipe.customWidth, height: recipe.customHeight }
-      : getPresetById(recipe.preset);
+      : getPresetById(recipe.preset)
+    : undefined;
 
-    if (!preset) return null;
+  const containerRatio = 16 / 9;
+  const outputRatio = activePreset
+    ? activePreset.width / activePreset.height
+    : containerRatio;
 
-    // Preview container is 16:9
-    const containerW = 16;
-    const containerH = 9;
-    const containerRatio = containerW / containerH;   // 1.777…
-    const outputRatio = preset.width / preset.height;
+  let boxTop = 0,
+    boxBottom = 0,
+    boxLeft = 0,
+    boxRight = 0;
 
-    if (recipe.framing === "fit") {
-      // Letterbox: the output video fits entirely inside 16:9, padded with bars.
-      if (outputRatio > containerRatio) {
-        // Wider output → pillarbox bars on top & bottom
-        const contentH = (containerRatio / outputRatio) * 100;
-        const barH = (100 - contentH) / 2;
-        return { mode: "fit", barTop: `${barH}%`, barBottom: `${barH}%`, barLeft: "0", barRight: "0" };
-      } else {
-        // Taller output → letterbox bars on left & right
-        const contentW = (outputRatio / containerRatio) * 100;
-        const barW = (100 - contentW) / 2;
-        return { mode: "fit", barTop: "0", barBottom: "0", barLeft: `${barW}%`, barRight: `${barW}%` };
-      }
-    } else {
-      // Fill / crop: the output fills the entire 16:9 preview — show a box representing what survives the crop.
-      if (outputRatio < containerRatio) {
-        // Output is taller → crops top & bottom
-        const visibleH = (outputRatio / containerRatio) * 100;
-        const cropH = (100 - visibleH) / 2;
-        return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };
-      } else {
-        // Output is wider → crops left & right
-        const visibleW = (containerRatio / outputRatio) * 100;
-        const cropW = (100 - visibleW) / 2;
-        return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
-      }
-    }
-  })();
-
-  if (!file) return null;
+  if (outputRatio > containerRatio) {
+    const boxHeightPct = (containerRatio / outputRatio) * 100;
+    const barH = (100 - boxHeightPct) / 2;
+    boxTop = barH;
+    boxBottom = barH;
+  } else {
+    const boxWidthPct = (outputRatio / containerRatio) * 100;
+    const barW = (100 - boxWidthPct) / 2;
+    boxLeft = barW;
+    boxRight = barW;
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.code === "Space") {
@@ -239,217 +277,250 @@ export default function VideoPreview({
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
         target.isContentEditable
-      ) {
+      )
         return;
-      }
 
       const video = videoRef.current;
       if (video) {
-        e.preventDefault(); // Prevent default page scroll
-        if (video.paused) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
+        e.preventDefault();
+        if (video.paused) video.play().catch(() => { });
+        else video.pause();
       }
     }
   };
+
+  if (!file) return null;
 
   return (
     <>
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"
+        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
       >
         {isLoading && (
           <div
-            className="absolute inset-0 animate-pulse bg-[var(--surface)] rounded-xl transition-opacity duration-300"
+            className="absolute inset-0 animate-pulse bg-[var(--surface)] rounded-xl transition-opacity duration-300 z-20"
             aria-label="Loading video preview"
           />
         )}
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video
-          ref={videoRef}
-          controls
-          className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
-          onLoadedData={() => setIsLoading(false)}
-          playsInline
-          muted={!recipe?.keepAudio}
+
+        {/* The WYSIWYG Inner Canvas Boundary */}
+        <div
+          ref={innerCanvasRef}
+          className="absolute flex items-center justify-center overflow-hidden ring-1 ring-white/10 shadow-2xl bg-black select-none"
+          style={{
+            top: `${boxTop}%`,
+            bottom: `${boxBottom}%`,
+            left: `${boxLeft}%`,
+            right: `${boxRight}%`,
+          }}
         >
-          <track kind="captions" />
-        </video>
-
-        {/* Phase 1 MVP: Multi-track overlay rendering */}
-        {multiTrackState && multiTrackVideoRefs && multiTrackState.timelineTracks.length > 1 && (
-          <div className="absolute inset-0 pointer-events-none" role="region" aria-label="Multi-track overlay layers">
-            {multiTrackState.timelineTracks
-              .filter((track) => track.visible && track.type === "video" && track.source && track.zIndex > 0)
-              .sort((a, b) => a.zIndex - b.zIndex)
-              .map((track) => {
-                const videoRef = multiTrackVideoRefs[track.id];
-                if (!videoRef) return null;
-
-                return (
-                  <video
-                    key={track.id}
-                    ref={videoRef}
-                    className="absolute"
-                    style={{
-                      left: track.position.x === -1 ? "50%" : `${track.position.x}px`,
-                      top: track.position.y === -1 ? "50%" : `${track.position.y}px`,
-                      width: `${track.scale * 100}%`,
-                      height: "auto",
-                      opacity: track.opacity / 100,
-                      transform:
-                        track.position.x === -1 && track.position.y === -1
-                          ? "translate(-50%, -50%)"
-                          : "none",
-                      zIndex: track.zIndex,
-                    }}
-                    muted
-                    playsInline
-                  >
-                    <track kind="captions" />
-                  </video>
-                );
-              })}
-          </div>
-        )}
-
-        {/* Letterbox / Crop overlay */}
-        {overlay && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-            {overlay.mode === "fit" ? (
-              // Letterbox: semi-transparent bars outside the content area
-              <>
-                <div className="absolute left-0 right-0 top-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-[color-mix(in_srgb,var(--bg)_60%,transparent)]" style={{ width: overlay.barRight }} />
-              </>
-            ) : (
-              // Fill/crop: dashed border around the surviving area, dimmed outside
-              <>
-                <div className="absolute left-0 right-0 top-0 bg-[var(--error-bg)]" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-[var(--error-bg)]" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-[var(--error-bg)]" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-[var(--error-bg)]" style={{ width: overlay.barRight }} />
-                <div
-                  className="absolute border-2 border-dashed border-film-400"
-                  style={{
-                    top: overlay.barTop,
-                    bottom: overlay.barBottom,
-                    left: overlay.barLeft,
-                    right: overlay.barRight,
-                  }}
-                />
-              </>
+          {/* THE VIDEO WITH NATIVE CONTROLS RESTORED */}
+          <video
+            ref={videoRef}
+            controls
+            onLoadedData={() => setIsLoading(false)}
+            className={cn(
+              "w-full h-full transition-opacity duration-300",
+              recipe?.framing === "fill" ? "object-cover" : "object-contain",
+              isLoading ? "opacity-0" : "opacity-100",
             )}
-          </div>
-        )}
+            style={{
+              transform: recipe ? `rotate(${recipe.rotate}deg)` : "none",
+              filter: recipe
+                ? `brightness(${recipe.brightness + 1}) contrast(${recipe.contrast}) saturate(${recipe.saturation})`
+                : "none",
+            }}
+            playsInline
+            muted={!recipe?.keepAudio}
+          >
+            <track kind="captions" />
+          </video>
+
+          {/* Phase 1 MVP: Multi-track overlay rendering (Contained within WYSIWYG bounds) */}
+          {multiTrackState && multiTrackVideoRefs && multiTrackState.timelineTracks.length > 1 && (
+            <div className="absolute inset-0 pointer-events-none" role="region" aria-label="Multi-track overlay layers">
+              {multiTrackState.timelineTracks
+                .filter((track) => track.visible && track.type === "video" && track.source && track.zIndex > 0)
+                .sort((a, b) => a.zIndex - b.zIndex)
+                .map((track) => {
+                  const trackVideoRef = multiTrackVideoRefs[track.id];
+                  if (!trackVideoRef) return null;
+
+                  return (
+                    <video
+                      key={track.id}
+                      ref={trackVideoRef}
+                      className="absolute pointer-events-auto"
+                      style={{
+                        left: track.position.x === -1 ? "50%" : `${track.position.x}px`,
+                        top: track.position.y === -1 ? "50%" : `${track.position.y}px`,
+                        width: `${track.scale * 100}%`,
+                        height: "auto",
+                        opacity: track.opacity / 100,
+                        transform:
+                          track.position.x === -1 && track.position.y === -1
+                            ? "translate(-50%, -50%)"
+                            : "none",
+                        zIndex: track.zIndex,
+                      }}
+                      muted
+                      playsInline
+                    >
+                      <track kind="captions" />
+                    </video>
+                  );
+                })}
+            </div>
+          )}
+        </div>
 
         {/* 3x3 Grid Overlay */}
-        {showGridOverlay && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-            {/* Vertical lines */}
-            <div className="absolute top-0 bottom-0 left-1/3 border-l-2 border-dotted border-black" />
-            <div className="absolute top-0 bottom-0 right-1/3 border-l-2 border-dotted border-black" />
-            {/* Horizontal lines */}
-            <div className="absolute left-0 right-0 top-1/3 border-t-2 border-dotted border-black" />
-            <div className="absolute left-0 right-0 bottom-1/3 border-t-2 border-dotted border-black" />
-          </div>
-        )}
+
+        {/* 3x3 Grid Overlay */}
+        {
+          showGridOverlay && (
+            <div
+              className="absolute inset-0 pointer-events-none"
+              aria-hidden="true"
+            >
+              {/* Vertical lines */}
+              <div className="absolute top-0 bottom-0 left-1/3 border-l-2 border-dotted border-black" />
+              <div className="absolute top-0 bottom-0 right-1/3 border-l-2 border-dotted border-black" />
+              {/* Horizontal lines */}
+              <div className="absolute left-0 right-0 top-1/3 border-t-2 border-dotted border-black" />
+              <div className="absolute left-0 right-0 bottom-1/3 border-t-2 border-dotted border-black" />
+            </div>
+          )
+        }
 
         {/* Draggable Text Overlays */}
-        {recipe && !isLoading && containerDimensions.width > 0 && (
-          <DraggableTextOverlays
-            recipe={recipe}
-            containerWidth={containerDimensions.width}
-            containerHeight={containerDimensions.height}
-            selectedTextId={selectedTextId ?? null}
-            onSelectText={onSelectText || (() => {})}
-            onUpdateText={onUpdateText || (() => {})}
-          />
-        )}
+        {
+          recipe && !isLoading && containerDimensions.width > 0 && (
+            <DraggableTextOverlays
+              recipe={recipe}
+              containerWidth={containerDimensions.width}
+              containerHeight={containerDimensions.height}
+              selectedTextId={selectedTextId ?? null}
+              onSelectText={onSelectText || (() => { })}
+              onUpdateText={onUpdateText || (() => { })}
+            />
+          )
+        }
 
-        {/* Toggle button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowOverlay((v) => !v)}
-            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showOverlay
+        {
+          recipe && !isLoading && containerDimensions.width > 0 && (
+            <DraggableTextOverlays
+              recipe={recipe}
+              containerWidth={containerDimensions.width}
+              containerHeight={containerDimensions.height}
+              selectedTextId={selectedTextId ?? null}
+              onSelectText={onSelectText || (() => { })}
+              onUpdateText={onUpdateText || (() => { })}
+            />
+          )
+        }
+
+        {/* Framing Overlay Toggle Button */}
+        {
+          recipe && !isLoading && (
+            <button
+              type="button"
+              onClick={() => setShowOverlay((v) => !v)}
+              className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${showOverlay
                 ? "bg-[var(--accent)] text-white"
                 : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showOverlay}
-            aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-            title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-          >
-            {showOverlay ? "Hide overlay" : "Show overlay"}
-          </button>
-        )}
+                }`}
+              aria-pressed={showOverlay}
+              aria-label={
+                showOverlay ? "Hide framing overlay" : "Show framing overlay"
+              }
+              title={
+                showOverlay ? "Hide framing overlay" : "Show framing overlay"
+              }
+            >
+              {showOverlay ? "Hide overlay" : "Show overlay"}
+            </button>
+          )
+        }
 
-        {/* Grid overlay button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowGridOverlay((v) => !v)}
-            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showGridOverlay
+        {/* Grid Overlay Toggle Button */}
+        {
+          recipe && !isLoading && (
+            <button
+              type="button"
+              onClick={() => setShowGridOverlay((v) => !v)}
+              className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${showGridOverlay
                 ? "bg-[var(--accent)] text-white"
                 : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showGridOverlay}
-            aria-label={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
-            title={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
-          >
-            {showGridOverlay ? "Hide grid" : "Show grid"}
-          </button>
-        )}
+                }`}
+              aria-pressed={showGridOverlay}
+              aria-label={
+                showGridOverlay ? "Hide grid overlay" : "Show grid overlay"
+              }
+              title={showGridOverlay ? "Hide grid overlay" : "Show grid"}
+            >
+              {showGridOverlay ? "Hide grid" : "Show grid"}
+            </button>
+          )
+        }
 
         {/* Compare button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowComparison((v) => !v)}
-            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showComparison
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showComparison}
-            aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
-            title={showComparison ? "Hide comparison preview" : "Show comparison preview"}
-          >
-            Compare
-          </button>
-        )}
+        {
+          recipe && !isLoading && (
+            <button
+              type="button"
+              onClick={() => setShowComparison((v) => !v)}
+              className={cn(
+                "absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto",
+                showComparison
+                  ? "bg-[var(--accent)] text-white"
+                  : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)]",
+              )}
+              aria-pressed={showComparison}
+              aria-label={
+                showComparison
+                  ? "Hide comparison preview"
+                  : "Show comparison preview"
+              }
+              title={
+                showComparison
+                  ? "Hide comparison preview"
+                  : "Show comparison preview"
+              }
+            >
+              Compare
+            </button>
+          )
+        }
 
         {/* Grab frame button */}
-        {!isLoading && (
-          <button
-            type="button"
-            onClick={handleGrabFrame}
-            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
-            aria-label="Grab frame as PNG"
-            title="Download current frame as PNG"
-          >
-            <Camera className="w-3 h-3" />
-            Grab frame
-          </button>
-        )}
-      </div>
+        {
+          !isLoading && (
+            <button
+              type="button"
+              onClick={handleGrabFrame}
+              className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-20 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] flex items-center gap-1"
+              aria-label="Grab frame as PNG"
+              title="Download current frame as PNG"
+            >
+              <Camera className="w-3 h-3" />
+              Grab frame
+            </button>
+          )
+        }
+      </div >
 
       {showComparison && file && (
         <div className="mt-4">
           <ComparisonPreview file={file} recipe={recipe} videoRef={videoRef} />
         </div>
-      )}
+      )
+      }
     </>
   );
 }

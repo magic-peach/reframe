@@ -16,13 +16,22 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
-import ImageOverlay from "./ImageOverlay"
+import ImageOverlay from "./ImageOverlay";
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
 import {
-  Layers, Crop, Scissors, RotateCw, Volume2, Type,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  Layers,
+  Crop,
+  Scissors,
+  RotateCw,
+  Volume2,
+  Type,
+  SlidersHorizontal,
+  Zap,
+  AlertTriangle,
+  Github,
+  Copy,
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -82,7 +91,9 @@ function AccordionSection({
       >
         <div className="flex items-center gap-2">
           <span className="text-film-500 opacity-80">{icon}</span>
-          <span className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">{title}</span>
+          <span className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
+            {title}
+          </span>
         </div>
         <svg
           aria-hidden="true"
@@ -90,9 +101,18 @@ function AccordionSection({
           height="12"
           viewBox="0 0 12 12"
           fill="none"
-          className={cn("text-[var(--muted)] transition-transform duration-200", isOpen && "rotate-180")}
+          className={cn(
+            "text-[var(--muted)] transition-transform duration-200",
+            isOpen && "rotate-180",
+          )}
         >
-          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M2 4l4 4 4-4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
 
@@ -100,7 +120,7 @@ function AccordionSection({
         id={`${id}-panel`}
         className={cn(
           "transition-all duration-200",
-          isOpen ? "block" : "hidden"
+          isOpen ? "block" : "hidden",
         )}
       >
         <div className="px-3 pt-3 pb-0">{children}</div>
@@ -123,37 +143,47 @@ function KeyboardShortcutsPanel() {
   const [open, setOpen] = useState(false);
 
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
-  {
-    keys: [
-      <Kbd key="ctrl">Ctrl</Kbd>,
-      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="shift">Shift</Kbd>,
-      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="e">E</Kbd>
-    ],
-    label: "Export video",
-  },
-  {
-    keys: [<Kbd key="m">M</Kbd>],
-    label: "Toggle audio mute",
-  },
-  {
-    keys: [<Kbd key="r">R</Kbd>],
-    label: "Reset all settings",
-  },
-  {
-    keys: [<Kbd key="esc">Esc</Kbd>],
-    label: "Cancel export",
-  },
-  {
-    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
-    label: "Switch preset by index",
-  },
-  {
-    keys: [<Kbd key="question">?</Kbd>],
-    label: "Toggle this panel",
-  },
-];
+    {
+      keys: [
+        <Kbd key="ctrl">Ctrl</Kbd>,
+        <span key="plus1" className="text-[var(--muted)] text-xs">
+          +
+        </span>,
+        <Kbd key="shift">Shift</Kbd>,
+        <span key="plus2" className="text-[var(--muted)] text-xs">
+          +
+        </span>,
+        <Kbd key="e">E</Kbd>,
+      ],
+      label: "Export video",
+    },
+    {
+      keys: [<Kbd key="m">M</Kbd>],
+      label: "Toggle audio mute",
+    },
+    {
+      keys: [<Kbd key="r">R</Kbd>],
+      label: "Reset all settings",
+    },
+    {
+      keys: [<Kbd key="esc">Esc</Kbd>],
+      label: "Cancel export",
+    },
+    {
+      keys: [
+        <Kbd key="1">1</Kbd>,
+        <span key="dash" className="text-[var(--muted)] text-xs">
+          –
+        </span>,
+        <Kbd key="9">9</Kbd>,
+      ],
+      label: "Switch preset by index",
+    },
+    {
+      keys: [<Kbd key="question">?</Kbd>],
+      label: "Toggle this panel",
+    },
+  ];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
@@ -174,9 +204,18 @@ function KeyboardShortcutsPanel() {
           height="12"
           viewBox="0 0 12 12"
           fill="none"
-          className={cn("text-[var(--muted)] transition-transform duration-200", open && "rotate-180")}
+          className={cn(
+            "text-[var(--muted)] transition-transform duration-200",
+            open && "rotate-180",
+          )}
         >
-          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M2 4l4 4 4-4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
 
@@ -186,7 +225,10 @@ function KeyboardShortcutsPanel() {
           className="px-4 pb-3 space-y-2 border-t border-[var(--border)]"
         >
           {shortcuts.map(({ keys, label }) => (
-            <li key={label} className="flex items-center justify-between gap-3 pt-2">
+            <li
+              key={label}
+              className="flex items-center justify-between gap-3 pt-2"
+            >
               <span className="text-xs text-[var(--muted)]">{label}</span>
               <span className="flex items-center gap-1 shrink-0">{keys}</span>
             </li>
@@ -199,15 +241,31 @@ function KeyboardShortcutsPanel() {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
-    result, error, exportStartedAt, updateRecipe,
-    handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
+    file,
+    duration,
+    recipe,
+    status,
+    progress,
+    result,
+    error,
+    exportStartedAt,
+    updateRecipe,
+    handleFileSelect,
+    fileError,
+    handleExport,
+    cancelExport,
+    reset,
+    resetSettings,
     videoRef,
     seekTo,
-    overlayFile, setOverlayFile,
-    overlayPosition, setOverlayPosition,
-    overlaySize, setOverlaySize,
-    overlayOpacity, setOverlayOpacity,
+    overlayFile,
+    setOverlayFile,
+    overlayPosition,
+    setOverlayPosition,
+    overlaySize,
+    setOverlaySize,
+    overlayOpacity,
+    setOverlayOpacity,
     recommendedPreset,
     currentTime,
     toggleSound,
@@ -221,7 +279,7 @@ export default function VideoEditor() {
     handleExport,
     status,
     cancelExport,
-    onToggleShortcutsModal: () => {},
+    onToggleShortcutsModal: () => { },
   });
 
   const [copied, setCopied] = useState(false);
@@ -239,7 +297,17 @@ export default function VideoEditor() {
       overlaySize,
       overlayOpacity,
     });
-  }, [overlayPosition, overlaySize, overlayOpacity, file]);
+
+    localStorage.setItem(
+      "editorState",
+      JSON.stringify({
+        recipe,
+        overlayPosition,
+        overlaySize,
+        overlayOpacity,
+      }),
+    );
+  }, [recipe, overlayPosition, overlaySize, overlayOpacity, file]);
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
@@ -259,8 +327,18 @@ export default function VideoEditor() {
     if (restored.overlayPosition) setOverlayPosition(restored.overlayPosition);
     if (typeof restored.overlaySize === "number") setOverlaySize(restored.overlaySize);
     if (typeof restored.overlayOpacity === "number") setOverlayOpacity(restored.overlayOpacity);
-  }, [setOverlayOpacity, setOverlayPosition, setOverlaySize]);
 
+    const saved = localStorage.getItem("editorState");
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved);
+      if (parsed.recipe) {
+        updateRecipe(parsed.recipe);
+      }
+    } catch (err) {
+      console.error("Failed to restore editor state", err);
+    }
+  }, [setOverlayOpacity, setOverlayPosition, setOverlaySize, updateRecipe]);
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   const downloadRef = useRef<HTMLDivElement>(null);
@@ -268,9 +346,12 @@ export default function VideoEditor() {
   /**
    * Updates a text overlay property and syncs with recipe.
    */
-  const handleUpdateTextOverlay = (id: string, updates: Partial<TextOverlay>) => {
+  const handleUpdateTextOverlay = (
+    id: string,
+    updates: Partial<TextOverlay>,
+  ) => {
     const updatedOverlays = (recipe.textOverlays || []).map((overlay) =>
-      overlay.id === id ? { ...overlay, ...updates } : overlay
+      overlay.id === id ? { ...overlay, ...updates } : overlay,
     );
     updateRecipe({ textOverlays: updatedOverlays });
   };
@@ -289,8 +370,9 @@ export default function VideoEditor() {
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
-      
-      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
       downloadRef.current.scrollIntoView({
         behavior: prefersReducedMotion ? "instant" : "smooth",
         block: "center",
@@ -298,22 +380,23 @@ export default function VideoEditor() {
     }
   }, [status]);
   useEffect(() => {
-const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-  if (file) {
-    e.preventDefault();
-    e.returnValue = "";
-  }
-};
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (file) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
 
-window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
-return () => {
-  window.removeEventListener("beforeunload", handleBeforeUnload);
-};
-}, [file]);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [file]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
-  const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
+  const isMac =
+    typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const intervalSeconds = useMemo(() => {
     if (duration <= 30) return 2;
@@ -324,21 +407,28 @@ return () => {
 
   const videoSrc = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
-    [file]
+    [file],
   );
 
   const exportSummary = useMemo(() => {
     const preset = getPresetById(recipe.preset);
-    const width = recipe.preset === "custom" ? recipe.customWidth : (preset?.width ?? recipe.customWidth);
-    const height = recipe.preset === "custom" ? recipe.customHeight : (preset?.height ?? recipe.customHeight);
+    const width =
+      recipe.preset === "custom"
+        ? recipe.customWidth
+        : (preset?.width ?? recipe.customWidth);
+    const height =
+      recipe.preset === "custom"
+        ? recipe.customHeight
+        : (preset?.height ?? recipe.customHeight);
 
     const framingLabel = recipe.framing === "fit" ? "Fit" : "Fill";
     const speedLabel = `${recipe.speed}× speed`;
-    const qualityLabel = recipe.quality <= 21
-      ? "High"
-      : recipe.quality <= 25
-      ? "Balanced"
-      : "Small file";
+    const qualityLabel =
+      recipe.quality <= 21
+        ? "High"
+        : recipe.quality <= 25
+          ? "Balanced"
+          : "Small file";
 
     return `Exporting to ${width}×${height} ${recipe.format.toUpperCase()} • ${framingLabel} • ${speedLabel} • Quality: ${qualityLabel}`;
   }, [recipe]);
@@ -350,7 +440,10 @@ return () => {
   }, [videoSrc]);
 
   return (
-    <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
+    <div
+      className="min-h-screen relative flex flex-col"
+      style={{ background: "var(--bg)" }}
+    >
       <ExportOverlay
         status={status}
         progress={progress}
@@ -367,51 +460,67 @@ return () => {
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
         <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
-        <div
-          className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
-          style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
-          aria-label="Reframe — video editor"
-        >
-        <h1
-          className="font-display leading-none tracking-widest2 text-[var(--text)] break-words text-center transition-all"
-          style={{ fontSize: 'clamp(2rem,10vw,4rem)', viewTransitionName: 'reframe-text' }}
-        >
-          REFRAME
-        </h1>
-        <p
-          className="font-heading text-[var(--muted)] uppercase tracking-widest text-center"
-          style={{
-            fontSize: 'clamp(0.7rem,2vw,0.875rem)',
-            marginTop: 'clamp(0.25rem,1vw,0.5rem)',
-          }}
-        >
-          Your video, any format
-        </p>
-    <div
-      className="flex md:hidden items-center justify-center gap-2 font-heading font-semibold uppercase tracking-widest text-[var(--muted)] border-t border-[var(--border)]"
-      style={{
-        fontSize: 'clamp(0.6rem,1.5vw,0.75rem)',
-        marginTop: 'clamp(0.5rem,2vw,0.75rem)',
-        paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
-      }}
-    >
-      <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-      No login. No ads. 100% private.
-    </div>
-  </div>  
-  <div
-    className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
-    style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
-  >
-    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-    No login. No ads. 100% private - your video never leaves your device.
-  </div>
-    </header>
+          <div
+            className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
+            style={{
+              padding: "clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)",
+              boxSizing: "border-box",
+            }}
+            aria-label="Reframe — video editor"
+          >
+            <h1
+              className="font-display leading-none tracking-widest2 text-[var(--text)] break-words text-center transition-all"
+              style={{
+                fontSize: "clamp(2rem,10vw,4rem)",
+                viewTransitionName: "reframe-text",
+              }}
+            >
+              REFRAME
+            </h1>
+            <p
+              className="font-heading text-[var(--muted)] uppercase tracking-widest text-center"
+              style={{
+                fontSize: "clamp(0.7rem,2vw,0.875rem)",
+                marginTop: "clamp(0.25rem,1vw,0.5rem)",
+              }}
+            >
+              Your video, any format
+            </p>
+            <div
+              className="flex md:hidden items-center justify-center gap-2 font-heading font-semibold uppercase tracking-widest text-[var(--muted)] border-t border-[var(--border)]"
+              style={{
+                fontSize: "clamp(0.6rem,1.5vw,0.75rem)",
+                marginTop: "clamp(0.5rem,2vw,0.75rem)",
+                paddingTop: "clamp(0.5rem,2vw,0.75rem)",
+              }}
+            >
+              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
+              No login. No ads. 100% private.
+            </div>
+          </div>
+          <div
+            className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
+            style={{
+              justifyContent: "center",
+              textAlign: "center",
+              margin: "0",
+              width: "auto",
+            }}
+          >
+            <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
+            No login. No ads. 100% private - your video never leaves your
+            device.
+          </div>
+        </header>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
-
           <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in">
-              <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
+              <FileUpload
+                onFileSelect={handleFileSelect}
+                currentFile={file}
+                fileError={fileError}
+                duration={duration}
+              />
 
               {!file && (
                 <div className="text-center text-[var(--muted)] py-6">
@@ -429,6 +538,12 @@ return () => {
                     selectedTextId={selectedTextId}
                     onSelectText={setSelectedTextId}
                     onUpdateText={handleUpdateTextOverlay}
+                    overlayFile={overlayFile}
+                    overlayPosition={overlayPosition}
+                    overlaySize={overlaySize}
+                    setOverlaySize={setOverlaySize}
+                    overlayOpacity={overlayOpacity}
+                    setOverlayPosition={setOverlayPosition}
                   />
 
                   <div className="mt-3">
@@ -452,10 +567,12 @@ return () => {
               </p>
             )}
             {file && (
-              <div className={cn(
-                "grid grid-cols-1 gap-4",
-                isProcessing && "pointer-events-none opacity-50"
-              )}>
+              <div
+                className={cn(
+                  "grid grid-cols-1 gap-4",
+                  isProcessing && "pointer-events-none opacity-50",
+                )}
+              >
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <AccordionSection
                     id="trim"
@@ -509,7 +626,10 @@ return () => {
                     onToggle={() => toggleSection("audio")}
                     delay={150}
                   >
-                    <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
+                    <AudioSpeedControl
+                      recipe={recipe}
+                      onChange={updateRecipe}
+                    />
                   </AccordionSection>
                   <Section
                     icon={<SlidersHorizontal size={12} />}
@@ -537,7 +657,9 @@ return () => {
                           max="1"
                           step="0.1"
                           value={recipe.brightness}
-                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
+                          onChange={(e) =>
+                            updateRecipe({ brightness: Number(e.target.value) })
+                          }
                           aria-label="Adjust brightness"
                           className="w-full accent-film-600"
                         />
@@ -562,7 +684,9 @@ return () => {
                           max="2"
                           step="0.1"
                           value={recipe.contrast}
-                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
+                          onChange={(e) =>
+                            updateRecipe({ contrast: Number(e.target.value) })
+                          }
                           aria-label="Adjust contrast"
                           className="w-full accent-film-600"
                         />
@@ -587,14 +711,20 @@ return () => {
                           max="3"
                           step="0.1"
                           value={recipe.saturation}
-                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
+                          onChange={(e) =>
+                            updateRecipe({ saturation: Number(e.target.value) })
+                          }
                           aria-label="Adjust saturation"
                           className="w-full accent-film-600"
                         />
                       </div>
                     </div>
                   </Section>
-                  <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
+                  <Section
+                    icon={<SlidersHorizontal size={12} />}
+                    title="Output format"
+                    delay={190}
+                  >
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <AccordionSection
@@ -605,14 +735,23 @@ return () => {
                     onToggle={() => toggleSection("export")}
                     delay={200}
                   >
-                    <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
+                    <ExportSettings
+                      recipe={recipe}
+                      duration={duration}
+                      onChange={updateRecipe}
+                    />
                   </AccordionSection>
-                  <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
+                  <Section
+                    icon={<Layers size={12} />}
+                    title="Image overlay"
+                    delay={120}
+                  >
                     <ImageOverlay
                       overlayFile={overlayFile}
                       setOverlayFile={setOverlayFile}
-                      overlayPosition={overlayPosition}
-                      setOverlayPosition={setOverlayPosition}
+                      // Type assertions to align hook coordinates with ImageOverlay expectations
+                      overlayPosition={overlayPosition as any}
+                      setOverlayPosition={setOverlayPosition as any}
                       overlaySize={overlaySize}
                       setOverlaySize={setOverlaySize}
                       overlayOpacity={overlayOpacity}
@@ -628,7 +767,10 @@ return () => {
                 role="status"
                 className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
               >
-                <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
+                <AlertTriangle
+                  size={16}
+                  className="shrink-0 mt-0.5 text-film-500"
+                />
                 <div className="flex-1">
                   <p className="font-heading font-bold text-sm">Error</p>
                   <p className="text-film-600 text-sm mt-1">{error}</p>
@@ -636,12 +778,18 @@ return () => {
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText(error).then(() => {
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }).catch((err) => {
-                      console.error("Failed to copy error to clipboard:", err);
-                    });
+                    navigator.clipboard
+                      .writeText(error)
+                      .then(() => {
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      })
+                      .catch((err) => {
+                        console.error(
+                          "Failed to copy error to clipboard:",
+                          err,
+                        );
+                      });
                   }}
                   className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-sm font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
                   aria-label="Copy error message to clipboard"
@@ -662,15 +810,22 @@ return () => {
 
             {status === "done" && result && (
               <div role="status" className="animate-fade-in" ref={downloadRef}>
-                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
+                <DownloadResult
+                  result={result}
+                  onReset={reset}
+                  soundOnCompletion={recipe.soundOnCompletion}
+                  onToggleSound={toggleSound}
+                />
               </div>
             )}
           </div>
 
-          <div className={cn(
-            "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
-            (isProcessing || !file) && "pointer-events-none opacity-50"
-          )}>
+          <div
+            className={cn(
+              "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
+              (isProcessing || !file) && "pointer-events-none opacity-50",
+            )}
+          >
             {!file && (
               <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 animate-fade-in">
                 <p className="text-[10px] font-heading font-bold text-film-600 uppercase tracking-widest">
@@ -681,7 +836,10 @@ return () => {
                 </p>
               </div>
             )}
-            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
+            <div
+              className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in"
+              style={{ animationDelay: "50ms" }}
+            >
               <AccordionSection
                 id="resize"
                 icon={<Layers size={12} />}
@@ -693,7 +851,10 @@ return () => {
                 {recommendedPreset && (
                   <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
                     <p>
-                      We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()} ({recommendedPreset.label.replace(/\s/g, "")})
+                      We detected a {recommendedPreset.label.replace(/\s/g, "")}{" "}
+                      video → Recommended:{" "}
+                      {(recommendedPreset.platform.split("·")[0] ?? "").trim()}{" "}
+                      ({recommendedPreset.label.replace(/\s/g, "")})
                     </p>
                   </div>
                 )}
@@ -734,19 +895,22 @@ return () => {
               id="export-button"
               type="button"
               onClick={handleExport}
-                disabled={!file || isProcessing}
-                aria-label='Export video'
-                aria-disabled={!file || isProcessing ? "true" : undefined}
-                title={!file ? "Upload a video to enable export" : undefined}
+              disabled={!file || isProcessing}
+              aria-label="Export video"
+              aria-disabled={!file || isProcessing ? "true" : undefined}
+              title={!file ? "Upload a video to enable export" : undefined}
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed",
               )}
             >
-             <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
+              <Zap
+                size={20}
+                className={cn(file && !isProcessing && "animate-pulse")}
+              />
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
 
