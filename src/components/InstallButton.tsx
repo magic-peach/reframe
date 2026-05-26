@@ -22,16 +22,13 @@ export function InstallButton() {
     // Register service worker asynchronously on page load (Strict Mode-safe check)
     if ("serviceWorker" in navigator) {
       if (navigator.serviceWorker.controller) {
-        console.log("ℹ️ Service Worker: Already active and controlling this page.");
         return;
       }
 
       const handleLoad = () => {
         navigator.serviceWorker
           .register("/sw.js")
-          .then((reg) => {
-            console.log("Service Worker registered successfully with scope:", reg.scope);
-          })
+          .then(() => {})
           .catch((err) => {
             console.error("Service Worker registration failed:", err);
           });
@@ -48,25 +45,21 @@ export function InstallButton() {
 
   useEffect(() => {
     if (isInstalled) {
-      console.log("ℹ️ PWA Install Button: App is marked as already installed.");
       return;
     }
 
     // Check if the event was already captured globally
     if (typeof window !== "undefined" && (window as any).deferredPrompt) {
-      console.log("⚡ PWA Install Button: Found deferredPrompt pre-captured on window object!");
       setDeferredPrompt((window as any).deferredPrompt);
     }
 
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log("⚡ PWA Install Button: beforeinstallprompt event received in component!");
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
     const handleDeferredPromptReady = () => {
       if ((window as any).deferredPrompt) {
-        console.log("⚡ PWA Install Button: deferredpromptready event received from layout!");
         setDeferredPrompt((window as any).deferredPrompt);
       }
     };
@@ -74,7 +67,6 @@ export function InstallButton() {
     const handleAppInstalled = () => {
       setDeferredPrompt(null);
       setIsInstalled(true);
-      console.log("🎉 Reframe app installed successfully!");
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -92,8 +84,7 @@ export function InstallButton() {
     if (!deferredPrompt) return;
 
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`PWA install prompt outcome: ${outcome}`);
+    await deferredPrompt.userChoice;
     setDeferredPrompt(null);
   };
 
