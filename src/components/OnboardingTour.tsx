@@ -320,52 +320,77 @@ export default function OnboardingTour() {
     }
 
     let retryCount = 0;
-    const maxRetries = 10;
+    const maxRetries = 10; // Retry up to ~5s with 500ms delays
     let retryTimer: number | null = null;
+    let cancelled = false;
 
     const tryMeasure = () => {
-      measureTarget(currentStep.targetId).then((rect) => {
-        if (rect) {
-          setTargetRect(rect);
+ measureTarget(currentStep.targetId)
+    .then((rect) => {
+      if (cancelled) return;
 
-          setTimeout(() => {
-            tooltipRef.current?.focus();
-          }, 50);
+      if (rect) {
+        setTargetRect(rect);
 
-          retryCount = 0;
-        } else if (retryCount < maxRetries) {
-          retryCount++;
+        setTimeout(() => {
+          tooltipRef.current?.focus();
+        }, 50);
 
-          retryTimer = window.setTimeout(() => {
-            tryMeasure();
-          }, 500);
+        retryCount = 0;
+      } else if (retryCount < maxRetries) {
+        retryCount++;
+
+        retryTimer = window.setTimeout(() => {
+          tryMeasure();
+        }, 500);
+      } else {
+        // Fallback if target never appears
+        if (stepIndex < TOUR_STEPS.length - 1) {
+          setStepIndex((i) => i + 1);
+        } else {
+          dismiss();
         }
-      });
+      }
+    })
+    .catch((error) => {
+      console.error("Failed to measure tour target:", error);
+      dismiss();
+    });
     };
 
     tryMeasure();
 
     return () => {
-      if (retryTimer !== null) {
-        clearTimeout(retryTimer);
-      }
+      cancelled = true;
+      if (retryTimer !== null) clearTimeout(retryTimer);
     };
   }, [stepIndex, visible, measureTarget, dismiss, currentStep]);
 
-  // Re-measure on resize
+  // Re-measure on resize or scroll so spotlight stays anchored to target.
+  // requestAnimationFrame prevents layout thrashing on rapid scroll/resize events.
   useEffect(() => {
     if (!visible) return;
+let rafId: number;
 
-    const step = TOUR_STEPS[stepIndex];
-    if (!step) return;
+  const remeasure = () => {
+    cancelAnimationFrame(rafId);
 
-    const onResize = () => {
-      measureTarget(step.targetId).then(setTargetRect);
-    };
+    rafId = requestAnimationFrame(() => {
+      measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(
+        setTargetRect
+      );
+    });
+  };
 
-    window.addEventListener("resize", onResize);
+  window.addEventListener("resize", remeasure);
+  window.addEventListener("scroll", remeasure, true);
 
-    return () => window.removeEventListener("resize", onResize);
+  return () => {
+    cancelAnimationFrame(rafId);
+
+    window.removeEventListener("resize", remeasure);
+    window.removeEventListener("scroll", remeasure, true);
+  };
   }, [visible, stepIndex, measureTarget]);
 
   // Keyboard support

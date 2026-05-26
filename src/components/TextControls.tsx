@@ -5,6 +5,8 @@ import { createDefaultTextOverlay } from "@/lib/text-overlay";
 import { Trash2, Plus } from "lucide-react";
 import { useMemo } from "react";
 import BaseButton from "./ui/BaseButton";
+import FontSelector from "./FontSelector";
+import { useFontManager } from "@/hooks/useFontManager";
 
 interface TextControlsProps {
   recipe: EditRecipe;
@@ -23,10 +25,19 @@ export default function TextControls({
   selectedTextId,
   onSelectText,
 }: TextControlsProps) {
+  const { customFonts, addFonts, removeFont, getErrors } = useFontManager();
+
   /**
    * Memoize text overlays to prevent unnecessary dependency changes.
+   * Always ensures textOverlays is an array, even if recipe is malformed.
    */
-  const textOverlays = useMemo(() => recipe.textOverlays || [], [recipe.textOverlays]);
+  const textOverlays = useMemo(
+    (): TextOverlay[] => {
+      const overlays = recipe?.textOverlays;
+      return Array.isArray(overlays) ? overlays : [];
+    },
+    [recipe?.textOverlays]
+  );
 
   /**
    * Adds a new text overlay to the recipe.
@@ -63,7 +74,8 @@ export default function TextControls({
    * Get the currently selected overlay.
    */
   const selectedOverlay = useMemo(
-    () => textOverlays.find((o) => o.id === selectedTextId),
+    (): TextOverlay | undefined =>
+      textOverlays.find((o) => o.id === selectedTextId),
     [textOverlays, selectedTextId]
   );
 
@@ -128,6 +140,18 @@ export default function TextControls({
               rows={2}
             />
           </div>
+
+          {/* Font Selector */}
+          <FontSelector
+            selectedFont={selectedOverlay.fontFamily}
+            onSelectFont={(fontName) =>
+              handleUpdateText(selectedTextId!, { fontFamily: fontName })
+            }
+            customFonts={customFonts}
+            onAddFonts={addFonts}
+            onRemoveFont={removeFont}
+            errors={getErrors()}
+          />
 
           {/* Font Size Slider */}
           <div>
