@@ -1,6 +1,7 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { PREVIEW_CONTAINER_WIDTH, PREVIEW_CONTAINER_HEIGHT } from "./crop-frame";
 
 export class FFmpegLoadError extends Error {}
 
@@ -351,9 +352,31 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
       `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
     );
   } else {
+    // For fill mode, apply the user-selected crop box (normalized to a 16:9 preview container),
+    // then scale the cropped region to the requested output size.
+    //
+    // This keeps the selection position while exporting (instead of always cropping from center).
+    const vcw = PREVIEW_CONTAINER_WIDTH;
+    const vch = PREVIEW_CONTAINER_HEIGHT;
+    const boxX = recipe.cropBoxX * vcw;
+    const boxY = recipe.cropBoxY * vch;
+    const boxW = recipe.cropBoxW * vcw;
+    const boxH = recipe.cropBoxH * vch;
+
+    // "Cover" mapping scale factor: how much the rotated source is scaled to cover the
+    // 16:9 preview container.
+    const scExpr = `max(${vcw}/iw\\,${vch}/ih)`;
+    const leftExpr = `(${vcw}-iw*${scExpr})/2`;
+    const topExpr = `(${vch}-ih*${scExpr})/2`;
+
+    const wExpr = `floor(${boxW}/${scExpr})`;
+    const hExpr = `floor(${boxH}/${scExpr})`;
+    const xExpr = `floor((${boxX}-${leftExpr})/${scExpr})`;
+    const yExpr = `floor((${boxY}-${topExpr})/${scExpr})`;
+
     filters.push(
-      `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
-      `crop=${targetW}:${targetH}`
+      `crop=w=${wExpr}:h=${hExpr}:x=${xExpr}:y=${yExpr}`,
+      `scale=${targetW}:${targetH}`
     );
   }
 
