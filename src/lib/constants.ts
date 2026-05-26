@@ -4,6 +4,7 @@ import { RECIPE_VERSION } from "./types"
 export const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4] as const;
 
 export const DEFAULT_RECIPE: EditRecipe = {
+  textOverlays: [],
   preset: "vertical-9-16",
   customWidth: 1920,
   customHeight: 1080,
@@ -22,5 +23,6 @@ export const DEFAULT_RECIPE: EditRecipe = {
   denoise: false,
   soundOnCompletion: false,
   normalizeAudio: false,
+  jumpCutSegments: undefined,
   version: RECIPE_VERSION,
 };

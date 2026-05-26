@@ -1,6 +1,22 @@
 export const RECIPE_VERSION = 1;
 
+export interface JumpCutSegment {
+  start: number;
+  end: number;
+}
+
+export interface TextOverlay {
+  id: string;
+  text: string;
+  x: number; // Percentage (0-100) from left
+  y: number; // Percentage (0-100) from top
+  fontSize: number; // In pixels
+  color: string; // Hex color
+  fontWeight: "normal" | "bold" | "900";
+}
+
 export interface EditRecipe {
+  textOverlays: TextOverlay[];
   preset: string;
   customWidth: number;
   customHeight: number;
@@ -20,6 +36,14 @@ export interface EditRecipe {
   saturation: number;
   soundOnCompletion: boolean;
   version: number;
+  silenceDetection?: {
+    enabled: boolean;
+    threshold: number;
+    minSilenceDuration: number;
+    padding: number;
+  };
+  silentSegments?: Array<{ start: number; end: number }>;
+  jumpCutSegments?: JumpCutSegment[];
 }
 
 export type OverlayPosition =
@@ -58,11 +82,9 @@ export type ExportStatus =
   | "done"
   | "error";
 
-export const MAX_FILE_SIZE =
-  2 * 1024 * 1024 * 1024;
+export const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
 
-export const WARNING_FILE_SIZE =
-  500 * 1024 * 1024; // 500MB
+export const WARNING_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
 export function isValidRecipe(value: unknown): value is EditRecipe {
   if (!value || typeof value !== "object") return false;
@@ -86,6 +108,16 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
+
+  if (v.jumpCutSegments !== undefined) {
+    if (!Array.isArray(v.jumpCutSegments)) return false;
+    for (const seg of v.jumpCutSegments) {
+      if (typeof seg !== "object" || seg === null) return false;
+      if (typeof seg.start !== "number" || !isFinite(seg.start)) return false;
+      if (typeof seg.end !== "number" || !isFinite(seg.end)) return false;
+      if (seg.start >= seg.end) return false;
+    }
+  }
 
   return true;
 }
