@@ -28,7 +28,6 @@ export default function FileUpload({
   const [warning, setWarning] = useState("");
   const dragCounterRef = useRef(0);
 
-  // ── Keyboard shortcut Ctrl+O ──────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o") {
@@ -40,8 +39,6 @@ export default function FileUpload({
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  // ── Page-level drag overlay ───────────────────────────
-  // Uses a counter so nested dragenter/dragleave don't flicker
   useEffect(() => {
     const onDragEnter = (e: DragEvent) => {
       e.preventDefault();
@@ -56,7 +53,7 @@ export default function FileUpload({
     };
 
     const onDragOver = (e: DragEvent) => {
-      e.preventDefault(); // required to allow drop
+      e.preventDefault();
     };
 
     const onDrop = (e: DragEvent) => {
@@ -82,7 +79,6 @@ export default function FileUpload({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── File validation ───────────────────────────────────
   const handleFile = useCallback((file: File) => {
     setError("");
     setWarning("");
@@ -117,7 +113,6 @@ export default function FileUpload({
     onFileSelect(file);
   }, [onFileSelect]);
 
-  // ── Drop zone (inner) handler ─────────────────────────
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
@@ -125,31 +120,32 @@ export default function FileUpload({
     if (file) handleFile(file);
   };
 
-  // ── File info (shown after upload) ───────────────────
   const FileInfo = () => (
-    <div className="px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow)]">
-      <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="hidden lg:flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--surface)] border border-[var(--border)] shrink-0">
-            <Film size={16} className="text-film-600" />
+    <div className="rounded-2xl border border-white/10 bg-slate-950/85 px-4 py-4 shadow-2xl backdrop-blur-xl">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/10 lg:flex">
+            <Film size={16} className="text-cyan-200" />
           </div>
-          <Film size={18} className="lg:hidden text-film-600 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-0.5">
-              <p className="text-sm font-semibold text-[var(--text)] truncate max-w-[320px] xl:max-w-[420px]">
+          <Film size={18} className="mt-0.5 shrink-0 text-cyan-200 lg:hidden" />
+          <div className="min-w-0 flex-1">
+            <div className="mb-0.5 flex flex-wrap items-center gap-2">
+              <p className="max-w-[320px] truncate text-sm font-semibold text-white xl:max-w-[420px]">
                 {currentFile?.name}
               </p>
               {currentFile && (
-                <span className="px-2 py-0.5 bg-[var(--accent-muted)] text-[var(--text)] font-bold tracking-wider rounded text-[10px] uppercase shrink-0">
+                <span className="shrink-0 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-100">
                   {currentFile.name.includes(".")
                     ? currentFile.name.split(".").pop()
                     : "VIDEO"}
                 </span>
               )}
             </div>
-            <div className="text-xs text-[var(--muted)] mt-1 space-y-0.5">
-              <p>{formatBytes(currentFile?.size ?? 0)}</p>
-              <p>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-300">
+              <p className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                {formatBytes(currentFile?.size ?? 0)}
+              </p>
+              <p className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                 {duration > 0
                   ? `Duration: ${formatDuration(duration)}`
                   : "Loading duration..."}
@@ -161,19 +157,18 @@ export default function FileUpload({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="text-xs font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide"
+          className="rounded-full bg-cyan-300 px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-950 shadow-lg transition hover:scale-105 hover:bg-cyan-200"
         >
-          Change
-          <span className="text-[var(--muted)] ml-1">(Ctrl+O)</span>
+          Change Video
         </button>
       </div>
 
-      <p className="text-xs text-[var(--muted)] mt-3 break-words">
+      <p className="mt-3 break-words text-xs text-slate-400">
         Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
       </p>
 
       {fileError && (
-        <p className="text-xs text-[var(--error)] mt-2 font-medium">{fileError}</p>
+        <p className="mt-2 text-xs font-medium text-red-300">{fileError}</p>
       )}
 
       <input
@@ -189,7 +184,6 @@ export default function FileUpload({
     </div>
   );
 
-  // ── Drop zone (inner) ─────────────────────────────────
   const DropZone = () => (
     <div
       id="upload-zone"
@@ -209,42 +203,47 @@ export default function FileUpload({
         }
       }}
       className={cn(
-        "group flex flex-col items-center justify-center gap-4 py-12 px-6",
-        "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden",
+        "group relative flex min-h-[420px] cursor-pointer flex-col items-center justify-center gap-5 overflow-hidden rounded-[2rem] px-6 py-14 text-center",
+        "border border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-black shadow-2xl backdrop-blur-xl",
+        "transition-all duration-300 before:pointer-events-none before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.22),transparent_36%)]",
         dragging
-          ? "border-[var(--accent)] bg-[var(--accent-muted)] scale-[1.02] shadow-[var(--shadow)] ring-4 ring-[var(--accent-muted)]"
-          : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
+          ? "scale-[1.02] border-cyan-300 shadow-[0_0_70px_rgba(34,211,238,0.28)] ring-4 ring-cyan-300/10"
+          : "hover:border-cyan-300/60 hover:shadow-[0_0_55px_rgba(34,211,238,0.18)]"
       )}
     >
       {dragging && (
-        <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-film-500/20 to-transparent pointer-events-none" />
+        <div className="pointer-events-none absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-cyan-300/20 to-transparent" />
       )}
 
-      <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-200">
+      <div className="relative z-10 flex h-28 w-28 items-center justify-center rounded-3xl border border-cyan-300/20 bg-cyan-300/10 opacity-90 shadow-[0_0_35px_rgba(34,211,238,0.22)] transition duration-200 group-hover:scale-105 group-hover:opacity-100">
         <LottiePlayer animationData={uploadAnim} loop autoplay />
       </div>
 
-      <div className="text-center">
-        <p className="font-heading font-semibold text-[var(--text)] text-base">
-          {dragging ? "Release to upload" : "Drag & Drop your video here"}
+      <div className="relative z-10 text-center">
+        <p className="font-heading text-3xl font-black text-white">
+          {dragging ? "Release to Upload" : "Upload & Transform Your Video"}
         </p>
-        <p className="text-sm text-[var(--muted)] mt-1">or click to browse</p>
-        <p className="text-xs text-[var(--muted)] mt-2 font-heading">
+        <p className="mt-3 text-sm text-slate-300">
+          Drag and drop a video here, or click to browse.
+        </p>
+        <p className="mt-3 font-heading text-xs uppercase tracking-[0.22em] text-slate-500">
           Ctrl+O / Cmd+O
         </p>
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
+      <div className="relative z-10 flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-heading font-semibold text-white backdrop-blur">
         <FolderOpen size={14} />
         MP4 / MOV / AVI / WebM
       </div>
 
-      <p className="text-xs text-[var(--muted)] text-center">
-        Supports: MP4, MOV, AVI, MKV, WebM, and most video formats up to 2GB
+      <p className="relative z-10 text-center text-xs text-slate-400">
+        Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
       </p>
 
       {fileError && (
-        <p className="text-sm text-[var(--error)] text-center">{fileError}</p>
+        <p className="relative z-10 text-center text-sm text-red-300">
+          {fileError}
+        </p>
       )}
 
       <input
@@ -262,23 +261,20 @@ export default function FileUpload({
 
   return (
     <>
-      {/* ── Page-level drag overlay ── */}
       {pageDragging && (
         <div
           aria-live="polite"
           aria-label="Drop your video file anywhere on the page"
           className={cn(
             "fixed inset-0 z-50 flex flex-col items-center justify-center gap-4",
-            "bg-black/60 backdrop-blur-sm",
-            "border-4 border-dashed border-film-500",
+            "border-4 border-dashed border-cyan-300 bg-black/60 backdrop-blur-sm",
             "transition-all duration-200 pointer-events-none"
           )}
         >
-          {/* Animated ring */}
           <div className="relative flex items-center justify-center">
-            <div className="absolute w-32 h-32 rounded-full border-4 border-film-500/40 animate-ping" />
-            <div className="w-24 h-24 rounded-full bg-film-500/10 border-2 border-film-500 flex items-center justify-center">
-              <Film size={40} className="text-film-400" />
+            <div className="absolute h-32 w-32 animate-ping rounded-full border-4 border-cyan-300/40" />
+            <div className="flex h-24 w-24 items-center justify-center rounded-full border-2 border-cyan-300 bg-cyan-300/10">
+              <Film size={40} className="text-cyan-200" />
             </div>
           </div>
 
@@ -286,22 +282,21 @@ export default function FileUpload({
             <p className="text-2xl font-bold text-white">
               Drop your video anywhere
             </p>
-            <p className="text-film-300 mt-1 text-sm">
+            <p className="mt-1 text-sm text-cyan-200">
               Release to start uploading
             </p>
           </div>
         </div>
       )}
 
-      {/* ── Normal upload UI ── */}
       <div className="space-y-2">
         {error && (
-          <p role="alert" className="text-sm text-[var(--error)]">
+          <p role="alert" className="text-sm text-red-300">
             {error}
           </p>
         )}
         {warning && (
-          <p role="alert" className="text-sm text-[var(--warning)]">
+          <p role="alert" className="text-sm text-amber-300">
             {warning}
           </p>
         )}
