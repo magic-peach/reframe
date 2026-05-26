@@ -9,9 +9,9 @@ import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
-  const STORAGE_KEY = "reframe:recipe";
+const STORAGE_KEY = "reframe:recipe";
 
-export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
+export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number; bitrate?: number; codec?: string }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
@@ -23,10 +23,15 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
     video.preload = "metadata";
     video.onloadedmetadata = () => {
       clearTimeout(timeout)
+      const duration = isFinite(video.duration) ? video.duration : 0;
+      const bitrate = duration > 0 ? Math.round((file.size * 8) / duration / 1000) : undefined;
+
       resolve({
         width: video.videoWidth,
         height: video.videoHeight,
-        duration: isFinite(video.duration) ? video.duration : 0,
+        duration,
+        bitrate,
+        codec: file.type || "unknown"
       });
       URL.revokeObjectURL(url);
     };
@@ -75,8 +80,8 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       `Trim end time cannot exceed the video duration (${Math.floor(duration)}s).`,
     ],
     [
-      recipe.trimEnd !== null 
-        ? recipe.trimStart >= recipe.trimEnd 
+      recipe.trimEnd !== null
+        ? recipe.trimStart >= recipe.trimEnd
         : (duration > 0 && recipe.trimStart >= duration),
       "Trim start time must be earlier than the end time.",
     ],
@@ -138,6 +143,8 @@ export function useVideoEditor() {
     width: number;
     height: number;
     duration: number;
+    bitrate?: number;
+    codec?: string;
   } | null>(null);
   const [recipe, setRecipe] = useState<EditRecipe>(() => {
     if (typeof window === "undefined") return { ...DEFAULT_RECIPE };
@@ -174,6 +181,18 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const soundOnCompletion = localStorage.getItem("soundOnCompletion");
+    if (soundOnCompletion === null) return;
+
+    setRecipe((prev) => ({
+      ...prev,
+      soundOnCompletion: soundOnCompletion === "true",
+    }));
+  }, []);
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
     const next = { ...prev, ...patch };
@@ -398,29 +417,28 @@ export function useVideoEditor() {
     }
 
     try {
-      const { width, height, duration: dur } = await extractMetadata(selectedFile);
+      const metadata = await extractMetadata(selectedFile);
+      const dimensionCheck = validateDimensions(metadata.width, metadata.height);
 
-      // Layer 5: Resolution check
-      const dimensionCheck = validateDimensions(width, height);
       if (dimensionCheck === "blocked") {
-        const suggested = getDownscaledDimensions(width, height);
+        const suggested = getDownscaledDimensions(metadata.width, metadata.height);
         setError(
-          `Layer 5 Validation Failed: Resolution too high (${width}×${height}). ` +
+          `Layer 5 Validation Failed: Resolution too high (${metadata.width}×${metadata.height}). ` +
           `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
         );
         setStatus("error");
         return;
       }
 
-      setDuration(dur);
-      setVideoMetadata({ width, height, duration: dur });
+      setDuration(metadata.duration);
+      setVideoMetadata(metadata);
       setFile(selectedFile);
 
       if (dimensionCheck === "warning") {
-        console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
+        console.warn(`[Reframe] High resolution video detected (${metadata.width}×${metadata.height}). Export may be slow.`);
       }
       setRecipe((prev) => {
-        const suggestedPreset = suggestPreset(width, height);
+        const suggestedPreset = suggestPreset(metadata.width, metadata.height);
         const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
 
         return {
@@ -708,6 +726,7 @@ export function useVideoEditor() {
     cancelExport,
     reset,
     resetSettings,
+    videoMetadata,
     musicFile,
     setMusicFile,
     musicVolume,

@@ -210,6 +210,7 @@ export default function VideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    videoMetadata,
   } = useVideoEditor();
 
   useKeyboardShortcuts({
@@ -401,6 +402,34 @@ export default function VideoEditor() {
                       intervalSeconds={intervalSeconds}
                     />
                   </div>
+
+                  {videoMetadata && (
+                    <div className="mt-4 p-3 bg-film-50/50 rounded-lg border border-film-100 text-xs text-film-500 flex flex-wrap gap-4 items-center">
+                      <div className="flex flex-col">
+                        <span className="font-heading font-bold uppercase tracking-widest text-[10px] mb-0.5">Resolution</span>
+                        <span className="text-film-900">{videoMetadata.width} × {videoMetadata.height}</span>
+                      </div>
+                      <div className="w-px h-6 bg-film-200" />
+                      <div className="flex flex-col">
+                        <span className="font-heading font-bold uppercase tracking-widest text-[10px] mb-0.5">Duration</span>
+                        <span className="text-film-900">{Math.round(videoMetadata.duration)}s</span>
+                      </div>
+                      <div className="w-px h-6 bg-film-200" />
+                      <div className="flex flex-col">
+                        <span className="font-heading font-bold uppercase tracking-widest text-[10px] mb-0.5">Format</span>
+                        <span className="text-film-900">{videoMetadata.codec?.split('/')[1]?.toUpperCase() || videoMetadata.codec}</span>
+                      </div>
+                      {videoMetadata.bitrate && (
+                        <>
+                          <div className="w-px h-6 bg-film-200" />
+                          <div className="flex flex-col">
+                            <span className="font-heading font-bold uppercase tracking-widest text-[10px] mb-0.5">Est. Bitrate</span>
+                            <span className="text-film-900">{videoMetadata.bitrate} kbps</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

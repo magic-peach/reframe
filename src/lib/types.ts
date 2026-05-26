@@ -36,6 +36,12 @@ export interface EditRecipe {
   version: number;
 }
 
+export interface CustomProfile {
+  id: string;
+  label: string;
+  recipe: Partial<EditRecipe>;
+}
+
 export type OverlayPosition =
   | "top-left"
   | "top-right"
