@@ -14,12 +14,14 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
-import ImageOverlay from "./ImageOverlay"
+import ImageOverlay from "./ImageOverlay";
+import TextControls from "./TextControls";
+import { TextOverlay } from "@/lib/types";
 
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  SlidersHorizontal, Zap, AlertTriangle, Github, Copy, Type
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -232,10 +234,12 @@ export default function VideoEditor() {
 
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
     trim: false,
     rotation: false,
+    text: false,
     audio: false,
     export: false,
   });
@@ -243,6 +247,13 @@ export default function VideoEditor() {
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   const downloadRef = useRef<HTMLDivElement>(null);
+
+  const handleUpdateTextOverlay = (id: string, updates: Partial<TextOverlay>) => {
+    const updatedOverlays = (recipe.textOverlays || []).map((overlay) =>
+      overlay.id === id ? { ...overlay, ...updates } : overlay
+    );
+    updateRecipe({ textOverlays: updatedOverlays });
+  };
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
@@ -322,7 +333,14 @@ export default function VideoEditor() {
 
               {file && (
                 <div className="mt-4 animate-fade-in">
-                  <VideoPreview file={file} recipe={recipe} videoRef={videoRef} />
+                  <VideoPreview
+                    file={file}
+                    recipe={recipe}
+                    videoRef={videoRef}
+                    selectedTextId={selectedTextId}
+                    onSelectText={setSelectedTextId}
+                    onUpdateText={handleUpdateTextOverlay}
+                  />
 
                   <div className="mt-3">
                     <ThumbnailStrip
@@ -374,6 +392,21 @@ export default function VideoEditor() {
                     delay={100}
                   >
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
+                  </AccordionSection>
+                  <AccordionSection
+                    id="text"
+                    icon={<Type size={12} />}
+                    title="Text Overlay"
+                    isOpen={openSections.text}
+                    onToggle={() => toggleSection("text")}
+                    delay={110}
+                  >
+                    <TextControls
+                      recipe={recipe}
+                      onChange={updateRecipe}
+                      selectedTextId={selectedTextId}
+                      onSelectText={setSelectedTextId}
+                    />
                   </AccordionSection>
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
@@ -495,6 +528,36 @@ export default function VideoEditor() {
                       setOverlayOpacity={setOverlayOpacity}
                     />
                   </Section>
+                  <details className="group">
+                  <summary className="flex items-center gap-2 cursor-pointer select-none list-none
+                    text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] py-1">
+                    <span className="text-film-500 opacity-80 transition-transform duration-200 group-open:rotate-90">›</span>
+                    Advanced settings
+                    <div className="flex-1 h-px bg-[var(--border)]" />
+                  </summary>
+
+                  <div className="mt-4 space-y-4">
+                    <AccordionSection
+                      id="rotation"
+                      icon={<RotateCw size={12} />}
+                      title="Rotation"
+                      isOpen={openSections.rotation}
+                      onToggle={() => toggleSection("rotation")}
+                    >
+                      <RotateControl recipe={recipe} onChange={updateRecipe} />
+                    </AccordionSection>
+
+                    <AccordionSection
+                      id="export"
+                      icon={<SlidersHorizontal size={12} />}
+                      title="Export"
+                      isOpen={openSections.export}
+                      onToggle={() => toggleSection("export")}
+                    >
+                      <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
+                    </AccordionSection>
+                  </div>
+                </details>
                 </div>
               </div>
             )}
