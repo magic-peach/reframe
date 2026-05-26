@@ -67,8 +67,11 @@ async function fetchWithIntegrity(url: string, mimeType: string): Promise<string
   const key = url.split("/").pop()!;
   const integrity = SRI_HASHES[key];
 
+  // Fallback to standard fetch if SRI is missing (Prevents ffmpeg-core.worker.js from crashing the thread)
   if (!integrity) {
-    throw new Error(`[SRI] No hash found for: ${key}`);
+    const response = await fetch(url, { credentials: "omit" });
+    const blob = new Blob([await response.arrayBuffer()], { type: mimeType });
+    return URL.createObjectURL(blob);
   }
 
   const response = await fetch(url, { integrity, credentials: "omit" });
@@ -217,20 +220,31 @@ function buildArguments(
       videoOut = "[vbase]";
     }
 
-    if (hasOverlay) {
-      const scaledW = overlayOptions!.size;
-      const alpha = (overlayOptions!.opacity / 100).toFixed(2);
-      const posMap: Record<string, string> = {
-        "top-left":     "20:20",
-        "top-right":    "W-w-20:20",
-        "bottom-left":  "20:H-h-20",
-        "bottom-right": "W-w-20:H-h-20",
-      };
-      const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
-      filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
-      filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
-      videoOut = "[vout]";
-    }
+if (hasOverlay) {
+  const scaledW = overlayOptions!.size;
+  const alpha = (overlayOptions!.opacity / 100).toFixed(2);
+  const posMap: Record<string, string> = {
+    "top-left":     "20:20",
+    "top-right":    "W-w-20:20",
+    "bottom-left":  "20:H-h-20",
+    "bottom-right": "W-w-20:H-h-20",
+  };
+
+interface PositionCoords {
+    x: number;
+    y: number;
+  }
+
+  const pos = typeof overlayOptions?.position === "string"
+    ? (posMap[overlayOptions.position] ?? "W-w-20:H-h-20")
+    : overlayOptions?.position
+    ? `(W-w)*${(overlayOptions.position as PositionCoords).x}/100:(H-h)*${(overlayOptions.position as PositionCoords).y}/100`
+    : "W-w-20:H-h-20";
+
+  filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
+  filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
+  videoOut = "[vout]";
+}
 
     let audioOut = "";
     if (shouldKeepAudio) {
