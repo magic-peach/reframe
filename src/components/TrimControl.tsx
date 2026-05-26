@@ -2,9 +2,10 @@
 
 import { EditRecipe } from "@/lib/types";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { AlertCircle } from "lucide-react";
-import { formatDuration } from "@/lib/utils";
+import { AlertCircle, Zap, X } from "lucide-react";
+import { formatDuration, cn } from "@/lib/utils";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
+import { useSilenceDetection } from "@/hooks/useSilenceDetection";
 import WaveformCanvas from "@/components/WaveformCanvas";
 
 const MIN_CLIP_DURATION = 0.1;
@@ -26,11 +27,15 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
   );
 
   const { waveform, isLoading: waveformLoading } = useAudioWaveform(file);
+  const { silentSegments } = useSilenceDetection(file, 0.02);
   const hasAudio = waveform.length > 0;
 
   useEffect(() => {
     setStartInput(recipe.trimStart.toString());
   }, [recipe.trimStart]);
+
+  const activeJumpCuts = recipe.jumpCutSegments;
+  const hasJumpCuts = !!activeJumpCuts && activeJumpCuts.length > 0;
 
   const clipLength =
     (recipe.trimEnd ?? duration) - recipe.trimStart;
@@ -175,6 +180,46 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
   const inputClass =
     "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
+  const generateJumpCuts = useCallback(() => {
+    if (silentSegments.length === 0) return;
+
+    const significantSilences = silentSegments.filter(
+      segment => (segment.end - segment.start) >= 0.5
+    );
+
+    if (significantSilences.length === 0) {
+      alert("No significant silent sections detected. Adjust your video threshold or check the audio.");
+      return;
+    }
+
+    const keepSegments: Array<{ start: number; end: number }> = [];
+    let cursor = 0;
+
+    for (const silence of significantSilences) {
+      if (silence.start > cursor) {
+        keepSegments.push({
+          start: cursor,
+          end: silence.start,
+        });
+      }
+
+      cursor = silence.end;
+    }
+
+    if (cursor < duration) {
+      keepSegments.push({
+        start: cursor,
+        end: duration,
+      });
+    }
+
+    onChange({ jumpCutSegments: keepSegments });
+  }, [silentSegments, duration, onChange]);
+
+  const clearJumpCuts = useCallback(() => {
+    onChange({ jumpCutSegments: undefined });
+  }, [onChange]);
+
   return (
     <div id="trim-control" className="space-y-3">
       {duration > 0 && (
@@ -201,6 +246,30 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
               right: `${((duration - (recipe.trimEnd ?? duration)) / duration) * 100}%`,
             }}
           />
+          {silentSegments.map((segment, idx) => (
+            <div
+              key={`silence-${idx}`}
+              className="absolute h-1.5 bg-red-400 opacity-40 rounded-full"
+              title={`Silent: ${formatDuration(segment.start)} - ${formatDuration(segment.end)}`}
+              style={{
+                left: `${(segment.start / duration) * 100}%`,
+                width: `${((segment.end - segment.start) / duration) * 100}%`,
+              }}
+              aria-label={`Silent section from ${formatDuration(segment.start)} to ${formatDuration(segment.end)}`}
+            />
+          ))}
+          {hasJumpCuts && activeJumpCuts!.map((seg, idx) => (
+            <div
+              key={`jumpcut-${idx}`}
+              className="absolute h-1.5 bg-green-400 opacity-60 rounded-full"
+              title={`Keep: ${formatDuration(seg.start)} - ${formatDuration(seg.end)}`}
+              style={{
+                left: `${(seg.start / duration) * 100}%`,
+                width: `${((seg.end - seg.start) / duration) * 100}%`,
+              }}
+              aria-label={`Keep segment from ${formatDuration(seg.start)} to ${formatDuration(seg.end)}`}
+            />
+          ))}
           <div
             role="slider"
             aria-label="Trim start"
@@ -323,6 +392,40 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             Clip must be at least 0.1 seconds long.
           </p>
       )}
+
+
+      {hasJumpCuts && (
+        <div className="flex items-center justify-between rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2">
+          <p className="text-sm font-heading text-green-200">
+            {activeJumpCuts!.length} keep segment{activeJumpCuts!.length !== 1 ? "s" : ""} active
+          </p>
+
+          <button
+            onClick={clearJumpCuts}
+            className="flex items-center gap-1 rounded-md border border-green-400/30 px-2 py-1 text-xs font-medium text-green-100 transition-colors hover:bg-green-400/10"
+            aria-label="Clear active jump cuts"
+          >
+            <X size={12} />
+            Clear
+          </button>
+        </div>
+      )}
+
+      <button
+        onClick={generateJumpCuts}
+        className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-film-400 text-white font-semibold text-sm hover:bg-film-500 transition-colors"
+        aria-label={`${hasJumpCuts ? "Regenerate" : "Generate"} jump cuts by removing ${silentSegments.length} silent section${silentSegments.length !== 1 ? "s" : ""}`}
+        title="Auto-generate jump cuts to remove silence"
+      >
+        <Zap size={16} />
+        {hasJumpCuts ? "Regenerate Jump Cuts" : "Generate Jump Cuts"}
+      </button>
+
+      <p className="mt-2 text-xs text-zinc-400">
+        1. Detect Silence to generate red silence markers.
+        {" "}2. Generate Jump Cuts to create green keep-segments.
+        {" "}3. Export the video to apply FFmpeg jump cuts.
+      </p>
     </div>
   );
 }

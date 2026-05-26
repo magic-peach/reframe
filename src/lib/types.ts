@@ -16,6 +16,7 @@ export interface TextOverlay {
 }
 
 export interface EditRecipe {
+  textOverlays: TextOverlay[];
   preset: string;
   customWidth: number;
   customHeight: number;
@@ -36,6 +37,14 @@ export interface EditRecipe {
   soundOnCompletion: boolean;
   textOverlays: TextOverlay[];
   version: number;
+  silenceDetection?: {
+    enabled: boolean;
+    threshold: number;
+    minSilenceDuration: number;
+    padding: number;
+  };
+  silentSegments?: Array<{ start: number; end: number }>;
+  jumpCutSegments?: JumpCutSegment[];
 }
 
 export type OverlayPosition =
@@ -75,11 +84,9 @@ export type ExportStatus =
   | "done"
   | "error";
 
-export const MAX_FILE_SIZE =
-  2 * 1024 * 1024 * 1024;
+export const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
 
-export const WARNING_FILE_SIZE =
-  500 * 1024 * 1024; // 500MB
+export const WARNING_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
 export function isValidRecipe(value: unknown): value is EditRecipe {
   if (!value || typeof value !== "object") return false;
@@ -104,6 +111,16 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
   if (!Array.isArray(v.textOverlays)) return false;
+
+  if (v.jumpCutSegments !== undefined) {
+    if (!Array.isArray(v.jumpCutSegments)) return false;
+    for (const seg of v.jumpCutSegments) {
+      if (typeof seg !== "object" || seg === null) return false;
+      if (typeof seg.start !== "number" || !isFinite(seg.start)) return false;
+      if (typeof seg.end !== "number" || !isFinite(seg.end)) return false;
+      if (seg.start >= seg.end) return false;
+    }
+  }
 
   return true;
 }

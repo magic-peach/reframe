@@ -4,28 +4,14 @@ import { buildTextFilter } from "./text-overlay";
 
 export class FFmpegLoadError extends Error {}
 
-const FFMPEG_WORKER_URL =
-  typeof window !== "undefined"
-    ? new URL("./ffmpeg.worker.ts", import.meta.url)
-    : null;
-
-type SerializedFile = {
-  name: string;
-  type: string;
-  data: ArrayBuffer;
+const SRI_HASHES: Record<string, string> = {
+  "ffmpeg-core.js":   "sha384-sKfkiFtvUk+vexk+0EUhEh366190/4WpgUAsUvaxEfyg7+E1Zt5Y5hrsU808g8Q9",
+  "ffmpeg-core.wasm": "sha384-U1VDhkPYrM3wTCT4/vjSpSsKqG/UjljYrYCI4hBSJ02svbCkxuCi6U6u/peg5vpW",
 };
 
-type WorkerExportRequest = {
-  type: "export";
-  id: string;
-  file: SerializedFile;
-  recipe: EditRecipe;
-  videoDuration: number;
-  musicFile?: SerializedFile;
-  musicOptions?: BackgroundMusicOptions;
-  overlayFile?: SerializedFile;
-  overlayOptions?: ImageOverlayOptions;
-};
+async function fetchWithIntegrity(url: string, mimeType: string): Promise<string> {
+  const key = url.split("/").pop()!;
+  const integrity = SRI_HASHES[key];
 
 type WorkerLoadResponse = { type: "ready" };
 type WorkerProgressResponse = { type: "progress"; percent: number };
@@ -132,27 +118,10 @@ function handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
       return;
     }
 
-    workerReadyReject?.(new FFmpegLoadError(data.message));
-    workerReady = null;
-    workerReadyResolve = null;
-    workerReadyReject = null;
-    resetWorker();
-    return;
-  }
-
-  if (data.type === "cancelled") {
-    if (data.id && pendingExport?.id === data.id) {
-      pendingExport.reject(new DOMException("Export cancelled", "AbortError"));
-      pendingExport = null;
-      pendingProgress = null;
-    }
-    return;
-  }
-}
-
-async function ensureWorker() {
-  if (!ffmpegWorker) {
-    createWorker();
+export class FFmpegLoadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FFmpegLoadError";
   }
 }
 
@@ -323,6 +292,113 @@ function buildSessionId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function buildSegmentVideoFilter(
+  recipe: EditRecipe,
+  segStart: number,
+  segEnd: number,
+  targetW: number,
+  targetH: number
+): string {
+  const filters: string[] = [];
+
+  filters.push(`trim=start=${segStart}:end=${segEnd}`);
+
+  if (recipe.stabilization) filters.push("deshake");
+
+  if (recipe.rotate === 90)       filters.push("transpose=1");
+  else if (recipe.rotate === 180) filters.push("transpose=1,transpose=1");
+  else if (recipe.rotate === 270) filters.push("transpose=2");
+
+  if (recipe.framing === "fit") {
+    filters.push(
+      `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
+      `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
+    );
+  } else {
+    filters.push(
+      `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
+      `crop=${targetW}:${targetH}`
+    );
+  }
+
+  filters.push("setpts=PTS-STARTPTS");
+
+  if (recipe.speed !== 1) {
+    const pts = (1 / recipe.speed).toFixed(4);
+    filters.push(`setpts=${pts}*PTS`);
+  }
+
+  if (recipe.denoise) filters.push("hqdn3d=1.5:1.5:6:6");
+
+  const needsEq =
+    recipe.brightness !== 0 ||
+    recipe.contrast !== 1 ||
+    recipe.saturation !== 1;
+  if (needsEq) {
+    filters.push(
+      `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+    );
+  }
+
+  (recipe.textOverlays ?? []).forEach((overlay: any) => {
+    filters.push(buildTextFilter(overlay, targetW, targetH));
+  });
+
+  return filters.join(",");
+}
+
+function buildSegmentAudioFilter(
+  recipe: EditRecipe,
+  segStart: number,
+  segEnd: number
+): string {
+  const parts: string[] = [];
+  parts.push(`atrim=start=${segStart}:end=${segEnd}`);
+  parts.push("asetpts=PTS-STARTPTS");
+  if (recipe.speed !== 1) {
+    const rate = recipe.speed.toFixed(4);
+    parts.push(`atempo=${rate}`);
+  }
+  if (recipe.normalizeAudio) parts.push("loudnorm");
+  return parts.join(",");
+}
+
+export function buildJumpCutFilterComplex(
+  recipe: EditRecipe,
+  targetW: number,
+  targetH: number,
+  hasAudio: boolean
+): { filterComplex: string; videoOut: string; audioOut: string } {
+  const segments = recipe.jumpCutSegments;
+  if (!segments || segments.length === 0) {
+    const vf = buildVideoFilter(recipe, targetW, targetH);
+    const af = hasAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+    return { filterComplex: "", videoOut: vf ? "" : "", audioOut: af };
+  }
+  const parts: string[] = [];
+  segments.forEach((seg, i) => {
+    const vf = buildSegmentVideoFilter(recipe, seg.start, seg.end, targetW, targetH);
+    parts.push(`[0:v]${vf}[v${i}]`);
+    if (hasAudio) {
+      const af = buildSegmentAudioFilter(recipe, seg.start, seg.end);
+      parts.push(`[0:a]${af}[a${i}]`);
+    }
+  });
+  const vPads = segments.map((_, i) => `[v${i}]`).join("");
+  const aPads = hasAudio ? segments.map((_, i) => `[a${i}]`).join("") : "";
+  const n = segments.length;
+  const aFlag = hasAudio ? 1 : 0;
+
+  parts.push(
+    `${vPads}${aPads}concat=n=${n}:v=1:a=${aFlag}[vout]${hasAudio ? "[aout]" : ""}`
+  );
+  return {
+    filterComplex: parts.join(";"),
+    videoOut: "[vout]",
+    audioOut: hasAudio ? "[aout]" : "",
+  };
+}
+
 export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
 
@@ -420,6 +496,206 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
   return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
 }
 
+export async function exportVideo(
+  ffmpeg: FFmpeg,
+  file: File,
+  recipe: EditRecipe,
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal,
+  musicOptions?: BackgroundMusicOptions,
+  overlayOptions?: ImageOverlayOptions
+): Promise<ExportResult> {
+  const sessionId = buildSessionId();
+  let targetW: number, targetH: number;
+  if (recipe.preset === "custom") {
+    targetW = recipe.customWidth;
+    targetH = recipe.customHeight;
+  } else {
+    const preset = getPresetById(recipe.preset);
+    targetW = preset?.width ?? 1920;
+    targetH = preset?.height ?? 1080;
+  }
+
+  targetW = Math.round(targetW / 2) * 2;
+  targetH = Math.round(targetH / 2) * 2;
+
+  const ext = file.name.split(".").pop() ?? "mp4";
+  const inputName = `input_${sessionId}.${ext}`;
+
+  const getOutputConfig = (format: string) => {
+    switch (format) {
+      case "webm":
+        return { filename: `output_${sessionId}.webm`, mimeType: "video/webm" };
+      case "mkv":
+        return { filename: `output_${sessionId}.mkv`, mimeType: "video/x-matroska" };
+      case "gif":
+        return { filename: `output_${sessionId}.gif`, mimeType: "image/gif" };
+      default:
+        return { filename: `output_${sessionId}.mp4`, mimeType: "video/mp4" };
+    }
+  };
+
+  const { filename: outputName, mimeType } = getOutputConfig(recipe.format);
+  const fallbackOutputName = `fallback_${sessionId}.webm`;
+  const paletteName = `palette_${sessionId}.png`;
+  const cleanupFiles = new Set<string>([inputName, outputName, fallbackOutputName, paletteName]);
+
+  const handleProgress = ({ progress }: { progress: number }) => {
+    onProgress(Math.min(99, Math.round(progress * 100)));
+  };
+
+  try {
+    await ffmpeg.writeFile(inputName, await fetchFile(file), { signal });
+
+    const videoDuration = await new Promise<number>((resolve, reject) => {
+      const videoElement = document.createElement("video");
+      videoElement.src = URL.createObjectURL(file);
+      videoElement.onloadedmetadata = () => {
+        resolve(videoElement.duration);
+        URL.revokeObjectURL(videoElement.src);
+      };
+      videoElement.onerror = () => {
+        reject(new Error("Failed to load video metadata"));
+        URL.revokeObjectURL(videoElement.src);
+      };
+    });
+
+    const hasMusicTrack = !!(musicOptions?.file && recipe.keepAudio);
+    const musicInputName = `music_input_${sessionId}.mp3`;
+    if (hasMusicTrack) {
+      await ffmpeg.writeFile(musicInputName, await fetchFile(musicOptions!.file!), { signal });
+      cleanupFiles.add(musicInputName);
+    }
+
+    const hasOverlay = !!(overlayOptions?.file);
+    const overlayExt = overlayOptions?.file?.name.split(".").pop() ?? "png";
+    const overlayInputName = `overlay_${sessionId}.${overlayExt}`;
+    if (hasOverlay) {
+      await ffmpeg.writeFile(overlayInputName, await fetchFile(overlayOptions!.file!), { signal });
+      cleanupFiles.add(overlayInputName);
+    }
+
+    ffmpeg.on("progress", handleProgress);
+
+    // GIF export path
+    if (recipe.format === "gif") {
+      const vf = buildVideoFilter(recipe, targetW, targetH);
+      const vfWithPalette = vf ? `${vf},palettegen` : "palettegen";
+      const vfWithPaletteUse = vf
+        ? `[0:v]${vf}[x];[x][1:v]paletteuse`
+        : "[0:v][1:v]paletteuse";
+
+      const pass1Code = await ffmpeg.exec(
+        ["-i", inputName, "-vf", vfWithPalette, "-y", paletteName],
+        undefined,
+        { signal }
+      );
+      if (pass1Code !== 0) throw new Error("GIF palette generation failed");
+
+      const pass2Code = await ffmpeg.exec(
+        ["-i", inputName, "-i", paletteName, "-lavfi", vfWithPaletteUse, "-y", outputName],
+        undefined,
+        { signal }
+      );
+      if (pass2Code !== 0) throw new Error("GIF export failed");
+
+      const data = await ffmpeg.readFile(outputName, undefined, { signal });
+      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "image/gif" });
+
+      ffmpeg.off("progress", handleProgress);
+      onProgress(100);
+      return {
+        blobUrl: URL.createObjectURL(blob),
+        blob,
+        size: blob.size,
+        width: targetW,
+        height: targetH,
+        format: "gif" as const,
+      };
+    }
+
+    let missingAudioDetected = false;
+    const logListener = ({ message }: { message: string }) => {
+      const msg = message.toLowerCase();
+      if (
+        msg.includes("matches no streams") ||
+        msg.includes("specifier '0:a'") ||
+        msg.includes("input pad 0 on filter src")
+      ) {
+        missingAudioDetected = true;
+      }
+    };
+    ffmpeg.on("log", logListener);
+
+    // Attempt 1: Process with original audio
+    let args = buildArguments(
+      recipe, recipe.format, outputName, inputName, targetW, targetH,
+      hasMusicTrack, musicInputName, musicOptions,
+      hasOverlay, overlayInputName, overlayOptions, true, videoDuration
+    );
+
+    let exitCode = await ffmpeg.exec(args, undefined, { signal });
+
+    // Attempt 2: Auto-recover if no original audio
+    if (exitCode !== 0 && missingAudioDetected) {
+      missingAudioDetected = false;
+      args = buildArguments(
+        recipe, recipe.format, outputName, inputName, targetW, targetH,
+        hasMusicTrack, musicInputName, musicOptions,
+        hasOverlay, overlayInputName, overlayOptions, false, videoDuration
+      );
+      exitCode = await ffmpeg.exec(args, undefined, { signal });
+    }
+
+    // Fallback: Try WebM
+    if (exitCode !== 0) {
+      args = buildArguments(
+        recipe, "webm", fallbackOutputName, inputName, targetW, targetH,
+        hasMusicTrack, musicInputName, musicOptions,
+        hasOverlay, overlayInputName, overlayOptions, !missingAudioDetected, videoDuration
+      );
+
+      const fallbackCode = await ffmpeg.exec(args, undefined, { signal });
+      if (fallbackCode !== 0) throw new Error("Export failed");
+
+      const data = await ffmpeg.readFile(fallbackOutputName, undefined, { signal });
+      const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: "video/webm" });
+
+      ffmpeg.off("log", logListener);
+      onProgress(100);
+      return {
+        blobUrl: URL.createObjectURL(blob),
+        blob,
+        size: blob.size,
+        width: targetW,
+        height: targetH,
+        format: "webm",
+      };
+    }
+
+    const data = await ffmpeg.readFile(outputName, undefined, { signal });
+    const blob = new Blob([new Uint8Array(data as Uint8Array)], { type: mimeType });
+
+    ffmpeg.off("log", logListener);
+    onProgress(100);
+    return {
+      blobUrl: URL.createObjectURL(blob),
+      blob,
+      size: blob.size,
+      width: targetW,
+      height: targetH,
+      format: recipe.format as "mp4" | "webm" | "mkv",
+    };
+  } finally {
+    ffmpeg.off("progress", handleProgress);
+    for (const path of cleanupFiles) {
+      try {
+        await ffmpeg.deleteFile(path);
+      } catch {}
+    }
+  }
+}
+
 function buildArguments(
   recipe: EditRecipe,
   format: "mp4" | "webm" | "mkv" | "gif",
@@ -436,17 +712,11 @@ function buildArguments(
   hasOriginalAudio: boolean,
   videoDuration: number
 ): string[] {
-  const vf = buildVideoFilter(recipe, targetW, targetH);
-  const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
-  const af = afParts.join(",");
-
-  const musicIdx = 1;
-  const overlayIdx = hasMusicTrack ? 2 : 1;
+  const hasJumpCuts = (recipe.jumpCutSegments?.length ?? 0) > 0;
 
   const args: string[] = [];
   args.push("-i", inputName);
+
   if (hasMusicTrack) {
     if (musicOptions!.loopMusic) args.push("-stream_loop", "-1");
     args.push("-i", musicInputName);
@@ -455,10 +725,69 @@ function buildArguments(
     args.push("-i", overlayInputName);
   }
 
-  const needsFilterComplex = hasOverlay || hasMusicTrack;
+  const musicIdx = 1;
+  const overlayIdx = hasMusicTrack ? 2 : 1;
   const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
 
-  if (needsFilterComplex) {
+  if (hasJumpCuts) {
+    const filterParts: string[] = [];
+    const { filterComplex: jumpCutFC, videoOut: concatV, audioOut: concatA } =
+      buildJumpCutFilterComplex(recipe, targetW, targetH, hasOriginalAudio);
+
+    filterParts.push(jumpCutFC);
+
+    let videoOut = concatV;
+    if (hasOverlay) {
+      const scaledW = overlayOptions!.size;
+      const alpha = (overlayOptions!.opacity / 100).toFixed(2);
+      const posMap: Record<string, string> = {
+        "top-left":     "20:20",
+        "top-right":    "W-w-20:20",
+        "bottom-left":  "20:H-h-20",
+        "bottom-right": "W-w-20:H-h-20",
+      };
+      const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
+      filterParts.push(
+        `[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`
+      );
+      filterParts.push(`${videoOut}[logo]overlay=${pos}[vfinal]`);
+      videoOut = "[vfinal]";
+    }
+
+    let audioOut = concatA;
+    if (shouldKeepAudio && hasMusicTrack) {
+      const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
+      if (hasOriginalAudio && concatA) {
+        const origVol = (musicOptions!.originalAudioVolume / 100).toFixed(2);
+        filterParts.push(`${concatA}volume=${origVol}[orig]`);
+        filterParts.push(`[${musicIdx}:a]volume=${musicVol}[music]`);
+        filterParts.push(
+          `[orig][music]amix=inputs=2:duration=first:dropout_transition=0[afinal]`
+        );
+        audioOut = "[afinal]";
+      } else {
+        filterParts.push(`[${musicIdx}:a]volume=${musicVol}[afinal]`);
+        audioOut = "[afinal]";
+      }
+    }
+
+    args.push("-filter_complex", filterParts.join(";"));
+    args.push("-map", videoOut);
+
+    if (!shouldKeepAudio) {
+      args.push("-an");
+    } else if (audioOut) {
+      args.push("-map", audioOut);
+    }
+
+  } else if (hasOverlay || hasMusicTrack) {
+    const vf = buildVideoFilter(recipe, targetW, targetH);
+    const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
+    const audioSpeed = hasOriginalAudio
+      ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false)
+      : "";
+    const afParts = [audioTrim, audioSpeed].filter(Boolean);
+
     const filterParts: string[] = [];
     let videoOut = "[0:v]";
 
@@ -477,7 +806,9 @@ function buildArguments(
         "bottom-right": "W-w-20:H-h-20",
       };
       const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
-      filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
+      filterParts.push(
+        `[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`
+      );
       filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
       videoOut = "[vout]";
     }
@@ -487,20 +818,22 @@ function buildArguments(
       if (hasMusicTrack) {
         const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
         if (hasOriginalAudio) {
-          const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
+          const origVol = (musicOptions!.originalAudioVolume / 100).toFixed(2);
           const origChain = afParts.length > 0
             ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
             : `[0:a]volume=${origVol}[orig]`;
           filterParts.push(origChain);
           filterParts.push(`[${musicIdx}:a]volume=${musicVol}[music]`);
-          filterParts.push(`[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
+          filterParts.push(
+            `[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`
+          );
           audioOut = "[aout]";
         } else {
           filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
           audioOut = "[aout]";
         }
-      } else if (hasOriginalAudio && af) {
-        filterParts.push(`[0:a]${af}[aout]`);
+      } else if (hasOriginalAudio && afParts.length > 0) {
+        filterParts.push(`[0:a]${afParts.join(",")}[aout]`);
         audioOut = "[aout]";
       }
     }
@@ -517,7 +850,16 @@ function buildArguments(
     } else if (hasOriginalAudio) {
       args.push("-map", "0:a");
     }
+
   } else {
+    const vf = buildVideoFilter(recipe, targetW, targetH);
+    const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
+    const audioSpeed = hasOriginalAudio
+      ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false)
+      : "";
+    const afParts = [audioTrim, audioSpeed].filter(Boolean);
+    const af = afParts.join(",");
+
     if (vf) args.push("-vf", vf);
     if (!shouldKeepAudio) {
       args.push("-an");
@@ -539,13 +881,16 @@ function buildArguments(
     args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast");
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
   } else {
-    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast", "-movflags", "+faststart");
+    args.push(
+      "-c:v", "libx264",
+      "-crf", String(recipe.quality),
+      "-preset", "ultrafast",
+      "-movflags", "+faststart"
+    );
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
   }
 
-  // Add explicit output duration when speed != 1 to prevent slight duration
-  // overshoot caused by encoder/filter pipeline frame flush at stream end.
-  if (recipe.speed !== 1) {
+  if (!hasJumpCuts && recipe.speed !== 1) {
     const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
     const outputDuration = sourceDuration / recipe.speed;
     args.push("-t", outputDuration.toFixed(6));

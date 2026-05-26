@@ -33,6 +33,7 @@ export function useAudioWaveform(
 ) {
   const [waveform, setWaveform] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     let isCancelled = false;
@@ -66,10 +67,12 @@ export function useAudioWaveform(
 
         if (!isCancelled) {
           setWaveform(peaks);
+          setDuration(audioBuffer.duration);
         }
       } catch {
         if (!isCancelled) {
           setWaveform([]);
+          setDuration(0);
         }
       } finally {
         await audioContext?.close();
@@ -86,5 +89,5 @@ export function useAudioWaveform(
     };
   }, [barCount, file]);
 
-  return { waveform, isLoading };
+  return { waveform, isLoading, duration };
 }

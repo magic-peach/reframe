@@ -354,7 +354,7 @@ export default function VideoEditor() {
         paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
       }}
     >
-      <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
+      <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
       No login. No ads. 100% private.
     </div>
   </div>  
@@ -362,7 +362,7 @@ export default function VideoEditor() {
     className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
     style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
   >
-    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
+    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse" />
     No login. No ads. 100% private - your video never leaves your device.
   </div>
     </header>
