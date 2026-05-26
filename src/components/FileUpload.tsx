@@ -92,11 +92,6 @@ export default function FileUpload({
       return;
     }
 
-    if (file.size > 500 * 1024 * 1024) {
-      setError("File size exceeds 500MB limit. Please select a smaller video.");
-      return;
-    }
-
     if (file.size > MAX_FILE_SIZE) {
       setError(
         `File too large (${formatBytes(file.size)}). Maximum allowed size is 2GB.`
@@ -209,32 +204,35 @@ export default function FileUpload({
         }
       }}
       className={cn(
-        "group flex flex-col items-center justify-center gap-4 py-12 px-6",
-        "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden",
+        "group flex min-h-[420px] flex-col items-center justify-center gap-5 px-6 py-14",
+        "border-2 border-dashed rounded-lg cursor-pointer transition-all duration-300 relative overflow-hidden",
         dragging
           ? "border-[var(--accent)] bg-[var(--accent-muted)] scale-[1.02] shadow-[var(--shadow)] ring-4 ring-[var(--accent-muted)]"
-          : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
+          : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-[var(--accent-muted)]"
       )}
     >
       {dragging && (
         <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-film-500/20 to-transparent pointer-events-none" />
       )}
 
-      <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-200">
+      <div className="absolute inset-x-6 top-6 flex items-center gap-2 text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
+        <span className="h-2 w-2 rounded-full bg-film-600" />
+        Import media
+        <span className="ml-auto">Ctrl+O</span>
+      </div>
+
+      <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-105 duration-200">
         <LottiePlayer animationData={uploadAnim} loop autoplay />
       </div>
 
       <div className="text-center">
-        <p className="font-heading font-semibold text-[var(--text)] text-base">
+        <p className="font-heading font-semibold text-[var(--text)] text-lg">
           {dragging ? "Release to upload" : "Drag & Drop your video here"}
         </p>
         <p className="text-sm text-[var(--muted)] mt-1">or click to browse</p>
-        <p className="text-xs text-[var(--muted)] mt-2 font-heading">
-          Ctrl+O / Cmd+O
-        </p>
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
+      <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)] shadow-sm">
         <FolderOpen size={14} />
         MP4 / MOV / AVI / WebM
       </div>
