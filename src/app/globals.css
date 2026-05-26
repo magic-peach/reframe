@@ -146,3 +146,10 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--accent-muted);
   border-radius: var(--radius);
 }
+
+detail > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
