@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Poppins:wght@400;700&family=Montserrat:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -143,4 +145,11 @@ textarea:focus {
   outline: 0;
   box-shadow: 0 0 0 3px var(--accent-muted);
   border-radius: var(--radius);
+}
+
+detail > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
 }
