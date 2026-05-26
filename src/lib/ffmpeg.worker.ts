@@ -1,14 +1,6 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { toBlobURL } from "@ffmpeg/util";
-import { EditRecipe, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
-import { getPresetById } from "./presets";
-import { buildTextFilter } from "./text-overlay";
-import {
-  buildAudioFadeFilter,
-  buildAudioSpeedFilter,
-  buildAudioTrimFilter,
-  getAudioOutputDuration,
-} from "./audio-filters";
+import type { EditRecipe, TextOverlay, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 const MT_CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm";
@@ -16,6 +8,102 @@ const SRI_HASHES: Record<string, string> = {
   "ffmpeg-core.js":   "sha384-sKfkiFtvUk+vexk+0EUhEh366190/4WpgUAsUvaxEfyg7+E1Zt5Y5hrsU808g8Q9",
   "ffmpeg-core.wasm": "sha384-U1VDhkPYrM3wTCT4/vjSpSsKqG/UjljYrYCI4hBSJ02svbCkxuCi6U6u/peg5vpW",
 };
+
+const AUDIO_FADE_MAX_SECONDS = 5;
+
+const PRESET_DIMENSIONS: Record<string, { width: number; height: number }> = {
+  "vertical-9-16": { width: 1080, height: 1920 },
+  "instagram-4-5": { width: 1080, height: 1350 },
+  "square-1-1": { width: 1080, height: 1080 },
+  "landscape-16-9": { width: 1920, height: 1080 },
+  "twitter-hd": { width: 1280, height: 720 },
+  "ultrawide-21-9": { width: 2560, height: 1080 },
+  "instagram-panoramic": { width: 5120, height: 1080 },
+  "portrait-3-4": { width: 1080, height: 1440 },
+  "cinema-scope": { width: 2048, height: 858 },
+  "dci-2k": { width: 2048, height: 1080 },
+  "custom": { width: 1920, height: 1080 },
+};
+
+function getPresetById(id: string) {
+  const size = PRESET_DIMENSIONS[id];
+  if (!size) return undefined;
+  return { id, ...size };
+}
+
+function buildTextFilter(overlay: TextOverlay, targetWidth: number, targetHeight: number): string {
+  const escapedText = overlay.text
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/:/g, "\\:");
+
+  const pixelX = Math.round((overlay.x / 100) * targetWidth);
+  const pixelY = Math.round((overlay.y / 100) * targetHeight);
+
+  const fontWeight = overlay.fontWeight === "900" || overlay.fontWeight === "bold"
+    ? "bold"
+    : "normal";
+
+  return `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:fontweight=${fontWeight}`;
+}
+
+function getAudioOutputDuration(recipe: EditRecipe, videoDuration: number): number {
+  const trimmedDuration = Math.max((recipe.trimEnd ?? videoDuration) - recipe.trimStart, 0);
+  if (trimmedDuration <= 0) return 0;
+  return recipe.speed > 0 ? trimmedDuration / recipe.speed : trimmedDuration;
+}
+
+function buildAudioTrimFilter(recipe: Pick<EditRecipe, "trimStart" | "trimEnd">): string {
+  if (recipe.trimStart === 0 && recipe.trimEnd === null) return "";
+  const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
+  return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
+}
+
+function buildAudioSpeedFilter(speed: number, normalizeAudio: boolean): string {
+  if (speed <= 0) return "";
+  const filters: string[] = [];
+
+  let remaining = speed;
+  while (remaining < 0.5) {
+    filters.push("atempo=0.5");
+    remaining /= 0.5;
+  }
+
+  while (remaining > 2.0) {
+    filters.push("atempo=2.0");
+    remaining /= 2.0;
+  }
+
+  if (Math.abs(remaining - 1.0) > 0.001) {
+    filters.push(`atempo=${Number(remaining.toFixed(4))}`);
+  }
+
+  if (normalizeAudio) filters.push("loudnorm=I=-14:TP=-1.5:LRA=11");
+
+  return filters.join(",");
+}
+
+function buildAudioFadeFilter(
+  recipe: Pick<EditRecipe, "audioFadeIn" | "audioFadeOut">,
+  outputDuration: number
+): string {
+  const safeDuration = Math.max(outputDuration, 0);
+  const fadeIn = Math.min(Math.max(recipe.audioFadeIn, 0), AUDIO_FADE_MAX_SECONDS, safeDuration);
+  const fadeOut = Math.min(Math.max(recipe.audioFadeOut, 0), AUDIO_FADE_MAX_SECONDS, safeDuration);
+
+  const filters: string[] = [];
+
+  if (fadeIn > 0) {
+    filters.push(`afade=t=in:st=0:d=${fadeIn.toFixed(3)}`);
+  }
+
+  if (fadeOut > 0) {
+    const fadeOutStart = Math.max(safeDuration - fadeOut, 0);
+    filters.push(`afade=t=out:st=${fadeOutStart.toFixed(3)}:d=${fadeOut.toFixed(3)}`);
+  }
+
+  return filters.join(",");
+}
 
 type SerializedFile = {
   name: string;
