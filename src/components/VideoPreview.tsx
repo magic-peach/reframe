@@ -319,7 +319,7 @@ export default function VideoPreview({
             right: `${boxRight}%`,
           }}
         >
-          {/* THE VIDEO WITH NATIVE CONTROLS RESTORED */}
+          {/* THE VIDEOS WITH NATIVE CONTROLS RESTORED */}
           <video
             ref={videoRef}
             controls
