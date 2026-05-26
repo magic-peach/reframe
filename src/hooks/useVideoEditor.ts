@@ -131,6 +131,23 @@ function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   }
 }
 
+function safeParseStoredJson<T>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+
+  const raw = localStorage.getItem(key);
+  if (!raw || raw.trim() === "") {
+    localStorage.removeItem(key);
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    localStorage.removeItem(key);
+    return null;
+  }
+}
+
 /**
  * Migrates old recipes to include missing properties from newer versions.
  * Ensures backwards compatibility when loading recipes created with older versions.
@@ -269,22 +286,18 @@ export function useVideoEditor() {
       } else {
         // Try full recipe restore first (new key)
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (isValidRecipe(parsed)) {
-              setRecipe(parsed);
-              return;
-            }
+          const parsed = safeParseStoredJson<unknown>(STORAGE_KEY);
+          if (parsed && isValidRecipe(parsed)) {
+            setRecipe(parsed);
+            return;
           }
         } catch {
           // ignore parse/validation errors and fall back to legacy
         }
 
         // Legacy partial settings (keep for backward compatibility)
-        const saved = localStorage.getItem("reframe-settings");
-        if (saved) {
-          const parsed = JSON.parse(saved);
+        const parsed = safeParseStoredJson<Partial<EditRecipe>>("reframe-settings");
+        if (parsed) {
           const sanitizeDimension = (val: unknown, fallback: number): number => {
             const n = Number(val);
             return Number.isFinite(n) && n >= 16 && n <= 7680 ? n : fallback;
@@ -683,10 +696,43 @@ export function useVideoEditor() {
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    let frameId: number | null = null;
     const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+    const handleSeeked = () => setCurrentTime(video.currentTime);
+    const stopTicker = () => {
+      if (frameId !== null) {
+        cancelAnimationFrame(frameId);
+        frameId = null;
+      }
+    };
+    const tick = () => {
+      setCurrentTime(video.currentTime);
+      if (!video.paused && !video.ended) {
+        frameId = requestAnimationFrame(tick);
+      }
+    };
+    const startTicker = () => {
+      stopTicker();
+      frameId = requestAnimationFrame(tick);
+    };
     video.addEventListener("timeupdate", handleTimeUpdate);
-    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  },[]);
+    video.addEventListener("play", startTicker);
+    video.addEventListener("pause", stopTicker);
+    video.addEventListener("ended", stopTicker);
+    video.addEventListener("seeking", handleSeeked);
+    video.addEventListener("seeked", handleSeeked);
+    video.addEventListener("loadedmetadata", handleSeeked);
+    return () => {
+      stopTicker();
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("play", startTicker);
+      video.removeEventListener("pause", stopTicker);
+      video.removeEventListener("ended", stopTicker);
+      video.removeEventListener("seeking", handleSeeked);
+      video.removeEventListener("seeked", handleSeeked);
+      video.removeEventListener("loadedmetadata", handleSeeked);
+    };
+  },[file]);
 
   const toggleSound = useCallback(() => {
   updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });

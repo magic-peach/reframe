@@ -1,6 +1,6 @@
 "use client";
 
-import { EditRecipe } from "@/lib/types";
+import { EditRecipe, VideoClip } from "@/lib/types";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AlertCircle } from "lucide-react";
 import { formatDuration } from "@/lib/utils";
@@ -14,9 +14,11 @@ interface Props {
   onChange: (patch: Partial<EditRecipe>) => void;
   duration: number;
   file: File | null;
+  playheadPercent: number;
+  clips: VideoClip[];
 }
 
-export default function TrimControl({ recipe, onChange, duration, file }: Props) {
+export default function TrimControl({ recipe, onChange, duration, file, playheadPercent, clips }: Props) {
   const [invalidStart, setStart] = useState(false);
   const [invalidEnd, setEnd] = useState(false);
   const [startErrorMsg, setStartErrorMsg] = useState("");
@@ -174,14 +176,74 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
   const inputClass =
     "w-full text-sm px-3 py-2 border border-[var(--border)] rounded-md bg-[var(--bg)] font-heading focus:outline-none focus:ring-2 focus:ring-film-400 text-[var(--text)] transition-shadow [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
-
   return (
     <div id="trim-control" className="space-y-3">
-      <WaveformCanvas
-        samples={waveform}
-        loading={waveformLoading}
-        hasAudio={hasAudio}
-      />
+      <div className="relative">
+        <WaveformCanvas
+          samples={waveform}
+          loading={waveformLoading}
+          hasAudio={hasAudio}
+        />
+        {duration > 0 && (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-10 w-0.5 -translate-x-1/2 bg-[var(--accent)] shadow-[0_0_12px_var(--accent)]"
+            style={{ left: `${playheadPercent}%` }}
+            aria-hidden="true"
+          >
+            <span className="absolute -top-1 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full border-2 border-[var(--surface)] bg-[var(--accent)] shadow-[var(--shadow)]" />
+          </div>
+        )}
+      </div>
+
+      {duration > 0 && (
+        <div className="relative h-9 rounded-md border border-[var(--border)] bg-[var(--bg)] overflow-hidden">
+          {clips.map((clip, index) => {
+            const clipDuration = clip.outPoint - clip.inPoint;
+            const left = (clip.trackStart / duration) * 100;
+            const width = (clipDuration / duration) * 100;
+            const isFirst = index === 0;
+            const isLast = index === clips.length - 1;
+
+            return (
+              <div
+                key={clip.id}
+                className="absolute inset-y-0 bg-[var(--accent-muted)]"
+                style={{ left: `${left}%`, width: `${width}%` }}
+                title={`Clip ${index + 1}: ${clip.inPoint.toFixed(1)}s-${clip.outPoint.toFixed(1)}s`}
+              >
+                <span
+                  className="absolute inset-y-0 left-0 z-10 w-0.5 bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]"
+                  aria-hidden="true"
+                />
+                <span
+                  className="absolute inset-y-0 right-0 z-10 w-0.5 bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]"
+                  aria-hidden="true"
+                />
+                {!isFirst && (
+                  <span
+                    className="absolute -left-1 top-1/2 z-20 h-4 w-2 -translate-y-1/2 rounded-full border border-[var(--accent)] bg-[var(--surface)]"
+                    aria-hidden="true"
+                  />
+                )}
+                {!isLast && (
+                  <span
+                    className="absolute -right-1 top-1/2 z-20 h-4 w-2 -translate-y-1/2 rounded-full border border-[var(--accent)] bg-[var(--surface)]"
+                    aria-hidden="true"
+                  />
+                )}
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
+                  Clip {index + 1}
+                </span>
+              </div>
+            );
+          })}
+          <div
+            className="pointer-events-none absolute inset-y-0 z-10 w-0.5 -translate-x-1/2 bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]"
+            style={{ left: `${playheadPercent}%` }}
+            aria-hidden="true"
+          />
+        </div>
+      )}
 
       {duration > 0 && (
         <div
@@ -200,6 +262,16 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
           }}
         >
           <div className="absolute inset-x-0 h-1.5 rounded-full bg-[var(--border)]" />
+          <div
+            className="absolute left-0 h-1.5 rounded-full bg-[var(--accent)] opacity-35 pointer-events-none"
+            style={{ width: `${playheadPercent}%` }}
+            aria-hidden="true"
+          />
+          <div
+            className="absolute top-1/2 z-10 h-6 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)] pointer-events-none"
+            style={{ left: `${playheadPercent}%` }}
+            aria-hidden="true"
+          />
           <div
             className="absolute h-1.5 rounded-full bg-film-400 opacity-60"
             style={{

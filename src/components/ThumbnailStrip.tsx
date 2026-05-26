@@ -1,7 +1,7 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
-import Image from "next/image";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 interface Thumbnail {
   time: number;
@@ -12,31 +12,42 @@ interface ThumbnailStripProps {
   videoSrc: string | null;
   duration: number;
   currentTime: number;
+  playheadPercent: number;
   trimStart?: number;
   trimEnd?: number;
   onSeek: (time: number) => void;
   intervalSeconds?: number;
+  showHeader?: boolean;
 }
 
 export default function ThumbnailStrip({
   videoSrc,
   duration,
   currentTime,
+  playheadPercent,
   trimStart = 0,
   trimEnd,
   onSeek,
   intervalSeconds = 5,
+  showHeader = true,
 }: ThumbnailStripProps) {
   const [thumbnails, setThumbnails] = useState<Thumbnail[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
   const offscreenVideoRef = useRef<HTMLVideoElement | null>(null);
   const lastRunIdRef = useRef(0);
   const objectUrlsRef = useRef<string[]>([]);
 
   const effectiveTrimEnd = trimEnd ?? duration;
+  const filmstripInterval = useMemo(() => {
+    if (duration <= 0) return 1;
+    if (duration <= 20) return 0.5;
+    if (duration <= 60) return 1;
+    return Math.max(1.5, Math.min(intervalSeconds, duration / 90));
+  }, [duration, intervalSeconds]);
 
   const revokeAllObjectUrls = useCallback(() => {
     objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -77,13 +88,13 @@ export default function ThumbnailStrip({
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      const thumbW = 160;
-      const thumbH = 90;
+      const thumbW = 120;
+      const thumbH = 68;
       canvas.width = thumbW;
       canvas.height = thumbH;
 
       const times: number[] = [];
-      for (let t = 0; t <= duration; t += intervalSeconds) {
+      for (let t = 0; t <= duration; t += filmstripInterval) {
         times.push(Math.min(t, duration - 0.1));
       }
       if ((times[times.length - 1] ?? 0) < duration - 0.5) {
@@ -141,7 +152,7 @@ export default function ThumbnailStrip({
         offscreenVideoRef.current = null;
       }
     }
-  }, [videoSrc, duration, intervalSeconds, revokeAllObjectUrls]);
+  }, [videoSrc, duration, filmstripInterval, revokeAllObjectUrls]);
 
   useEffect(() => {
     if (videoSrc && duration > 0) {
@@ -164,35 +175,44 @@ export default function ThumbnailStrip({
       currentTime >= t.time &&
       (i === thumbnails.length - 1 || currentTime < (thumbnails[i + 1]?.time ?? Infinity))
   );
+  const seekFromClientX = useCallback((clientX: number) => {
+    const track = trackRef.current;
+    if (!track || duration <= 0) return;
+    const rect = track.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    onSeek(ratio * duration);
+  }, [duration, onSeek]);
 
   if (!videoSrc) return null;
 
   return (
     <div className="thumbnail-strip-wrapper">
-      <div className="strip-header">
-        <span className="strip-label">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <rect x="0.5" y="0.5" width="11" height="11" rx="1.5" stroke="currentColor" />
-            <rect x="3" y="2.5" width="1.5" height="7" rx="0.5" fill="currentColor" />
-            <rect x="7.5" y="2.5" width="1.5" height="7" rx="0.5" fill="currentColor" />
-          </svg>
-          Frames
-        </span>
-        {isGenerating && (
-          <span className="strip-progress">
-            <span
-              className="progress-bar"
-              style={{ width: `${progress}%` }}
-            />
-            <span className="progress-text">{progress}%</span>
+      {showHeader && (
+        <div className="strip-header">
+          <span className="strip-label">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <rect x="0.5" y="0.5" width="11" height="11" rx="1.5" stroke="currentColor" />
+              <rect x="3" y="2.5" width="1.5" height="7" rx="0.5" fill="currentColor" />
+              <rect x="7.5" y="2.5" width="1.5" height="7" rx="0.5" fill="currentColor" />
+            </svg>
+            Timeline
           </span>
-        )}
-        {!isGenerating && thumbnails.length > 0 && (
-          <span className="strip-meta">
-            {thumbnails.length} frames · every {intervalSeconds}s
-          </span>
-        )}
-      </div>
+          {isGenerating && (
+            <span className="strip-progress">
+              <span
+                className="progress-bar"
+                style={{ width: `${progress}%` }}
+              />
+              <span className="progress-text">{progress}%</span>
+            </span>
+          )}
+          {!isGenerating && thumbnails.length > 0 && (
+            <span className="strip-meta">
+              Filmstrip · {thumbnails.length} frames
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="strip-scroll-area" ref={stripRef}>
         {thumbnails.length === 0 && isGenerating && (
@@ -204,37 +224,48 @@ export default function ThumbnailStrip({
         )}
 
         {thumbnails.length > 0 && (
-          <div className="strip-inner">
-            {thumbnails.map((thumb, i) => {
-              const isActive = i === activeIndex;
-              const inTrimRange =
-                thumb.time >= trimStart && thumb.time <= effectiveTrimEnd;
-              const isHovered = hoveredIndex === i;
+          <div
+            ref={trackRef}
+            className="timeline-track"
+          >
+            <div className="strip-inner">
+              {thumbnails.map((thumb, i) => {
+                const isActive = i === activeIndex;
+                const inTrimRange =
+                  thumb.time >= trimStart && thumb.time <= effectiveTrimEnd;
+                const isHovered = hoveredIndex === i;
 
-              return (
-                <button
-                  key={thumb.time}
-                  className={`thumb-btn ${isActive ? "active" : ""} ${
-                    !inTrimRange ? "out-of-range" : ""
-                  } ${isHovered ? "hovered" : ""}`}
-                  onClick={() => onSeek(thumb.time)}
-                  onMouseEnter={() => setHoveredIndex(i)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                  title={`Seek to ${formatTime(thumb.time)}`}
-                >
-                  <Image
-                    src={thumb.dataUrl}
-                    alt={`Frame at ${formatTime(thumb.time)}`}
-                    width={160}
-                    height={90}
-                    unoptimized
-                    draggable={false}
-                  />
-                  <span className="thumb-time">{formatTime(thumb.time)}</span>
-                  {isActive && <span className="active-indicator" />}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={thumb.time}
+                    className={`thumb-btn ${isActive ? "active" : ""} ${
+                      !inTrimRange ? "out-of-range" : ""
+                    } ${isHovered ? "hovered" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      seekFromClientX(e.clientX);
+                    }}
+                    onMouseEnter={() => setHoveredIndex(i)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                    title={`Seek to ${formatTime(thumb.time)}`}
+                  >
+                    <img
+                      src={thumb.dataUrl}
+                      alt={`Frame at ${formatTime(thumb.time)}`}
+                      draggable={false}
+                    />
+                    <span className="thumb-time">{formatTime(thumb.time)}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div
+              className="frame-playhead"
+              style={{ left: `${playheadPercent}%` }}
+              aria-hidden="true"
+            >
+              <span className="playhead-handle" />
+            </div>
           </div>
         )}
       </div>
@@ -244,10 +275,9 @@ export default function ThumbnailStrip({
           width: 100%;
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: var(--radius);
+          border-radius: 8px;
           overflow: hidden;
           font-family: 'SF Mono', 'Fira Code', monospace;
-          box-shadow: var(--shadow);
         }
 
         .strip-header {
@@ -306,24 +336,14 @@ export default function ThumbnailStrip({
         }
 
         .strip-scroll-area {
-          overflow-x: auto;
+          overflow-x: hidden;
           overflow-y: hidden;
-          padding: 10px 10px 6px;
-          scrollbar-width: thin;
-          scrollbar-color: var(--border) transparent;
+          padding: ${showHeader ? "16px 12px 10px" : "0"};
         }
 
-        .strip-scroll-area::-webkit-scrollbar {
-          height: 4px;
-        }
-
-        .strip-scroll-area::-webkit-scrollbar-track {
-          background: transparent;
-        }
-
-        .strip-scroll-area::-webkit-scrollbar-thumb {
-          background: var(--border);
-          border-radius: 2px;
+        .timeline-track {
+          position: relative;
+          width: 100%;
         }
 
         .strip-skeleton {
@@ -348,8 +368,37 @@ export default function ThumbnailStrip({
 
         .strip-inner {
           display: flex;
-          gap: 6px;
+          gap: 0;
           align-items: flex-end;
+          border: 1px solid var(--border);
+          border-radius: 6px;
+          overflow: hidden;
+          background: var(--bg);
+        }
+
+        .frame-playhead {
+          position: absolute;
+          top: -10px;
+          bottom: -2px;
+          width: 2px;
+          background: var(--accent);
+          box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 0 16px var(--accent);
+          transform: translateX(-50%);
+          pointer-events: none;
+          z-index: 6;
+        }
+
+        .playhead-handle {
+          position: absolute;
+          top: -5px;
+          left: 50%;
+          width: 12px;
+          height: 12px;
+          background: var(--accent);
+          border: 2px solid var(--surface);
+          border-radius: 999px;
+          box-shadow: var(--shadow);
+          transform: translateX(-50%);
         }
 
         .thumb-btn {
@@ -357,15 +406,14 @@ export default function ThumbnailStrip({
           padding: 0;
           border: none;
           background: none;
-          cursor: pointer;
-          border-radius: 6px;
+          cursor: crosshair;
+          border-radius: 0;
           overflow: hidden;
-          flex-shrink: 0;
-          width: 106px;
-          height: 60px;
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
-          outline: 2px solid transparent;
-          outline-offset: 1px;
+          flex: 1 1 0;
+          min-width: 0;
+          height: 54px;
+          transition: filter 0.15s ease;
+          outline: 0;
         }
 
         .thumb-btn img {
@@ -373,8 +421,8 @@ export default function ThumbnailStrip({
           height: 100%;
           object-fit: cover;
           display: block;
-          border-radius: 6px;
-          filter: brightness(0.85);
+          border-radius: 0;
+          filter: brightness(0.9);
           transition: filter 0.15s ease;
         }
 
@@ -383,17 +431,7 @@ export default function ThumbnailStrip({
           filter: brightness(1.05);
         }
 
-        .thumb-btn:hover,
-        .thumb-btn.hovered {
-          transform: translateY(-3px) scale(1.04);
-          box-shadow: var(--shadow);
-          outline-color: var(--accent);
-          z-index: 2;
-        }
-
         .thumb-btn.active {
-          outline-color: var(--accent);
-          box-shadow: 0 0 0 2px var(--accent), var(--shadow);
           z-index: 3;
         }
 
@@ -410,36 +448,19 @@ export default function ThumbnailStrip({
           bottom: 0;
           left: 0;
           right: 0;
-          padding: 3px 4px 3px;
+          padding: 8px 4px 3px;
           background: linear-gradient(transparent, var(--bg));
           font-size: 9px;
           color: var(--muted);
           text-align: center;
           letter-spacing: 0.04em;
           pointer-events: none;
-          border-radius: 0 0 6px 6px;
         }
 
         .thumb-btn.active .thumb-time {
           color: var(--text);
         }
 
-        .active-indicator {
-          position: absolute;
-          top: 4px;
-          right: 4px;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: var(--accent);
-          box-shadow: 0 0 6px var(--accent);
-          animation: pulse-dot 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.7); }
-        }
       `}</style>
     </div>
   );

@@ -15,6 +15,14 @@ export interface TextOverlay {
   fontPath?: string; // Path/URL to custom font file for export
 }
 
+export interface VideoClip {
+  id: string;
+  sourceUrl: string;
+  inPoint: number;
+  outPoint: number;
+  trackStart: number;
+}
+
 export interface EditRecipe {
   preset: string;
   customWidth: number;

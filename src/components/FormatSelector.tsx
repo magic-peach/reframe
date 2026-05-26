@@ -17,6 +17,13 @@ const FORMAT_OPTIONS = [
 ] as const;
 
 export default function FormatSelector({ recipe, onChange }: Props) {
+  const handleFormatSelect = (format: EditRecipe["format"]) => {
+    onChange({
+      format,
+      ...(format === "gif" ? { keepAudio: false } : {}),
+    });
+  };
+
   return (
     <div>
       <div className="flex items-center gap-1 mb-3">
@@ -30,15 +37,16 @@ export default function FormatSelector({ recipe, onChange }: Props) {
           <button
             key={option.id}
             type="button"
-            onClick={() => onChange({ format: option.id as "mp4" | "webm" | "mkv" | "gif" })}
+            onClick={() => handleFormatSelect(option.id)}
             aria-label={`Select ${option.label} format`}
             aria-pressed={recipe.format === option.id}
             className={cn(
-              "relative px-3 py-2.5 rounded-lg border-2 transition-all",
+              "relative px-3 py-3 rounded-lg border transition-all min-h-12",
               "text-xs font-heading font-semibold uppercase tracking-wider",
+              "focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-0",
               recipe.format === option.id
-                ? "border-film-600 bg-film-50 text-film-600"
-                : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-400 hover:text-film-600"
+                ? "border-[var(--accent)] bg-[var(--accent-muted)] text-[var(--text)] shadow-[inset_0_0_0_1px_var(--accent)]"
+                : "border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] active:scale-[0.98]"
             )}
           >
             {option.label}

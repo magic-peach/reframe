@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
-import { TextOverlay } from "@/lib/types";
+import { TextOverlay, VideoClip } from "@/lib/types";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
@@ -21,7 +21,7 @@ import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
 import {
-  Layers, RotateCw, Volume2, Type,
+  Layers, RotateCw, Volume2, Type, Scissors,
   SlidersHorizontal, Zap, AlertTriangle, Copy
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
@@ -37,7 +37,7 @@ interface SectionProps {
 function Section({ icon, title, children, delay = 0 }: SectionProps) {
   return (
     <div
-      className="space-y-3 animate-fade-in"
+      className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--bg)] p-3 animate-fade-in"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-center gap-2">
@@ -71,7 +71,10 @@ function AccordionSection({
   delay?: number;
 }) {
   return (
-    <div className="animate-fade-in" style={{ animationDelay: `${delay}ms` }}>
+    <div
+      className="rounded-lg border border-[var(--border)] bg-[var(--bg)] animate-fade-in overflow-hidden"
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <button
         type="button"
         aria-expanded={isOpen}
@@ -98,11 +101,11 @@ function AccordionSection({
       <div
         id={`${id}-panel`}
         className={cn(
-          "transition-all duration-200",
+          "transition-all duration-200 border-t border-[var(--border)]",
           isOpen ? "block" : "hidden"
         )}
       >
-        <div className="px-3 pt-3 pb-0">{children}</div>
+        <div className="px-3 py-3">{children}</div>
       </div>
     </div>
   );
@@ -280,11 +283,108 @@ export default function VideoEditor() {
     if (duration <= 300) return 15;
     return 30;
   }, [duration]);
+  const timelinePlayheadPercent = useMemo(
+    () => (duration > 0 ? Math.max(0, Math.min(100, (currentTime / duration) * 100)) : 0),
+    [currentTime, duration]
+  );
 
   const videoSrc = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
     [file]
   );
+  const [clips, setClips] = useState<VideoClip[]>([]);
+
+  const makeClipId = () => {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
+
+  useEffect(() => {
+    if (!videoSrc || duration <= 0) {
+      setClips([]);
+      return;
+    }
+
+    setClips([
+      {
+        id: makeClipId(),
+        sourceUrl: videoSrc,
+        inPoint: 0,
+        outPoint: duration,
+        trackStart: 0,
+      },
+    ]);
+  }, [videoSrc, duration]);
+
+  const getClipAtTime = (timelineTime: number) =>
+    clips.find((clip) => {
+      const clipEnd = clip.trackStart + (clip.outPoint - clip.inPoint);
+      return timelineTime >= clip.trackStart && timelineTime <= clipEnd;
+    });
+
+  const timelineToSourceTime = (timelineTime: number) => {
+    const clip = getClipAtTime(timelineTime);
+    if (!clip) return Math.max(0, Math.min(duration, timelineTime));
+    const offset = timelineTime - clip.trackStart;
+    return clip.inPoint + offset;
+  };
+
+  const handleTimelineSeek = (timelineTime: number) => {
+    seekTo(timelineToSourceTime(timelineTime));
+  };
+
+  const handleSplitAtPlayhead = () => {
+    if (duration <= 0 || clips.length === 0) return;
+
+    const timelineTime = Math.max(0, Math.min(duration, currentTime));
+    const targetIndex = clips.findIndex((clip) => {
+      const clipEnd = clip.trackStart + (clip.outPoint - clip.inPoint);
+      return timelineTime > clip.trackStart && timelineTime < clipEnd;
+    });
+
+    if (targetIndex === -1) return;
+
+    const clip = clips[targetIndex];
+    if (!clip) return;
+
+    const splitOffset = timelineTime - clip.trackStart;
+    const splitSourceTime = clip.inPoint + splitOffset;
+    const minSplitPadding = 0.05;
+    if (
+      splitSourceTime <= clip.inPoint + minSplitPadding ||
+      splitSourceTime >= clip.outPoint - minSplitPadding
+    ) {
+      return;
+    }
+
+    const firstClip: VideoClip = {
+      ...clip,
+      id: makeClipId(),
+      outPoint: splitSourceTime,
+    };
+    const secondClip: VideoClip = {
+      ...clip,
+      id: makeClipId(),
+      inPoint: splitSourceTime,
+      trackStart: clip.trackStart + splitOffset,
+    };
+
+    setClips((prev) => [
+      ...prev.slice(0, targetIndex),
+      firstClip,
+      secondClip,
+      ...prev.slice(targetIndex + 1),
+    ]);
+  };
+  const canSplitAtPlayhead = useMemo(() => {
+    if (duration <= 0 || clips.length === 0) return false;
+    return clips.some((clip) => {
+      const clipEnd = clip.trackStart + (clip.outPoint - clip.inPoint);
+      return currentTime > clip.trackStart + 0.05 && currentTime < clipEnd - 0.05;
+    });
+  }, [clips, currentTime, duration]);
 
   const exportSummary = useMemo(() => {
     const preset = getPresetById(recipe.preset);
@@ -476,31 +576,52 @@ export default function VideoEditor() {
                 <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-[10px] font-heading font-bold uppercase tracking-widest text-film-600">
-                      Timeline & Audio Graph
+                      Timeline
                     </p>
                     <p className="text-xs text-[var(--muted)]">
-                      Trim handles, thumbnails, and waveform
+                      Filmstrip, waveform, trim handles, and playhead
                     </p>
                   </div>
-                  <p className="text-xs font-mono text-[var(--muted)]">
-                    {currentTime.toFixed(1)}s / {duration.toFixed(1)}s
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSplitAtPlayhead}
+                      disabled={!canSplitAtPlayhead}
+                      className={cn(
+                        "inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-[10px] font-heading font-bold uppercase tracking-widest transition-all",
+                        canSplitAtPlayhead
+                          ? "border-[var(--border)] bg-[var(--bg)] text-[var(--text)] hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] hover:text-[var(--accent)] active:scale-[0.98]"
+                          : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] opacity-50 cursor-not-allowed"
+                      )}
+                      aria-label="Split clip at current playhead"
+                    >
+                      <Scissors size={12} />
+                      Split
+                    </button>
+                    <p className="text-xs font-mono text-[var(--muted)]">
+                      {currentTime.toFixed(1)}s / {duration.toFixed(1)}s
+                    </p>
+                  </div>
                 </div>
                 <div className="space-y-4">
                   <ThumbnailStrip
                     videoSrc={videoSrc}
                     duration={duration}
                     currentTime={currentTime}
+                    playheadPercent={timelinePlayheadPercent}
                     trimStart={recipe.trimStart ?? 0}
                     trimEnd={recipe.trimEnd ?? duration}
-                    onSeek={seekTo}
+                    onSeek={handleTimelineSeek}
                     intervalSeconds={intervalSeconds}
+                    showHeader={false}
                   />
                   <TrimControl
                     recipe={recipe}
                     onChange={updateRecipe}
                     duration={duration}
                     file={file}
+                    playheadPercent={timelinePlayheadPercent}
+                    clips={clips}
                   />
                 </div>
               </div>
