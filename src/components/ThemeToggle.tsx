@@ -1,16 +1,55 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const isDark = theme === "dark";
+
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        aria-label="Toggle theme"
+        disabled
+        className="
+          relative flex items-center justify-center
+          w-9 h-9 rounded-full
+          bg-[var(--surface)]
+          text-[var(--text)]
+          border border-[var(--border)]
+          transition-all duration-200
+        "
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="w-4 h-4 opacity-0"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="4" />
+        </svg>
+      </button>
+    );
+  }
 
   return (
     <button
-       type="button"
-       onClick={toggleTheme}
-       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      type="button"
+      onClick={toggleTheme}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className="
         relative flex items-center justify-center
         w-9 h-9 rounded-full
