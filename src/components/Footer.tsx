@@ -51,6 +51,10 @@ export default function Footer() {
               <Lock size={14} className="group-hover:scale-110 transition-transform duration-300" />
               Privacy Policy
             </Link>
+            <Link href="/terms" className="opacity-70 hover:opacity-100 hover:text-[var(--accent)] hover:translate-x-1 transition-all duration-300 w-fit flex items-center gap-2 group">
+              <ShieldCheck size={14} className="group-hover:scale-110 transition-transform duration-300" />
+              Terms of Use
+            </Link>
           </nav>
         </div>
 
