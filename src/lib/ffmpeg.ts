@@ -1,6 +1,7 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { buildAutoCropExpression } from "./ai/crop-filter";
 
 export class FFmpegLoadError extends Error {}
 
@@ -349,6 +350,11 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
       `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
+    );
+  } else if (recipe.autoReframe && recipe.autoReframeTimeline.length > 1) {
+    filters.push(
+      `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
+      `crop=${targetW}:${targetH}:${buildAutoCropExpression(recipe.autoReframeTimeline, targetW)}:(ih-${targetH})/2`
     );
   } else {
     filters.push(

@@ -3,6 +3,7 @@ import { toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { buildAutoCropExpression } from "./ai/crop-filter";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 const MT_CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm";
@@ -103,6 +104,11 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
       `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
+    );
+  } else if (recipe.autoReframe && recipe.autoReframeTimeline.length > 1) {
+    filters.push(
+      `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
+      `crop=${targetW}:${targetH}:${buildAutoCropExpression(recipe.autoReframeTimeline, targetW)}:(ih-${targetH})/2`
     );
   } else {
     filters.push(

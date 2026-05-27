@@ -271,7 +271,7 @@ export default function VideoEditor() {
     }
   }, [status]);
 
-  const isProcessing = status === "loading-engine" || status === "exporting";
+  const isProcessing = status === "analyzing" || status === "loading-engine" || status === "exporting";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const intervalSeconds = useMemo(() => {
@@ -291,7 +291,7 @@ export default function VideoEditor() {
     const width = recipe.preset === "custom" ? recipe.customWidth : (preset?.width ?? recipe.customWidth);
     const height = recipe.preset === "custom" ? recipe.customHeight : (preset?.height ?? recipe.customHeight);
 
-    const framingLabel = recipe.framing === "fit" ? "Fit" : "Fill";
+    const framingLabel = recipe.autoReframe && recipe.framing === "fill" ? "AI fill" : recipe.framing === "fit" ? "Fit" : "Fill";
     const speedLabel = `${recipe.speed}× speed`;
     const qualityLabel = recipe.quality <= 21
       ? "High"

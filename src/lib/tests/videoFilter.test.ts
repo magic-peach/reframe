@@ -64,6 +64,20 @@ describe("buildVideoFilter", () => {
     expect(result).toContain("crop=1280:720");
   });
 
+  it("should use dynamic crop expression when auto reframe timeline is available", () => {
+    const result = buildVideoFilter(base({
+      framing: "fill",
+      autoReframe: true,
+      autoReframeTimeline: [
+        { time: 0, centerX: 0.25, confidence: 0.8 },
+        { time: 1, centerX: 0.75, confidence: 0.8 },
+      ],
+    }), 1080, 1920);
+
+    expect(result).toContain("crop=1080:1920:");
+    expect(result).toContain("between(t\\,0\\,1)");
+  });
+
   it("should include deshake when stabilization is true", () => {
     const result = buildVideoFilter(base({ stabilization: true }), 1280, 720);
     expect(result).toContain("deshake");

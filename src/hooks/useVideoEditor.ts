@@ -7,6 +7,7 @@ import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import { analyzeSubjectMotion } from "@/lib/ai/subject-tracking";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
@@ -141,6 +142,7 @@ function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
     ...recipe,
     // Ensure textOverlays is always an array
     textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
+    autoReframeTimeline: Array.isArray(recipe.autoReframeTimeline) ? recipe.autoReframeTimeline : [],
   };
 }
 
@@ -437,6 +439,7 @@ export function useVideoEditor() {
           ...prev,
           trimStart: 0,
           trimEnd: null,
+          autoReframeTimeline: [],
           ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
         };
       });
@@ -448,7 +451,7 @@ export function useVideoEditor() {
 
   const handleExport = useCallback(async () => {
     if (!file) return;
-    if (status === "loading-engine" || status === "exporting") {
+    if (status === "analyzing" || status === "loading-engine" || status === "exporting") {
       return;
     }
 
@@ -471,6 +474,28 @@ export function useVideoEditor() {
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
+      let exportRecipe = recipe;
+      if (recipe.autoReframe && recipe.framing === "fill") {
+        setStatus("analyzing");
+        let timeline: EditRecipe["autoReframeTimeline"] = [];
+        try {
+          timeline = await analyzeSubjectMotion(file, {
+            fps: 3,
+            maxSamples: 180,
+            signal: abortController.signal,
+            onProgress: (percent) => setProgress(Math.min(20, Math.round(percent * 0.2))),
+          });
+        } catch (analysisError) {
+          if (analysisError instanceof DOMException && analysisError.name === "AbortError") {
+            throw analysisError;
+          }
+          console.warn("Subject tracking failed; falling back to centered crop.", analysisError);
+        }
+        if (exportCancelledRef.current) return;
+        exportRecipe = { ...recipe, autoReframeTimeline: timeline };
+        setRecipe((prev) => ({ ...prev, autoReframeTimeline: timeline }));
+      }
+
       await loadFFmpeg(abortController.signal, setProgress);
       if (exportCancelledRef.current) return;
 
@@ -480,7 +505,7 @@ export function useVideoEditor() {
 
       const exportResult = await exportVideo(
         file,
-        recipe,
+        exportRecipe,
         setProgress,
         abortController.signal,
         {
@@ -542,7 +567,9 @@ export function useVideoEditor() {
 
 
   useEffect(() => {
-    if (status === "exporting") {
+    if (status === "analyzing") {
+      document.title = `Finding subject ${progress}% | Reframe`;
+    } else if (status === "exporting") {
       document.title = `Exporting ${progress}% | Reframe`;
     } else if (status === "loading-engine") {
       document.title = `Loading engine... | Reframe`;
@@ -560,6 +587,7 @@ export function useVideoEditor() {
 
   useEffect(() => {
     const shouldWarn =
+      status === "analyzing" ||
       status === "exporting" ||
       status === "loading-engine";
 
@@ -581,6 +609,7 @@ export function useVideoEditor() {
         e.key === "Enter" &&
         file &&
         status !== "loading-engine" &&
+        status !== "analyzing" &&
         status !== "exporting"
       ) {
         handleExport();

@@ -15,6 +15,12 @@ export interface TextOverlay {
   fontPath?: string; // Path/URL to custom font file for export
 }
 
+export interface AutoReframePoint {
+  time: number;
+  centerX: number;
+  confidence: number;
+}
+
 export interface EditRecipe {
   preset: string;
   customWidth: number;
@@ -33,6 +39,8 @@ export interface EditRecipe {
   brightness: number;
   contrast: number;
   saturation: number;
+  autoReframe: boolean;
+  autoReframeTimeline: AutoReframePoint[];
   soundOnCompletion: boolean;
   textOverlays: TextOverlay[];
   version: number;
@@ -70,6 +78,7 @@ export interface ExportResult {
 
 export type ExportStatus =
   | "idle"
+  | "analyzing"
   | "loading-engine"
   | "exporting"
   | "done"
@@ -102,6 +111,8 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.brightness !== "number" || !isFinite(v.brightness)) return false;
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
+  if (typeof v.autoReframe !== "boolean") return false;
+  if (!Array.isArray(v.autoReframeTimeline)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
   if (!Array.isArray(v.textOverlays)) return false;
 

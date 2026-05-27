@@ -22,7 +22,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function ExportOverlay({ status, progress, exportStartedAt, onCancel }: Props) {
-  const visible = status === "loading-engine" || status === "exporting";
+  const visible = status === "analyzing" || status === "loading-engine" || status === "exporting";
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -76,6 +76,7 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
 
   if (!visible) return null;
 
+  const isAnalyzing = status === "analyzing";
   const isLoading = status === "loading-engine";
 
   return (
@@ -114,10 +115,12 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
           </div>
           <div className="export-text">
             <h2 className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">
-              {isLoading ? "Loading engine" : "Exporting"}
+              {isAnalyzing ? "Finding subject" : isLoading ? "Loading engine" : "Exporting"}
             </h2>
             <p className="text-sm text-[var(--muted)] mt-1">
-              {isLoading
+              {isAnalyzing
+                ? "Analyzing a sparse set of frames locally."
+                : isLoading
                 ? "Downloading the video engine. This only happens once."
                 : "Processing your video locally."}
             </p>
@@ -126,7 +129,9 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
             </p>
           </div>
           <span className="sr-only">
-            {status === "loading-engine"
+            {status === "analyzing"
+              ? `Finding subject: ${progress}%`
+              : status === "loading-engine"
               ? `Loading video engine: ${progress}%`
               : `Exporting: ${progress}%, ${formatElapsed(elapsedMs)} elapsed`}
           </span>
@@ -137,14 +142,14 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
                   aria-valuenow={progress}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={isLoading ? "Engine download progress" : "Export progress"}
+                  aria-label={isAnalyzing ? "Subject tracking progress" : isLoading ? "Engine download progress" : "Export progress"}
                   className="h-full bg-film-600 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
               <div className="flex items-center justify-between gap-4 text-xs font-heading font-semibold text-[var(--muted)]">
                 <span>{progress}%</span>
-                {!isLoading && (
+                {!isLoading && !isAnalyzing && (
                   <span>{formatElapsed(elapsedMs)} elapsed</span>
                 )}
               </div>

@@ -18,6 +18,8 @@ export const DEFAULT_RECIPE: EditRecipe = {
   brightness: 0,
   contrast: 1,
   saturation: 1,
+  autoReframe: false,
+  autoReframeTimeline: [],
   stabilization: false,
   denoise: false,
   soundOnCompletion: false,
