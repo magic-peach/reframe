@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
+import { useWaveform } from "@/hooks/useWaveform";
 import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
@@ -212,6 +213,8 @@ export default function VideoEditor() {
     toggleSound,
   } = useVideoEditor();
 
+  const { waveform } = useWaveform(file);
+
   useKeyboardShortcuts({
     file,
     recipe,
@@ -399,6 +402,7 @@ export default function VideoEditor() {
                       trimEnd={recipe.trimEnd ?? duration}
                       onSeek={seekTo}
                       intervalSeconds={intervalSeconds}
+                      waveform={waveform}
                     />
                   </div>
                 </div>

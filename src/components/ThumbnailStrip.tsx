@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { WaveformOverlay } from "./WaveformOverlay";
 
 interface Thumbnail {
   time: number;
@@ -16,6 +17,7 @@ interface ThumbnailStripProps {
   trimEnd?: number;
   onSeek: (time: number) => void;
   intervalSeconds?: number;
+  waveform?: number[] | null;
 }
 
 export default function ThumbnailStrip({
@@ -26,6 +28,7 @@ export default function ThumbnailStrip({
   trimEnd,
   onSeek,
   intervalSeconds = 5,
+  waveform,
 }: ThumbnailStripProps) {
   const [thumbnails, setThumbnails] = useState<Thumbnail[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -205,6 +208,7 @@ export default function ThumbnailStrip({
 
         {thumbnails.length > 0 && (
           <div className="strip-inner">
+            {waveform && waveform.length > 0 && <WaveformOverlay waveform={waveform} />}
             {thumbnails.map((thumb, i) => {
               const isActive = i === activeIndex;
               const inTrimRange =
@@ -350,6 +354,7 @@ export default function ThumbnailStrip({
           display: flex;
           gap: 6px;
           align-items: flex-end;
+          position: relative;
         }
 
         .thumb-btn {
