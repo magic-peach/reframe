@@ -54,7 +54,7 @@ function verifyMagicBytes(file: File): Promise<boolean> {
       // WebM / MKV
       if (hex.startsWith("1A45DFA3")) resolve(true);
       // AVI
-      else if (hex.startsWith("52494646")) resolve(true);
+      else if (hex.startsWith("52494646") && hex.substring(16, 24) === "41564920") resolve(true);
       // MP4 / MOV (checks for 'ftyp' in first 12 bytes)
       else if (ascii.substring(0, 12).includes("ftyp")) resolve(true);
       else resolve(false);
