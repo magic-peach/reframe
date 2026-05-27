@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+.next/
+out/
+dist/
+build/
+
+# Generated files
+*.min.js
+*.min.css
+public/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Package manager lock files (formatting not needed)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
