@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto:wght@400;700&family=Poppins:wght@400;700&family=Montserrat:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -145,23 +147,9 @@ textarea:focus {
   border-radius: var(--radius);
 }
 
-/* ── High Contrast Mode Accessibility Fixes ── */
-/* When outline buttons with `hover:bg-[var(--border)]` are hovered in High Contrast Mode,
-   their background becomes white. We force all text, icons, and child elements to black
-   to maintain readable contrast (21:1 ratio). */
-[data-theme="high-contrast"] [class*="hover:bg-[var(--border)]"]:hover {
-  background-color: #FFFFFF !important;
-  color: #000000 !important;
+detail > summary {
+  list-style: none;
 }
-
-[data-theme="high-contrast"] [class*="hover:bg-[var(--border)]"]:hover * {
-  color: #000000 !important;
-  stroke: #000000 !important;
-}
-
-/* Ensure browser-native number input spinner arrows are always visible (not just on hover)
-   to improve discoverability, especially on touch/mobile devices. */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  opacity: 1 !important;
+details > summary::-webkit-details-marker {
+  display: none;
 }
