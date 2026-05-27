@@ -17,6 +17,7 @@ import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
+import { RecoveryPrompt } from "./RecoveryPrompt";
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
@@ -210,6 +211,10 @@ export default function VideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    recoverySession,
+    isRestoring,
+    restoreSession,
+    discardSession,
   } = useVideoEditor();
 
   useKeyboardShortcuts({
@@ -369,6 +374,14 @@ export default function VideoEditor() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
+            {recoverySession && !file && !isRestoring && (
+              <RecoveryPrompt
+                lastSavedAt={recoverySession.lastSavedAt}
+                onRestore={restoreSession}
+                onDiscard={discardSession}
+              />
+            )}
+
             <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in">
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 

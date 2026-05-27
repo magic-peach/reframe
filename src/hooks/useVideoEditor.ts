@@ -7,6 +7,7 @@ import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import { saveSession, loadSession, clearSession, RecoverySession } from "@/lib/db";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
@@ -145,6 +146,8 @@ function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
 }
 
 export function useVideoEditor() {
+  const [recoverySession, setRecoverySession] = useState<RecoverySession | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
   const [videoMetadata, setVideoMetadata] = useState<{
@@ -669,6 +672,7 @@ export function useVideoEditor() {
     } catch {
       // ignore
     }
+    clearSession();
   }, [result]);
 
 
@@ -691,6 +695,53 @@ export function useVideoEditor() {
   const toggleSound = useCallback(() => {
   updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
 }, [recipe.soundOnCompletion, updateRecipe]);
+
+  // Load session on mount
+  useEffect(() => {
+    loadSession().then((session) => {
+      if (session && session.file) {
+        setRecoverySession(session);
+      }
+    });
+  }, []);
+
+  // Auto-save logic
+  useEffect(() => {
+    if (!file) return;
+
+    const timer = setTimeout(() => {
+      saveSession({
+        file,
+        musicFile,
+        overlayFile,
+        recipe,
+        duration,
+        videoMetadata,
+        lastSavedAt: Date.now(),
+      }).catch(console.error);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [file, musicFile, overlayFile, recipe, duration, videoMetadata]);
+
+  // Restore session
+  const restoreSession = useCallback(async () => {
+    if (!recoverySession) return;
+    setIsRestoring(true);
+    setFile(recoverySession.file);
+    setMusicFile(recoverySession.musicFile);
+    setOverlayFile(recoverySession.overlayFile);
+    setRecipe(recoverySession.recipe);
+    setDuration(recoverySession.duration);
+    setVideoMetadata(recoverySession.videoMetadata);
+    setRecoverySession(null);
+    setIsRestoring(false);
+  }, [recoverySession]);
+
+  const discardSession = useCallback(async () => {
+    await clearSession();
+    setRecoverySession(null);
+  }, []);
 
   return {
     file,
@@ -729,5 +780,9 @@ export function useVideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    recoverySession,
+    isRestoring,
+    restoreSession,
+    discardSession,
   };
 }
