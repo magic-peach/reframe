@@ -409,13 +409,11 @@ export function useVideoEditor() {
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
-      const ffmpeg = await loadFFmpeg(abortController.signal);
       if (exportCancelledRef.current) return;
 
       setStatus("exporting");
 
       const exportResult = await exportVideo(
-        ffmpeg,
         file,
         recipe,
         setProgress,
