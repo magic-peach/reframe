@@ -8,7 +8,7 @@ export function WaveformOverlay({ waveform }: WaveformOverlayProps) {
   if (!waveform || waveform.length === 0) return null;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-[40%] pointer-events-none opacity-90 z-[5]">
+    <div className="w-full h-full opacity-90 z-[5]">
       <svg
         className="w-full h-full"
         viewBox={`0 0 ${waveform.length} 100`}

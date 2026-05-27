@@ -207,9 +207,9 @@ export default function ThumbnailStrip({
         )}
 
         {thumbnails.length > 0 && (
-          <div className="strip-inner">
-            {waveform && waveform.length > 0 && <WaveformOverlay waveform={waveform} />}
-            {thumbnails.map((thumb, i) => {
+          <div className="strip-tracks">
+            <div className="strip-inner">
+              {thumbnails.map((thumb, i) => {
               const isActive = i === activeIndex;
               const inTrimRange =
                 thumb.time >= trimStart && thumb.time <= effectiveTrimEnd;
@@ -239,6 +239,12 @@ export default function ThumbnailStrip({
                 </button>
               );
             })}
+            </div>
+            {waveform && waveform.length > 0 && (
+              <div className="waveform-track">
+                <WaveformOverlay waveform={waveform} />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -350,11 +356,27 @@ export default function ThumbnailStrip({
           100% { background-position: -200% 0; }
         }
 
+        .strip-tracks {
+          display: inline-flex;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 100%;
+        }
+
         .strip-inner {
           display: flex;
           gap: 6px;
           align-items: flex-end;
           position: relative;
+        }
+
+        .waveform-track {
+          width: 100%;
+          height: 32px;
+          position: relative;
+          background: var(--bg);
+          border-radius: 4px;
+          overflow: hidden;
         }
 
         .thumb-btn {
