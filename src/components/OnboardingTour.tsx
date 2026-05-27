@@ -79,7 +79,7 @@ function getTooltipStyle(
     case "left":
       return {
         top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left - tw - TOOLTIP_OFFSET,
+        left: sr.left - sr.width / 4 + TOOLTIP_OFFSET,
       };
     case "right":
       return {
@@ -269,7 +269,7 @@ export default function OnboardingTour() {
 
   // Initialise on mount
   useEffect(() => {
-    if (localStorage.getItem(TOUR_KEY)) return;
+    // if (localStorage.getItem(TOUR_KEY)) return;
     const t = setTimeout(async () => {
       const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
       if (rect) {
