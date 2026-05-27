@@ -583,7 +583,10 @@ export default function VideoPreview({
 
             {/* Crop Boundary & Handles */}
             <div
-              className="absolute border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.5)] cursor-move"
+              role="button"
+              tabIndex={0}
+              aria-label="Crop selection area. Drag to reposition."
+              className="absolute border-2 border-white shadow-[0_0_0_1px_rgba(0,0,0,0.5)] cursor-move focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
               style={{
                 left: `${tempCropArea.x}%`,
                 top: `${tempCropArea.y}%`,
@@ -605,22 +608,34 @@ export default function VideoPreview({
 
               {/* Resize Corners */}
               <div
-                className="absolute -top-1 -left-1 w-5 h-5 border-t-[4px] border-l-[4px] border-white cursor-nwse-resize drop-shadow"
+                role="button"
+                tabIndex={0}
+                aria-label="Top-left resize handle."
+                className="absolute -top-1 -left-1 w-5 h-5 border-t-[4px] border-l-[4px] border-white cursor-nwse-resize drop-shadow focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                 onMouseDown={(e) => { e.stopPropagation(); handleDragStart("nw", e); }}
                 onTouchStart={(e) => { e.stopPropagation(); handleDragStart("nw", e); }}
               />
               <div
-                className="absolute -top-1 -right-1 w-5 h-5 border-t-[4px] border-r-[4px] border-white cursor-nesw-resize drop-shadow"
+                role="button"
+                tabIndex={0}
+                aria-label="Top-right resize handle."
+                className="absolute -top-1 -right-1 w-5 h-5 border-t-[4px] border-r-[4px] border-white cursor-nesw-resize drop-shadow focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                 onMouseDown={(e) => { e.stopPropagation(); handleDragStart("ne", e); }}
                 onTouchStart={(e) => { e.stopPropagation(); handleDragStart("ne", e); }}
               />
               <div
-                className="absolute -bottom-1 -left-1 w-5 h-5 border-b-[4px] border-l-[4px] border-white cursor-nesw-resize drop-shadow"
+                role="button"
+                tabIndex={0}
+                aria-label="Bottom-left resize handle."
+                className="absolute -bottom-1 -left-1 w-5 h-5 border-b-[4px] border-l-[4px] border-white cursor-nesw-resize drop-shadow focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                 onMouseDown={(e) => { e.stopPropagation(); handleDragStart("sw", e); }}
                 onTouchStart={(e) => { e.stopPropagation(); handleDragStart("sw", e); }}
               />
               <div
-                className="absolute -bottom-1 -right-1 w-5 h-5 border-b-[4px] border-r-[4px] border-white cursor-nwse-resize drop-shadow"
+                role="button"
+                tabIndex={0}
+                aria-label="Bottom-right resize handle."
+                className="absolute -bottom-1 -right-1 w-5 h-5 border-b-[4px] border-r-[4px] border-white cursor-nwse-resize drop-shadow focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
                 onMouseDown={(e) => { e.stopPropagation(); handleDragStart("se", e); }}
                 onTouchStart={(e) => { e.stopPropagation(); handleDragStart("se", e); }}
               />

@@ -724,6 +724,8 @@ export default function VideoEditor() {
                   <button
                     type="button"
                     onClick={() => setIsCropping(true)}
+                    aria-label="Crop Video"
+                    title="Crop Video"
                     className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border border-film-500 bg-film-50/50 hover:bg-film-50 text-film-700 font-heading font-bold uppercase tracking-wider text-xs hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer shadow-sm"
                   >
                     <Crop size={14} />
