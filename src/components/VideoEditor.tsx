@@ -500,6 +500,8 @@ export default function VideoEditor() {
                   >
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </AccordionSection>
+                  
+                  {/* ADJUSTMENTS SECTION WITH PERCENTAGES BEFORE RESET BUTTON */}
                   <Section
                     icon={<SlidersHorizontal size={12} />}
                     title="Adjustments"
@@ -509,7 +511,9 @@ export default function VideoEditor() {
                       {/* Brightness */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="brightness-slider">Brightness</label>
+                          <label htmlFor="brightness-slider">
+                            Brightness: {Math.round(recipe.brightness * 100)}%
+                          </label>
                           <button
                             type="button"
                             onClick={() => updateRecipe({ brightness: 0 })}
@@ -534,7 +538,9 @@ export default function VideoEditor() {
                       {/* Contrast */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="contrast-slider">Contrast</label>
+                          <label htmlFor="contrast-slider">
+                            Contrast: {Math.round(recipe.contrast * 100)}%
+                          </label>
                           <button
                             type="button"
                             onClick={() => updateRecipe({ contrast: 1 })}
@@ -559,7 +565,9 @@ export default function VideoEditor() {
                       {/* Saturation */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="saturation-slider">Saturation</label>
+                          <label htmlFor="saturation-slider">
+                            Saturation: {Math.round(recipe.saturation * 100)}%
+                          </label>
                           <button
                             type="button"
                             onClick={() => updateRecipe({ saturation: 1 })}
@@ -583,6 +591,7 @@ export default function VideoEditor() {
                       </div>
                     </div>
                   </Section>
+                  
                   <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
                   </Section>
