@@ -776,6 +776,7 @@ export default function VideoPreview({
               </button>
             </div>
           </div>
+        )}
         {/* Grid overlay button */}
         {recipe && !isLoading && (
           <button
