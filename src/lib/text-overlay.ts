@@ -1,4 +1,6 @@
 import { TextOverlay, Subtitle } from "./types";
+import { TextOverlay } from "./types";
+import { getFFmpegFontArg } from "@/utils/fontLoader";
 
 /**
  * Generates a unique ID for a text overlay.
@@ -19,6 +21,7 @@ export function createDefaultTextOverlay(): TextOverlay {
     fontSize: 48,
     color: "#ffffff",
     fontWeight: "normal",
+    fontFamily: "Arial", // Default to Arial for immediate visibility
   };
 }
 
@@ -59,6 +62,7 @@ export function getTextPercentPosition(
 /**
  * Generates a drawText FFmpeg filter for a single text overlay.
  * Escapes special characters and positions text on the output video.
+ * Includes font family and custom font file support.
  */
 export function buildTextFilter(
   overlay: TextOverlay | Subtitle,
@@ -92,4 +96,30 @@ export function buildTextFilter(
       ? "bold"
       : "normal"
   }${enableClause}`;
+  // Build font parameters
+  const fontWeightParam = overlay.fontWeight === "900"
+    ? "bold"
+    : overlay.fontWeight === "bold"
+    ? "bold"
+    : "normal";
+
+  // Get font file parameter for custom fonts (if available)
+  const fontFileParam = getFFmpegFontArg(overlay.fontFamily, overlay.fontPath);
+
+  // Build the drawtext filter with font support
+  let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:fontweight=${fontWeightParam}`;
+
+  // Add font family if specified
+  if (overlay.fontFamily) {
+    // Sanitize font name for FFmpeg
+    const safeFontName = overlay.fontFamily.replace(/[^a-zA-Z0-9-]/g, "");
+    filter += `:fontfile='${safeFontName}'`;
+  }
+
+  // Add custom font file path if available
+  if (fontFileParam) {
+    filter += `:${fontFileParam}`;
+  }
+
+  return filter;
 }
