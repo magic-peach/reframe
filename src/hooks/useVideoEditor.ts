@@ -168,14 +168,7 @@ export function useVideoEditor() {
         localStorage.getItem("soundOnCompletion") === "true",
     });
   });
-  const [status, setStatus] = useState<ExportStatus>("idle");
-  const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<ExportResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
-  const [exportStartedAt, setExportStartedAt] = useState<number | null>(null);
-  const exportAbortControllerRef = useRef<AbortController | null>(null);
-  const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const [musicFile, setMusicFile] = useState<File | null>(null);
@@ -366,9 +359,7 @@ export function useVideoEditor() {
   }, [videoMetadata]);
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
-    setResult(null);
-    setStatus("idle");
-    setError(null);
+    setFileError("");
     setFile(null);
     setVideoMetadata(null);
     if (!selectedFile.type.startsWith("video/")) {
@@ -380,8 +371,7 @@ export function useVideoEditor() {
 
     // LAYER 0: Size check
     if (selectedFile.size > MAX_FILE_SIZE) {
-      setError(`Validation Failed: File too large. Maximum size is 2GB.`);
-      setStatus("error");
+      setFileError(`Validation Failed: File too large. Maximum size is 2GB.`);
       return;
     }
 
@@ -389,21 +379,18 @@ export function useVideoEditor() {
     const filename = selectedFile.name.toLowerCase();
     const hasValidExtension = validExtensions.some(ext => filename.endsWith(ext));
     if (!hasValidExtension) {
-      setError(`Layer 1 Validation Failed: Invalid file extension. Expected one of: ${validExtensions.join(', ')}`);
-      setStatus("error");
+      setFileError(`Layer 1 Validation Failed: Invalid file extension. Expected one of: ${validExtensions.join(', ')}`);
       return;
     }
 
     if (!selectedFile.type.startsWith("video/")) {
-      setError(`Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || 'unknown'}`);
-      setStatus("error");
+      setFileError(`Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || 'unknown'}`);
       return;
     }
 
     const isVideo = await verifyMagicBytes(selectedFile);
     if (!isVideo) {
-      setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
-      setStatus("error");
+      setFileError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
       return;
     }
 
@@ -414,11 +401,10 @@ export function useVideoEditor() {
       const dimensionCheck = validateDimensions(width, height);
       if (dimensionCheck === "blocked") {
         const suggested = getDownscaledDimensions(width, height);
-        setError(
+        setFileError(
           `Layer 5 Validation Failed: Resolution too high (${width}×${height}). ` +
           `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
         );
-        setStatus("error");
         return;
       }
 
@@ -441,114 +427,15 @@ export function useVideoEditor() {
         };
       });
     } catch (err) {
-      setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-      setStatus("error");
+      setFileError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
   }, []);
 
-  const handleExport = useCallback(async () => {
-    if (!file) return;
-    if (status === "loading-engine" || status === "exporting") {
-      return;
-    }
 
-    const validationError = validateRecipe(recipe, duration);
-    if (validationError) {
-      setError(validationError);
-      setStatus("error");
-      return;
-    }
-
-    const abortController = new AbortController();
-    exportAbortControllerRef.current = abortController;
-    exportCancelledRef.current = false;
-
-    try {
-      setStatus("loading-engine");
-      setProgress(0);
-      setError(null);
-      setExportStartedAt(null);
-      if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
-      setResult(null);
-
-      await loadFFmpeg(abortController.signal, setProgress);
-      if (exportCancelledRef.current) return;
-
-      const startedAt = Date.now();
-      setExportStartedAt(startedAt);
-      setStatus("exporting");
-
-      const exportResult = await exportVideo(
-        file,
-        recipe,
-        setProgress,
-        abortController.signal,
-        {
-          file: musicFile,
-          musicVolume,
-          originalAudioVolume,
-          loopMusic,
-        },
-        {
-          file: overlayFile,
-          position: overlayPosition,
-          size: overlaySize,
-          opacity: overlayOpacity,
-        }
-      );
-      if (exportCancelledRef.current) return;
-
-      setResult({
-        ...exportResult,
-        exportDurationMs: Date.now() - startedAt,
-      });
-      setStatus("done");
-     }  catch (err) {
-      if (exportCancelledRef.current) return;
-
-      console.error("export failed:", err);
-      if (err instanceof FFmpegLoadError) {
-        setError(err.message);
-      } else if (err instanceof Error && err.message.includes('network')) {
-        setError('Network error. Check your internet connection and try again.');
-      } else if (err instanceof Error && err.message.includes('codec')) {
-        setError('This video format is not supported. Try converting to MP4 first.');
-      } else {
-        setError('Export failed. Please try again or use a different video.');
-      }
-      setExportStartedAt(null);
-      setStatus("error");
-    }
-    finally {
-      if (exportAbortControllerRef.current === abortController) {
-        exportAbortControllerRef.current = null;
-      }
-    }
-  }, [
-    duration,
-    file,
-    loopMusic,
-    musicFile,
-    musicVolume,
-    originalAudioVolume,
-    overlayFile,
-    overlayOpacity,
-    overlayPosition,
-    overlaySize,
-    recipe,
-    result,
-    status,
-  ]);
 
 
   useEffect(() => {
-    if (status === "exporting") {
-      document.title = `Exporting ${progress}% | Reframe`;
-    } else if (status === "loading-engine") {
-      document.title = `Loading engine... | Reframe`;
-    } else if (status === "done") {
-      document.title = `Export complete | Reframe`;
-    } else if (file) {
+    if (file) {
       document.title = `Editing: ${file.name} | Reframe`;
     } else {
       document.title = DEFAULT_TITLE;
@@ -556,42 +443,7 @@ export function useVideoEditor() {
     return () => {
       document.title = DEFAULT_TITLE;
     };
-  }, [status, progress, file]);
-
-  useEffect(() => {
-    const shouldWarn =
-      status === "exporting" ||
-      status === "loading-engine";
-
-    if (!shouldWarn) return;
-
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [status]);
-  
-  useEffect(() => {
-    const handleKeydown = (e: KeyboardEvent) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key === "Enter" &&
-        file &&
-        status !== "loading-engine" &&
-        status !== "exporting"
-      ) {
-        handleExport();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeydown);
-    return () => {
-      document.removeEventListener("keydown", handleKeydown);
-    };
-  }, [file, status, handleExport]);
+  }, [file]);
 
   // M key: toggle audio mute — only when a file is loaded and focus isn't in a text field
   useEffect(() => {
@@ -618,13 +470,7 @@ export function useVideoEditor() {
     };
   }, [file]);
 
-  useEffect(()=>{
-    return ()=>{
-      if(result?.blobUrl){
-        URL.revokeObjectURL(result.blobUrl);
-      }
-    }
-   },[result?.blobUrl])
+
 
   useEffect(() => {
     return () => {
@@ -641,35 +487,18 @@ export function useVideoEditor() {
     }
   }, []);
 
-  const cancelExport = useCallback(() => {
-    exportCancelledRef.current = true;
-    exportAbortControllerRef.current?.abort();
-    exportAbortControllerRef.current = null;
-    terminateFFmpeg();
-    setStatus("idle");
-    setProgress(0);
-    setError(null);
-    setExportStartedAt(null);
-  }, []);
-
-
   const reset = useCallback(() => {
-    if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setFile(null);
     setVideoMetadata(null);
     setDuration(0);
     setRecipe(DEFAULT_RECIPE);
-    setStatus("idle");
-    setProgress(0);
-    setResult(null);
-    setError(null);
-    setExportStartedAt(null);
+    setFileError("");
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
       // ignore
     }
-  }, [result]);
+  }, []);
 
 
   useEffect(() => {
@@ -696,18 +525,12 @@ export function useVideoEditor() {
     file,
     duration,
     recipe,
-    status,
-    progress,
-    exportStartedAt,
-    result,
-    error,
+    videoMetadata,
     videoRef,
     seekTo,
     updateRecipe,
     handleFileSelect,
     fileError,
-    handleExport,
-    cancelExport,
     reset,
     resetSettings,
     musicFile,

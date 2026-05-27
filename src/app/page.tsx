@@ -1,5 +1,7 @@
 import VideoEditor from "@/components/VideoEditor";
 import Footer from "@/components/Footer";
+import { ExportQueueProvider } from "@/context/ExportQueueContext";
+import { ExportQueuePanel } from "@/components/ExportQueuePanel";
 
 export default function Home() {
   return (
@@ -14,7 +16,10 @@ export default function Home() {
       </a>
 
       <main id="main-content" tabIndex={-1}>
-        <VideoEditor />
+        <ExportQueueProvider>
+          <VideoEditor />
+          <ExportQueuePanel />
+        </ExportQueueProvider>
       </main>
 
       <Footer />

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
+import { useExportQueue } from "@/context/ExportQueueContext";
 import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
@@ -14,9 +15,8 @@ import TextControls from "./TextControls";
 import AudioSpeedControl from "./AudioSpeedControl";
 import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
-import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
-import ImageOverlay from "./ImageOverlay"
+import ImageOverlay from "./ImageOverlay";
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
@@ -198,11 +198,12 @@ function KeyboardShortcutsPanel() {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
-    result, error, exportStartedAt, updateRecipe,
-    handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
+    file, duration, recipe,
+    videoMetadata, fileError, updateRecipe,
+    handleFileSelect, reset, resetSettings,
     videoRef,
     seekTo,
+    musicFile, musicVolume, originalAudioVolume, loopMusic,
     overlayFile, setOverlayFile,
     overlayPosition, setOverlayPosition,
     overlaySize, setOverlaySize,
@@ -212,14 +213,26 @@ export default function VideoEditor() {
     toggleSound,
   } = useVideoEditor();
 
+  const { enqueueExport } = useExportQueue();
+
+  const handleExport = useCallback(() => {
+    if (!file) return;
+    enqueueExport(
+      file,
+      recipe,
+      { file: musicFile, musicVolume, originalAudioVolume, loopMusic },
+      { file: overlayFile, position: overlayPosition, size: overlaySize, opacity: overlayOpacity }
+    );
+  }, [file, recipe, musicFile, musicVolume, originalAudioVolume, loopMusic, overlayFile, overlayPosition, overlaySize, overlayOpacity, enqueueExport]);
+
   useKeyboardShortcuts({
     file,
     recipe,
     resetSettings,
     updateRecipe,
     handleExport,
-    status,
-    cancelExport,
+    status: "idle",
+    cancelExport: () => {},
     onToggleShortcutsModal: () => {},
   });
 
@@ -262,16 +275,9 @@ export default function VideoEditor() {
   };
 
   useEffect(() => {
-    if (status === "done" && downloadRef.current) {
-      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      downloadRef.current.scrollIntoView({
-        behavior: prefersReducedMotion ? "instant" : "smooth",
-        block: "center",
-      });
-    }
-  }, [status]);
+    // Scroll behavior if needed
+  }, []);
 
-  const isProcessing = status === "loading-engine" || status === "exporting";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const intervalSeconds = useMemo(() => {
@@ -310,19 +316,7 @@ export default function VideoEditor() {
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
-      <ExportOverlay
-        status={status}
-        progress={progress}
-        exportStartedAt={exportStartedAt}
-        onCancel={cancelExport}
-      />
       <OnboardingTour />
-
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {status === "exporting" && `Exporting video: ${progress}%`}
-        {status === "done" && "Export complete! Video ready to download."}
-        {status === "error" && `Export failed: ${error}`}
-      </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
         <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
@@ -412,8 +406,7 @@ export default function VideoEditor() {
             )}
             {file && (
               <div className={cn(
-                "grid grid-cols-1 gap-4",
-                isProcessing && "pointer-events-none opacity-50"
+                "grid grid-cols-1 gap-4"
               )}>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <AccordionSection
@@ -642,53 +635,12 @@ export default function VideoEditor() {
               </div>
             )}
 
-            {status === "error" && error && (
-              <div
-                role="status"
-                className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
-              >
-                <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
-                <div className="flex-1">
-                  <p className="font-heading font-bold text-sm">Error</p>
-                  <p className="text-film-600 text-sm mt-1">{error}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(error).then(() => {
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    }).catch((err) => {
-                      console.error("Failed to copy error to clipboard:", err);
-                    });
-                  }}
-                  className="px-3 py-1.5 bg-[var(--border)] border border-[var(--border)] rounded-lg text-sm font-semibold hover:opacity-80 transition-colors shrink-0 whitespace-nowrap"
-                  aria-label="Copy error message to clipboard"
-                >
-                  {copied ? "Copied!" : "Copy error"}
-                </button>
-                {!error.includes("Validation Failed") && (
-                  <button
-                    type="button"
-                    onClick={handleExport}
-                    className="px-3 py-1.5 bg-[var(--error-bg)] border border-[var(--error-border)] rounded-lg text-sm font-semibold hover:bg-[var(--error-hover)] hover:border-[var(--error)] text-[var(--text)] transition-colors shrink-0 whitespace-nowrap"
-                  >
-                    Retry Export
-                  </button>
-                )}
-              </div>
-            )}
 
-            {status === "done" && result && (
-              <div role="status" className="animate-fade-in" ref={downloadRef}>
-                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
-              </div>
-            )}
           </div>
 
           <div className={cn(
             "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
-            (isProcessing || !file) && "pointer-events-none opacity-50"
+            (!file) && "pointer-events-none opacity-50"
           )}>
             {!file && (
               <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 animate-fade-in">
@@ -753,23 +705,23 @@ export default function VideoEditor() {
               id="export-button"
               type="button"
               onClick={handleExport}
-                disabled={!file || isProcessing}
+                disabled={!file}
                 aria-label='Export video'
-                aria-disabled={!file || isProcessing ? "true" : undefined}
+                aria-disabled={!file ? "true" : undefined}
                 title={!file ? "Upload a video to enable export" : undefined}
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
-                file && !isProcessing
-                  ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
+                file
+                  ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-black shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >
-             <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
-              {isProcessing ? "PROCESSING" : "EXPORT"}
+             <Zap size={20} className={cn(file && "animate-pulse")} />
+              EXPORT
             </button>
 
-            {file && !isProcessing && (
+            {file && (
               <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
                 {isMac ? "⌘" : "Ctrl"} + Enter to export
               </p>
