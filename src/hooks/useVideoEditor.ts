@@ -366,6 +366,7 @@ export function useVideoEditor() {
   }, [videoMetadata]);
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
+    if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setResult(null);
     setStatus("idle");
     setError(null);
