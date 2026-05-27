@@ -31,6 +31,7 @@ export default function VideoPreview({
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [showGridOverlay, setShowGridOverlay] = useState(false);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0,
@@ -272,6 +273,18 @@ export default function VideoPreview({
           </div>
         )}
 
+        {/* 3x3 Grid Overlay */}
+        {showGridOverlay && (
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            {/* Vertical lines */}
+            <div className="absolute top-0 bottom-0 left-1/3 border-l-2 border-dotted border-black" />
+            <div className="absolute top-0 bottom-0 right-1/3 border-l-2 border-dotted border-black" />
+            {/* Horizontal lines */}
+            <div className="absolute left-0 right-0 top-1/3 border-t-2 border-dotted border-black" />
+            <div className="absolute left-0 right-0 bottom-1/3 border-t-2 border-dotted border-black" />
+          </div>
+        )}
+
         {/* Draggable Text Overlays */}
         {recipe && !isLoading && containerDimensions.width > 0 && (
           <DraggableTextOverlays
@@ -299,6 +312,24 @@ export default function VideoPreview({
             title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
           >
             {showOverlay ? "Hide overlay" : "Show overlay"}
+          </button>
+        )}
+
+        {/* Grid overlay button */}
+        {recipe && !isLoading && (
+          <button
+            type="button"
+            onClick={() => setShowGridOverlay((v) => !v)}
+            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+              showGridOverlay
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+            }`}
+            aria-pressed={showGridOverlay}
+            aria-label={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
+            title={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
+          >
+            {showGridOverlay ? "Hide grid" : "Show grid"}
           </button>
         )}
 
