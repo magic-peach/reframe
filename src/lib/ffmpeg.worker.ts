@@ -61,20 +61,25 @@ type WorkerResponse = ProgressPayload | ReadyPayload | ResultPayload | ErrorPayl
 let ffmpeg: FFmpeg | null = null;
 let ffmpegLoaded = false;
 let activeExportAbortController: AbortController | null = null;
+let activeLoadAbortController: AbortController | null = null;
 let activeExportId: string | null = null;
 
-async function fetchWithIntegrity(url: string, mimeType: string): Promise<string> {
+async function fetchWithIntegrity(
+  url: string,
+  mimeType: string,
+  signal?: AbortSignal
+): Promise<string> {
   const key = url.split("/").pop()!;
   const integrity = SRI_HASHES[key];
 
   // Fallback to standard fetch if SRI is missing (Prevents ffmpeg-core.worker.js from crashing the thread)
   if (!integrity) {
-    const response = await fetch(url, { credentials: "omit" });
+    const response = await fetch(url, { credentials: "omit" , signal });
     const blob = new Blob([await response.arrayBuffer()], { type: mimeType });
     return URL.createObjectURL(blob);
   }
 
-  const response = await fetch(url, { integrity, credentials: "omit" });
+  const response = await fetch(url, { integrity, credentials: "omit" , signal });
   const blob = new Blob([await response.arrayBuffer()], { type: mimeType });
   return URL.createObjectURL(blob);
 }
@@ -317,10 +322,14 @@ interface PositionCoords {
   return args;
 }
 
-async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
+async function loadCore(signal?: AbortSignal, onProgress?: (percent: number) => void): Promise<void> {
   if (ffmpegLoaded) {
     onProgress?.(100);
     return;
+  }
+
+  if (signal?.aborted) {
+    throw new DOMException("Loading aborted", "AbortError");
   }
 
   ffmpeg = new FFmpeg();
@@ -335,12 +344,22 @@ async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
   ffmpeg.on("progress", handleProgress);
 
   try {
+    const coreURL = await fetchWithIntegrity(`${baseURL}/ffmpeg-core.js`, "text/javascript", signal);
+    const wasmURL = await fetchWithIntegrity(`${baseURL}/ffmpeg-core.wasm`, "application/wasm", signal);
+    let workerURL: string | undefined = undefined;
+    
+    if (isIsolated) {
+      workerURL = await fetchWithIntegrity(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript", signal);
+    }
+
+    if (signal?.aborted) {
+      throw new DOMException("Loading aborted", "AbortError");
+    }
+
     await ffmpeg.load({
-      coreURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-      ...(isIsolated && {
-        workerURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript"),
-      }),
+      coreURL,
+      wasmURL,
+      ...(isIsolated && { workerURL }),
     });
 
     ffmpegLoaded = true;
@@ -631,11 +650,22 @@ function handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
 async function handleCommand(message: WorkerCommand) {
   switch (message.type) {
     case "load": {
-      try {
-        await loadCore();
+      if (ffmpegLoaded) {
         postMessage({ type: "ready" });
-      } catch (error) {
-        postMessage({ type: "error", message: (error as Error).message });
+        return;
+      }
+      activeLoadAbortController = new AbortController();
+      try {
+        await loadCore(activeLoadAbortController.signal);
+        postMessage({ type: "ready" });
+      } catch (error: any) {
+        if (activeLoadAbortController?.signal.aborted || error?.name === "AbortError") {
+          postMessage({ type: "cancelled" });
+        } else {
+          postMessage({ type: "error", message: error?.message || String(error) });
+        }
+      } finally {
+        activeLoadAbortController = null;
       }
       return;
     }
@@ -659,11 +689,11 @@ async function handleCommand(message: WorkerCommand) {
           return;
         }
         postMessage({ ...result }, [result.data]);
-      } catch (error) {
-        if (activeExportAbortController?.signal.aborted) {
+      } catch (error: any) {
+        if (activeExportAbortController?.signal.aborted || error?.name === "AbortError") {
           postMessage({ type: "cancelled", id: message.id });
         } else {
-          postMessage({ type: "error", id: message.id, message: (error as Error).message });
+          postMessage({ type: "error", id: message.id, message: error?.message || String(error) });
         }
       } finally {
         activeExportAbortController = null;
@@ -674,6 +704,9 @@ async function handleCommand(message: WorkerCommand) {
     case "cancel": {
       if (activeExportAbortController && !activeExportAbortController.signal.aborted) {
         activeExportAbortController.abort();
+      }
+      if (activeLoadAbortController && !activeLoadAbortController.signal.aborted) {
+        activeLoadAbortController.abort();
       }
       return;
     }
