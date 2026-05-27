@@ -770,7 +770,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={() => setShowComparison((v) => !v)}
-            className={`absolute top-2 right-24 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${showComparison
+            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${showComparison
               ? "bg-[var(--accent)] text-white"
               : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
               }`}
