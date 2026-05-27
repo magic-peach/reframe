@@ -35,6 +35,12 @@ export interface EditRecipe {
   saturation: number;
   soundOnCompletion: boolean;
   textOverlays: TextOverlay[];
+  cropArea?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   version: number;
 }
 
@@ -104,6 +110,18 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
   if (!Array.isArray(v.textOverlays)) return false;
+
+  if (
+    v.cropArea !== undefined &&
+    (typeof v.cropArea !== "object" ||
+      v.cropArea === null ||
+      typeof v.cropArea.x !== "number" ||
+      typeof v.cropArea.y !== "number" ||
+      typeof v.cropArea.width !== "number" ||
+      typeof v.cropArea.height !== "number")
+  ) {
+    return false;
+  }
 
   return true;
 }

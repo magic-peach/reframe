@@ -328,6 +328,14 @@ function buildSessionId(): string {
 export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
   const filters: string[] = [];
 
+  if (recipe.cropArea) {
+    const wStr = `2*trunc(iw*(${recipe.cropArea.width}/100)/2)`;
+    const hStr = `2*trunc(ih*(${recipe.cropArea.height}/100)/2)`;
+    const xStr = `2*trunc(iw*(${recipe.cropArea.x}/100)/2)`;
+    const yStr = `2*trunc(ih*(${recipe.cropArea.y}/100)/2)`;
+    filters.push(`crop=${wStr}:${hStr}:${xStr}:${yStr}`);
+  }
+
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
     const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
     filters.push(`trim=start=${recipe.trimStart}:end=${end}`);

@@ -226,6 +226,7 @@ export default function VideoEditor() {
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
   const [openSections, setOpenSections] = useState({
     resize: true,
     trim: false,
@@ -388,6 +389,9 @@ export default function VideoEditor() {
                     selectedTextId={selectedTextId}
                     onSelectText={setSelectedTextId}
                     onUpdateText={handleUpdateTextOverlay}
+                    isCropping={isCropping}
+                    setIsCropping={setIsCropping}
+                    onUpdateRecipe={updateRecipe}
                   />
 
                   <div className="mt-3">
@@ -717,6 +721,14 @@ export default function VideoEditor() {
                   </div>
                 )}
                 <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsCropping(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border border-film-500 bg-film-50/50 hover:bg-film-50 text-film-700 font-heading font-bold uppercase tracking-wider text-xs hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer shadow-sm"
+                  >
+                    <Crop size={14} />
+                    Crop Video
+                  </button>
                   <PresetSelector recipe={recipe} onChange={updateRecipe} />
                   <FramingControl recipe={recipe} onChange={updateRecipe} />
                 </div>
