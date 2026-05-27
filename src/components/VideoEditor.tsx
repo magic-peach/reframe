@@ -77,9 +77,9 @@ function AccordionSection({
         aria-expanded={isOpen}
         aria-controls={`${id}-panel`}
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[var(--border)] transition-colors duration-150"
+        className="w-full flex items-center justify-between px-4 py-3 sm:py-4 text-left hover:bg-[var(--border)] transition-colors duration-150"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <span className="text-film-500 opacity-80">{icon}</span>
           <span className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">{title}</span>
         </div>
@@ -102,7 +102,7 @@ function AccordionSection({
           isOpen ? "block" : "hidden"
         )}
       >
-        <div className="px-3 pt-3 pb-0">{children}</div>
+        <div className="px-4 pt-2 pb-4">{children}</div>
       </div>
     </div>
   );
@@ -233,6 +233,9 @@ export default function VideoEditor() {
     text: false,
     audio: false,
     export: false,
+    adjustments: false,
+    format: false,
+    imageOverlay: false,
   });
 
   const toggleSection = (key: keyof typeof openSections) =>
@@ -324,8 +327,8 @@ export default function VideoEditor() {
         {status === "error" && `Export failed: ${error}`}
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
-        <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 pb-24 lg:pb-6 flex-1 w-full overflow-x-hidden">
+        <header className="mb-8 sm:mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
         <div
           className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
           style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
@@ -412,10 +415,10 @@ export default function VideoEditor() {
             )}
             {file && (
               <div className={cn(
-                "grid grid-cols-1 gap-4",
+                "grid grid-cols-1 gap-3 sm:gap-4",
                 isProcessing && "pointer-events-none opacity-50"
               )}>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-4 sm:p-5 space-y-4 sm:space-y-6">
                   <AccordionSection
                     id="trim"
                     icon={<Scissors size={12} />}
@@ -459,7 +462,7 @@ export default function VideoEditor() {
                     />
                   </AccordionSection>
                 </div>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-4 sm:p-5 space-y-4 sm:space-y-6">
                   <AccordionSection
                     id="audio"
                     icon={<Volume2 size={12} />}
@@ -470,20 +473,23 @@ export default function VideoEditor() {
                   >
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </AccordionSection>
-                  <Section
+                  <AccordionSection
+                    id="adjustments"
                     icon={<SlidersHorizontal size={12} />}
                     title="Adjustments"
+                    isOpen={openSections.adjustments}
+                    onToggle={() => toggleSection("adjustments")}
                     delay={175}
                   >
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                       {/* Brightness */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
                           <label htmlFor="brightness-slider">Brightness</label>
                           <button
                             type="button"
                             onClick={() => updateRecipe({ brightness: 0 })}
-                            className="text-film-500 hover:underline"
+                            className="text-film-500 hover:underline p-1 -m-1"
                             aria-label="reset brightness"
                           >
                             Reset
@@ -498,17 +504,17 @@ export default function VideoEditor() {
                           value={recipe.brightness}
                           onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
                           aria-label="Adjust brightness"
-                          className="w-full accent-film-600"
+                          className="w-full h-2 accent-film-600"
                         />
                       </div>
                       {/* Contrast */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
                           <label htmlFor="contrast-slider">Contrast</label>
                           <button
                             type="button"
                             onClick={() => updateRecipe({ contrast: 1 })}
-                            className="text-film-500 hover:underline"
+                            className="text-film-500 hover:underline p-1 -m-1"
                             aria-label="reset-contrast"
                           >
                             Reset
@@ -523,17 +529,17 @@ export default function VideoEditor() {
                           value={recipe.contrast}
                           onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
                           aria-label="Adjust contrast"
-                          className="w-full accent-film-600"
+                          className="w-full h-2 accent-film-600"
                         />
                       </div>
                       {/* Saturation */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
                           <label htmlFor="saturation-slider">Saturation</label>
                           <button
                             type="button"
                             onClick={() => updateRecipe({ saturation: 1 })}
-                            className="text-film-500 hover:underline"
+                            className="text-film-500 hover:underline p-1 -m-1"
                             aria-label="reset-saturation"
                           >
                             Reset
@@ -548,14 +554,21 @@ export default function VideoEditor() {
                           value={recipe.saturation}
                           onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
                           aria-label="Adjust saturation"
-                          className="w-full accent-film-600"
+                          className="w-full h-2 accent-film-600"
                         />
                       </div>
                     </div>
-                  </Section>
-                  <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
+                  </AccordionSection>
+                  <AccordionSection 
+                    id="format"
+                    icon={<SlidersHorizontal size={12} />} 
+                    title="Output format" 
+                    isOpen={openSections.format}
+                    onToggle={() => toggleSection("format")}
+                    delay={190}
+                  >
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
-                  </Section>
+                  </AccordionSection>
                   <AccordionSection
                     id="export"
                     icon={<SlidersHorizontal size={12} />}
@@ -566,7 +579,14 @@ export default function VideoEditor() {
                   >
                     <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
                   </AccordionSection>
-                  <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
+                  <AccordionSection 
+                    id="imageOverlay"
+                    icon={<Layers size={12} />} 
+                    title="Image overlay" 
+                    isOpen={openSections.imageOverlay}
+                    onToggle={() => toggleSection("imageOverlay")}
+                    delay={120}
+                  >
                     <ImageOverlay
                       overlayFile={overlayFile}
                       setOverlayFile={setOverlayFile}
@@ -577,7 +597,7 @@ export default function VideoEditor() {
                       overlayOpacity={overlayOpacity}
                       setOverlayOpacity={setOverlayOpacity}
                     />
-                  </Section>
+                  </AccordionSection>
                 </div>
               </div>
             )}
@@ -640,7 +660,7 @@ export default function VideoEditor() {
                 </p>
               </div>
             )}
-            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
+            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-4 sm:p-5 space-y-4 sm:space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
               <AccordionSection
                 id="resize"
                 icon={<Layers size={12} />}
@@ -710,13 +730,36 @@ export default function VideoEditor() {
             </button>
 
             {file && !isProcessing && (
-              <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
+              <p className="hidden lg:block text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
                 {isMac ? "⌘" : "Ctrl"} + Enter to export
               </p>
             )}
           </div>
         </div>
       </div>
+
+      {/* Mobile Sticky Export Button */}
+      {file && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-[var(--bg)] border-t border-[var(--border)] z-50 lg:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+          <button
+            id="export-button-mobile"
+            type="button"
+            onClick={handleExport}
+            disabled={!file || isProcessing}
+            aria-label='Export video'
+            className={cn(
+              "w-full flex items-center justify-center gap-3 py-4 min-h-[48px] rounded-xl",
+              "font-display text-xl tracking-widest transition-all duration-200",
+              file && !isProcessing
+                ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
+                : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+            )}
+          >
+            <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
+            {isProcessing ? "PROCESSING" : "EXPORT"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
