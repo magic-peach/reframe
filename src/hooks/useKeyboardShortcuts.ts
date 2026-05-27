@@ -7,7 +7,7 @@ interface UseKeyboardShortcutsProps {
   file: File | null;
   recipe: EditRecipe;
   resetSettings: () => void;
-  updateRecipe: (recipe: Partial<EditRecipe>) => void;  
+  updateRecipe: (recipe: Partial<EditRecipe>) => void;
   handleExport: () => void;
   status: ExportStatus;
   cancelExport: () => void;
@@ -38,10 +38,10 @@ export function useKeyboardShortcuts({
 
       if (isCtrlOrCmd && e.shiftKey && e.key === "E") {
         e.preventDefault();
-        e.stopPropagation();   // ← add this
+        e.stopPropagation();
         if (file && status === "idle") handleExport();
         return;
-    }
+      }
 
       if (!file) return;
 
