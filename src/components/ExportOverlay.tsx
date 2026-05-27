@@ -11,6 +11,7 @@ interface Props {
   status: ExportStatus;
   progress: number;
   onCancel?: () => void;
+  exportStartedAt: number | null;
 }
 
 const ProcessingOrbit = memo(() => (
