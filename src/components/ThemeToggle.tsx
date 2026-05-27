@@ -9,6 +9,9 @@ export function ThemeToggle() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const isDark = theme === "dark";
+  
   if (!mounted) {
     return (
       <button
@@ -26,7 +29,6 @@ export function ThemeToggle() {
   }
 
   const isDark = theme === "dark";
-
   return (
     <button
        type="button"
