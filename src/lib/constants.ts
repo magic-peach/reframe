@@ -1,5 +1,5 @@
-import type { EditRecipe } from "./types"
-import { RECIPE_VERSION } from "./types"
+import type { EditRecipe } from "./types";
+import { RECIPE_VERSION } from "./types";
 
 export const SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 4] as const;
 
@@ -14,6 +14,7 @@ export const DEFAULT_RECIPE: EditRecipe = {
   keepAudio: true,
   speed: 1,
   quality: 23,
+  fps: 0, // 0 represents the 'Original' framerate
   format: "mp4",
   brightness: 0,
   contrast: 1,

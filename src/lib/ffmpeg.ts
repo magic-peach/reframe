@@ -1,9 +1,13 @@
-import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
+import {
+  EditRecipe,
+  ExportResult,
+  BackgroundMusicOptions,
+  ImageOverlayOptions,
+} from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
 
 export class FFmpegLoadError extends Error {}
-
 
 type SerializedFile = {
   name: string;
@@ -33,7 +37,7 @@ type WorkerResultResponse = {
   size: number;
   width: number;
   height: number;
-  format: "mp4" | "webm" | "mkv" | "gif";
+  format: "mp4" | "webm" | "mkv" | "gif" | "mp3";
 };
 type WorkerErrorResponse = { type: "error"; id?: string; message: string };
 type WorkerCancelledResponse = { type: "cancelled"; id?: string };
@@ -62,8 +66,10 @@ function createWorker(): Worker {
   }
 
   // MUST be strictly inline for Next.js/Webpack to detect and compile the worker chunk
-  ffmpegWorker = new Worker(new URL("./ffmpeg.worker.ts", import.meta.url), { type: "module" });
-  
+  ffmpegWorker = new Worker(new URL("./ffmpeg.worker.ts", import.meta.url), {
+    type: "module",
+  });
+
   ffmpegWorker.onmessage = handleWorkerMessage;
   ffmpegWorker.onerror = (event) => {
     const message = event.message || "FFmpeg worker error";
@@ -156,11 +162,11 @@ async function ensureWorker() {
 
 export async function loadFFmpeg(
   signal?: AbortSignal,
-  onProgress?: (percent: number) => void
+  onProgress?: (percent: number) => void,
 ): Promise<void> {
   // 1. Capture if the worker is uninitialized before ensureWorker runs
-  const isFirstLoad = !ffmpegWorker; 
-  
+  const isFirstLoad = !ffmpegWorker;
+
   await ensureWorker();
 
   if (workerReady && workerReadyResolve === null) {
@@ -201,7 +207,9 @@ export async function loadFFmpeg(
 
 function cancelPendingExport(reason?: unknown) {
   if (pendingExport) {
-    pendingExport.reject(reason ?? new DOMException("Export cancelled", "AbortError"));
+    pendingExport.reject(
+      reason ?? new DOMException("Export cancelled", "AbortError"),
+    );
     pendingExport = null;
   }
   pendingProgress = null;
@@ -213,7 +221,7 @@ export async function exportVideo(
   onProgress: (percent: number) => void,
   signal?: AbortSignal,
   musicOptions?: BackgroundMusicOptions,
-  overlayOptions?: ImageOverlayOptions
+  overlayOptions?: ImageOverlayOptions,
 ): Promise<ExportResult> {
   await loadFFmpeg(signal, onProgress);
 
@@ -286,7 +294,7 @@ export async function exportVideo(
       overlayFile: overlayFilePayload,
       overlayOptions: sanitizedOverlayOptions,
     } as WorkerExportRequest,
-    transfers
+    transfers,
   );
 
   try {
@@ -325,7 +333,11 @@ function buildSessionId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
+export function buildVideoFilter(
+  recipe: EditRecipe,
+  targetW: number,
+  targetH: number,
+): string {
   const filters: string[] = [];
 
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
@@ -348,12 +360,12 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   if (recipe.framing === "fit") {
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
-      `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
+      `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`,
     );
   } else {
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
-      `crop=${targetW}:${targetH}`
+      `crop=${targetW}:${targetH}`,
     );
   }
 
@@ -373,13 +385,11 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   }
 
   const needsEq =
-    recipe.brightness !== 0 ||
-    recipe.contrast !== 1 ||
-    recipe.saturation !== 1;
+    recipe.brightness !== 0 || recipe.contrast !== 1 || recipe.saturation !== 1;
 
   if (needsEq) {
     filters.push(
-      `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+      `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`,
     );
   }
 
@@ -392,7 +402,10 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   return filters.join(",");
 }
 
-export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+export function buildAudioFilter(
+  speed: number,
+  normalizeAudio: boolean,
+): string {
   if (speed <= 0) return "";
   const filters: string[] = [];
 
@@ -424,7 +437,7 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
 
 function buildArguments(
   recipe: EditRecipe,
-  format: "mp4" | "webm" | "mkv" | "gif",
+  format: "mp4" | "webm" | "mkv" | "gif" | "mp3",
   outputName: string,
   inputName: string,
   targetW: number,
@@ -436,11 +449,14 @@ function buildArguments(
   overlayInputName: string,
   overlayOptions: ImageOverlayOptions | undefined,
   hasOriginalAudio: boolean,
-  videoDuration: number
+  videoDuration: number,
 ): string[] {
-  const vf = buildVideoFilter(recipe, targetW, targetH);
+  const isMp3 = format === "mp3";
+  const vf = isMp3 ? "" : buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+  const audioSpeed = hasOriginalAudio
+    ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false)
+    : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
@@ -458,7 +474,8 @@ function buildArguments(
   }
 
   const needsFilterComplex = hasOverlay || hasMusicTrack;
-  const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
+  const shouldKeepAudio =
+    recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
 
   if (needsFilterComplex) {
     const filterParts: string[] = [];
@@ -469,44 +486,50 @@ function buildArguments(
       videoOut = "[vbase]";
     }
 
-if (hasOverlay) {
-  const scaledW = overlayOptions!.size;
-  const alpha = (overlayOptions!.opacity / 100).toFixed(2);
-  const posMap: Record<string, string> = {
-    "top-left":     "20:20",
-    "top-right":    "main_w-w-20:20",
-    "bottom-left":  "20:main_h-h-20",
-    "bottom-right": "main_w-w-20:main_h-h-20",
-  };
+    if (hasOverlay && !isMp3) {
+      const scaledW = overlayOptions!.size;
+      const alpha = (overlayOptions!.opacity / 100).toFixed(2);
+      const posMap: Record<string, string> = {
+        "top-left": "20:20",
+        "top-right": "main_w-w-20:20",
+        "bottom-left": "20:main_h-h-20",
+        "bottom-right": "main_w-w-20:main_h-h-20",
+      };
 
-interface PositionCoords {
-    x: number;
-    y: number;
-  }
+      interface PositionCoords {
+        x: number;
+        y: number;
+      }
 
-  const pos = typeof overlayOptions?.position === "string"
-    ? (posMap[overlayOptions.position] ?? "main_w-w-20:main_h-h-20")
-    : overlayOptions?.position
-    ? `(main_w)*${(overlayOptions.position as PositionCoords).x}/100:(main_h)*${(overlayOptions.position as PositionCoords).y}/100`
-    : "main_w-w-20:main_h-h-20";
+      const pos =
+        typeof overlayOptions?.position === "string"
+          ? (posMap[overlayOptions.position] ?? "main_w-w-20:main_h-h-20")
+          : overlayOptions?.position
+            ? `(main_w)*${(overlayOptions.position as PositionCoords).x}/100:(main_h)*${(overlayOptions.position as PositionCoords).y}/100`
+            : "main_w-w-20:main_h-h-20";
 
-  filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
-  filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
-  videoOut = "[vout]";
-}
+      filterParts.push(
+        `[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`,
+      );
+      filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
+      videoOut = "[vout]";
+    }
 
     let audioOut = "";
     if (shouldKeepAudio) {
       if (hasMusicTrack) {
         const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
         if (hasOriginalAudio) {
-          const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
-          const origChain = afParts.length > 0
-            ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
-            : `[0:a]volume=${origVol}[orig]`;
+          const origVol = (musicOptions!.originalAudioVolume / 100).toFixed(2);
+          const origChain =
+            afParts.length > 0
+              ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
+              : `[0:a]volume=${origVol}[orig]`;
           filterParts.push(origChain);
           filterParts.push(`[${musicIdx}:a]volume=${musicVol}[music]`);
-          filterParts.push(`[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
+          filterParts.push(
+            `[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`,
+          );
           audioOut = "[aout]";
         } else {
           filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
@@ -521,7 +544,10 @@ interface PositionCoords {
     if (filterParts.length > 0) {
       args.push("-filter_complex", filterParts.join(";"));
     }
-    args.push("-map", videoOut === "[0:v]" ? "0:v" : videoOut);
+
+    if (!isMp3) {
+      args.push("-map", videoOut === "[0:v]" ? "0:v" : videoOut);
+    }
 
     if (!shouldKeepAudio) {
       args.push("-an");
@@ -531,7 +557,7 @@ interface PositionCoords {
       args.push("-map", "0:a");
     }
   } else {
-    if (vf) args.push("-vf", vf);
+    if (vf && !isMp3) args.push("-vf", vf);
     if (!shouldKeepAudio) {
       args.push("-an");
     } else if (af && hasOriginalAudio) {
@@ -541,19 +567,46 @@ interface PositionCoords {
 
   if (format === "webm") {
     args.push(
-      "-c:v", "libvpx-vp9",
-      "-b:v", "0",
-      "-crf", String(recipe.quality),
-      "-cpu-used", "4",
-      "-deadline", "realtime"
+      "-c:v",
+      "libvpx-vp9",
+      "-b:v",
+      "0",
+      "-crf",
+      String(recipe.quality),
+      "-cpu-used",
+      "4",
+      "-deadline",
+      "realtime",
     );
     if (shouldKeepAudio) args.push("-c:a", "libopus");
   } else if (format === "mkv") {
-    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast");
+    args.push(
+      "-c:v",
+      "libx264",
+      "-crf",
+      String(recipe.quality),
+      "-preset",
+      "ultrafast",
+    );
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
+  } else if (format === "mp3") {
+    args.push("-vn", "-c:a", "libmp3lame", "-q:a", "2");
   } else {
-    args.push("-c:v", "libx264", "-crf", String(recipe.quality), "-preset", "ultrafast", "-movflags", "+faststart");
+    args.push(
+      "-c:v",
+      "libx264",
+      "-crf",
+      String(recipe.quality),
+      "-preset",
+      "ultrafast",
+      "-movflags",
+      "+faststart",
+    );
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
+  }
+
+  if (recipe.fps > 0 && !isMp3) {
+    args.push("-r", String(recipe.fps));
   }
 
   // Add explicit output duration when speed != 1 to prevent slight duration

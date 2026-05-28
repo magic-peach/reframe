@@ -2,123 +2,127 @@
 
 import { EditRecipe } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import {
-  SlidersHorizontal,
-  Info as InfoIcon,
-} from "lucide-react";
+import { SlidersHorizontal, Info as InfoIcon } from "lucide-react";
 
-import {
-  estimateExportSize,
-  formatEstimatedSize,
-} from "@/lib/exportEstimate";
+import { estimateExportSize, formatEstimatedSize } from "@/lib/exportEstimate";
 
 interface Props {
   recipe: EditRecipe;
   duration: number;
-  onChange: (
-    patch: Partial<EditRecipe>
-  ) => void;
+  onChange: (patch: Partial<EditRecipe>) => void;
 }
 
-export default function ExportSettings({
-  recipe,
-  duration,
-  onChange,
-}: Props) {
+export default function ExportSettings({ recipe, duration, onChange }: Props) {
   const label =
     recipe.quality <= 21
       ? "High"
       : recipe.quality <= 25
-      ? "Balanced"
-      : "Small file";
+        ? "Balanced"
+        : "Small file";
 
   const isGif = recipe.format === "gif";
+  const isMp3 = recipe.format === "mp3";
 
-  const estimatedSize =
-    formatEstimatedSize(
-      estimateExportSize(
-        recipe,
-        duration
-      )
-    );
+  const estimatedSize = formatEstimatedSize(
+    estimateExportSize(recipe, duration),
+  );
 
   return (
     <>
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label
-            htmlFor="quality-control"
-            className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
-          >
-            <SlidersHorizontal size={10} />
-            Quality
-
-            <span
-              className="cursor-help"
-              title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file."
+      {!isMp3 && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <label
+              htmlFor="fps-control"
+              className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
             >
-              <InfoIcon size={14} />
-            </span>
-          </label>
-
-          <span className="text-sm font-heading font-bold text-film-600">
-            {label}
-
-            <span className="font-normal text-sm text-[var(--muted)] ml-2">
-              CRF {recipe.quality}
-            </span>
-          </span>
+              <SlidersHorizontal size={10} />
+              Framerate
+            </label>
+            <select
+              id="fps-control"
+              value={recipe.fps}
+              onChange={(e) => onChange({ fps: Number(e.target.value) })}
+              className="px-2 py-1.5 text-xs font-semibold rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-film-500 cursor-pointer"
+            >
+              <option value={0}>Original</option>
+              <option value={24}>24 FPS</option>
+              <option value={30}>30 FPS</option>
+              <option value={60}>60 FPS</option>
+            </select>
+          </div>
         </div>
+      )}
 
-        <input
-          id="quality-control"
-          type="range"
-          min={18}
-          max={30}
-          step={1}
-          value={48 - recipe.quality}
-          onChange={(e) =>
-            onChange({
-              quality: 48 - Number(
-                e.target.value
-              ),
-            })
-          }
-          aria-describedby="quality-description"
-          aria-label="Video export quality (CRF)"
-          aria-valuetext={`${label} quality, CRF value ${recipe.quality}`}
-          className="w-full accent-film-600 cursor-pointer"
-        />
+      {!isMp3 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label
+              htmlFor="quality-control"
+              className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
+            >
+              <SlidersHorizontal size={10} />
+              Quality
+              <span
+                className="cursor-help"
+                title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file."
+              >
+                <InfoIcon size={14} />
+              </span>
+            </label>
 
-        <div
-          id="quality-description"
-          className="mt-1 space-y-3"
-        >
-          <div className="flex justify-between">
-            <span className="text-sm text-[var(--muted)]">
-              Smallest file
-            </span>
+            <span className="text-sm font-heading font-bold text-film-600">
+              {label}
 
-            <span className="text-sm text-[var(--muted)]">
-              Best quality
+              <span className="font-normal text-sm text-[var(--muted)] ml-2">
+                CRF {recipe.quality}
+              </span>
             </span>
           </div>
 
-          <p className="text-xs text-[var(--muted)]">
-            Estimated size:{" "}
-            <span className="font-semibold text-[var(--text)]">
-              {estimatedSize}
-            </span>
-          </p>
+          <input
+            id="quality-control"
+            type="range"
+            min={18}
+            max={30}
+            step={1}
+            value={48 - recipe.quality}
+            onChange={(e) =>
+              onChange({
+                quality: 48 - Number(e.target.value),
+              })
+            }
+            aria-describedby="quality-description"
+            aria-label="Video export quality (CRF)"
+            aria-valuetext={`${label} quality, CRF value ${recipe.quality}`}
+            className="w-full accent-film-600 cursor-pointer"
+          />
 
-          {isGif && (
-            <p className="text-xs text-[var(--warning)] font-medium">
-              ⚠ GIF files can be very large. Keep clips under 10 s for best results.
+          <div id="quality-description" className="mt-1 space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-[var(--muted)]">Smallest file</span>
+
+              <span className="text-sm text-[var(--muted)]">Best quality</span>
+            </div>
+
+            <p className="text-xs text-[var(--muted)]">
+              Estimated size:{" "}
+              <span className="font-semibold text-[var(--text)]">
+                {estimatedSize}
+              </span>
             </p>
-          )}
-        </div>
 
-        {!isGif && (
+            {isGif && (
+              <p className="text-xs text-[var(--warning)] font-medium">
+                ⚠ GIF files can be very large. Keep clips under 10 s for best
+                results.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!isGif && (
         <div className="flex items-center justify-between mt-4">
           <label
             htmlFor="sound-on-completion"
@@ -131,110 +135,111 @@ export default function ExportSettings({
             id="sound-on-completion"
             type="checkbox"
             checked={recipe.soundOnCompletion}
-            onChange={(e) =>
-              onChange({ soundOnCompletion: e.target.checked })
-            }
+            onChange={(e) => onChange({ soundOnCompletion: e.target.checked })}
             aria-label="Play sound when export completes"
             className="accent-film-600 cursor-pointer"
           />
         </div>
-        )}
-      </div>
+      )}
 
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label
-            htmlFor="stabilization-toggle"
-            className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
-          >
-            <SlidersHorizontal size={10} />
-            Stabilization
-          </label>
-
-          <span className="flex text-sm font-heading font-bold text-film-600">
-            <input
-              id="stabilization-toggle"
-              type="checkbox"
-              checked={recipe.stabilization}
-              onChange={(e) =>
-                onChange({
-                  stabilization: e.target.checked,
-                })
-              }
-              aria-label="Enable video stabilization"
-              className="w-full accent-film-600 cursor-pointer"
-            />
-          </span>
-        </div>
-
-        <p className="text-xs text-[var(--muted)] mb-1">
-          Reduce camera shake
-        </p>
-
-        <div className="flex justify-end">
-          <span
-            className={cn(
-              "text-xs",
-              recipe.stabilization
-                ? "text-[var(--error)] font-medium"
-                : "text-[var(--muted)]"
-            )}
-          >
-            Note: significantly increases processing time.
-          </span>
-        </div>
-      </div>
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label
-            htmlFor="denoise-toggle"
-            className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
-          >
-            <SlidersHorizontal size={10} />
-            Reduce noise
-
-            <span
-              className="cursor-help"
-              title="Reduces video noise. May slow down export slightly."
+      {!isMp3 && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-1">
+            <label
+              htmlFor="stabilization-toggle"
+              className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
             >
-              <InfoIcon size={14} />
+              <SlidersHorizontal size={10} />
+              Stabilization
+            </label>
+
+            <span className="flex text-sm font-heading font-bold text-film-600">
+              <input
+                id="stabilization-toggle"
+                type="checkbox"
+                checked={recipe.stabilization}
+                onChange={(e) =>
+                  onChange({
+                    stabilization: e.target.checked,
+                  })
+                }
+                aria-label="Enable video stabilization"
+                className="w-full accent-film-600 cursor-pointer"
+              />
             </span>
-          </label>
+          </div>
 
-          <span className="flex text-sm font-heading font-bold text-film-600">
-            <input
-              id="denoise-toggle"
-              type="checkbox"
-              checked={recipe.denoise}
-              onChange={(e) =>
-                onChange({
-                  denoise: e.target.checked,
-                })
-              }
-              aria-label="Enable noise reduction"
-              aria-checked={recipe.denoise}
-              className="w-full accent-film-600 cursor-pointer"
-            />
-          </span>
+          <p className="text-xs text-[var(--muted)] mb-1">
+            Reduce camera shake
+          </p>
+
+          <div className="flex justify-end">
+            <span
+              className={cn(
+                "text-xs",
+                recipe.stabilization
+                  ? "text-[var(--error)] font-medium"
+                  : "text-[var(--muted)]",
+              )}
+            >
+              Note: significantly increases processing time.
+            </span>
+          </div>
         </div>
+      )}
 
-        <p className="text-xs text-[var(--muted)] mb-1">
-          Reduce low-light video grain
-        </p>
+      {!isMp3 && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-1">
+            <label
+              htmlFor="denoise-toggle"
+              className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
+            >
+              <SlidersHorizontal size={10} />
+              Reduce noise
+              <span
+                className="cursor-help"
+                title="Reduces video noise. May slow down export slightly."
+              >
+                <InfoIcon size={14} />
+              </span>
+            </label>
 
-        <div className="flex justify-end">
-          <span
-            className={cn(
-              "text-xs",
-              recipe.denoise
-                ? "text-red-700 font-medium"
-                : "text-[var(--muted)]"
-            )}
-          >
-            May slightly increase export time.
-          </span>
+            <span className="flex text-sm font-heading font-bold text-film-600">
+              <input
+                id="denoise-toggle"
+                type="checkbox"
+                checked={recipe.denoise}
+                onChange={(e) =>
+                  onChange({
+                    denoise: e.target.checked,
+                  })
+                }
+                aria-label="Enable noise reduction"
+                aria-checked={recipe.denoise}
+                className="w-full accent-film-600 cursor-pointer"
+              />
+            </span>
+          </div>
+
+          <p className="text-xs text-[var(--muted)] mb-1">
+            Reduce low-light video grain
+          </p>
+
+          <div className="flex justify-end">
+            <span
+              className={cn(
+                "text-xs",
+                recipe.denoise
+                  ? "text-red-700 font-medium"
+                  : "text-[var(--muted)]",
+              )}
+            >
+              May slightly increase export time.
+            </span>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

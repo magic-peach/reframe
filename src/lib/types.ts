@@ -27,7 +27,8 @@ export interface EditRecipe {
   normalizeAudio: boolean;
   speed: number;
   quality: number;
-  format: "mp4" | "webm" | "mkv" | "gif";
+  fps: number; // 0 means 'Original', otherwise specific frame rates like 24, 30, 60
+  format: "mp4" | "webm" | "mkv" | "gif" | "mp3";
   stabilization: boolean;
   denoise: boolean;
   brightness: number;
@@ -64,7 +65,7 @@ export interface ExportResult {
   size: number;
   width: number;
   height: number;
-  format: "mp4" | "webm" | "mkv" | "gif";
+  format: "mp4" | "webm" | "mkv" | "gif" | "mp3";
   exportDurationMs?: number;
 }
 
@@ -75,29 +76,37 @@ export type ExportStatus =
   | "done"
   | "error";
 
-export const MAX_FILE_SIZE =
-  2 * 1024 * 1024 * 1024;
+export const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
 
-export const WARNING_FILE_SIZE =
-  500 * 1024 * 1024; // 500MB
+export const WARNING_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
 export function isValidRecipe(value: unknown): value is EditRecipe {
   if (!value || typeof value !== "object") return false;
   const v = value as any;
 
-  if (typeof v.version !== "number" || v.version !== RECIPE_VERSION) return false;
+  if (typeof v.version !== "number" || v.version !== RECIPE_VERSION)
+    return false;
   if (typeof v.preset !== "string") return false;
-  if (typeof v.customWidth !== "number" || !isFinite(v.customWidth)) return false;
-  if (typeof v.customHeight !== "number" || !isFinite(v.customHeight)) return false;
+  if (typeof v.customWidth !== "number" || !isFinite(v.customWidth))
+    return false;
+  if (typeof v.customHeight !== "number" || !isFinite(v.customHeight))
+    return false;
   if (v.framing !== "fit" && v.framing !== "fill") return false;
   if (typeof v.trimStart !== "number" || !isFinite(v.trimStart)) return false;
-  if (!(v.trimEnd === null || (typeof v.trimEnd === "number" && isFinite(v.trimEnd)))) return false;
+  if (
+    !(
+      v.trimEnd === null ||
+      (typeof v.trimEnd === "number" && isFinite(v.trimEnd))
+    )
+  )
+    return false;
   if (![0, 90, 180, 270].includes(v.rotate)) return false;
   if (typeof v.keepAudio !== "boolean") return false;
   if (typeof v.normalizeAudio !== "boolean") return false;
   if (typeof v.speed !== "number" || !isFinite(v.speed)) return false;
   if (typeof v.quality !== "number" || !isFinite(v.quality)) return false;
-  if (!["mp4", "webm", "mkv", "gif"].includes(v.format)) return false;
+  if (typeof v.fps !== "number" || !isFinite(v.fps)) return false;
+  if (!["mp4", "webm", "mkv", "gif", "mp3"].includes(v.format)) return false;
   if (typeof v.stabilization !== "boolean") return false;
   if (typeof v.brightness !== "number" || !isFinite(v.brightness)) return false;
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
