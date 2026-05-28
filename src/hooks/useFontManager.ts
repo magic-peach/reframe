@@ -11,6 +11,7 @@ import {
   initializeFontRegistry,
   clearCustomFonts,
   ensureFontLoaded,
+  storeFontFile,
 } from "@/utils/fontLoader";
 
 export interface CustomFont {
@@ -91,6 +92,7 @@ export function useFontManager(): UseFontManagerReturn {
         // Register in DOM
         try {
           registerCustomFont(fontName, blobUrl);
+          storeFontFile(fontName, file);
           
           // Ensure font is loaded before allowing render
           // This prevents fallback font flashing

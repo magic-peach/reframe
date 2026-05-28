@@ -17,6 +17,12 @@ type SerializedFile = {
   data: ArrayBuffer;
 };
 
+type FontSerializedFile = {
+  name: string;
+  extension: string;
+  data: ArrayBuffer;
+};
+
 type ExportRequest = {
   type: "export";
   id: string;
@@ -27,6 +33,7 @@ type ExportRequest = {
   musicOptions?: BackgroundMusicOptions;
   overlayFile?: SerializedFile;
   overlayOptions?: ImageOverlayOptions;
+  fontFiles?: FontSerializedFile[];
 };
 
 type LoadRequest = { type: "load" };
@@ -429,6 +436,31 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     });
   }
 
+  const fontVfsPaths = new Map<string, string>();
+  if (request.fontFiles) {
+    for (const fontFile of request.fontFiles) {
+      const vfsPath = `custom_font_${sessionId}_${fontFile.name}.${fontFile.extension}`;
+      await ffmpeg.writeFile(vfsPath, new Uint8Array(fontFile.data), {
+        signal: activeExportAbortController?.signal,
+      });
+      cleanupFiles.add(vfsPath);
+      fontVfsPaths.set(fontFile.name, vfsPath);
+    }
+  }
+
+  let patchedRecipe: EditRecipe = recipe;
+  if (fontVfsPaths.size > 0) {
+    patchedRecipe = {
+      ...recipe,
+      textOverlays: recipe.textOverlays.map(o => {
+        if (o.fontFamily && fontVfsPaths.has(o.fontFamily)) {
+          return { ...o, fontPath: fontVfsPaths.get(o.fontFamily)! };
+        }
+        return o;
+      }),
+    };
+  }
+
   const videoDuration = request.videoDuration;
 
   const handleProgress = ({ progress }: { progress: number }) => {
@@ -441,7 +473,7 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
 
   try {
     if (recipe.format === "gif") {
-      const vf = buildVideoFilter(recipe, targetW, targetH);
+      const vf = buildVideoFilter(patchedRecipe, targetW, targetH);
       const vfWithPalette = vf ? `${vf},palettegen` : "palettegen";
       const vfWithPaletteUse = vf
         ? `[0:v]${vf}[x];[x][1:v]paletteuse`
@@ -499,8 +531,8 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     ffmpeg.on("log", logListener);
 
     let args = buildArguments(
-      recipe,
-      recipe.format,
+      patchedRecipe,
+      patchedRecipe.format,
       outputName,
       inputName,
       targetW,
@@ -522,8 +554,8 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     if (exitCode !== 0 && missingAudioDetected) {
       missingAudioDetected = false;
       args = buildArguments(
-        recipe,
-        recipe.format,
+        patchedRecipe,
+        patchedRecipe.format,
         outputName,
         inputName,
         targetW,
@@ -544,7 +576,7 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
 
     if (exitCode !== 0) {
       args = buildArguments(
-        recipe,
+        patchedRecipe,
         "webm",
         fallbackOutputName,
         inputName,

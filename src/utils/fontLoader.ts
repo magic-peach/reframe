@@ -180,6 +180,8 @@ export function clearCustomFonts(): void {
   customFonts.forEach((font) => {
     unregisterCustomFont(font);
   });
+
+  fontFileRegistry.clear();
 }
 
 /**
@@ -275,4 +277,20 @@ export async function ensureFontLoaded(
     // The browser will use fallback fonts
     console.warn(`Font "${fontName}" failed to load:`, err);
   }
+}
+
+type FontFileEntry = {
+  file: File;
+  extension: string;
+};
+
+const fontFileRegistry = new Map<string, FontFileEntry>();
+
+export function storeFontFile(name: string, file: File): void {
+  const ext = (file.name.split(".").pop() || "ttf").toLowerCase();
+  fontFileRegistry.set(name, { file, extension: ext });
+}
+
+export function getFontFileEntry(name: string): FontFileEntry | undefined {
+  return fontFileRegistry.get(name);
 }
