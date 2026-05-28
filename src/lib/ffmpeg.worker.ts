@@ -343,6 +343,11 @@ async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
       }),
     });
 
+    // Fetch and write a default font file to MEMFS so that drawtext has a fallback font
+    const fontRes = await fetch("https://cdnjs.cloudflare.com/ajax/libs/ink/3.0.1/fonts/Roboto/roboto-regular-webfont.ttf");
+    const fontBuf = await fontRes.arrayBuffer();
+    await ffmpeg.writeFile("default.ttf", new Uint8Array(fontBuf));
+
     ffmpegLoaded = true;
     onProgress?.(100);
   } finally {
