@@ -4,6 +4,7 @@ import { EditRecipe, BackgroundMusicOptions, ImageOverlayOptions } from "./types
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
 import { buildAutoCropExpression } from "./ai/crop-filter";
+import { canUseAutoReframe } from "./ai/auto-reframe";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 const MT_CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm";
@@ -63,6 +64,7 @@ let ffmpeg: FFmpeg | null = null;
 let ffmpegLoaded = false;
 let activeExportAbortController: AbortController | null = null;
 let activeExportId: string | null = null;
+let coreBlobUrls: string[] = [];
 
 async function fetchWithIntegrity(url: string, mimeType: string): Promise<string> {
   const key = url.split("/").pop()!;
@@ -72,12 +74,21 @@ async function fetchWithIntegrity(url: string, mimeType: string): Promise<string
   if (!integrity) {
     const response = await fetch(url, { credentials: "omit" });
     const blob = new Blob([await response.arrayBuffer()], { type: mimeType });
-    return URL.createObjectURL(blob);
+    const blobUrl = URL.createObjectURL(blob);
+    coreBlobUrls.push(blobUrl);
+    return blobUrl;
   }
 
   const response = await fetch(url, { integrity, credentials: "omit" });
   const blob = new Blob([await response.arrayBuffer()], { type: mimeType });
-  return URL.createObjectURL(blob);
+  const blobUrl = URL.createObjectURL(blob);
+  coreBlobUrls.push(blobUrl);
+  return blobUrl;
+}
+
+function revokeCoreBlobUrls() {
+  coreBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+  coreBlobUrls = [];
 }
 
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
@@ -105,7 +116,7 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
       `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
     );
-  } else if (recipe.autoReframe && recipe.autoReframeTimeline.length > 1) {
+  } else if (canUseAutoReframe(recipe) && recipe.autoReframeTimeline.length > 1) {
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
       `crop=${targetW}:${targetH}:${buildAutoCropExpression(recipe.autoReframeTimeline, targetW)}:(ih-${targetH})/2`
@@ -353,6 +364,7 @@ async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
     onProgress?.(100);
   } finally {
     ffmpeg.off("progress", handleProgress);
+    revokeCoreBlobUrls();
   }
 }
 
@@ -685,6 +697,7 @@ async function handleCommand(message: WorkerCommand) {
     }
     case "terminate": {
       if (ffmpeg) ffmpeg.terminate();
+      revokeCoreBlobUrls();
       ffmpeg = null;
       ffmpegLoaded = false;
       self.close();

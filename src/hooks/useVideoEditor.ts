@@ -8,6 +8,8 @@ import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
 import { analyzeSubjectMotion } from "@/lib/ai/subject-tracking";
+import { canUseAutoReframe, getAutoReframeUnavailableReason } from "@/lib/ai/auto-reframe";
+import { normalizeAutoReframePoints } from "@/lib/ai/crop-filter";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
@@ -16,24 +18,28 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
-    const timeout = setTimeout(() => {
+    const cleanup = () => {
+      clearTimeout(timeout);
       URL.revokeObjectURL(url);
+      video.removeAttribute("src");
+      video.load();
+    };
+    const timeout = setTimeout(() => {
+      cleanup();
       reject( new Error("Video metaData load timeout — the file may be too large or the device too slow. Please try again.") );
     }, 5000);
 
     video.preload = "metadata";
     video.onloadedmetadata = () => {
-      clearTimeout(timeout)
       resolve({
         width: video.videoWidth,
         height: video.videoHeight,
         duration: isFinite(video.duration) ? video.duration : 0,
       });
-      URL.revokeObjectURL(url);
+      cleanup();
     };
     video.onerror = () => {
-      clearTimeout(timeout)
-      URL.revokeObjectURL(url);
+      cleanup();
       reject(new Error("Failed to load video metadata"));
     };
     video.src = url;
@@ -174,6 +180,7 @@ export function useVideoEditor() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aiWarning, setAiWarning] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
   const [exportStartedAt, setExportStartedAt] = useState<number | null>(null);
   const exportAbortControllerRef = useRef<AbortController | null>(null);
@@ -196,6 +203,10 @@ export function useVideoEditor() {
     // GIF has no audio — force keepAudio off
     if (next.format === "gif") {
       next.keepAudio = false;
+    }
+    if (getAutoReframeUnavailableReason(next)) {
+      next.autoReframe = false;
+      next.autoReframeTimeline = [];
     }
     return next;
   });
@@ -371,6 +382,7 @@ export function useVideoEditor() {
     setResult(null);
     setStatus("idle");
     setError(null);
+    setAiWarning(null);
     setFile(null);
     setVideoMetadata(null);
     if (!selectedFile.type.startsWith("video/")) {
@@ -470,12 +482,21 @@ export function useVideoEditor() {
       setStatus("loading-engine");
       setProgress(0);
       setError(null);
+      setAiWarning(null);
       setExportStartedAt(null);
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
       let exportRecipe = recipe;
-      if (recipe.autoReframe && recipe.framing === "fill") {
+      if (recipe.autoReframe && !canUseAutoReframe(recipe)) {
+        const reason = getAutoReframeUnavailableReason(recipe);
+        if (reason) {
+          console.warn(reason);
+          setAiWarning(reason);
+        }
+      }
+
+      if (canUseAutoReframe(recipe)) {
         setStatus("analyzing");
         let timeline: EditRecipe["autoReframeTimeline"] = [];
         try {
@@ -483,20 +504,30 @@ export function useVideoEditor() {
             fps: 3,
             maxSamples: 180,
             signal: abortController.signal,
-            onProgress: (percent) => setProgress(Math.min(20, Math.round(percent * 0.2))),
+            onProgress: (percent) => {
+              if (!abortController.signal.aborted && exportAbortControllerRef.current === abortController) {
+                setProgress(Math.min(20, Math.round(percent * 0.2)));
+              }
+            },
           });
         } catch (analysisError) {
           if (analysisError instanceof DOMException && analysisError.name === "AbortError") {
             throw analysisError;
           }
           console.warn("Subject tracking failed; falling back to centered crop.", analysisError);
+          setAiWarning("AI subject tracking was unavailable, so this export used a centered crop.");
         }
-        if (exportCancelledRef.current) return;
-        exportRecipe = { ...recipe, autoReframeTimeline: timeline };
-        setRecipe((prev) => ({ ...prev, autoReframeTimeline: timeline }));
+        if (exportCancelledRef.current || abortController.signal.aborted || exportAbortControllerRef.current !== abortController) return;
+        const compressedTimeline = normalizeAutoReframePoints(timeline);
+        exportRecipe = { ...recipe, autoReframeTimeline: compressedTimeline };
+        setRecipe((prev) => ({ ...prev, autoReframeTimeline: compressedTimeline }));
       }
 
-      await loadFFmpeg(abortController.signal, setProgress);
+      await loadFFmpeg(abortController.signal, (percent) => {
+        if (!abortController.signal.aborted && exportAbortControllerRef.current === abortController) {
+          setProgress(percent);
+        }
+      });
       if (exportCancelledRef.current) return;
 
       const startedAt = Date.now();
@@ -506,7 +537,11 @@ export function useVideoEditor() {
       const exportResult = await exportVideo(
         file,
         exportRecipe,
-        setProgress,
+        (percent) => {
+          if (!abortController.signal.aborted && exportAbortControllerRef.current === abortController) {
+            setProgress(percent);
+          }
+        },
         abortController.signal,
         {
           file: musicFile,
@@ -678,6 +713,7 @@ export function useVideoEditor() {
     setStatus("idle");
     setProgress(0);
     setError(null);
+    setAiWarning(null);
     setExportStartedAt(null);
   }, []);
 
@@ -692,6 +728,7 @@ export function useVideoEditor() {
     setProgress(0);
     setResult(null);
     setError(null);
+    setAiWarning(null);
     setExportStartedAt(null);
     try {
       localStorage.removeItem(STORAGE_KEY);
@@ -730,6 +767,7 @@ export function useVideoEditor() {
     exportStartedAt,
     result,
     error,
+    aiWarning,
     videoRef,
     seekTo,
     updateRecipe,

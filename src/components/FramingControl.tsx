@@ -3,6 +3,7 @@
 import { EditRecipe } from "@/lib/types";
 import { Maximize2, Crop, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getAutoReframeUnavailableReason } from "@/lib/ai/auto-reframe";
 
 interface Props {
   recipe: EditRecipe;
@@ -10,6 +11,9 @@ interface Props {
 }
 
 export default function FramingControl({ recipe, onChange }: Props) {
+  const unavailableReason = getAutoReframeUnavailableReason(recipe);
+  const isAutoReframeDisabled = unavailableReason !== null;
+
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
@@ -61,14 +65,14 @@ export default function FramingControl({ recipe, onChange }: Props) {
               AI subject tracking
             </span>
             <span className="block text-[10px] text-[var(--muted)]">
-              Pan crop for vertical fill exports
+              {unavailableReason ?? "Pan crop for vertical fill exports"}
             </span>
           </span>
         </span>
         <input
           type="checkbox"
           checked={recipe.autoReframe}
-          disabled={recipe.framing !== "fill"}
+          disabled={isAutoReframeDisabled}
           onChange={(event) => onChange({
             autoReframe: event.target.checked,
             autoReframeTimeline: [],

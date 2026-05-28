@@ -78,6 +78,22 @@ describe("buildVideoFilter", () => {
     expect(result).toContain("between(t\\,0\\,1)");
   });
 
+  it("should not use AI crop expression for 90 degree rotation", () => {
+    const result = buildVideoFilter(base({
+      framing: "fill",
+      rotate: 90,
+      autoReframe: true,
+      autoReframeTimeline: [
+        { time: 0, centerX: 0.1, confidence: 0.8 },
+        { time: 1, centerX: 0.9, confidence: 0.8 },
+      ],
+    }), 1080, 1920);
+
+    expect(result).toContain("transpose=1");
+    expect(result).toContain("crop=1080:1920");
+    expect(result).not.toContain("between(t\\,0\\,1)");
+  });
+
   it("should include deshake when stabilization is true", () => {
     const result = buildVideoFilter(base({ stabilization: true }), 1280, 720);
     expect(result).toContain("deshake");

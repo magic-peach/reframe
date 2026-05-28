@@ -4,6 +4,7 @@ import { EditRecipe } from "@/lib/types";
 import { RotateCw } from "lucide-react";
 import BaseButton from "./ui/BaseButton";
 import { cn } from "@/lib/utils";
+import { supportsAutoReframeRotation } from "@/lib/ai/auto-reframe";
 
 interface Props {
   recipe: EditRecipe;
@@ -21,7 +22,10 @@ export default function RotateControl({ recipe, onChange }: Props) {
           <BaseButton
             type="button"
             key={deg}
-            onClick={() => onChange({ rotate: deg })}
+            onClick={() => onChange({
+              rotate: deg,
+              ...(!supportsAutoReframeRotation(deg) ? { autoReframe: false, autoReframeTimeline: [] } : {}),
+            })}
             aria-label={`Rotate video to ${deg} degrees`}
             aria-pressed={active}
             active={active}

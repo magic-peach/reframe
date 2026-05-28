@@ -40,3 +40,4 @@ bun.lockb
 
 # npm lockfile (project uses bun)
 package-lock.json
+qa-artifacts/

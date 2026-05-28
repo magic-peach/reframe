@@ -35,18 +35,36 @@ async function loadDetector(signal?: AbortSignal): Promise<PoseDetector> {
       wasm.setWasmPaths("https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@4.22.0/dist/");
       await tf.setBackend("wasm");
       await tf.ready();
+      assertNotAborted(signal);
 
-      return poseDetection.createDetector(
+      const detector = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
         {
           modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
           enableSmoothing: false,
         }
       );
+      if (signal?.aborted) {
+        detector.dispose();
+      }
+      assertNotAborted(signal);
+      return detector;
     })();
+    detectorPromise.catch(() => {
+      detectorPromise = null;
+    });
   }
 
-  return detectorPromise;
+  const detector = await detectorPromise;
+  assertNotAborted(signal);
+  return detector;
+}
+
+export async function disposeSubjectDetector(): Promise<void> {
+  const promise = detectorPromise;
+  const detector = promise ? await promise.catch(() => null) : null;
+  detectorPromise = null;
+  detector?.dispose();
 }
 
 function createVideo(file: File, signal?: AbortSignal): Promise<{ video: HTMLVideoElement; url: string }> {
@@ -115,6 +133,27 @@ function seekVideo(video: HTMLVideoElement, time: number, signal?: AbortSignal):
     video.addEventListener("seeked", onSeeked, { once: true });
     video.addEventListener("error", onError, { once: true });
     video.currentTime = Math.min(Math.max(0, time), Math.max(0, video.duration - 0.05));
+  });
+}
+
+function waitForNextTask(signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      signal?.removeEventListener("abort", onAbort);
+    };
+
+    const onAbort = () => {
+      cleanup();
+      reject(new DOMException("Subject tracking cancelled", "AbortError"));
+    };
+
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      resolve();
+    }, 0);
+
+    signal?.addEventListener("abort", onAbort, { once: true });
   });
 }
 
@@ -199,6 +238,7 @@ export async function analyzeSubjectMotion(
         maxPoses: 1,
         flipHorizontal: false,
       });
+      assertNotAborted(signal);
       const subject = poseCenterX(poses[0], canvas.width, minConfidence);
       lastCenterX = subject?.centerX ?? lastCenterX;
 
@@ -209,7 +249,7 @@ export async function analyzeSubjectMotion(
       });
 
       onProgress?.(Math.round(((index + 1) / times.length) * 100));
-      await new Promise((resolve) => window.setTimeout(resolve, 0));
+      await waitForNextTask(signal);
     }
 
     return smoothPoints(points, smoothingAlpha);
@@ -220,6 +260,6 @@ export async function analyzeSubjectMotion(
     URL.revokeObjectURL(url);
     canvas.width = 0;
     canvas.height = 0;
+    await disposeSubjectDetector();
   }
 }
-

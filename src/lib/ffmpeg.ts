@@ -2,6 +2,7 @@ import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions }
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
 import { buildAutoCropExpression } from "./ai/crop-filter";
+import { canUseAutoReframe } from "./ai/auto-reframe";
 
 export class FFmpegLoadError extends Error {}
 
@@ -300,13 +301,22 @@ export async function exportVideo(
 async function getVideoDuration(file: File): Promise<number> {
   return new Promise((resolve) => {
     const video = document.createElement("video");
+    const url = URL.createObjectURL(file);
+    const cleanup = () => {
+      URL.revokeObjectURL(url);
+      video.removeAttribute("src");
+      video.load();
+    };
     video.preload = "metadata";
     video.onloadedmetadata = () => {
-      URL.revokeObjectURL(video.src);
+      cleanup();
       resolve(video.duration);
     };
-    video.onerror = () => resolve(0);
-    video.src = URL.createObjectURL(file);
+    video.onerror = () => {
+      cleanup();
+      resolve(0);
+    };
+    video.src = url;
   });
 }
 
@@ -351,7 +361,7 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
       `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
     );
-  } else if (recipe.autoReframe && recipe.autoReframeTimeline.length > 1) {
+  } else if (canUseAutoReframe(recipe) && recipe.autoReframeTimeline.length > 1) {
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
       `crop=${targetW}:${targetH}:${buildAutoCropExpression(recipe.autoReframeTimeline, targetW)}:(ih-${targetH})/2`

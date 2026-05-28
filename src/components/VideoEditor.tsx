@@ -199,7 +199,7 @@ function KeyboardShortcutsPanel() {
 export default function VideoEditor() {
   const {
     file, duration, recipe, status, progress,
-    result, error, exportStartedAt, updateRecipe,
+    result, error, aiWarning, exportStartedAt, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
     videoRef,
     seekTo,
@@ -676,6 +676,19 @@ export default function VideoEditor() {
                     Retry Export
                   </button>
                 )}
+              </div>
+            )}
+
+            {aiWarning && status !== "error" && (
+              <div
+                role="status"
+                className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
+              >
+                <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
+                <div className="flex-1">
+                  <p className="font-heading font-bold text-sm">AI tracking notice</p>
+                  <p className="text-film-600 text-sm mt-1">{aiWarning}</p>
+                </div>
               </div>
             )}
 
