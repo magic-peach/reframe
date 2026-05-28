@@ -18,6 +18,10 @@ import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
 import { getPresetById } from "@/lib/presets";
+import {
+  estimateExportSize,
+  formatEstimatedSize,
+} from "@/lib/exportEstimate";
 
 import { cn } from "@/lib/utils";
 import {
@@ -301,6 +305,15 @@ export default function VideoEditor() {
 
     return `Exporting to ${width}×${height} ${recipe.format.toUpperCase()} • ${framingLabel} • ${speedLabel} • Quality: ${qualityLabel}`;
   }, [recipe]);
+
+  const estimatedSizeMb = useMemo(
+    () => estimateExportSize(recipe, duration),
+    [recipe, duration]
+  );
+  const estimatedSizeLabel = useMemo(
+    () => formatEstimatedSize(estimatedSizeMb),
+    [estimatedSizeMb]
+  );
 
   useEffect(() => {
     return () => {
@@ -747,6 +760,24 @@ export default function VideoEditor() {
               <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)] leading-relaxed">
                 {exportSummary}
               </p>
+            )}
+
+            {file && (
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-4 py-3 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+                    Estimated size
+                  </span>
+                  <span className="text-sm font-heading font-bold text-film-600">
+                    {estimatedSizeLabel}
+                  </span>
+                </div>
+                {recipe.format === "gif" && estimatedSizeMb >= 100 && (
+                  <p className="mt-2 text-xs text-[var(--warning)] font-medium">
+                    ⚠ Large GIF detected ({estimatedSizeLabel}). Consider trimming the clip or switching to MP4/WebM for a smaller file.
+                  </p>
+                )}
+              </div>
             )}
 
             <button
