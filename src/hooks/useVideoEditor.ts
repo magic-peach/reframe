@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe, sanitizeTextOverlay } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
@@ -9,7 +9,11 @@ import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
-  const STORAGE_KEY = "reframe:recipe";
+const STORAGE_KEY = "reframe:recipe";
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
 
 export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
@@ -139,13 +143,27 @@ function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
 /**
  * Migrates old recipes to include missing properties from newer versions.
  * Ensures backwards compatibility when loading recipes created with older versions.
+ * Sanitizes all numeric fields to valid ranges and validates text overlays.
  */
 function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
   return {
     ...DEFAULT_RECIPE,
     ...recipe,
-    // Ensure textOverlays is always an array
-    textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
+    version: DEFAULT_RECIPE.version,
+    quality: clamp(recipe.quality ?? DEFAULT_RECIPE.quality, 18, 30),
+    speed: (SPEED_STEPS as readonly number[]).includes(recipe.speed ?? DEFAULT_RECIPE.speed)
+      ? (recipe.speed ?? DEFAULT_RECIPE.speed)
+      : DEFAULT_RECIPE.speed,
+    brightness: clamp(recipe.brightness ?? DEFAULT_RECIPE.brightness, -1, 1),
+    contrast: clamp(recipe.contrast ?? DEFAULT_RECIPE.contrast, 0, 2),
+    saturation: clamp(recipe.saturation ?? DEFAULT_RECIPE.saturation, 0, 3),
+    customWidth: clamp(recipe.customWidth ?? DEFAULT_RECIPE.customWidth, 16, 7680),
+    customHeight: clamp(recipe.customHeight ?? DEFAULT_RECIPE.customHeight, 16, 7680),
+    trimStart: Math.max(0, recipe.trimStart ?? DEFAULT_RECIPE.trimStart),
+    rotate: [0, 90, 180, 270].includes(recipe.rotate ?? DEFAULT_RECIPE.rotate)
+      ? (recipe.rotate as EditRecipe["rotate"])
+      : DEFAULT_RECIPE.rotate,
+    textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays.map(sanitizeTextOverlay) : [],
   };
 }
 
@@ -164,7 +182,17 @@ export function useVideoEditor() {
     if (encoded) {
       const decoded = decodeRecipe(encoded);
       if (decoded) {
-        return migrateRecipe(decoded);
+        const fullRecipe = migrateRecipe(decoded);
+        if (isValidRecipe(fullRecipe)) {
+          return fullRecipe;
+        }
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("settings");
+          window.history.replaceState(null, "", url.toString());
+        } catch {
+          // ignore URL manipulation errors
+        }
       }
     }
     return migrateRecipe({
@@ -196,8 +224,13 @@ export function useVideoEditor() {
   const [currentTime, setCurrentTime] = useState(0);
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
-    const next = { ...prev, ...patch };
-    // GIF has no audio — force keepAudio off
+    const validated: Partial<EditRecipe> = {};
+    for (const [key, val] of Object.entries(patch)) {
+      if (isValidValue(key as keyof EditRecipe, val)) {
+        (validated as any)[key as keyof EditRecipe] = val;
+      }
+    }
+    const next = { ...prev, ...validated };
     if (next.format === "gif") {
       next.keepAudio = false;
     }

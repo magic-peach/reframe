@@ -107,3 +107,24 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
 
   return true;
 }
+
+const VALID_FONT_WEIGHTS = ["normal", "bold", "900"] as const;
+const HEX_COLOR_REGEX = /^#[0-9a-fA-F]{3,8}$/;
+
+export function isValidHexColor(color: unknown): color is string {
+  return typeof color === "string" && HEX_COLOR_REGEX.test(color);
+}
+
+export function sanitizeTextOverlay(overlay: Partial<TextOverlay>): TextOverlay {
+  return {
+    id: typeof overlay.id === "string" ? overlay.id : `text-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    text: typeof overlay.text === "string" ? overlay.text.slice(0, 500) : "",
+    x: typeof overlay.x === "number" && isFinite(overlay.x) ? Math.max(0, Math.min(100, overlay.x)) : 50,
+    y: typeof overlay.y === "number" && isFinite(overlay.y) ? Math.max(0, Math.min(100, overlay.y)) : 50,
+    fontSize: typeof overlay.fontSize === "number" && isFinite(overlay.fontSize) ? Math.max(12, Math.min(120, Math.round(overlay.fontSize))) : 48,
+    color: isValidHexColor(overlay.color) ? overlay.color : "#ffffff",
+    fontWeight: VALID_FONT_WEIGHTS.includes(overlay.fontWeight as typeof VALID_FONT_WEIGHTS[number]) ? overlay.fontWeight as "normal" | "bold" | "900" : "normal",
+    fontFamily: typeof overlay.fontFamily === "string" ? overlay.fontFamily : undefined,
+    fontPath: typeof overlay.fontPath === "string" ? overlay.fontPath : undefined,
+  };
+}
