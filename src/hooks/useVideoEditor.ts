@@ -131,6 +131,19 @@ function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   }
 }
 
+/**
+ * Migrates old recipes to include missing properties from newer versions.
+ * Ensures backwards compatibility when loading recipes created with older versions.
+ */
+function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
+  return {
+    ...DEFAULT_RECIPE,
+    ...recipe,
+    // Ensure textOverlays is always an array
+    textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
+  };
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -145,12 +158,15 @@ export function useVideoEditor() {
     const encoded = params.get("settings");
     if (encoded) {
       const decoded = decodeRecipe(encoded);
-      if (decoded) return { ...DEFAULT_RECIPE, ...decoded, soundOnCompletion: false };
+      if (decoded) {
+        return migrateRecipe(decoded);
+      }
     }
-    return {
-      ...DEFAULT_RECIPE,
-      soundOnCompletion: false,
-    };
+    return migrateRecipe({
+      soundOnCompletion:
+        typeof window !== "undefined" &&
+        localStorage.getItem("soundOnCompletion") === "true",
+    });
   });
   const [history, setHistory] = useState<EditRecipe[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -567,7 +583,7 @@ export function useVideoEditor() {
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
-      const ffmpeg = await loadFFmpeg(abortController.signal);
+      await loadFFmpeg(abortController.signal, setProgress);
       if (exportCancelledRef.current) return;
 
       const startedAt = Date.now();
@@ -575,7 +591,6 @@ export function useVideoEditor() {
       setStatus("exporting");
 
       const exportResult = await exportVideo(
-        ffmpeg,
         file,
         recipe,
         setProgress,
@@ -658,13 +673,13 @@ export function useVideoEditor() {
   useEffect(() => {
     const shouldWarn =
       status === "exporting" ||
-      status === "loading-engine" ||
-      status === "done";
+      status === "loading-engine";
 
     if (!shouldWarn) return;
 
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
+      e.returnValue = "";
     };
 
     window.addEventListener("beforeunload", handler);
