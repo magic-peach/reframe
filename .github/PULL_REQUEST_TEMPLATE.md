@@ -1,25 +1,17 @@
 ## Description
-<!-- Briefly describe the changes made in this PR -->
-
 ## Related Issue
-<!-- Mention the issue number, for example: Closes #12 -->
-
 ## Type of Contribution
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Documentation update
+- [ ] Refactor
 - [ ] GSSoC contribution
 
 ## Participant Info
-- GitHub username:
-- Contribution level (Beginner/Intermediate/Advanced):
+- GitHub username: 
+- Contribution level (Beginner/Intermediate/Advanced): 
 
 ## Screen Recording
-
-<!-- REQUIRED for all UI / feature / design changes. -->
-<!-- Drag a video file here or paste a Loom link below. -->
-<!-- PRs touching any visible UI without a recording will NOT be merged. -->
-
 > **How to record:** run `bun run dev` → open http://localhost:3000 → demonstrate the full working flow of your change, including any edge cases.
 >
 > - **macOS**: `Cmd + Shift + 5` → Record Selected Portion, or use QuickTime Player
@@ -27,9 +19,7 @@
 > - **Linux**: OBS Studio, GNOME Screenshot tool, or `kazam`
 > - **Any OS**: [Loom](https://loom.com) (free screen recorder, great for sharing)
 
-**Recording / Loom link:** <!-- drag file here or paste link -->
-
-## Checklist
+**Recording / Loom link:** ## Checklist
 - [ ] I have read the contribution guidelines
 - [ ] My changes follow the project structure
 - [ ] I have tested my changes in Chrome, Firefox, and Safari
