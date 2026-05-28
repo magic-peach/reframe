@@ -15,23 +15,28 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
+    let timedOut = false;
+
     const timeout = setTimeout(() => {
+      timedOut = true;
       URL.revokeObjectURL(url);
       reject( new Error("Video metaData load timeout — the file may be too large or the device too slow. Please try again.") );
     }, 5000);
 
     video.preload = "metadata";
     video.onloadedmetadata = () => {
-      clearTimeout(timeout)
-      resolve({
-        width: video.videoWidth,
-        height: video.videoHeight,
-        duration: isFinite(video.duration) ? video.duration : 0,
-      });
+      clearTimeout(timeout);
       URL.revokeObjectURL(url);
+      if (!timedOut) {
+        resolve({
+          width: video.videoWidth,
+          height: video.videoHeight,
+          duration: isFinite(video.duration) ? video.duration : 0,
+        });
+      }
     };
     video.onerror = () => {
-      clearTimeout(timeout)
+      clearTimeout(timeout);
       URL.revokeObjectURL(url);
       reject(new Error("Failed to load video metadata"));
     };
@@ -176,6 +181,7 @@ export function useVideoEditor() {
   const [exportStartedAt, setExportStartedAt] = useState<number | null>(null);
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
+  const prevResultBlobUrlRef = useRef<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const [musicFile, setMusicFile] = useState<File | null>(null);
@@ -618,13 +624,17 @@ export function useVideoEditor() {
     };
   }, [file]);
 
-  useEffect(()=>{
-    return ()=>{
-      if(result?.blobUrl){
+  useEffect(() => {
+    if (prevResultBlobUrlRef.current) {
+      URL.revokeObjectURL(prevResultBlobUrlRef.current);
+    }
+    prevResultBlobUrlRef.current = result?.blobUrl ?? null;
+    return () => {
+      if (result?.blobUrl) {
         URL.revokeObjectURL(result.blobUrl);
       }
-    }
-   },[result?.blobUrl])
+    };
+  }, [result?.blobUrl]);
 
   useEffect(() => {
     return () => {

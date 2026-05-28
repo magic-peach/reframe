@@ -57,7 +57,6 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
     }
   })();
 
-  // Load video source for both left and right videos
   useEffect(() => {
     if (!file) return;
     const url = URL.createObjectURL(file);
@@ -71,7 +70,17 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
       rightVideoRef.current.load();
     }
 
-    return () => URL.revokeObjectURL(url);
+    return () => {
+      if (leftVideoRef.current) {
+        leftVideoRef.current.pause();
+        leftVideoRef.current.removeAttribute("src");
+      }
+      if (rightVideoRef.current) {
+        rightVideoRef.current.pause();
+        rightVideoRef.current.removeAttribute("src");
+      }
+      URL.revokeObjectURL(url);
+    };
   }, [file]);
 
   // Sync right video with left video and auto-play left

@@ -26,8 +26,6 @@ export default function VideoPreview({
   onSelectText,
   onUpdateText,
 }: Props) {
-  const lastId = useRef(0);
-  const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
@@ -37,7 +35,6 @@ export default function VideoPreview({
     height: 0,
   });
   const previewContainerRef = useRef<HTMLDivElement>(null);
-  const onLoadedRef = useRef<(() => void) | null>(null);
 
   const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
@@ -52,66 +49,50 @@ export default function VideoPreview({
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob((blob) => {
-      if (!blob) return;
+      try {
+        if (!blob) return;
 
-      const totalSec = Math.floor(video.currentTime);
-      const mins = String(Math.floor(totalSec / 60)).padStart(2, "0");
-      const secs = String(totalSec % 60).padStart(2, "0");
-      const filename = `frame-${mins}m${secs}s.png`;
+        const totalSec = Math.floor(video.currentTime);
+        const mins = String(Math.floor(totalSec / 60)).padStart(2, "0");
+        const secs = String(totalSec % 60).padStart(2, "0");
+        const filename = `frame-${mins}m${secs}s.png`;
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      } finally {
+        canvas.width = 0;
+        canvas.height = 0;
+      }
     }, "image/png");
   }, [videoRef]);
 
   useEffect(() => {
     if (!file) return;
 
-    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     setIsLoading(true);
-    const id = ++lastId.current;
-    const url = URL.createObjectURL(file);
-
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
-    }
-    urlRef.current = url;
-
     const video = videoRef.current;
     if (!video) return;
 
+    const url = URL.createObjectURL(file);
     video.src = url;
     video.load();
 
     const handleLoaded = () => {
-      if (lastId.current !== id) return;
       video.play().catch(() => {});
     };
-
-    onLoadedRef.current = handleLoaded;
 
     video.addEventListener("loadeddata", handleLoaded);
 
     return () => {
-      if (onLoadedRef.current) {
-        video.removeEventListener("loadeddata", onLoadedRef.current);
-        onLoadedRef.current = null;
-      }
-
-      if (video) {
-        video.pause();
-        video.removeAttribute("src");
-        video.load();
-      }
-
-      if (urlRef.current === url) {
-        URL.revokeObjectURL(urlRef.current);
-        urlRef.current = null;
-      }
+      video.removeEventListener("loadeddata", handleLoaded);
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+      URL.revokeObjectURL(url);
     };
   }, [file, videoRef]);
 

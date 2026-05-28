@@ -327,7 +327,10 @@ async function getVideoDuration(file: File): Promise<number> {
       URL.revokeObjectURL(video.src);
       resolve(video.duration);
     };
-    video.onerror = () => resolve(0);
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src);
+      resolve(0);
+    };
     video.src = URL.createObjectURL(file);
   });
 }
