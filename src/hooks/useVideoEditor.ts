@@ -177,6 +177,7 @@ export function useVideoEditor() {
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [musicVolume, setMusicVolume] = useState(70);
