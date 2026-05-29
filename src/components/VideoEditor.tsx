@@ -265,7 +265,11 @@ export default function VideoEditor() {
   }, [status]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
-  const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    setIsMac(typeof navigator !== "undefined" && /Mac/i.test(navigator.platform));
+  }, []);
 
   const videoSrc = useMemo(
     () => (file ? URL.createObjectURL(file) : null),
