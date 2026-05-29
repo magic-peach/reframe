@@ -13,13 +13,7 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
-    const videoRef = useRef<HTMLVideoElement>(null);
-  const [previousRecipe, setPreviousRecipe] = useState<typeof DEFAULT_RECIPE | null>(null);
-  const [showUndoToast, setShowUndoToast] = useState(false);
 
-// ADD THESE TWO:
-const [previousRecipe, setPreviousRecipe] = useState<typeof DEFAULT_RECIPE | null>(null);
-const [showUndoToast, setShowUndoToast] = useState(false);
     const timeout = setTimeout(() => {
       URL.revokeObjectURL(url);
       reject( new Error("Video metaData load timeout"))
@@ -143,8 +137,6 @@ export function useVideoEditor() {
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [previousRecipe, setPreviousRecipe] = useState<typeof DEFAULT_RECIPE | null>(null);
-  const [showUndoToast, setShowUndoToast] = useState(false);
 
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [musicVolume, setMusicVolume] = useState(70);
@@ -155,6 +147,8 @@ export function useVideoEditor() {
   const [overlayPosition, setOverlayPosition] = useState<OverlayPosition>("bottom-right");
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
+  const [previousRecipe, setPreviousRecipe] = useState<typeof DEFAULT_RECIPE | null>(null);
+  const [showUndoToast, setShowUndoToast] = useState(false);
 
  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {

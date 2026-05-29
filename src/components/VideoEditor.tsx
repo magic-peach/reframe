@@ -62,7 +62,7 @@ export default function VideoEditor() {
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
     recommendedPreset,
-    handleReset,
+    resetSettings: handleReset,
     handleUndo,
     showUndoToast,
     handleToastDismiss,
