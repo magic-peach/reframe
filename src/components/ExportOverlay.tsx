@@ -3,9 +3,11 @@
 import FocusTrap from "focus-trap-react";
 import { useEffect, useRef, useCallback, useState } from "react";
 import { ExportStatus } from "@/lib/types";
-import LottiePlayer from "./LottiePlayer";
+import dynamic from "next/dynamic";
 import spinnerAnim from "@/lib/lottie/spinner.json";
 import TipCarousel from "./TipCarousel";
+
+const LottiePlayer = dynamic(() => import("./LottiePlayer"), { ssr: false });
 
 interface Props {
   status: ExportStatus;
