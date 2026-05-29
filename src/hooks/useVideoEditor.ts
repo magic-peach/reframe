@@ -188,16 +188,23 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
- const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-  setRecipe((prev) => {
-    const next = { ...prev, ...patch };
-    // GIF has no audio — force keepAudio off
-    if (next.format === "gif") {
-      next.keepAudio = false;
-    }
-    return next;
-  });
-}, []);
+
+  // *** UPDATED: reset autoReframe when preset changes ***
+  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+    setRecipe((prev) => {
+      const next = { ...prev, ...patch };
+      // If preset changed, reset autoReframe (aspect ratio may differ)
+      if (patch.preset !== undefined) {
+        next.autoReframe = undefined;
+      }
+      // GIF has no audio — force keepAudio off
+      if (next.format === "gif") {
+        next.keepAudio = false;
+      }
+      return next;
+    });
+  }, []);
+
   const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
     switch (key) {
       case "preset":
@@ -437,6 +444,7 @@ export function useVideoEditor() {
           ...prev,
           trimStart: 0,
           trimEnd: null,
+          autoReframe: undefined, // reset on file change (aspect ratio may be different)
           ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
         };
       });
@@ -689,8 +697,8 @@ export function useVideoEditor() {
   },[]);
 
   const toggleSound = useCallback(() => {
-  updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
-}, [recipe.soundOnCompletion, updateRecipe]);
+    updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
+  }, [recipe.soundOnCompletion, updateRecipe]);
 
   return {
     file,

@@ -15,6 +15,12 @@ export interface TextOverlay {
   fontPath?: string; // Path/URL to custom font file for export
 }
 
+export interface AutoReframeSettings {
+  enabled: boolean;
+  cropX: number; // Normalized 0–1 (0.5 = center)
+  cropY: number; // Normalized 0–1 (0.5 = center)
+}
+
 export interface EditRecipe {
   preset: string;
   customWidth: number;
@@ -36,6 +42,7 @@ export interface EditRecipe {
   soundOnCompletion: boolean;
   textOverlays: TextOverlay[];
   version: number;
+  autoReframe?: AutoReframeSettings;  // ← added
 }
 
 export type OverlayPosition =

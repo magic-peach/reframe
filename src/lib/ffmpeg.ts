@@ -4,7 +4,6 @@ import { buildTextFilter } from "./text-overlay";
 
 export class FFmpegLoadError extends Error {}
 
-
 type SerializedFile = {
   name: string;
   type: string;
@@ -351,9 +350,23 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
       `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
     );
   } else {
+    // ---- Smart Auto Reframe integration ----
+    const auto = recipe.autoReframe;
+    const useSmartCrop = auto?.enabled && auto.cropX !== undefined && auto.cropY !== undefined;
+
+    const cropX = useSmartCrop ? auto!.cropX : 0.5;
+    const cropY = useSmartCrop ? auto!.cropY : 0.5;
+
+    // After scale, the input to crop has dimensions (iw,ih) that are larger
+    // or equal to targetW,targetH. Compute crop offset so that the crop window
+    // is centered at (cropX*iw, cropY*ih) – with clamping to keep it valid.
+    const cropFilter = `crop=${targetW}:${targetH}` +
+      `:x='max(0,min(iw-${targetW}, ${cropX}*iw - ${targetW}/2))'` +
+      `:y='max(0,min(ih-${targetH}, ${cropY}*ih - ${targetH}/2))'`;
+
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
-      `crop=${targetW}:${targetH}`
+      cropFilter
     );
   }
 
@@ -469,31 +482,31 @@ function buildArguments(
       videoOut = "[vbase]";
     }
 
-if (hasOverlay) {
-  const scaledW = overlayOptions!.size;
-  const alpha = (overlayOptions!.opacity / 100).toFixed(2);
-  const posMap: Record<string, string> = {
-    "top-left":     "20:20",
-    "top-right":    "main_w-w-20:20",
-    "bottom-left":  "20:main_h-h-20",
-    "bottom-right": "main_w-w-20:main_h-h-20",
-  };
+    if (hasOverlay) {
+      const scaledW = overlayOptions!.size;
+      const alpha = (overlayOptions!.opacity / 100).toFixed(2);
+      const posMap: Record<string, string> = {
+        "top-left":     "20:20",
+        "top-right":    "main_w-w-20:20",
+        "bottom-left":  "20:main_h-h-20",
+        "bottom-right": "main_w-w-20:main_h-h-20",
+      };
 
-interface PositionCoords {
-    x: number;
-    y: number;
-  }
+      interface PositionCoords {
+        x: number;
+        y: number;
+      }
 
-  const pos = typeof overlayOptions?.position === "string"
-    ? (posMap[overlayOptions.position] ?? "main_w-w-20:main_h-h-20")
-    : overlayOptions?.position
-    ? `(main_w)*${(overlayOptions.position as PositionCoords).x}/100:(main_h)*${(overlayOptions.position as PositionCoords).y}/100`
-    : "main_w-w-20:main_h-h-20";
+      const pos = typeof overlayOptions?.position === "string"
+        ? (posMap[overlayOptions.position] ?? "main_w-w-20:main_h-h-20")
+        : overlayOptions?.position
+        ? `(main_w)*${(overlayOptions.position as PositionCoords).x}/100:(main_h)*${(overlayOptions.position as PositionCoords).y}/100`
+        : "main_w-w-20:main_h-h-20";
 
-  filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
-  filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
-  videoOut = "[vout]";
-}
+      filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
+      filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
+      videoOut = "[vout]";
+    }
 
     let audioOut = "";
     if (shouldKeepAudio) {

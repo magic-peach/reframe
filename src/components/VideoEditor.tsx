@@ -16,8 +16,9 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
-import ImageOverlay from "./ImageOverlay"
+import ImageOverlay from "./ImageOverlay";
 import { getPresetById } from "@/lib/presets";
+import { AutoReframeControl } from "./AutoReframeControl";
 
 import { cn } from "@/lib/utils";
 import {
@@ -122,37 +123,37 @@ function KeyboardShortcutsPanel() {
   const [open, setOpen] = useState(false);
 
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
-  {
-    keys: [
-      <Kbd key="ctrl">Ctrl</Kbd>,
-      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="shift">Shift</Kbd>,
-      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="e">E</Kbd>
-    ],
-    label: "Export video",
-  },
-  {
-    keys: [<Kbd key="m">M</Kbd>],
-    label: "Toggle audio mute",
-  },
-  {
-    keys: [<Kbd key="r">R</Kbd>],
-    label: "Reset all settings",
-  },
-  {
-    keys: [<Kbd key="esc">Esc</Kbd>],
-    label: "Cancel export",
-  },
-  {
-    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
-    label: "Switch preset by index",
-  },
-  {
-    keys: [<Kbd key="question">?</Kbd>],
-    label: "Toggle this panel",
-  },
-];
+    {
+      keys: [
+        <Kbd key="ctrl">Ctrl</Kbd>,
+        <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
+        <Kbd key="shift">Shift</Kbd>,
+        <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
+        <Kbd key="e">E</Kbd>
+      ],
+      label: "Export video",
+    },
+    {
+      keys: [<Kbd key="m">M</Kbd>],
+      label: "Toggle audio mute",
+    },
+    {
+      keys: [<Kbd key="r">R</Kbd>],
+      label: "Reset all settings",
+    },
+    {
+      keys: [<Kbd key="esc">Esc</Kbd>],
+      label: "Cancel export",
+    },
+    {
+      keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
+      label: "Switch preset by index",
+    },
+    {
+      keys: [<Kbd key="question">?</Kbd>],
+      label: "Toggle this panel",
+    },
+  ];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
@@ -468,7 +469,7 @@ export default function VideoEditor() {
 
                     <div className="mt-4 space-y-4">
                       <AccordionSection
-                        id="rotation"
+                        id="rotation-advanced"
                         icon={<RotateCw size={12} />}
                         title="Rotation"
                         isOpen={openSections.rotation}
@@ -478,7 +479,7 @@ export default function VideoEditor() {
                       </AccordionSection>
 
                       <AccordionSection
-                        id="export"
+                        id="export-advanced"
                         icon={<SlidersHorizontal size={12} />}
                         title="Export"
                         isOpen={openSections.export}
@@ -587,7 +588,7 @@ export default function VideoEditor() {
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
                   </Section>
                   <AccordionSection
-                    id="export"
+                    id="export-bottom"
                     icon={<SlidersHorizontal size={12} />}
                     title="Export"
                     isOpen={openSections.export}
@@ -618,7 +619,7 @@ export default function VideoEditor() {
 
                   <div className="mt-4 space-y-4">
                     <AccordionSection
-                      id="rotation"
+                      id="rotation-adv2"
                       icon={<RotateCw size={12} />}
                       title="Rotation"
                       isOpen={openSections.rotation}
@@ -628,7 +629,7 @@ export default function VideoEditor() {
                     </AccordionSection>
 
                     <AccordionSection
-                      id="export"
+                      id="export-adv2"
                       icon={<SlidersHorizontal size={12} />}
                       title="Export"
                       isOpen={openSections.export}
@@ -719,6 +720,17 @@ export default function VideoEditor() {
                 <div className="space-y-3">
                   <PresetSelector recipe={recipe} onChange={updateRecipe} />
                   <FramingControl recipe={recipe} onChange={updateRecipe} />
+
+                  {/* ---- Smart Auto Reframe (only for Fill mode) ---- */}
+                  {recipe.framing === "fill" && (
+                    <AutoReframeControl
+                      videoFile={file}
+                      targetWidth={recipe.preset === "custom" ? recipe.customWidth : (getPresetById(recipe.preset)?.width ?? 0)}
+                      targetHeight={recipe.preset === "custom" ? recipe.customHeight : (getPresetById(recipe.preset)?.height ?? 0)}
+                      autoReframe={recipe.autoReframe}
+                      onChange={(settings) => updateRecipe({ autoReframe: settings })}
+                    />
+                  )}
                 </div>
               </AccordionSection>
 
