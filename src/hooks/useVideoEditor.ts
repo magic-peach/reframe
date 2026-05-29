@@ -14,6 +14,8 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
     const videoRef = useRef<HTMLVideoElement>(null);
+  const [previousRecipe, setPreviousRecipe] = useState<typeof DEFAULT_RECIPE | null>(null);
+  const [showUndoToast, setShowUndoToast] = useState(false);
 
 // ADD THESE TWO:
 const [previousRecipe, setPreviousRecipe] = useState<typeof DEFAULT_RECIPE | null>(null);
@@ -141,6 +143,8 @@ export function useVideoEditor() {
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [previousRecipe, setPreviousRecipe] = useState<typeof DEFAULT_RECIPE | null>(null);
+  const [showUndoToast, setShowUndoToast] = useState(false);
 
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [musicVolume, setMusicVolume] = useState(70);
