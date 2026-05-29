@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import { TextOverlay } from "@/lib/types";
-import FileUpload from "./FileUpload";
+import dynamic from "next/dynamic";
+const FileUpload = dynamic(() => import("./FileUpload"), { ssr: false });
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
 import PresetSelector from "./PresetSelector";
