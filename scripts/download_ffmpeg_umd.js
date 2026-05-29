@@ -10,11 +10,11 @@ if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
 const filesToDownload = [
   {
-    url: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+    url: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js',
     dest: path.join(targetDir, 'ffmpeg-core.js')
   },
   {
-    url: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
+    url: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.wasm',
     dest: path.join(targetDir, 'ffmpeg-core.wasm')
   }
 ];
