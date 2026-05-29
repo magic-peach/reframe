@@ -1,7 +1,10 @@
-// Vitest setup: polyfills and global mocks
-import '@testing-library/jest-dom/vitest'
+import "@testing-library/jest-dom/vitest";
+import { expect } from "vitest";
+import { toHaveNoViolations } from "jest-axe";
 
-Object.defineProperty(window, 'matchMedia', {
+expect.extend(toHaveNoViolations);
+
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
     matches: false,
@@ -13,4 +16,4 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: () => {},
     dispatchEvent: () => false,
   }),
-})
+});
