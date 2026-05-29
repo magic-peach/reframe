@@ -26,7 +26,7 @@ export default function FramingControl({ recipe, onChange }: Props) {
               active && "border-purple-400 bg-gradient-to-r from-purple-600/20 to-blue-600/20"
             )}
           >
-            <Icon size={18} aria-hidden="true"/>
+            <Icon size={18} aria-hidden="true" />
             <span className="sr-only">
               Set framing to {mode === "fit" ? "fit within frame" : "fill frame by cropping"}
             </span>
