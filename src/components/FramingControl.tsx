@@ -22,10 +22,8 @@ export default function FramingControl({ recipe, onChange }: Props) {
             title={mode === "fit" ? "Fit: Adds black bars (letterbox) to fill empty space" : "Fill: Crops the video to fill the entire frame"}
             onClick={() => onChange({ framing: mode })}
             className={cn(
-              "flex-1 min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-2 py-4 rounded-lg border transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]",
-              active
-                ? "border-film-500 bg-film-50 text-film-700"
-                : "border-[var(--border)] text-[var(--muted)] hover:border-film-300 bg-[var(--surface)]"
+              "rounded-2xl border border-white/10 bg-white/5 backdrop-blur-lg transition-all duration-300 hover:scale-[1.03] hover:border-blue-400 hover:bg-white/10 hover:shadow-[0_0_25px_rgba(59,130,246,0.25)]",
+              active && "border-purple-400 bg-gradient-to-r from-purple-600/20 to-blue-600/20"
             )}
           >
             <Icon size={18} aria-hidden="true"/>

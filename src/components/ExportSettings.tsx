@@ -43,7 +43,7 @@ export default function ExportSettings({
     );
 
   return (
-    <>
+      <div className="glass-card rounded-3xl p-6 space-y-6 border border-white/10 bg-white/5 backdrop-blur-xl">
       <div>
         <div className="flex items-center justify-between mb-2">
           <label
@@ -87,7 +87,7 @@ export default function ExportSettings({
           aria-describedby="quality-description"
           aria-label="Video export quality (CRF)"
           aria-valuetext={`${label} quality, CRF value ${recipe.quality}`}
-          className="w-full accent-film-600 cursor-pointer"
+          className="w-full accent-purple-500 cursor-pointer hover:accent-blue-500 transition-all duration-300"
         />
 
         <div
@@ -163,7 +163,7 @@ export default function ExportSettings({
               }
               aria-label="Enable video stabilization"
               aria-checked={recipe.stabilization}
-              className="w-full accent-film-600 cursor-pointer"
+              className="w-full accent-purple-500 cursor-pointer hover:accent-blue-500 transition-all duration-300"
             />
           </span>
         </div>
@@ -186,6 +186,6 @@ export default function ExportSettings({
           </span>
         </div>
       </div>
-    </>
+    </div>
   );
 }

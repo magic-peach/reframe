@@ -152,9 +152,9 @@ export default function PresetSelector({ recipe, onChange }: Props) {
               aria-pressed={isActive}
               onClick={() => onChange({ preset })}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.04] active:scale-[0.97]",
+                "relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl px-4 py-3 flex flex-col items-center justify-center gap-1 text-center transition-all duration-300 hover:scale-[1.02] hover:border-purple-400 hover:bg-white/10 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]",
                 isActive
-                  ? "border-film-500 bg-film-50 text-film-600"
+                  ? "border-purple-400 bg-gradient-to-r from-purple-600/30 to-blue-600/30 shadow-[0_0_25px_rgba(168,85,247,0.35)] text-white"
                   : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-300 hover:bg-film-50/30 hover:text-[var(--text)]",
               )}
             >
@@ -201,9 +201,9 @@ export default function PresetSelector({ recipe, onChange }: Props) {
                 aria-label={`${preset.label.replaceAll(":", " is to ")} output ratio`}
                 aria-pressed={active}
                 className={cn(
-                  "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+                  "relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 px-4 py-3 text-center transition-all duration-300 hover:scale-[1.02] hover:border-purple-400 hover:bg-white/10 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]",
                   active
-                    ? "border-film-500 bg-film-50"
+                    ? "border-purple-400 bg-gradient-to-r from-purple-600/30 to-blue-600/30 shadow-[0_0_25px_rgba(168,85,247,0.35)]"
                     : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
                 )}
               >
@@ -239,9 +239,9 @@ export default function PresetSelector({ recipe, onChange }: Props) {
           aria-pressed={recipe.preset === "custom"}
           onClick={() => handlePresetSelect("custom")}
           className={cn(
-            "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+            "relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 px-4 py-3 text-center transition-all duration-300 hover:scale-[1.02] hover:border-purple-400 hover:bg-white/10 hover:shadow-[0_0_25px_rgba(168,85,247,0.25)]",
             recipe.preset === "custom"
-              ? "border-film-500 bg-film-50"
+              ? "border-purple-400 bg-gradient-to-r from-purple-600/30 to-blue-600/30 shadow-[0_0_25px_rgba(168,85,247,0.35)]"
               : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
           )}
         >

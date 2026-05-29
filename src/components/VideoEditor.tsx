@@ -35,15 +35,15 @@ interface SectionProps {
 function Section({ icon, title, children, delay = 0 }: SectionProps) {
   return (
     <div
-      className="space-y-3 animate-fade-in"
+      className="space-y-4 animate-fade-in rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-5 transition-all duration-300 hover:border-purple-400/40 hover:bg-white/10 hover:shadow-[0_0_30px_rgba(168,85,247,0.15)]"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-center gap-2">
         <span className="text-film-500 opacity-80">{icon}</span>
-        <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
+        <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-slate-200">
           {title}
         </h3>
-        <div className="flex-1 h-px bg-[var(--border)]" />
+        <div className="flex-1 h-px bg-gradient-to-r from-purple-500/50 to-transparent" />
       </div>
       {children}
     </div>

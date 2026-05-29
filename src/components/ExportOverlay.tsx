@@ -70,6 +70,8 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
         tabIndex={-1}
         className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 dark:bg-black/70 backdrop-blur-sm"
       >
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-blue-500/10 pointer-events-none animate-pulse" />
+      
         <div
           className="text-center space-y-6 max-w-xs px-6 animate-fade-in"
           aria-live="polite"
@@ -127,7 +129,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
                 <button
                   type="button"
                   onClick={() => onCancel?.()}
-                  className="inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--text)] transition-colors hover:opacity-95 active:scale-[0.98]"
+                  className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-3 font-semibold text-white transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(139,92,246,0.4)] active:scale-[0.98]"
                 >
                   Cancel Export
                 </button>
