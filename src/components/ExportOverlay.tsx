@@ -1,7 +1,7 @@
 "use client";
 
 import FocusTrap from "focus-trap-react";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { ExportStatus } from "@/lib/types";
 import LottiePlayer from "./LottiePlayer";
 import spinnerAnim from "@/lib/lottie/spinner.json";
@@ -10,13 +10,22 @@ import TipCarousel from "./TipCarousel";
 interface Props {
   status: ExportStatus;
   progress: number;
+  exportStartedAt?: number | null;
   onCancel?: () => void;
 }
 
-export default function ExportOverlay({ status, progress, onCancel }: Props) {
+function formatElapsed(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+export default function ExportOverlay({ status, progress, exportStartedAt, onCancel }: Props) {
   const visible = status === "loading-engine" || status === "exporting";
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -50,6 +59,21 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
     }
   }, [visible]);
 
+  useEffect(() => {
+    if (status !== "exporting" || !exportStartedAt) {
+      setElapsedMs(0);
+      return;
+    }
+
+    const updateElapsed = () => {
+      setElapsedMs(Date.now() - exportStartedAt);
+    };
+
+    updateElapsed();
+    const timer = window.setInterval(updateElapsed, 1000);
+    return () => window.clearInterval(timer);
+  }, [status, exportStartedAt]);
+
   if (!visible) return null;
 
   const isLoading = status === "loading-engine";
@@ -68,7 +92,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 dark:bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--bg)] backdrop-blur-sm"
       >
         <div
           className="text-center space-y-6 max-w-xs px-6 animate-fade-in"
@@ -104,7 +128,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
           <span className="sr-only">
             {status === "loading-engine"
               ? `Loading video engine: ${progress}%`
-              : `Exporting: ${progress}%`}
+              : `Exporting: ${progress}%, ${formatElapsed(elapsedMs)} elapsed`}
           </span>
             <div className="w-full space-y-2">
               <div className="h-1 w-full bg-film-100 rounded-full overflow-hidden">
@@ -113,14 +137,17 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
                   aria-valuenow={progress}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label={isLoading? "Engine download progress": "Export progress"}
+                  aria-label={isLoading ? "Engine download progress" : "Export progress"}
                   className="h-full bg-film-600 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-xs font-heading font-semibold text-[var(--muted)]">
-                {progress}%
-              </p>
+              <div className="flex items-center justify-between gap-4 text-xs font-heading font-semibold text-[var(--muted)]">
+                <span>{progress}%</span>
+                {!isLoading && (
+                  <span>{formatElapsed(elapsedMs)} elapsed</span>
+                )}
+              </div>
               <TipCarousel />
               {!isLoading && (
               <div className="flex flex-col items-center gap-3 mt-4">
