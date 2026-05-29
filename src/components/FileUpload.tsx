@@ -138,6 +138,7 @@ export default function FileUpload({
       <input
         ref={inputRef}
         type="file"
+        suppressHydrationWarning
         accept="video/*"
         className="hidden"
         onChange={(e) => {
@@ -158,6 +159,7 @@ export default function FileUpload({
     <input
       ref={inputRef}
       type="file"
+      suppressHydrationWarning
       accept="video/*"
       className="hidden"
       onChange={(e) => {
@@ -171,6 +173,7 @@ export default function FileUpload({
     <div
       id="upload-zone"
       role="button"
+      aria-label="Upload video — drag and drop or click to browse"
       tabIndex={0}
       onDragOver={(e) => {
         e.preventDefault();
@@ -238,6 +241,7 @@ export default function FileUpload({
         <input
           ref={inputRef}
           type="file"
+          suppressHydrationWarning
           accept="video/*"
           className="hidden"
           onChange={(e) => {
