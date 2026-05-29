@@ -47,11 +47,6 @@ export default function FileUpload({
       return;
     }
 
-    if (file.size > 500 * 1024 * 1024) {
-      setError("File size exceeds 500MB limit. Please select a smaller video.");
-      return;
-    }
-
     // Hard limit
     if (file.size > MAX_FILE_SIZE) {
       setError(
@@ -64,7 +59,10 @@ export default function FileUpload({
 
     // Soft warning
     if (file.size > WARNING_FILE_SIZE) {
-      const estimatedMinutes = Math.max(1, Math.round(file.size / (100 * 1024 * 1024)));
+      const estimatedMinutes = Math.max(
+        1,
+        Math.round(file.size / (100 * 1024 * 1024))
+      );
       setWarning(
         `Large file detected (${formatBytes(
           file.size
@@ -84,7 +82,7 @@ export default function FileUpload({
   };
 
  const FileInfo = () => (
-  <div className="px-4 py-3 bg-film-50 border border-film-200 rounded-lg">
+  <div className="px-4 py-3 bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl">
     <div className="flex flex-col lg:flex-row lg:items-center gap-3">
 
       <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -103,7 +101,7 @@ export default function FileUpload({
             {currentFile && (
               <span className="px-2 py-0.5 bg-gray-700 text-white font-bold tracking-wider rounded text-[10px] uppercase shrink-0">
                 {currentFile.name.includes(".")
-                  ? currentFile.name.split(".").pop()
+                  ? currentFile.name.split(".").pop()?.toUpperCase() ?? "VIDEO"
                   : "VIDEO"}
               </span>
             )}
@@ -123,7 +121,23 @@ export default function FileUpload({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="text-xs font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide"
+        className="
+        relative
+        overflow-hidden
+        rounded-2xl
+        bg-gradient-to-r
+        from-purple-600
+        to-blue-600
+        px-5
+        py-3
+        font-semibold
+        text-white
+        transition-all
+        duration-300
+        hover:scale-[1.02]
+        hover:shadow-[0_0_30px_rgba(139,92,246,0.4)]
+        active:scale-[0.98]
+        "
       >
         Change
         <span className="text-[var(--muted)] ml-1">(Ctrl+O)</span>
@@ -135,16 +149,6 @@ export default function FileUpload({
           {fileError}
         </p>
       )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
     </div>
 
     <p className="text-xs text-gray-500 mt-3 break-words">
@@ -181,17 +185,39 @@ export default function FileUpload({
       onClick={() => inputRef.current?.click()}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
           inputRef.current?.click();
         }
       }}
       className={cn(
-        "group flex flex-col items-center justify-center gap-4 py-12 px-6",
-        "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden",
+        `
+        relative
+        overflow-hidden
+        rounded-3xl
+        border
+        border-dashed
+        border-purple-400/40
+        bg-white/5
+        backdrop-blur-xl
+        p-10
+        transition-all
+        duration-300
+        group
+        flex
+        flex-col
+        items-center
+        justify-center
+        gap-4
+        cursor-pointer
+        `,
         dragging
-          ? "border-film-500 bg-film-50/50 scale-[1.02] shadow-[0_0_40px_-10px_rgba(230,57,70,0.4)] ring-4 ring-film-500/30"
-          : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
+          ? "scale-[1.02] border-purple-400 shadow-[0_0_40px_rgba(168,85,247,0.35)] ring-4 ring-purple-500/20 bg-white/10"
+          : "hover:border-purple-400 hover:bg-white/10 hover:shadow-[0_0_40px_rgba(168,85,247,0.2)]"
       )}
     >
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-blue-500/10 pointer-events-none" />
+
+
       {/* Premium Light Beam Shimmer Effect */}
       {dragging && (
         <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-film-500/20 to-transparent pointer-events-none" />
@@ -207,16 +233,16 @@ export default function FileUpload({
             : "Drag & Drop your video in here"}
         </p>
 
-        <p className="text-sm text-[var(--muted)] mt-1">
+        <p className="text-sm text-slate-300 mt-1">
           or click to browse
         </p>
 
-        <p className="text-xs text-[var(--muted)] mt-2 font-heading">
+        <p className="text-xs text-slate-300 mt-2 font-heading">
           Ctrl+O / Cmd+O
         </p>
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
+      <div className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/10 rounded-lg text-sm font-heading font-medium text-slate-300 backdrop-blur-md">
         <FolderOpen size={14} />
         MP4 / MOV / AVI / WebM
       </div>

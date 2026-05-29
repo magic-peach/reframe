@@ -22,17 +22,22 @@
 
 /* ── Dark mode tokens ── */
 .dark {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --border: #334155;
-  --text: #f1f5f9;
+  --bg: #020617;
+  --surface: rgba(15, 23, 42, 0.75);
+  --border: rgba(148, 163, 184, 0.12);
+  --text: #f8fafc;
   --muted: #94a3b8;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --warning: #fbbf24;
+
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+
+  --film-600: #a855f7;
+  --film-400: #c084fc;
+
+  --warning: #facc15;
   --error: #f87171;
-  --error-bg: #7f1d1d;
-  --error-border: #991b1b;
+  --error-bg: #450a0a;
+  --error-border: #7f1d1d;
   --error-hover: #991b1b;
 }
 
@@ -80,9 +85,20 @@
 
 /* ── Base styles ── */
 body {
+  background:
+    radial-gradient(circle at top left, rgba(139,92,246,0.18), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(59,130,246,0.18), transparent 30%),
+    linear-gradient(to bottom, #020617, #0f172a);
+
   background-color: var(--bg);
   color: var(--text);
-  transition: background-color 0.3s ease, color 0.3s ease;
+
+  min-height: 100vh;
+  overflow-x: hidden;
+
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* Smooth transitions for all themed elements */
@@ -98,4 +114,85 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* ── Glassmorphism Utilities ── */
+.glass-card {
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(18px);
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* ── Glow Effects ── */
+.glow-effect {
+  box-shadow:
+    0 0 20px rgba(168,85,247,0.25),
+    0 0 50px rgba(59,130,246,0.15);
+}
+
+/* ── Gradient Border ── */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #8b5cf6,
+      #3b82f6
+    );
+
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+  pointer-events: none;
+}
+
+/* ── Animations ── */
+@keyframes float {
+  0%,100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%,100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: pulseGlow 4s ease infinite;
+}
+
+html {
+  scroll-behavior: smooth;
 }

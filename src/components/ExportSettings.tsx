@@ -43,7 +43,7 @@ export default function ExportSettings({
     );
 
   return (
-    <>
+    <div className="glass-card rounded-3xl p-6 space-y-5 gradient-border">
       <div>
         <div className="flex items-center justify-between mb-2">
           <label
@@ -186,6 +186,6 @@ export default function ExportSettings({
           </span>
         </div>
       </div>
-    </>
+    </div>
   );
 }

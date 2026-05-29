@@ -68,10 +68,10 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/95 dark:bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/50 backdrop-blur-2xl"
       >
         <div
-          className="text-center space-y-6 max-w-xs px-6 animate-fade-in"
+          className="glass-card rounded-3xl p-8 text-center space-y-6 max-w-sm animate-fade-in glow-effect"
           aria-live="polite"
         >
           <div
@@ -114,7 +114,7 @@ export default function ExportOverlay({ status, progress, onCancel }: Props) {
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-label={isLoading? "Engine download progress": "Export progress"}
-                  className="h-full bg-film-600 rounded-full transition-all duration-300"
+                  className="h-full rounded-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>

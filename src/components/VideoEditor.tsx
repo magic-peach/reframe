@@ -15,12 +15,12 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
-import ImageOverlay from "./ImageOverlay"
+import ImageOverlay from "./ImageOverlay";
 
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  SlidersHorizontal, Zap, AlertTriangle, Copy
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -40,11 +40,10 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
     >
       <div className="flex items-center gap-2">
         <span className="text-film-500 opacity-80">{icon}</span>
-        <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
+        <h3 className="text-sm font-heading font-bold uppercase tracking-[0.25em] text-purple-300">          
           {title}
         </h3>
-        <div className="flex-1 h-px bg-[var(--border)]" />
-      </div>
+        <div className="flex-1 h-px bg-gradient-to-r from-purple-500/60 to-transparent" />      </div>
       {children}
     </div>
   );
@@ -97,7 +96,7 @@ function KeyboardShortcutsPanel() {
 ];
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
+    <div className="glass-card rounded-2xl border border-white/10 animate-fade-in overflow-hidden">
       <button
         type="button"
         aria-expanded={open}
@@ -181,7 +180,7 @@ export default function VideoEditor() {
     if (status === "done" && downloadRef.current) {
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       downloadRef.current.scrollIntoView({
-        behavior: prefersReducedMotion ? "instant" : "smooth",
+        behavior: prefersReducedMotion ? "auto" : "smooth",
         block: "center",
       });
     }
@@ -202,9 +201,15 @@ export default function VideoEditor() {
   }, [videoSrc]);
 
   return (
-    <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
-      <ExportOverlay status={status} progress={progress} onCancel={cancelExport} />
-      <OnboardingTour />
+    <div
+      className="min-h-screen relative flex flex-col"
+      style={{ background: "transparent" }}
+    >
+      <ExportOverlay
+        status={status}
+        progress={progress}
+        onCancel={cancelExport}
+      />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {status === "exporting" && `Exporting video: ${progress}%`}
@@ -212,11 +217,10 @@ export default function VideoEditor() {
         {status === "error" && `Export failed: ${error}`}
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
-
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-10 lg:px-8">
         <header className="mb-10 flex items-end justify-between animate-fade-in">
           <div
-            className="inline-block px-5 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600"
+            className="glass-card gradient-border inline-block px-6 py-4 rounded-2xl shadow-2xl border border-white/10 hover:-translate-y-1 transition-all duration-300"            
             aria-label="Reframe — video editor"
           >
             <h1 className="font-display text-6xl leading-none tracking-widest2 text-[var(--text)]">
@@ -235,7 +239,7 @@ export default function VideoEditor() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
-            <div className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] animate-fade-in">
+            <div className="glass-card rounded-3xl p-5 border border-white/10 animate-fade-in hover:-translate-y-1 transition-all duration-300">
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
@@ -273,7 +277,7 @@ export default function VideoEditor() {
                 "grid grid-cols-1 sm:grid-cols-2 gap-4",
                 isProcessing && "pointer-events-none opacity-50"
               )}>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                <div className="glass-card rounded-3xl border border-white/10 p-5 space-y-6 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
                   <Section icon={<Scissors size={12} />} title="Trim" delay={50}>
                     <TrimControl
                       recipe={recipe}
@@ -286,7 +290,7 @@ export default function VideoEditor() {
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
                 </div>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                <div className="glass-card rounded-3xl border border-white/10 p-5 space-y-6 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
 
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
@@ -399,7 +403,7 @@ export default function VideoEditor() {
             {status === "error" && error && (
               <div
                 role="status"
-                className="flex items-start gap-3 p-4 bg-film-50 border border-film-200 rounded-xl text-film-800 text-sm animate-fade-in"
+                className="glass-card flex items-start gap-3 p-4 border border-red-500/20 rounded-2xl text-red-200 text-sm animate-fade-in"
               >
                 <AlertTriangle size={16} className="shrink-0 mt-0.5 text-film-500" />
                 <div className="flex-1">
@@ -442,10 +446,10 @@ export default function VideoEditor() {
             "space-y-5",
             isProcessing && "pointer-events-none opacity-50"
           )}>
-            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
+            <div className="glass-card rounded-3xl border border-white/10 p-5 space-y-6 animate-fade-in hover:-translate-y-1 hover:shadow-2xl transition-all duration-300" style={{ animationDelay: "50ms" }}>
               <Section icon={<Layers size={12} />} title="Output size">
                 {recommendedPreset && (
-                  <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
+                  <div className="mb-4 rounded-2xl border border-purple-500/20 bg-purple-500/10 backdrop-blur-xl p-3 text-sm text-purple-200">
                     <p>
                       We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()} ({recommendedPreset.label.replace(/\s/g, "")})
                     </p>
@@ -487,10 +491,10 @@ export default function VideoEditor() {
               aria-label='Export video'
               aria-disabled={!file || isProcessing ? "true" : undefined}
               className={cn(
-                "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
+                "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-2xl overflow-hidden",
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
-                  ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
+                  ? "bg-gradient-to-r from-purple-600 to-blue-600 hover:scale-[1.02] text-white shadow-[0_0_30px_rgba(139,92,246,0.35)] active:scale-[0.98] cursor-pointer glow-effect"
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >

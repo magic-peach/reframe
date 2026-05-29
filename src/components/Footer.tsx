@@ -16,7 +16,7 @@ export default function Footer() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <footer className="w-full border-t border-[var(--border)] bg-[var(--bg)] text-[var(--text)] px-6 py-16 mt-20 transition-colors duration-300">
+    <footer className="w-full border-t border-white/10 bg-black/20 backdrop-blur-xl text-[var(--text)] px-6 py-16 mt-16 transition-colors duration-300">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
         {/* Brand Section */}
         <div className="md:col-span-5 space-y-6">
@@ -54,24 +54,27 @@ export default function Footer() {
           <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">
             Navigation
           </h3>
+        
           <nav className="flex flex-col gap-3 text-sm">
             <a
               href="https://github.com/magic-peach/reframe"
               target="_blank"
               rel="noopener"
-              className="opacity-70 hover:opacity-100 hover:text-red-400 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
+              className="opacity-70 hover:opacity-100 hover:text-purple-300 transition-colors duration-200 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
             >
               GitHub
             </a>
+        
             <Link
               href="/contact"
-              className="opacity-70 hover:opacity-100 hover:text-red-400 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
+              className="opacity-70 hover:opacity-100 hover:text-purple-300 transition-colors duration-200 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
             >
               Contact
             </Link>
+        
             <Link
               href="/privacy"
-              className="opacity-70 hover:opacity-100 hover:text-red-400 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
+              className="opacity-70 hover:opacity-100 hover:text-purple-300 transition-colors duration-200 hover:scale-110 transition-all duration-500 ease-in-out w-fit flex items-center gap-2 group"
             >
               Privacy Policy
             </Link>
