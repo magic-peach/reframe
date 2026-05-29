@@ -437,6 +437,8 @@ export function useVideoEditor() {
           ...prev,
           trimStart: 0,
           trimEnd: null,
+          customWidth: width,
+          customHeight: height,
           ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
         };
       });
