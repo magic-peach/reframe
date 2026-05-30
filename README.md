@@ -149,7 +149,7 @@ Reframe uses static export (`output: 'export'`) and can be deployed easily on Ve
 4. Configure:
    - Framework Preset: Next.js
    - Build Command: `bun run build`
-   - Output Directory: `out`
+   - Output Directory: leave blank (Vercel auto-detects `out` for static exports)
 5. Click **Deploy**
 
 Vercel will automatically build and host the static output.
@@ -214,7 +214,7 @@ The quickest way to get Reframe live:
 3. Vercel auto-detects Next.js settings:
    - **Framework Preset:** Next.js
    - **Build Command:** `bun run build`
-   - **Output Directory:** `out`
+   - **Output Directory:** leave blank (Vercel auto-detects `out` for static exports)
 4. Click **Deploy** — your site will be live in ~2 minutes
 
 **Option 2 — Vercel CLI**
