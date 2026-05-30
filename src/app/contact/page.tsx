@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 };
 export default function ContactPage() {
   return (
-    <main className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-8">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] p-8">
       <div className="mb-8">
         <Link 
           href="/" 
@@ -46,6 +46,6 @@ export default function ContactPage() {
           <p className="text-[var(--muted)] mt-1">For questions, ideas, and general help.</p>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

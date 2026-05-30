@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <>
-      <main className="min-h-screen bg-[var(--bg)] text-[var(--text)] pt-24 pb-20">
+      <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] pt-24 pb-20">
 
         {/* Back link - top left below header */}
         <div className="px-6 mb-6">
@@ -84,7 +84,7 @@ export default function PrivacyPage() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </>
   );
 }
