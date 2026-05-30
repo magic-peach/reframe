@@ -10,7 +10,7 @@ import BrandLogo from "@/components/BrandLogo";
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
   description: "Free, open-source video editor that runs entirely in your browser. No login, no uploads, no ads. Resize for any platform, trim, rotate, adjust speed, and export.",
-   keywords: [
+  keywords: [
     "video editor",
     "browser video editor",
     "open source video editor",
@@ -69,16 +69,17 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
         
-      <a href="#main-content"
+        <a href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-[var(--radius)] focus:border focus:border-[var(--border)] focus:bg-[var(--surface)] focus:px-4 focus:py-2 focus:text-[var(--text)]"
         >
           Skip to main content
         </a>
         <ThemeProvider>
           <ErrorBoundary>
+            {/* Updated Header with distinct surface background and shadows */}
             <header
               role="banner"
-              className="sticky top-0 z-50 flex items-center justify-between border-b border-[var(--border)] bg-[var(--bg)]/95 px-6 py-3 backdrop-blur"
+              className="sticky top-0 z-50 flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-6 py-3 shadow-[var(--shadow)] backdrop-blur"
             >
               <div className="flex items-center gap-2">
                 <BrandLogo size={24} />
@@ -86,6 +87,7 @@ export default function RootLayout({
               </div>
               <ThemeToggle />
             </header>
+
             <main id="main-content" tabIndex={-1}>
               {children}
             </main>
