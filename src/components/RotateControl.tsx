@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { EditRecipe } from "@/lib/types";
 import { RotateCw } from "lucide-react";
 import BaseButton from "./ui/BaseButton";
+import { cn } from "@/lib/utils";
 
 interface Props {
   recipe: EditRecipe;
