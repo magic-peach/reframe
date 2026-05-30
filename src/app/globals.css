@@ -142,14 +142,15 @@ textarea:focus {
 }
 
 :focus-visible {
-  outline: 0;
-  box-shadow: 0 0 0 3px var(--accent-muted);
-  border-radius: var(--radius);
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--accent-muted);
 }
 
-detail > summary {
+detail>summary {
   list-style: none;
 }
-details > summary::-webkit-details-marker {
+
+details>summary::-webkit-details-marker {
   display: none;
 }

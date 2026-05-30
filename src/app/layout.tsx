@@ -6,11 +6,12 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ScrollToTop from "@/components/ScrollToTop";
 import BrandLogo from "@/components/BrandLogo";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
   description: "Free, open-source video editor that runs entirely in your browser. No login, no uploads, no ads. Resize for any platform, trim, rotate, adjust speed, and export.",
-   keywords: [
+  keywords: [
     "video editor",
     "browser video editor",
     "open source video editor",
@@ -68,9 +69,9 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
       </head>
       <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
-        
-      <a href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-[var(--radius)] focus:border focus:border-[var(--border)] focus:bg-[var(--surface)] focus:px-4 focus:py-2 focus:text-[var(--text)]"
+
+        <a href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-1/2 focus:-translate-x-1/2 focus:z-[100] focus:rounded-full focus:border focus:border-[var(--border)] focus:bg-[var(--surface)] focus:px-5 focus:py-2 focus:text-[var(--text)] focus:shadow-lg focus:font-semibold"
         >
           Skip to main content
         </a>
@@ -80,10 +81,14 @@ export default function RootLayout({
               role="banner"
               className="sticky top-0 z-50 flex items-center justify-between border-b border-[var(--border)] bg-[var(--bg)]/95 px-6 py-3 backdrop-blur"
             >
-              <div className="flex items-center gap-2">
+              <Link
+                href="/"
+                className="flex items-center gap-2 rounded-xl p-1.5 -m-1.5 hover:opacity-80 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+                aria-label="Reframe home"
+              >
                 <BrandLogo size={24} />
-                <h1 className="text-lg font-semibold">Reframe</h1>
-              </div>
+                <span className="text-lg font-semibold">Reframe</span>
+              </Link>
               <ThemeToggle />
             </header>
             <main id="main-content" tabIndex={-1}>
