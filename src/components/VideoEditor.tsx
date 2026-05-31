@@ -358,10 +358,11 @@ export default function VideoEditor() {
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-film-600 hover:bg-film-700 hover:scale-[1.01] text-white shadow-lg shadow-film-200 active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed"
+                  : "bg-[var(--border)] text-[var(--muted)] opacity-40 cursor-not-allowed",
+                file && status === "idle" && "animate-pulse"
               )}
             >
-              <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
+              <Zap size={20} className={cn(file && status === "idle" && "animate-pulse")} />
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
             {exportHistory.length > 0 && (
