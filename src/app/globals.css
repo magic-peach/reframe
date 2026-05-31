@@ -76,3 +76,10 @@ body {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Ensure pulse animations are paused when prefers-reduced-motion is enabled */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation-play-state: paused !important;
+  }
+}
