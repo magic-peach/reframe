@@ -245,107 +245,123 @@ export default function VideoEditor() {
                   <Section icon={<Volume2 size={12} />} title="Audio & Speed" delay={150}>
                     <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
                   </Section>
-                  <Section
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Adjustments"
-                    delay={175}
-                  >
-                    <div className="space-y-5">
-                      {/* Brightness */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="brightness-slider">Brightness</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ brightness: 0 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset brightness"
-                          >
-                            Reset
-                          </button>
+
+                  <details className="group border-t border-[var(--border)] pt-4 space-y-5">
+                    <summary className="flex items-center justify-between font-heading font-bold uppercase tracking-widest text-xs text-[var(--muted)] hover:text-film-600 transition-all cursor-pointer select-none [&::-webkit-details-marker]:hidden list-none">
+                      <span className="flex items-center gap-2">
+                        <SlidersHorizontal size={12} className="text-film-500 opacity-80" />
+                        Advanced Settings
+                      </span>
+                      <span className="text-[10px] opacity-60 group-open:rotate-180 transition-transform duration-200">▼</span>
+                    </summary>
+
+                    <div className="space-y-6 pt-3 animate-fade-in">
+                      <Section
+                        icon={<SlidersHorizontal size={12} />}
+                        title="Adjustments"
+                        delay={175}
+                      >
+                        <div className="space-y-5">
+                          {/* Brightness */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <label htmlFor="brightness-slider">Brightness</label>
+                              <button
+                                type="button"
+                                onClick={() => updateRecipe({ brightness: 0 })}
+                                className="text-film-500 hover:underline"
+                                aria-label="reset brightness"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                            <input
+                              id="brightness-slider"
+                              type="range"
+                              min="-1"
+                              max="1"
+                              step="0.1"
+                              value={recipe.brightness}
+                              onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
+                              aria-label="Adjust brightness"
+                              className="w-full"
+                            />
+                          </div>
+                          {/* Contrast */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <label htmlFor="contrast-slider">Contrast</label>
+                              <button
+                                type="button"
+                                onClick={() => updateRecipe({ contrast: 1 })}
+                                className="text-film-500 hover:underline"
+                                aria-label="reset-contrast"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                            <input
+                              id="contrast-slider"
+                              type="range"
+                              min="0"
+                              max="2"
+                              step="0.1"
+                              value={recipe.contrast}
+                              onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
+                              aria-label="Adjust contrast"
+                              className="w-full"
+                            />
+                          </div>
+                          {/* Saturation */}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <label htmlFor="saturation-slider">Saturation</label>
+                              <button
+                                type="button"
+                                onClick={() => updateRecipe({ saturation: 1 })}
+                                className="text-film-500 hover:underline"
+                                aria-label="reset-saturation"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                            <input
+                              id="saturation-slider"
+                              type="range"
+                              min="0"
+                              max="3"
+                              step="0.1"
+                              value={recipe.saturation}
+                              onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
+                              aria-label="Adjust saturation"
+                              className="w-full"
+                            />
+                          </div>
                         </div>
-                        <input
-                          id="brightness-slider"
-                          type="range"
-                          min="-1"
-                          max="1"
-                          step="0.1"
-                          value={recipe.brightness}
-                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
-                          aria-label="Adjust brightness"
-                          className="w-full"
+                      </Section>
+                      
+                      <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
+                        <FormatSelector recipe={recipe} onChange={updateRecipe} />
+                      </Section>
+                      
+                      <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
+                        <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
+                      </Section>
+                      
+                      <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
+                        <ImageOverlay
+                          overlayFile={overlayFile}
+                          setOverlayFile={setOverlayFile}
+                          overlayPosition={overlayPosition}
+                          setOverlayPosition={setOverlayPosition}
+                          overlaySize={overlaySize}
+                          setOverlaySize={setOverlaySize}
+                          overlayOpacity={overlayOpacity}
+                          setOverlayOpacity={setOverlayOpacity}
                         />
-                      </div>
-                      {/* Contrast */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="contrast-slider">Contrast</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ contrast: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-contrast"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="contrast-slider"
-                          type="range"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={recipe.contrast}
-                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
-                          aria-label="Adjust contrast"
-                          className="w-full"
-                        />
-                      </div>
-                      {/* Saturation */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="saturation-slider">Saturation</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ saturation: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-saturation"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="saturation-slider"
-                          type="range"
-                          min="0"
-                          max="3"
-                          step="0.1"
-                          value={recipe.saturation}
-                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
-                          aria-label="Adjust saturation"
-                          className="w-full"
-                        />
-                      </div>
+                      </Section>
                     </div>
-                  </Section>
-                  <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
-                    <FormatSelector recipe={recipe} onChange={updateRecipe} />
-                  </Section>
-                  <Section icon={<SlidersHorizontal size={12} />} title="Export quality" delay={200}>
-                    <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                  </Section>
-                  <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
-                    <ImageOverlay
-                      overlayFile={overlayFile}
-                      setOverlayFile={setOverlayFile}
-                      overlayPosition={overlayPosition}
-                      setOverlayPosition={setOverlayPosition}
-                      overlaySize={overlaySize}
-                      setOverlaySize={setOverlaySize}
-                      overlayOpacity={overlayOpacity}
-                      setOverlayOpacity={setOverlayOpacity}
-                    />
-                  </Section>
+                  </details>
                 </div>
               </div>
             )}
