@@ -7,8 +7,13 @@ import { buildTextFilter } from "./text-overlay";
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 const MT_CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm";
 const SRI_HASHES: Record<string, string> = {
+  // Single-threaded core (UMD) - @ffmpeg/core@0.12.10
   "ffmpeg-core.js":   "sha384-sKfkiFtvUk+vexk+0EUhEh366190/4WpgUAsUvaxEfyg7+E1Zt5Y5hrsU808g8Q9",
   "ffmpeg-core.wasm": "sha384-U1VDhkPYrM3wTCT4/vjSpSsKqG/UjljYrYCI4hBSJ02svbCkxuCi6U6u/peg5vpW",
+  // Multi-threaded core (ESM) - @ffmpeg/core-mt@0.12.6
+  "mt-ffmpeg-core.js":   "sha384-W///EnBaTc/koJ2li+z9tlVIZpfvrFSyePilMXKRK5PVInCGTUgCCX/CLz0XOJMK",
+  "mt-ffmpeg-core.wasm": "sha384-FycsKH8SDTkBt19cTwetE082xjCaWrSu1JpBG7O1+kZRu1xnfgD4rAiCnpRPQQSX",
+  "mt-ffmpeg-core.worker.js": "sha384-32plzPULGD7+hN54cJPtCAjBlATPw/00oahYoyI5MlZ6CP5/IZJ/rkeUJ6PW/Ozy",
 };
 
 type SerializedFile = {
@@ -63,15 +68,18 @@ let ffmpegLoaded = false;
 let activeExportAbortController: AbortController | null = null;
 let activeExportId: string | null = null;
 
-async function fetchWithIntegrity(url: string, mimeType: string): Promise<string> {
-  const key = url.split("/").pop()!;
+async function fetchWithIntegrity(url: string, mimeType: string, isMultiThreaded: boolean): Promise<string> {
+  const filename = url.split("/").pop()!;
+  const key = isMultiThreaded ? `mt-${filename}` : filename;
   const integrity = SRI_HASHES[key];
 
-  // Fallback to standard fetch if SRI is missing (Prevents ffmpeg-core.worker.js from crashing the thread)
+  // CRITICAL: Never load without SRI verification - this prevents supply chain attacks
   if (!integrity) {
-    const response = await fetch(url, { credentials: "omit" });
-    const blob = new Blob([await response.arrayBuffer()], { type: mimeType });
-    return URL.createObjectURL(blob);
+    throw new Error(
+      `Security Error: Missing SRI hash for ${filename}. ` +
+      `This prevents loading unverified code from CDN. ` +
+      `Please add the SRI hash to SRI_HASHES in ffmpeg.worker.ts`
+    );
   }
 
   const response = await fetch(url, { integrity, credentials: "omit" });
@@ -336,10 +344,10 @@ async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
 
   try {
     await ffmpeg.load({
-      coreURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
+      coreURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.js`, "text/javascript", isIsolated),
+      wasmURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.wasm`, "application/wasm", isIsolated),
       ...(isIsolated && {
-        workerURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript"),
+        workerURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript", isIsolated),
       }),
     });
 
