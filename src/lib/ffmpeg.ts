@@ -143,6 +143,16 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   filters.push(
     `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
   );
+
+  if (recipe.textOverlay) {
+    const escapedText = recipe.textOverlay.replace(/'/g, "'\\\\''");
+    const color = recipe.textOverlayColor || "white";
+    const size = recipe.textOverlaySize || 24;
+    filters.push(
+      `drawtext=text='${escapedText}':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=${size}:fontcolor=${color}`
+    );
+  }
+
   return filters.join(",");
 }
 

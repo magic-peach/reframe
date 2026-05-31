@@ -285,6 +285,28 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
             Grab frame
           </button>
         )}
+
+        {recipe?.textOverlay && (
+          <div
+            className="absolute inset-0 flex items-center justify-center pointer-events-none"
+            style={{ zIndex: 5 }}
+          >
+            <span
+              style={{
+                color: recipe.textOverlayColor || "#ffffff",
+                fontSize: `${recipe.textOverlaySize || 24}px`,
+                fontWeight: "bold",
+                textShadow: "0px 2px 8px rgba(0,0,0,0.8)",
+                fontFamily: "sans-serif",
+                textAlign: "center",
+                padding: "0 16px",
+                lineHeight: "1.2",
+              }}
+            >
+              {recipe.textOverlay}
+            </span>
+          </div>
+        )}
       </div>
 
       {showComparison && file && (

@@ -22,5 +22,9 @@ export const DEFAULT_RECIPE: EditRecipe = {
   denoise: false,
   soundOnCompletion: false,
   normalizeAudio: false,
+  textOverlay: "",
+  textOverlayColor: "#ffffff",
+  textOverlaySize: 24,
+  backgroundColor: "#000000",
   version: RECIPE_VERSION,
 };

@@ -19,7 +19,7 @@ import ImageOverlay from "./ImageOverlay"
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  SlidersHorizontal, Zap, AlertTriangle, Github, Copy, Type
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -238,6 +238,7 @@ export default function VideoEditor() {
     rotation: false,
     audio: false,
     export: false,
+    textOverlay: false,
   });
 
   const toggleSection = (key: keyof typeof openSections) =>
@@ -574,6 +575,50 @@ export default function VideoEditor() {
                 <PresetSelector recipe={recipe} onChange={updateRecipe} />
                 <div className="mt-3">
                   <FramingControl recipe={recipe} onChange={updateRecipe} />
+                </div>
+              </AccordionSection>
+
+              <AccordionSection
+                id="textOverlay"
+                icon={<Type size={12} />}
+                title="Text Overlay Titles"
+                isOpen={openSections.textOverlay}
+                onToggle={() => toggleSection("textOverlay")}
+                delay={100}
+              >
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)]">Overlay Text Content</span>
+                    <input
+                      type="text"
+                      value={recipe.textOverlay || ""}
+                      onChange={(e) => updateRecipe({ textOverlay: e.target.value })}
+                      placeholder="Type title text overlays here..."
+                      className="w-full h-9 px-3 text-sm rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-film-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)]">Font Color</span>
+                      <input
+                        type="color"
+                        value={recipe.textOverlayColor || "#ffffff"}
+                        onChange={(e) => updateRecipe({ textOverlayColor: e.target.value })}
+                        className="w-full h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1 cursor-pointer"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)]">Size ({recipe.textOverlaySize || 24}px)</span>
+                      <input
+                        type="range"
+                        min="14"
+                        max="64"
+                        value={recipe.textOverlaySize || 24}
+                        onChange={(e) => updateRecipe({ textOverlaySize: parseInt(e.target.value) })}
+                        className="w-full accent-film-500 h-9"
+                      />
+                    </div>
+                  </div>
                 </div>
               </AccordionSection>
 

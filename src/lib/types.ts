@@ -19,6 +19,10 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  backgroundColor?: string;
+  textOverlay?: string;
+  textOverlayColor?: string;
+  textOverlaySize?: number;
   version: number;
 }
 
@@ -82,10 +86,15 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.quality !== "number" || !isFinite(v.quality)) return false;
   if (!["mp4", "webm", "mkv", "gif"].includes(v.format)) return false;
   if (typeof v.stabilization !== "boolean") return false;
+  if (typeof v.denoise !== "boolean") return false;
   if (typeof v.brightness !== "number" || !isFinite(v.brightness)) return false;
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
+  if (v.backgroundColor !== undefined && typeof v.backgroundColor !== "string") return false;
+  if (v.textOverlay !== undefined && typeof v.textOverlay !== "string") return false;
+  if (v.textOverlayColor !== undefined && typeof v.textOverlayColor !== "string") return false;
+  if (v.textOverlaySize !== undefined && (typeof v.textOverlaySize !== "number" || !isFinite(v.textOverlaySize))) return false;
 
   return true;
 }
