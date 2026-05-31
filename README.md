@@ -417,15 +417,7 @@ Reframe is an **official project in GirlScript Summer of Code (GSSoC) 2026**! We
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide including development setup, code style, and PR checklist.
 
----
 
-## Contributors
-
-Thank you to everyone who has contributed to Reframe! 🎉
-
-[![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
-
----
 
 ## Privacy
 
