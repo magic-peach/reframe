@@ -269,61 +269,61 @@ export default function PresetSelector({ recipe, onChange }: Props) {
       </div>
 
       {recipe.preset === "custom" && (
-        <div className="mt-2 flex items-center gap-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm animate-fade-in">
-          <div className="flex-1">
-            <label
-              htmlFor="custom-width"
-              className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
-            >
-              Width (px)
-            </label>
-            <input
-              id="custom-width"
-              type="number"
-              min={16}
-              max={7680}
-              step={2}
-              value={recipe.customWidth}
-              onChange={(e) => handleWidthChange(Number(e.target.value))}
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
+        <div className="mt-2 flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm animate-fade-in">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <label
+                htmlFor="custom-width"
+                className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
+              >
+                Width (px)
+              </label>
+              <input
+                id="custom-width"
+                type="number"
+                min={16}
+                max={7680}
+                step={2}
+                value={recipe.customWidth}
+                onChange={(e) => handleWidthChange(Number(e.target.value))}
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
+
+            <div className="mt-5 flex flex-col items-center justify-center">
+              <span className="font-heading text-sm font-medium text-[var(--muted)]">
+                ×
+              </span>
+            </div>
+
+            <div className="flex-1">
+              <label
+                htmlFor="custom-height"
+                className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
+              >
+                Height (px)
+              </label>
+              <input
+                id="custom-height"
+                type="number"
+                min={16}
+                max={7680}
+                step={2}
+                value={recipe.customHeight}
+                onChange={(e) => handleHeightChange(Number(e.target.value))}
+                className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
           </div>
 
-          <div className="mt-5 flex flex-col items-center justify-center">
-            <span className="font-heading text-sm font-medium text-[var(--muted)]">
-              ×
-            </span>
-          </div>
-
-          <div className="flex-1">
-            <label
-              htmlFor="custom-height"
-              className="mb-1.5 block text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
-            >
-              Height (px)
-            </label>
-            <input
-              id="custom-height"
-              type="number"
-              min={16}
-              max={7680}
-              step={2}
-              value={recipe.customHeight}
-              onChange={(e) => handleHeightChange(Number(e.target.value))}
-              className="w-full rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading transition-all focus:outline-none focus:ring-2 focus:ring-film-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
-          </div>
-
-          <div className="hidden h-full flex-col justify-end sm:flex">
-            <span className="mb-1.5 block text-center text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
-              Ratio
-            </span>
-            <div className="flex h-[38px] items-center rounded-md border border-[var(--border)] bg-[var(--bg)] px-3 text-xs font-medium text-film-700">
+          <div className="border-t border-[var(--border)] pt-2.5 flex items-center justify-between text-xs font-heading">
+            <span className="text-[var(--muted)] uppercase tracking-wider text-[10px] font-semibold">Aspect Ratio</span>
+            <span className="font-bold text-film-600 bg-film-50 px-2 py-0.5 rounded border border-film-100">
               {getOrientationLabel(
                 recipe.customWidth || 0,
                 recipe.customHeight || 0,
               )}
-            </div>
+            </span>
           </div>
         </div>
       )}

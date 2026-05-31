@@ -126,142 +126,9 @@ Outputs a static site to `out/` — deploy to Vercel, Netlify, GitHub Pages, or 
 
 ## Deploying
 
-Reframe uses static export (`output: 'export'`), so it can be deployed to any static hosting provider.
+Reframe is built using Next.js with static HTML export (`output: 'export'`), meaning it can be hosted on any static hosting provider. 
 
-### Deploying to Vercel
-
-Reframe uses static export (`output: 'export'`) and can be deployed easily on Vercel.
-
-#### Option 1 — Vercel Dashboard (Recommended)
-
-1. Fork this repository
-2. Go to https://vercel.com/new
-3. Import your forked repository
-4. Configure:
-   - Framework Preset: Next.js
-   - Build Command: `bun run build`
-   - Output Directory: `out`
-5. Click **Deploy**
-
-Vercel will automatically build and host the static output.
-
-#### Option 2 — Vercel CLI
-
-```bash
-# Install Vercel CLI globally
-npm i -g vercel
-
-# Login to Vercel
-vercel login
-
-# Deploy from project root
-vercel --prod
-```
-
-#### FFmpeg.wasm Configuration
-
-FFmpeg.wasm requires COOP/COEP headers for SharedArrayBuffer support.
-
-Add the following to `vercel.json`:
-
-```json
-{
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin"
-        },
-        {
-          "key": "Cross-Origin-Embedder-Policy",
-          "value": "require-corp"
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Alternative Static Hosts
-
-You can also deploy Reframe on other static hosting providers:
-
-| Platform             | Deployment Method                                           |
-| -------------------- | ----------------------------------------------------------- |
-| **Netlify**          | Connect your fork at https://app.netlify.com/start          |
-| **GitHub Pages**     | Deploy the generated `out/` folder to the `gh-pages` branch |
-| **Cloudflare Pages** | Connect your fork in Cloudflare Pages                       |
-
-### Deploying to Vercel
-
-The quickest way to get Reframe live:
-
-**Option 1 — Vercel Dashboard (Recommended)**
-
-1. Fork this repository on GitHub
-2. Go to [vercel.com/new](https://vercel.com/new) and import your fork
-3. Vercel auto-detects Next.js settings:
-   - **Framework Preset:** Next.js
-   - **Build Command:** `bun run build`
-   - **Output Directory:** `out`
-4. Click **Deploy** — your site will be live in ~2 minutes
-
-**Option 2 — Vercel CLI**
-
-```bash
-# Install Vercel CLI globally
-npm i -g vercel
-
-# Login to Vercel
-vercel login
-
-# Deploy from project root
-vercel --prod
-```
-
-> **Note:** FFmpeg.wasm requires COOP/COEP headers for SharedArrayBuffer support. On Vercel, add a `vercel.json` in your project root:
->
-> ```json
-> {
->   "headers": [
->     {
->       "source": "/(.*)",
->       "headers": [
->         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
->         { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
->       ]
->     }
->   ]
-> }
-> ```
-
-### Deploying to Netlify
-
-1. Push your fork to GitHub
-2. Open Netlify and import the repository
-3. Configure:
-   - Build command: `bun run build`
-   - Publish directory: `out`
-4. Deploy the site
-
-> Note: FFmpeg browser features may require proper CORS headers depending on hosting setup.
-
-### Deploying to GitHub Pages
-
-Build the static export:
-
-```bash
-bun run build
-```
-
-The production files will be generated in the `out/` directory.
-
-You can deploy the `out/` folder using:
-- GitHub Pages
-- `gh-pages` branch
-- GitHub Actions workflow
+For detailed setup instructions on hosting platforms (including important notes about serving **COOP/COEP headers** required for FFmpeg WebAssembly), please refer to our dedicated **[Deployment Documentation](docs/DEPLOYMENT.md)**.
 
 ---
 
@@ -417,15 +284,7 @@ Reframe is an **official project in GirlScript Summer of Code (GSSoC) 2026**! We
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide including development setup, code style, and PR checklist.
 
----
 
-## Contributors
-
-Thank you to everyone who has contributed to Reframe! 🎉
-
-[![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
-
----
 
 ## Privacy
 
