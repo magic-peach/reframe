@@ -78,29 +78,17 @@ export function buildTextFilter(
   const pixelX = Math.round((overlay.x / 100) * targetWidth);
   const pixelY = Math.round((overlay.y / 100) * targetHeight);
 
-  // Build font parameters
-  const fontWeightParam = overlay.fontWeight === "900"
-    ? "bold"
-    : overlay.fontWeight === "bold"
-    ? "bold"
-    : "normal";
-
   // Get font file parameter for custom fonts (if available)
   const fontFileParam = getFFmpegFontArg(overlay.fontFamily, overlay.fontPath);
 
-  // Build the drawtext filter with font support
-  let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:fontweight=${fontWeightParam}`;
+  // Build the drawtext filter with font support (FFmpeg drawtext does not have a 'fontweight' option)
+  let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}`;
 
-  // Add font family if specified
-  if (overlay.fontFamily) {
-    // Sanitize font name for FFmpeg
-    const safeFontName = overlay.fontFamily.replace(/[^a-zA-Z0-9-]/g, "");
-    filter += `:fontfile='${safeFontName}'`;
-  }
-
-  // Add custom font file path if available
+  // Add custom font file path if available, otherwise fall back to the default font file
   if (fontFileParam) {
     filter += `:${fontFileParam}`;
+  } else {
+    filter += `:fontfile='default.ttf'`;
   }
 
   return filter;

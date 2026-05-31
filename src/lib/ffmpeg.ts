@@ -3,6 +3,10 @@ import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
 
 export class FFmpegLoadError extends Error {}
+// Force worker rebuild after final cleanups
+
+
+
 
 
 type SerializedFile = {
