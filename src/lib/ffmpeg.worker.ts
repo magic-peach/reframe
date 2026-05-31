@@ -68,6 +68,25 @@ let ffmpegLoaded = false;
 let activeExportAbortController: AbortController | null = null;
 let activeExportId: string | null = null;
 
+// Blob URL tracking to prevent memory leaks
+const activeBlobUrls = new Set<string>();
+
+function createTrackedBlobUrl(blob: Blob, mimeType: string): string {
+  const url = URL.createObjectURL(blob);
+  activeBlobUrls.add(url);
+  return url;
+}
+
+function revokeBlobUrl(url: string): void {
+  URL.revokeObjectURL(url);
+  activeBlobUrls.delete(url);
+}
+
+function revokeAllBlobUrls(): void {
+  activeBlobUrls.forEach(url => URL.revokeObjectURL(url));
+  activeBlobUrls.clear();
+}
+
 async function fetchWithIntegrity(url: string, mimeType: string, isMultiThreaded: boolean): Promise<string> {
   const filename = url.split("/").pop()!;
   const key = isMultiThreaded ? `mt-${filename}` : filename;
@@ -84,7 +103,7 @@ async function fetchWithIntegrity(url: string, mimeType: string, isMultiThreaded
 
   const response = await fetch(url, { integrity, credentials: "omit" });
   const blob = new Blob([await response.arrayBuffer()], { type: mimeType });
-  return URL.createObjectURL(blob);
+  return createTrackedBlobUrl(blob, mimeType);
 }
 
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
@@ -355,6 +374,8 @@ async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
     onProgress?.(100);
   } finally {
     ffmpeg.off("progress", handleProgress);
+    // Revoke blob URLs after FFmpeg loads them - they're no longer needed
+    revokeAllBlobUrls();
   }
 }
 
@@ -606,6 +627,8 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
   } finally {
     ffmpeg.off("progress", handleProgress);
     if (logListener) ffmpeg.off("log", logListener);
+    // Revoke any blob URLs created during export
+    revokeAllBlobUrls();
     for (const path of cleanupFiles) {
       await removeFile(path);
     }

@@ -1,9 +1,49 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { getMemoryMonitor } from "./memoryMonitor";
 
 export class FFmpegLoadError extends Error {}
 
+// Blob URL tracking to prevent memory leaks on main thread
+const activeBlobUrls = new Set<string>();
+const memoryMonitor = typeof window !== "undefined" ? getMemoryMonitor() : null;
+
+export function createTrackedBlobUrl(blob: Blob): string {
+  const url = URL.createObjectURL(blob);
+  activeBlobUrls.add(url);
+  memoryMonitor?.registerBlobUrl();
+  return url;
+}
+
+export function revokeBlobUrl(url: string): void {
+  URL.revokeObjectURL(url);
+  activeBlobUrls.delete(url);
+  memoryMonitor?.revokeBlobUrl();
+}
+
+export function revokeAllBlobUrls(): void {
+  const count = activeBlobUrls.size;
+  activeBlobUrls.forEach(url => URL.revokeObjectURL(url));
+  activeBlobUrls.clear();
+  // Reset memory monitor count
+  if (memoryMonitor) {
+    for (let i = 0; i < count; i++) {
+      memoryMonitor.revokeBlobUrl();
+    }
+  }
+}
+
+// Cleanup on page unload to prevent memory leaks
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", revokeAllBlobUrls);
+  // Also cleanup on page visibility change (user navigates away)
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      revokeAllBlobUrls();
+    }
+  });
+}
 
 type SerializedFile = {
   name: string;
@@ -110,7 +150,7 @@ function handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
     if (pendingExport?.id !== data.id) return;
     const blob = new Blob([data.data], { type: data.mimeType });
     pendingExport.resolve({
-      blobUrl: URL.createObjectURL(blob),
+      blobUrl: createTrackedBlobUrl(blob),
       blob,
       size: data.size,
       width: data.width,

@@ -71,14 +71,15 @@ export default function VideoPreview({
   useEffect(() => {
     if (!file) return;
 
-    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    // Revoke previous URL before creating new one
+    if (urlRef.current) {
+      URL.revokeObjectURL(urlRef.current);
+      urlRef.current = null;
+    }
+
     setIsLoading(true);
     const id = ++lastId.current;
     const url = URL.createObjectURL(file);
-
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
-    }
     urlRef.current = url;
 
     const video = videoRef.current;
@@ -108,12 +109,23 @@ export default function VideoPreview({
         video.load();
       }
 
+      // Only revoke if this is still the current URL (prevents race conditions)
       if (urlRef.current === url) {
         URL.revokeObjectURL(urlRef.current);
         urlRef.current = null;
       }
     };
   }, [file, videoRef]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (urlRef.current) {
+        URL.revokeObjectURL(urlRef.current);
+        urlRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!videoRef.current || !recipe) return;
