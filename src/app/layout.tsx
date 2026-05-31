@@ -84,6 +84,16 @@ export default function RootLayout({
                 <BrandLogo size={24} />
                 <h1 className="text-lg font-semibold">Reframe</h1>
               </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://github.com/magic-peach/reframe"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden min-[300px]:flex fixed top-4 right-16 z-50 items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[10px] font-heading font-semibold uppercase tracking-wider transition-all duration-200 ease-in-out hover:scale-105 hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] hover:shadow-[var(--shadow)]"
+                >
+                ⭐ Star on GitHub
+                </a>
+              </div>
               <ThemeToggle />
             </header>
             <main id="main-content" tabIndex={-1}>
