@@ -1,9 +1,5 @@
 {
-  "routes": [
-    {
-      "handle": "filesystem"
-    }
-  ],
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/(.*)",

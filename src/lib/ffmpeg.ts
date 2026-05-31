@@ -60,13 +60,15 @@ function createWorker(): Worker {
     throw new Error("Web Workers are not available in this environment.");
   }
 
-  // MUST be strictly inline for Next.js/Webpack to detect and compile the worker chunk
   ffmpegWorker = new Worker(new URL("./ffmpeg.worker.ts", import.meta.url), { type: "module" });
-  
+
   ffmpegWorker.onmessage = handleWorkerMessage;
   ffmpegWorker.onerror = (event) => {
-    const message = event.message || "FFmpeg worker error";
-    const error = new FFmpegLoadError(message);
+    const rawMessage = event.message || event.filename
+      ? `Worker script error in ${event.filename ?? "unknown"} (line ${event.lineno ?? "?"}): ${event.message || "unknown error"}`
+      : "FFmpeg worker failed to start. This is often caused by missing Cross-Origin-Opener-Policy / Cross-Origin-Embedder-Policy headers. Check the browser console for details.";
+    console.error("[FFmpeg] Worker onerror:", rawMessage, event);
+    const error = new FFmpegLoadError(rawMessage);
     workerReadyReject?.(error);
     pendingExport?.reject(error);
     resetWorker();
@@ -157,9 +159,8 @@ export async function loadFFmpeg(
   signal?: AbortSignal,
   onProgress?: (percent: number) => void
 ): Promise<void> {
-  // 1. Capture if the worker is uninitialized before ensureWorker runs
-  const isFirstLoad = !ffmpegWorker; 
-  
+  const isFirstLoad = !ffmpegWorker;
+
   await ensureWorker();
 
   if (workerReady && workerReadyResolve === null) {
@@ -167,7 +168,6 @@ export async function loadFFmpeg(
     return;
   }
 
-  // 2. Use the captured flag to securely trigger the worker's internal load phase
   if (isFirstLoad) {
     ffmpegWorker!.postMessage({ type: "load" });
   }
@@ -350,16 +350,12 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
       `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
     );
   } else {
-    // ---- Smart Auto Reframe integration ----
     const auto = recipe.autoReframe;
     const useSmartCrop = auto?.enabled && auto.cropX !== undefined && auto.cropY !== undefined;
 
     const cropX = useSmartCrop ? auto!.cropX : 0.5;
     const cropY = useSmartCrop ? auto!.cropY : 0.5;
 
-    // After scale, the input to crop has dimensions (iw,ih) that are larger
-    // or equal to targetW,targetH. Compute crop offset so that the crop window
-    // is centered at (cropX*iw, cropY*ih) – with clamping to keep it valid.
     const cropFilter = `crop=${targetW}:${targetH}` +
       `:x='max(0,min(iw-${targetW}, ${cropX}*iw - ${targetW}/2))'` +
       `:y='max(0,min(ih-${targetH}, ${cropY}*ih - ${targetH}/2))'`;
@@ -370,8 +366,6 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     );
   }
 
-  // Normalize timestamps only when needed — trim or speed change both
-  // require a clean 0-based timeline to produce correct output duration.
   if (recipe.trimStart > 0 || recipe.trimEnd !== null || recipe.speed !== 1) {
     filters.push("setpts=PTS-STARTPTS");
   }
@@ -396,7 +390,6 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     );
   }
 
-  // Add text overlays
   const textOverlays = recipe.textOverlays || [];
   textOverlays.forEach((overlay) => {
     filters.push(buildTextFilter(overlay, targetW, targetH));
@@ -513,7 +506,7 @@ function buildArguments(
       if (hasMusicTrack) {
         const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
         if (hasOriginalAudio) {
-          const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
+          const origVol = (musicOptions!.originalAudioVolume / 100).toFixed(2);
           const origChain = afParts.length > 0
             ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
             : `[0:a]volume=${origVol}[orig]`;
@@ -569,8 +562,6 @@ function buildArguments(
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
   }
 
-  // Add explicit output duration when speed != 1 to prevent slight duration
-  // overshoot caused by encoder/filter pipeline frame flush at stream end.
   if (recipe.speed !== 1) {
     const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
     const outputDuration = sourceDuration / recipe.speed;

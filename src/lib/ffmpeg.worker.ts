@@ -67,16 +67,27 @@ async function fetchWithIntegrity(url: string, mimeType: string): Promise<string
   const key = url.split("/").pop()!;
   const integrity = SRI_HASHES[key];
 
-  // Fallback to standard fetch if SRI is missing (Prevents ffmpeg-core.worker.js from crashing the thread)
-  if (!integrity) {
-    const response = await fetch(url, { credentials: "omit" });
+  try {
+    if (!integrity) {
+      const response = await fetch(url, { credentials: "omit" });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${key}: HTTP ${response.status} ${response.statusText}`);
+      }
+      const blob = new Blob([await response.arrayBuffer()], { type: mimeType });
+      return URL.createObjectURL(blob);
+    }
+
+    const response = await fetch(url, { integrity, credentials: "omit" });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${key}: HTTP ${response.status} ${response.statusText}`);
+    }
     const blob = new Blob([await response.arrayBuffer()], { type: mimeType });
     return URL.createObjectURL(blob);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[FFmpeg Worker] fetchWithIntegrity error for "${key}":`, message);
+    throw new Error(`Could not load FFmpeg asset "${key}": ${message}`);
   }
-
-  const response = await fetch(url, { integrity, credentials: "omit" });
-  const blob = new Blob([await response.arrayBuffer()], { type: mimeType });
-  return URL.createObjectURL(blob);
 }
 
 function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
@@ -220,31 +231,31 @@ function buildArguments(
       videoOut = "[vbase]";
     }
 
-if (hasOverlay) {
-  const scaledW = overlayOptions!.size;
-  const alpha = (overlayOptions!.opacity / 100).toFixed(2);
-  const posMap: Record<string, string> = {
-    "top-left":     "20:20",
-    "top-right":    "W-w-20:20",
-    "bottom-left":  "20:H-h-20",
-    "bottom-right": "W-w-20:H-h-20",
-  };
+    if (hasOverlay) {
+      const scaledW = overlayOptions!.size;
+      const alpha = (overlayOptions!.opacity / 100).toFixed(2);
+      const posMap: Record<string, string> = {
+        "top-left":     "20:20",
+        "top-right":    "main_w-w-20:20",
+        "bottom-left":  "20:main_h-h-20",
+        "bottom-right": "main_w-w-20:main_h-h-20",
+      };
 
-interface PositionCoords {
-    x: number;
-    y: number;
-  }
+      interface PositionCoords {
+        x: number;
+        y: number;
+      }
 
-  const pos = typeof overlayOptions?.position === "string"
-    ? (posMap[overlayOptions.position] ?? "W-w-20:H-h-20")
-    : overlayOptions?.position
-    ? `(W-w)*${(overlayOptions.position as PositionCoords).x}/100:(H-h)*${(overlayOptions.position as PositionCoords).y}/100`
-    : "W-w-20:H-h-20";
+      const pos = typeof overlayOptions?.position === "string"
+        ? (posMap[overlayOptions.position] ?? "main_w-w-20:main_h-h-20")
+        : overlayOptions?.position
+        ? `(main_w)*${(overlayOptions.position as PositionCoords).x}/100:(main_h)*${(overlayOptions.position as PositionCoords).y}/100`
+        : "main_w-w-20:main_h-h-20";
 
-  filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
-  filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
-  videoOut = "[vout]";
-}
+      filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
+      filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
+      videoOut = "[vout]";
+    }
 
     let audioOut = "";
     if (shouldKeepAudio) {
@@ -325,7 +336,10 @@ async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
 
   ffmpeg = new FFmpeg();
 
-  const isIsolated = typeof self !== "undefined" && self.crossOriginIsolated;
+  const isIsolated = false;
+
+  console.log("[FFmpeg Worker] Using single-threaded FFmpeg core");
+
   const baseURL = isIsolated ? MT_CORE_BASE_URL : CORE_BASE_URL;
 
   const handleProgress = ({ progress }: { progress: number }) => {
@@ -338,15 +352,23 @@ async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
     await ffmpeg.load({
       coreURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
       wasmURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-      ...(isIsolated && {
+      ...(isIsolated ? {
         workerURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript"),
-      }),
+      } : {}),
     });
 
     ffmpegLoaded = true;
     onProgress?.(100);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[FFmpeg Worker] Failed to load FFmpeg core:", message, {
+      isIsolated,
+      baseURL,
+    });
+    ffmpeg = null;
+    throw new Error(`FFmpeg failed to load: ${message}`);
   } finally {
-    ffmpeg.off("progress", handleProgress);
+    ffmpeg?.off("progress", handleProgress);
   }
 }
 
@@ -372,7 +394,6 @@ async function removeFile(path: string) {
   try {
     await ffmpeg.deleteFile(path);
   } catch {
-    // ignore cleanup failures
   }
 }
 
