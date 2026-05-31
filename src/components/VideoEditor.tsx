@@ -575,6 +575,46 @@ export default function VideoEditor() {
                 <div className="mt-3">
                   <FramingControl recipe={recipe} onChange={updateRecipe} />
                 </div>
+
+                <div className="mt-4 pt-3 border-t border-[var(--border)] space-y-2.5 animate-fade-in" style={{ animationDelay: "100ms" }}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
+                      Canvas Background Filler
+                    </span>
+                    {recipe.backgroundColor && recipe.backgroundColor !== "#000000" && (
+                      <span className="text-[10px] font-mono text-film-500 font-semibold bg-film-50 dark:bg-film-900/20 px-1.5 py-0.5 rounded uppercase">
+                        {recipe.backgroundColor}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { name: 'Black', value: '#000000', class: 'bg-black' },
+                      { name: 'White', value: '#ffffff', class: 'bg-white border border-gray-300' },
+                      { name: 'Slate', value: '#475569', class: 'bg-slate-600' },
+                      { name: 'Navy', value: '#1e3a8a', class: 'bg-blue-900' },
+                      { name: 'Purple', value: '#581c87', class: 'bg-purple-900' }
+                    ].map((bg) => {
+                      const isActive = recipe.backgroundColor === bg.value || (!recipe.backgroundColor && bg.value === '#000000');
+                      return (
+                        <button
+                          key={bg.value}
+                          type="button"
+                          onClick={() => updateRecipe({ backgroundColor: bg.value })}
+                          className={cn(
+                            "h-7 px-2.5 text-xs font-medium rounded-lg transition-all flex items-center gap-2 cursor-pointer border",
+                            isActive
+                              ? "border-film-500 ring-2 ring-film-500/20 text-[var(--text)] bg-[var(--surface)] shadow-sm font-bold"
+                              : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] opacity-75 hover:opacity-100 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                          )}
+                        >
+                          <span className={cn("w-3 h-3 rounded-full flex-shrink-0 shadow-sm", bg.class)} />
+                          <span className="text-[11px] font-medium">{bg.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </AccordionSection>
 
               <div className="pt-2 flex justify-between items-center">

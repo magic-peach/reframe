@@ -22,5 +22,6 @@ export const DEFAULT_RECIPE: EditRecipe = {
   denoise: false,
   soundOnCompletion: false,
   normalizeAudio: false,
+  backgroundColor: "#000000",
   version: RECIPE_VERSION,
 };

@@ -181,7 +181,8 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
     <>
       <div
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[#0a0a0a] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
+        className="relative w-full rounded-lg overflow-hidden aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-film-500"
+        style={{ backgroundColor: recipe?.backgroundColor || '#000000' }}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"
@@ -208,12 +209,12 @@ export default function VideoPreview({ file, recipe, videoRef }: Props) {
         {overlay && (
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
             {overlay.mode === "fit" ? (
-              // Letterbox: semi-transparent bars outside the content area
+              // Letterbox: transparent bars outside the content area to let the canvas background show through
               <>
-                <div className="absolute left-0 right-0 top-0 bg-black/50" style={{ height: overlay.barTop }} />
-                <div className="absolute left-0 right-0 bottom-0 bg-black/50" style={{ height: overlay.barBottom }} />
-                <div className="absolute top-0 bottom-0 left-0 bg-black/50" style={{ width: overlay.barLeft }} />
-                <div className="absolute top-0 bottom-0 right-0 bg-black/50" style={{ width: overlay.barRight }} />
+                <div className="absolute left-0 right-0 top-0 bg-transparent" style={{ height: overlay.barTop }} />
+                <div className="absolute left-0 right-0 bottom-0 bg-transparent" style={{ height: overlay.barBottom }} />
+                <div className="absolute top-0 bottom-0 left-0 bg-transparent" style={{ width: overlay.barLeft }} />
+                <div className="absolute top-0 bottom-0 right-0 bg-transparent" style={{ width: overlay.barRight }} />
               </>
             ) : (
               // Fill/crop: dashed border around the surviving area, dimmed outside

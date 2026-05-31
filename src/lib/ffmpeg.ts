@@ -120,9 +120,10 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   }
 
   if (recipe.framing === "fit") {
+    const padColor = recipe.backgroundColor ? recipe.backgroundColor.replace("#", "0x") : "black";
     filters.push(
       `scale=${targetW}:${targetH}:force_original_aspect_ratio=decrease`,
-      `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=black`
+      `pad=${targetW}:${targetH}:(ow-iw)/2:(oh-ih)/2:color=${padColor}`
     );
   } else {
     filters.push(
