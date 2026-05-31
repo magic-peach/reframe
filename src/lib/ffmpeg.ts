@@ -12,9 +12,11 @@ const SRI_HASHES: Record<string, string> = {
   "ffmpeg-core.wasm": "sha384-U1VDhkPYrM3wTCT4/vjSpSsKqG/UjljYrYCI4hBSJ02svbCkxuCi6U6u/peg5vpW",
 };
 
-// Added from main branch to perform secure binary verification
 async function fetchWithIntegrity(url: string, mimeType: string): Promise<string> {
-  const key = url.split("/").pop()!;
+  const key = url.split("/").pop();
+  if (!key) {
+    throw new Error(`[SRI] Invalid URL: ${url}`);
+  }
   const integrity = SRI_HASHES[key];
 
   if (!integrity) {
@@ -186,8 +188,8 @@ const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.norm
 
   const args: string[] = [];
   args.push("-i", inputName);
-  if (hasMusicTrack) {
-    if (musicOptions!.loopMusic) args.push("-stream_loop", "-1");
+  if (hasMusicTrack && musicOptions) {
+    if (musicOptions.loopMusic) args.push("-stream_loop", "-1");
     args.push("-i", musicInputName);
   }
   if (hasOverlay) {
@@ -206,16 +208,16 @@ const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.norm
       videoOut = "[vbase]";
     }
 
-    if (hasOverlay) {
-      const scaledW = overlayOptions!.size;
-      const alpha = (overlayOptions!.opacity / 100).toFixed(2);
+    if (hasOverlay && overlayOptions) {
+      const scaledW = overlayOptions.size;
+      const alpha = (overlayOptions.opacity / 100).toFixed(2);
       const posMap: Record<string, string> = {
         "top-left":     "20:20",
         "top-right":    "W-w-20:20",
         "bottom-left":  "20:H-h-20",
         "bottom-right": "W-w-20:H-h-20",
       };
-      const pos = posMap[overlayOptions!.position] ?? "W-w-20:H-h-20";
+      const pos = posMap[overlayOptions.position] ?? "W-w-20:H-h-20";
       filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
       filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
       videoOut = "[vout]";
@@ -223,10 +225,10 @@ const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.norm
 
     let audioOut = "";
     if (shouldKeepAudio) {
-      if (hasMusicTrack) {
-        const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
+      if (hasMusicTrack && musicOptions) {
+        const musicVol = (musicOptions.musicVolume / 100).toFixed(2);
         if (hasOriginalAudio) {
-          const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
+          const origVol  = (musicOptions.originalAudioVolume / 100).toFixed(2);
           const origChain = afParts.length > 0
             ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
             : `[0:a]volume=${origVol}[orig]`;
@@ -340,16 +342,16 @@ export async function exportVideo(
   const af = afParts.join(",");
     const hasMusicTrack = !!(musicOptions?.file && recipe.keepAudio);
     const musicInputName = `music_input_${sessionId}.mp3`;
-    if (hasMusicTrack) {
-      await ffmpeg.writeFile(musicInputName, await fetchFile(musicOptions!.file!), { signal });
+    if (hasMusicTrack && musicOptions?.file) {
+      await ffmpeg.writeFile(musicInputName, await fetchFile(musicOptions.file), { signal });
       cleanupFiles.add(musicInputName);
     }
 
     const hasOverlay = !!(overlayOptions?.file);
     const overlayExt = overlayOptions?.file?.name.split(".").pop() ?? "png";
     const overlayInputName = `overlay_${sessionId}.${overlayExt}`;
-    if (hasOverlay) {
-      await ffmpeg.writeFile(overlayInputName, await fetchFile(overlayOptions!.file!), { signal });
+    if (hasOverlay && overlayOptions?.file) {
+      await ffmpeg.writeFile(overlayInputName, await fetchFile(overlayOptions.file), { signal });
       cleanupFiles.add(overlayInputName);
     }
 
