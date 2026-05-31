@@ -6,6 +6,26 @@ import { Github, ArrowRight, ShieldCheck, Zap, Globe } from "lucide-react";
 
 export default function Footer() {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setStatus("loading");
+    
+    // Simulate static signup submission delay
+    setTimeout(() => {
+      setStatus("success");
+      setEmail("");
+      // Revert and collapse updates signup input after 3 seconds
+      setTimeout(() => {
+        setStatus("idle");
+        setIsExpanded(false);
+      }, 3000);
+    }, 1200);
+  };
 
   return (
     <footer className="w-full border-t border-[var(--border)] bg-[var(--bg)] text-[var(--text)] px-6 py-16 mt-20 transition-colors duration-300">
@@ -70,7 +90,7 @@ export default function Footer() {
         {/* Right Section: Newsletter & Community */}
         <div className="md:col-span-4 flex flex-col items-start md:items-end space-y-8">
           
-          {/* Newsletter - Logic updated to pass Lint/Build checks */}
+          {/* Newsletter - Interactive signup with submission feedback */}
           <div className="w-full flex flex-col items-start md:items-end gap-3">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40">Updates</h3>
             
@@ -90,23 +110,38 @@ export default function Footer() {
             ) : (
               <div 
                 id="updates-signup-form"
-                className="w-full sm:w-72 px-4 flex items-center bg-[var(--surface)] border border-blue-500/50 rounded-lg transition-all duration-500 ease-in-out">
-                <form 
-                  aria-label="Updates signup form"
-                  onSubmit={(e) => { e.preventDefault(); setIsExpanded(false); }} 
-                  className="flex w-full items-center animate-in slide-in-from-right-2 duration-500"
-                >
-                  <input 
-                    type="email" 
-                    placeholder="ENTER EMAIL" 
-                    className="bg-transparent border-none text-[10px] font-bold tracking-widest text-[var(--text)] focus:outline-none w-full py-3 placeholder:opacity-30"
-                    aria-label="Email address for updates"
-                    onBlur={() => setIsExpanded(false)}
-                  />
-                  <button aria-label="Submit email for updates" type="submit" className="text-blue-500 hover:text-blue-400 p-1">
-                    <ArrowRight size={16} aria-hidden="true"  />
-                  </button>
-                </form>
+                className="w-full sm:w-72 px-4 flex items-center bg-[var(--surface)] border border-blue-500/50 rounded-lg transition-all duration-500 ease-in-out"
+              >
+                {status === "success" ? (
+                  <div className="text-[10px] font-bold tracking-widest text-green-500 py-3 text-center animate-fade-in flex items-center justify-center gap-1.5 w-full">
+                    <span>✓</span> THANKS! YOU'RE ON THE LIST
+                  </div>
+                ) : (
+                  <form 
+                    aria-label="Updates signup form"
+                    onSubmit={handleSubmit} 
+                    className="flex w-full items-center animate-in slide-in-from-right-2 duration-500 gap-2"
+                  >
+                    <input 
+                      type="email" 
+                      required
+                      disabled={status === "loading"}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={status === "loading" ? "SUBMITTING..." : "ENTER EMAIL"} 
+                      className="bg-transparent border-none text-[10px] font-bold tracking-widest text-[var(--text)] focus:outline-none w-full py-3 placeholder:opacity-30 disabled:opacity-50"
+                      aria-label="Email address for updates"
+                    />
+                    <button 
+                      aria-label="Submit email for updates" 
+                      type="submit" 
+                      disabled={status === "loading" || !email}
+                      className="text-blue-500 hover:text-blue-400 p-1 disabled:opacity-35 disabled:cursor-not-allowed"
+                    >
+                      <ArrowRight size={16} aria-hidden="true" className={status === "loading" ? "animate-pulse" : ""} />
+                    </button>
+                  </form>
+                )}
               </div>
             )}
           </div>
