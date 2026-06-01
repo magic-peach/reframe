@@ -118,13 +118,13 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
   );
 }
 
-function encodeRecipe(recipe: EditRecipe): string {
-  return btoa(JSON.stringify(recipe));
+export function encodeRecipe(recipe: EditRecipe): string {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(recipe))));
 }
 
 function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   try {
-    const decoded = JSON.parse(atob(encoded));
+    const decoded = JSON.parse(decodeURIComponent(escape(atob(encoded))));
     return decoded as Partial<EditRecipe>;
   } catch {
     return null;
@@ -311,6 +311,7 @@ export function useVideoEditor() {
       const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
 
       recipeKeys.forEach((key) => {
+        if (key === "textOverlays") return;
         const currentVal = recipe[key];
         const defaultVal = DEFAULT_RECIPE[key];
 
