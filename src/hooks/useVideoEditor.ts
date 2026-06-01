@@ -188,17 +188,7 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
- const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-  setRecipe((prev) => {
-    const next = { ...prev, ...patch };
-    // GIF has no audio — force keepAudio off
-    if (next.format === "gif") {
-      next.keepAudio = false;
-    }
-    return next;
-  });
-}, []);
-  const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
+   const isValidValue = useCallback((key: keyof EditRecipe, val: any): boolean => {
     switch (key) {
       case "preset":
         return typeof val === "string";
@@ -229,7 +219,7 @@ export function useVideoEditor() {
       default:
         return true;
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -267,7 +257,6 @@ export function useVideoEditor() {
           }));
         }
       } else {
-        // Try full recipe restore first (new key)
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           if (raw) {
@@ -278,10 +267,9 @@ export function useVideoEditor() {
             }
           }
         } catch {
-          // ignore parse/validation errors and fall back to legacy
+          // ignore
         }
 
-        // Legacy partial settings (keep for backward compatibility)
         const saved = localStorage.getItem("reframe-settings");
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -302,7 +290,7 @@ export function useVideoEditor() {
     } catch (e) {
       // ignore
     }
-  }, []);
+  }, [isValidValue]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -347,7 +335,6 @@ export function useVideoEditor() {
     }
   }, [recipe.preset, recipe.quality, recipe.speed, recipe.customWidth, recipe.customHeight]);
 
-  // Persist the full recipe (debounced)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const timer = setTimeout(() => {
@@ -378,7 +365,6 @@ export function useVideoEditor() {
 
     setFileError("");
 
-    // LAYER 0: Size check
     if (selectedFile.size > MAX_FILE_SIZE) {
       setError(`Validation Failed: File too large. Maximum size is 2GB.`);
       setStatus("error");
@@ -410,7 +396,6 @@ export function useVideoEditor() {
     try {
       const { width, height, duration: dur } = await extractMetadata(selectedFile);
 
-      // Layer 5: Resolution check
       const dimensionCheck = validateDimensions(width, height);
       if (dimensionCheck === "blocked") {
         const suggested = getDownscaledDimensions(width, height);
@@ -427,289 +412,38 @@ export function useVideoEditor() {
       setFile(selectedFile);
 
       if (dimensionCheck === "warning") {
-        console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
+        console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow`);
       }
-      setRecipe((prev) => {
-        const suggestedPreset = suggestPreset(width, height);
-        const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
-
-        return {
-          ...prev,
-          trimStart: 0,
-          trimEnd: null,
-          ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
-        };
-      });
-    } catch (err) {
-      setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } catch (err: any) {
+      setError(err.message || "Failed to process video file.");
       setStatus("error");
     }
   }, []);
 
-  const handleExport = useCallback(async () => {
-    if (!file) return;
-    if (status === "loading-engine" || status === "exporting") {
-      return;
-    }
-
-    const validationError = validateRecipe(recipe, duration);
-    if (validationError) {
-      setError(validationError);
-      setStatus("error");
-      return;
-    }
-
-    const abortController = new AbortController();
-    exportAbortControllerRef.current = abortController;
-    exportCancelledRef.current = false;
-
-    try {
-      setStatus("loading-engine");
-      setProgress(0);
-      setError(null);
-      setExportStartedAt(null);
-      if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
-      setResult(null);
-
-      await loadFFmpeg(abortController.signal, setProgress);
-      if (exportCancelledRef.current) return;
-
-      const startedAt = Date.now();
-      setExportStartedAt(startedAt);
-      setStatus("exporting");
-
-      const exportResult = await exportVideo(
-        file,
-        recipe,
-        setProgress,
-        abortController.signal,
-        {
-          file: musicFile,
-          musicVolume,
-          originalAudioVolume,
-          loopMusic,
-        },
-        {
-          file: overlayFile,
-          position: overlayPosition,
-          size: overlaySize,
-          opacity: overlayOpacity,
-        }
-      );
-      if (exportCancelledRef.current) return;
-
-      setResult({
-        ...exportResult,
-        exportDurationMs: Date.now() - startedAt,
-      });
-      setStatus("done");
-     }  catch (err) {
-      if (exportCancelledRef.current) return;
-
-      console.error("export failed:", err);
-      if (err instanceof FFmpegLoadError) {
-        setError(err.message);
-      } else if (err instanceof Error && err.message.includes('network')) {
-        setError('Network error. Check your internet connection and try again.');
-      } else if (err instanceof Error && err.message.includes('codec')) {
-        setError('This video format is not supported. Try converting to MP4 first.');
-      } else {
-        setError('Export failed. Please try again or use a different video.');
-      }
-      setExportStartedAt(null);
-      setStatus("error");
-    }
-    finally {
-      if (exportAbortControllerRef.current === abortController) {
-        exportAbortControllerRef.current = null;
-      }
-    }
-  }, [
-    duration,
+  return useMemo(() => ({
     file,
-    loopMusic,
-    musicFile,
-    musicVolume,
-    originalAudioVolume,
-    overlayFile,
-    overlayOpacity,
-    overlayPosition,
-    overlaySize,
-    recipe,
-    result,
-    status,
-  ]);
-
-
-  useEffect(() => {
-    if (status === "exporting") {
-      document.title = `Exporting ${progress}% | Reframe`;
-    } else if (status === "loading-engine") {
-      document.title = `Loading engine... | Reframe`;
-    } else if (status === "done") {
-      document.title = `Export complete | Reframe`;
-    } else if (file) {
-      document.title = `Editing: ${file.name} | Reframe`;
-    } else {
-      document.title = DEFAULT_TITLE;
-    }
-    return () => {
-      document.title = DEFAULT_TITLE;
-    };
-  }, [status, progress, file]);
-
-  useEffect(() => {
-    const shouldWarn =
-      status === "exporting" ||
-      status === "loading-engine";
-
-    if (!shouldWarn) return;
-
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [status]);
-  
-  useEffect(() => {
-    const handleKeydown = (e: KeyboardEvent) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key === "Enter" &&
-        file &&
-        status !== "loading-engine" &&
-        status !== "exporting"
-      ) {
-        handleExport();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeydown);
-    return () => {
-      document.removeEventListener("keydown", handleKeydown);
-    };
-  }, [file, status, handleExport]);
-
-  // M key: toggle audio mute — only when a file is loaded and focus isn't in a text field
-  useEffect(() => {
-    if (!file) return;
-
-    const handleMuteShortcut = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== "m" || e.ctrlKey || e.metaKey || e.altKey) return;
-
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      setRecipe((prev) => ({ ...prev, keepAudio: !prev.keepAudio }));
-    };
-
-    document.addEventListener("keydown", handleMuteShortcut);
-    return () => {
-      document.removeEventListener("keydown", handleMuteShortcut);
-    };
-  }, [file]);
-
-  useEffect(()=>{
-    return ()=>{
-      if(result?.blobUrl){
-        URL.revokeObjectURL(result.blobUrl);
-      }
-    }
-   },[result?.blobUrl])
-
-  useEffect(() => {
-    return () => {
-      terminateFFmpeg();
-    };
-  }, []);
-
-  const resetSettings = useCallback(() => {
-    setRecipe(DEFAULT_RECIPE);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  const cancelExport = useCallback(() => {
-    exportCancelledRef.current = true;
-    exportAbortControllerRef.current?.abort();
-    exportAbortControllerRef.current = null;
-    terminateFFmpeg();
-    setStatus("idle");
-    setProgress(0);
-    setError(null);
-    setExportStartedAt(null);
-  }, []);
-
-
-  const reset = useCallback(() => {
-    if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
-    setFile(null);
-    setVideoMetadata(null);
-    setDuration(0);
-    setRecipe(DEFAULT_RECIPE);
-    setStatus("idle");
-    setProgress(0);
-    setResult(null);
-    setError(null);
-    setExportStartedAt(null);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-  }, [result]);
-
-
-  useEffect(() => {
-    localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
-  }, [recipe.soundOnCompletion]);
-  const seekTo = useCallback((time: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-    }
-  }, []);
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
-    video.addEventListener("timeupdate", handleTimeUpdate);
-    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  },[]);
-
-  const toggleSound = useCallback(() => {
-  updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
-}, [recipe.soundOnCompletion, updateRecipe]);
-
-  return {
-    file,
+    setFile,
     duration,
+    setDuration,
+    videoMetadata,
+    setVideoMetadata,
     recipe,
+    setRecipe,
     status,
+    setStatus,
     progress,
-    exportStartedAt,
+    setProgress,
     result,
+    setResult,
     error,
-    videoRef,
-    seekTo,
-    updateRecipe,
-    handleFileSelect,
+    setError,
     fileError,
-    handleExport,
-    cancelExport,
-    reset,
-    resetSettings,
+    setFileError,
+    exportStartedAt,
+    setExportStartedAt,
+    exportAbortControllerRef,
+    exportCancelledRef,
+    videoRef,
     musicFile,
     setMusicFile,
     musicVolume,
@@ -726,8 +460,35 @@ export function useVideoEditor() {
     setOverlaySize,
     overlayOpacity,
     setOverlayOpacity,
-    recommendedPreset,
     currentTime,
-    toggleSound,
-  };
+    setCurrentTime,
+    updateRecipe,
+    isValidValue,
+    recommendedPreset,
+    handleFileSelect
+  }), [
+    file,
+    duration,
+    videoMetadata,
+    recipe,
+    status,
+    progress,
+    result,
+    error,
+    fileError,
+    exportStartedAt,
+    musicFile,
+    musicVolume,
+    originalAudioVolume,
+    loopMusic,
+    overlayFile,
+    overlayPosition,
+    overlaySize,
+    overlayOpacity,
+    currentTime,
+    updateRecipe,
+    isValidValue,
+    recommendedPreset,
+    handleFileSelect
+  ]);
 }
