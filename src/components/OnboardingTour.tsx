@@ -362,6 +362,16 @@ export default function OnboardingTour() {
     return () => window.removeEventListener("keydown", onKey);
   }, [visible, stepIndex, dismiss]);
 
+  // Lock body scroll when tour is active
+  useEffect(() => {
+    if (!visible) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [visible]);
+
   if (!visible || !targetRect || !currentStep) return null;
 
   return createPortal(
