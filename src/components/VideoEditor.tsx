@@ -488,17 +488,6 @@ return () => {
                   </AccordionSection>
 
                   <AccordionSection
-                    id="rotation"
-                    icon={<RotateCw size={12} />}
-                    title="Rotation"
-                    isOpen={openSections.rotation}
-                    onToggle={() => toggleSection("rotation")}
-                    delay={100}
-                  >
-                    <RotateControl recipe={recipe} onChange={updateRecipe} />
-                  </AccordionSection>
-
-                  <AccordionSection
                     id="text"
                     icon={<Type size={12} />}
                     title="Text Overlay"
@@ -513,36 +502,7 @@ return () => {
                       onSelectText={setSelectedTextId}
                     />
                   </AccordionSection>
-                  <details className="group">
-                  <summary className="flex items-center gap-2 cursor-pointer select-none list-none
-                      text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] py-1">
-                      <span className="text-film-500 opacity-80 transition-transform duration-200 group-open:rotate-90">›</span>
-                      Advanced settings
-                      <div className="flex-1 h-px bg-[var(--border)]" />
-                    </summary>
 
-                    <div className="mt-4 space-y-4">
-                      <AccordionSection
-                        id="rotation"
-                        icon={<RotateCw size={12} />}
-                        title="Rotation"
-                        isOpen={openSections.rotation}
-                        onToggle={() => toggleSection("rotation")}
-                      >
-                        <RotateControl recipe={recipe} onChange={updateRecipe} />
-                      </AccordionSection>
-
-                      <AccordionSection
-                        id="export"
-                        icon={<SlidersHorizontal size={12} />}
-                        title="Export"
-                        isOpen={openSections.export}
-                        onToggle={() => toggleSection("export")}
-                      >
-                        <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                      </AccordionSection>
-                    </div>
-                  </details>
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <AccordionSection
@@ -641,16 +601,7 @@ return () => {
                   <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
                     <FormatSelector recipe={recipe} onChange={updateRecipe} />
                   </Section>
-                  <AccordionSection
-                    id="export"
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Export"
-                    isOpen={openSections.export}
-                    onToggle={() => toggleSection("export")}
-                    delay={200}
-                  >
-                    <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                  </AccordionSection>
+
                   <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
                     <ImageOverlay
                       overlayFile={overlayFile}
