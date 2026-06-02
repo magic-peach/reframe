@@ -8,7 +8,7 @@ export default function Footer() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <footer className="w-full border-t border-[var(--border)] bg-[var(--bg)] text-[var(--text)] px-6 py-16 mt-20 transition-colors duration-300">
+    <footer className="w-full border-t border-[var(--border)] bg-[var(--bg)] text-[var(--text)] px-6 py-16 mt-20 transition-colors duration-300 overflow-x-hidden">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-8">
 
         {/* Brand Section */}
@@ -90,7 +90,7 @@ export default function Footer() {
                   <a href={social.href} target="_blank" rel="noopener" aria-label={social.label} className="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] transition-all duration-200 hover:-translate-y-1 active:scale-95 flex items-center justify-center">
                     <span className="opacity-70 group-hover:opacity-100 transition-opacity duration-200">{social.icon}</span>
                   </a>
-                  <span className="absolute -top-9 left-1/2 -translate-x-1/2 bg-[var(--text)] text-[var(--bg)] text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                  <span className="absolute -top-9 left-1/2 -translate-x-1/2 bg-[var(--text)] text-[var(--bg)] text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap max-w-xs truncate">
                     {social.tooltip}
                   </span>
                 </div>
