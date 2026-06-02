@@ -374,6 +374,8 @@ Performance tools: https://developer.chrome.com/docs/devtools/performance
 ---
 
 ### 8. Verify Environment Variables
+This repository currently does not require any runtime environment variables.
+If you need local overrides, copy `.env.example` to `.env.local` and update variables there.
 After modifying `.env.local`, restart the Next.js development server because environment variables are loaded only during server startup.
 
 Example:
