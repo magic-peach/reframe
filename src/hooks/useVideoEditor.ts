@@ -7,6 +7,7 @@ import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import { useFontManager } from "@/hooks/useFontManager";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
@@ -188,7 +189,9 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
- const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+  const { customFonts, addFonts, removeFont, getErrors: getFontErrors } = useFontManager();
+
+  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
     const next = { ...prev, ...patch };
     // GIF has no audio — force keepAudio off
@@ -494,7 +497,8 @@ export function useVideoEditor() {
           position: overlayPosition,
           size: overlaySize,
           opacity: overlayOpacity,
-        }
+        },
+        customFonts
       );
       if (exportCancelledRef.current) return;
 
@@ -729,5 +733,9 @@ export function useVideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    customFonts,
+    addFonts,
+    removeFont,
+    getFontErrors,
   };
 }

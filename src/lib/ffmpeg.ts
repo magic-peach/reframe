@@ -213,7 +213,8 @@ export async function exportVideo(
   onProgress: (percent: number) => void,
   signal?: AbortSignal,
   musicOptions?: BackgroundMusicOptions,
-  overlayOptions?: ImageOverlayOptions
+  overlayOptions?: ImageOverlayOptions,
+  customFonts?: Array<{ name: string; file: File }>
 ): Promise<ExportResult> {
   await loadFFmpeg(signal, onProgress);
 
@@ -245,6 +246,44 @@ export async function exportVideo(
       }
     : undefined;
 
+  // Process custom fonts
+  const fontFilesPayload: SerializedFile[] = [];
+  const transfers: Transferable[] = [arrayBuffer];
+  if (musicFilePayload) transfers.push(musicFilePayload.data);
+  if (overlayFilePayload) transfers.push(overlayFilePayload.data);
+
+  const updatedOverlays = (recipe.textOverlays || []).map((overlay) => {
+    if (!overlay.fontFamily) return overlay;
+    const customFont = customFonts?.find((f) => f.name === overlay.fontFamily);
+    if (!customFont) return overlay;
+
+    const ext = customFont.file.name.split(".").pop() ?? "ttf";
+    const virtualFontPath = `font_${customFont.name}.${ext}`;
+    return {
+      ...overlay,
+      fontPath: virtualFontPath,
+    };
+  });
+
+  const updatedRecipe = {
+    ...recipe,
+    textOverlays: updatedOverlays,
+  };
+
+  if (customFonts) {
+    for (const font of customFonts) {
+      const ext = font.file.name.split(".").pop() ?? "ttf";
+      const virtualFontPath = `font_${font.name}.${ext}`;
+      const fontBuffer = await font.file.arrayBuffer();
+      fontFilesPayload.push({
+        name: virtualFontPath,
+        type: font.file.type || "application/x-font-truetype",
+        data: fontBuffer,
+      });
+      transfers.push(fontBuffer);
+    }
+  }
+
   const sanitizedMusicOptions = musicOptions
     ? { ...musicOptions, file: null }
     : undefined;
@@ -270,22 +309,19 @@ export async function exportVideo(
   };
   signal?.addEventListener("abort", onAbort, { once: true });
 
-  const transfers: Transferable[] = [arrayBuffer];
-  if (musicFilePayload) transfers.push(musicFilePayload.data);
-  if (overlayFilePayload) transfers.push(overlayFilePayload.data);
-
   ffmpegWorker.postMessage(
     {
       type: "export",
       id: sessionId,
       file: filePayload,
-      recipe,
+      recipe: updatedRecipe,
       videoDuration: await getVideoDuration(file),
       musicFile: musicFilePayload,
       musicOptions: sanitizedMusicOptions,
       overlayFile: overlayFilePayload,
       overlayOptions: sanitizedOverlayOptions,
-    } as WorkerExportRequest,
+      fontFiles: fontFilesPayload,
+    } as any,
     transfers
   );
 

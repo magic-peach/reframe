@@ -6,13 +6,17 @@ import { Trash2, Plus } from "lucide-react";
 import { useMemo } from "react";
 import BaseButton from "./ui/BaseButton";
 import FontSelector from "./FontSelector";
-import { useFontManager } from "@/hooks/useFontManager";
+import { CustomFont } from "@/hooks/useFontManager";
 
 interface TextControlsProps {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
   selectedTextId: string | null;
   onSelectText: (id: string | null) => void;
+  customFonts: CustomFont[];
+  onAddFonts: (files: File[]) => Promise<{ success: number; errors: string[] }>;
+  onRemoveFont: (name: string) => void;
+  getFontErrors: () => string[];
 }
 
 /**
@@ -24,8 +28,11 @@ export default function TextControls({
   onChange,
   selectedTextId,
   onSelectText,
+  customFonts,
+  onAddFonts,
+  onRemoveFont,
+  getFontErrors,
 }: TextControlsProps) {
-  const { customFonts, addFonts, removeFont, getErrors } = useFontManager();
 
   /**
    * Memoize text overlays to prevent unnecessary dependency changes.
@@ -148,9 +155,9 @@ export default function TextControls({
               handleUpdateText(selectedTextId!, { fontFamily: fontName })
             }
             customFonts={customFonts}
-            onAddFonts={addFonts}
-            onRemoveFont={removeFont}
-            errors={getErrors()}
+            onAddFonts={onAddFonts}
+            onRemoveFont={onRemoveFont}
+            errors={getFontErrors()}
           />
 
           {/* Font Size Slider */}

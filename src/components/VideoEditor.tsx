@@ -210,6 +210,10 @@ export default function VideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    customFonts,
+    addFonts,
+    removeFont,
+    getFontErrors,
   } = useVideoEditor();
 
   useKeyboardShortcuts({
@@ -511,6 +515,10 @@ return () => {
                       onChange={updateRecipe}
                       selectedTextId={selectedTextId}
                       onSelectText={setSelectedTextId}
+                      customFonts={customFonts}
+                      onAddFonts={addFonts}
+                      onRemoveFont={removeFont}
+                      getFontErrors={getFontErrors}
                     />
                   </AccordionSection>
                   <details className="group">

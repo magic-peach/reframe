@@ -27,6 +27,7 @@ type ExportRequest = {
   musicOptions?: BackgroundMusicOptions;
   overlayFile?: SerializedFile;
   overlayOptions?: ImageOverlayOptions;
+  fontFiles?: SerializedFile[];
 };
 
 type LoadRequest = { type: "load" };
@@ -427,6 +428,16 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     await ffmpeg.writeFile(overlayInputName, serializeFileBuffer(request.overlayFile!), {
       signal: activeExportAbortController?.signal,
     });
+  }
+
+  // Write custom font files
+  if (request.fontFiles) {
+    for (const fontFile of request.fontFiles) {
+      cleanupFiles.add(fontFile.name);
+      await ffmpeg.writeFile(fontFile.name, serializeFileBuffer(fontFile), {
+        signal: activeExportAbortController?.signal,
+      });
+    }
   }
 
   const videoDuration = request.videoDuration;
