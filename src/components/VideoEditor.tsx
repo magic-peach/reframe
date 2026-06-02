@@ -22,7 +22,11 @@ import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2, Type,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  SlidersHorizontal, Zap, AlertTriangle, Github, Copy,
+  Upload,
+  Target,
+  Settings,
+  Rocket
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -122,37 +126,37 @@ function KeyboardShortcutsPanel() {
   const [open, setOpen] = useState(false);
 
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
-  {
-    keys: [
-      <Kbd key="ctrl">Ctrl</Kbd>,
-      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="shift">Shift</Kbd>,
-      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="e">E</Kbd>
-    ],
-    label: "Export video",
-  },
-  {
-    keys: [<Kbd key="m">M</Kbd>],
-    label: "Toggle audio mute",
-  },
-  {
-    keys: [<Kbd key="r">R</Kbd>],
-    label: "Reset all settings",
-  },
-  {
-    keys: [<Kbd key="esc">Esc</Kbd>],
-    label: "Cancel export",
-  },
-  {
-    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
-    label: "Switch preset by index",
-  },
-  {
-    keys: [<Kbd key="question">?</Kbd>],
-    label: "Toggle this panel",
-  },
-];
+    {
+      keys: [
+        <Kbd key="ctrl">Ctrl</Kbd>,
+        <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
+        <Kbd key="shift">Shift</Kbd>,
+        <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
+        <Kbd key="e">E</Kbd>
+      ],
+      label: "Export video",
+    },
+    {
+      keys: [<Kbd key="m">M</Kbd>],
+      label: "Toggle audio mute",
+    },
+    {
+      keys: [<Kbd key="r">R</Kbd>],
+      label: "Reset all settings",
+    },
+    {
+      keys: [<Kbd key="esc">Esc</Kbd>],
+      label: "Cancel export",
+    },
+    {
+      keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
+      label: "Switch preset by index",
+    },
+    {
+      keys: [<Kbd key="question">?</Kbd>],
+      label: "Toggle this panel",
+    },
+  ];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
@@ -220,24 +224,24 @@ export default function VideoEditor() {
     handleExport,
     status,
     cancelExport,
-    onToggleShortcutsModal: () => {},
+    onToggleShortcutsModal: () => { },
   });
 
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   useEffect(() => {
-  if (!file) return;
+    if (!file) return;
 
-  localStorage.setItem(
-    "editorState",
-    JSON.stringify({
-      recipe,
-      overlayPosition,
-      overlaySize,
-      overlayOpacity,
-    })
-  );
-}, [recipe, overlayPosition, overlaySize, overlayOpacity, file]);
+    localStorage.setItem(
+      "editorState",
+      JSON.stringify({
+        recipe,
+        overlayPosition,
+        overlaySize,
+        overlayOpacity,
+      })
+    );
+  }, [recipe, overlayPosition, overlaySize, overlayOpacity, file]);
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
@@ -248,32 +252,32 @@ export default function VideoEditor() {
     export: false,
   });
   useEffect(() => {
-  const saved = localStorage.getItem("editorState");
+    const saved = localStorage.getItem("editorState");
 
-  if (!saved) return;
+    if (!saved) return;
 
-  try {
-    const parsed = JSON.parse(saved);
+    try {
+      const parsed = JSON.parse(saved);
 
-    if (parsed.recipe) {
-      updateRecipe(parsed.recipe);
+      if (parsed.recipe) {
+        updateRecipe(parsed.recipe);
+      }
+
+      if (parsed.overlayPosition) {
+        setOverlayPosition(parsed.overlayPosition);
+      }
+
+      if (parsed.overlaySize) {
+        setOverlaySize(parsed.overlaySize);
+      }
+
+      if (parsed.overlayOpacity) {
+        setOverlayOpacity(parsed.overlayOpacity);
+      }
+    } catch (err) {
+      console.error("Failed to restore editor state", err);
     }
-
-    if (parsed.overlayPosition) {
-      setOverlayPosition(parsed.overlayPosition);
-    }
-
-    if (parsed.overlaySize) {
-      setOverlaySize(parsed.overlaySize);
-    }
-
-    if (parsed.overlayOpacity) {
-      setOverlayOpacity(parsed.overlayOpacity);
-    }
-  } catch (err) {
-    console.error("Failed to restore editor state", err);
-  }
-}, []);
+  }, []);
 
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -303,7 +307,7 @@ export default function VideoEditor() {
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
-      
+
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       downloadRef.current.scrollIntoView({
         behavior: prefersReducedMotion ? "instant" : "smooth",
@@ -312,19 +316,19 @@ export default function VideoEditor() {
     }
   }, [status]);
   useEffect(() => {
-const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-  if (file) {
-    e.preventDefault();
-    e.returnValue = "";
-  }
-};
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (file) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
 
-window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
-return () => {
-  window.removeEventListener("beforeunload", handleBeforeUnload);
-};
-}, [file]);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [file]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
@@ -351,8 +355,8 @@ return () => {
     const qualityLabel = recipe.quality <= 21
       ? "High"
       : recipe.quality <= 25
-      ? "Balanced"
-      : "Small file";
+        ? "Balanced"
+        : "Small file";
 
     return `Exporting to ${width}×${height} ${recipe.format.toUpperCase()} • ${framingLabel} • ${speedLabel} • Quality: ${qualityLabel}`;
   }, [recipe]);
@@ -381,46 +385,46 @@ return () => {
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
         <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
-        <div
-          className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
-          style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
-          aria-label="Reframe — video editor"
-        >
-        <h1
-          className="font-display leading-none tracking-widest2 text-[var(--text)] break-words text-center transition-all"
-          style={{ fontSize: 'clamp(2rem,10vw,4rem)', viewTransitionName: 'reframe-text' }}
-        >
-          REFRAME
-        </h1>
-        <p
-          className="font-heading text-[var(--muted)] uppercase tracking-widest text-center"
-          style={{
-            fontSize: 'clamp(0.7rem,2vw,0.875rem)',
-            marginTop: 'clamp(0.25rem,1vw,0.5rem)',
-          }}
-        >
-          Your video, any format
-        </p>
-    <div
-      className="flex md:hidden items-center justify-center gap-2 font-heading font-semibold uppercase tracking-widest text-[var(--muted)] border-t border-[var(--border)]"
-      style={{
-        fontSize: 'clamp(0.6rem,1.5vw,0.75rem)',
-        marginTop: 'clamp(0.5rem,2vw,0.75rem)',
-        paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
-      }}
-    >
-      <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-      No login. No ads. 100% private.
-    </div>
-  </div>  
-  <div
-    className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
-    style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
-  >
-    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-    No login. No ads. 100% private - your video never leaves your device.
-  </div>
-    </header>
+          <div
+            className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
+            style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
+            aria-label="Reframe — video editor"
+          >
+            <h1
+              className="font-display leading-none tracking-widest2 text-[var(--text)] break-words text-center transition-all"
+              style={{ fontSize: 'clamp(2rem,10vw,4rem)', viewTransitionName: 'reframe-text' }}
+            >
+              REFRAME
+            </h1>
+            <p
+              className="font-heading text-[var(--muted)] uppercase tracking-widest text-center"
+              style={{
+                fontSize: 'clamp(0.7rem,2vw,0.875rem)',
+                marginTop: 'clamp(0.25rem,1vw,0.5rem)',
+              }}
+            >
+              Your video, any format
+            </p>
+            <div
+              className="flex md:hidden items-center justify-center gap-2 font-heading font-semibold uppercase tracking-widest text-[var(--muted)] border-t border-[var(--border)]"
+              style={{
+                fontSize: 'clamp(0.6rem,1.5vw,0.75rem)',
+                marginTop: 'clamp(0.5rem,2vw,0.75rem)',
+                paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
+              }}
+            >
+              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
+              No login. No ads. 100% private.
+            </div>
+          </div>
+          <div
+            className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
+            style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
+          >
+            <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
+            No login. No ads. 100% private - your video never leaves your device.
+          </div>
+        </header>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
@@ -428,9 +432,36 @@ return () => {
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
-                <div className="text-center text-[var(--muted)] py-6">
-                  <p>Upload a video to get started</p>
-                  <p className="text-sm">Supports MP4, MOV, WebM and more</p>
+                <div className="py-5 text-center text-[var(--muted)]">
+                  <h3 className="font-semibold mb-4">
+                    Getting Started
+                  </h3>
+
+                  <div className="space-y-3 mt-6 text-sm">
+                    <div className="flex items-center justify-center gap-2">
+                      <Upload size={18} />
+                      <span>1. Upload Video</span>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2">
+                      <Target size={18} />
+                      <span>2. Choose Preset</span>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2">
+                      <Settings size={18} />
+                      <span>3. Adjust Settings</span>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-2">
+                      <Rocket size={18} />
+                      <span>4. Export Video</span>
+                    </div>
+                  </div>
+
+                  <p className="mt-6 text-xs">
+                    Supports MP4, MOV, AVI, MKV and WebM formats
+                  </p>
                 </div>
               )}
 
@@ -514,7 +545,7 @@ return () => {
                     />
                   </AccordionSection>
                   <details className="group">
-                  <summary className="flex items-center gap-2 cursor-pointer select-none list-none
+                    <summary className="flex items-center gap-2 cursor-pointer select-none list-none
                       text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] py-1">
                       <span className="text-film-500 opacity-80 transition-transform duration-200 group-open:rotate-90">›</span>
                       Advanced settings
@@ -664,35 +695,35 @@ return () => {
                     />
                   </Section>
                   <details className="group">
-                  <summary className="flex items-center gap-2 cursor-pointer select-none list-none
+                    <summary className="flex items-center gap-2 cursor-pointer select-none list-none
                     text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] py-1">
-                    <span className="text-film-500 opacity-80 transition-transform duration-200 group-open:rotate-90">›</span>
-                    Advanced settings
-                    <div className="flex-1 h-px bg-[var(--border)]" />
-                  </summary>
+                      <span className="text-film-500 opacity-80 transition-transform duration-200 group-open:rotate-90">›</span>
+                      Advanced settings
+                      <div className="flex-1 h-px bg-[var(--border)]" />
+                    </summary>
 
-                  <div className="mt-4 space-y-4">
-                    <AccordionSection
-                      id="rotation"
-                      icon={<RotateCw size={12} />}
-                      title="Rotation"
-                      isOpen={openSections.rotation}
-                      onToggle={() => toggleSection("rotation")}
-                    >
-                      <RotateControl recipe={recipe} onChange={updateRecipe} />
-                    </AccordionSection>
+                    <div className="mt-4 space-y-4">
+                      <AccordionSection
+                        id="rotation"
+                        icon={<RotateCw size={12} />}
+                        title="Rotation"
+                        isOpen={openSections.rotation}
+                        onToggle={() => toggleSection("rotation")}
+                      >
+                        <RotateControl recipe={recipe} onChange={updateRecipe} />
+                      </AccordionSection>
 
-                    <AccordionSection
-                      id="export"
-                      icon={<SlidersHorizontal size={12} />}
-                      title="Export"
-                      isOpen={openSections.export}
-                      onToggle={() => toggleSection("export")}
-                    >
-                      <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                    </AccordionSection>
-                  </div>
-                </details>
+                      <AccordionSection
+                        id="export"
+                        icon={<SlidersHorizontal size={12} />}
+                        title="Export"
+                        isOpen={openSections.export}
+                        onToggle={() => toggleSection("export")}
+                      >
+                        <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
+                      </AccordionSection>
+                    </div>
+                  </details>
                 </div>
               </div>
             )}
@@ -808,10 +839,10 @@ return () => {
               id="export-button"
               type="button"
               onClick={handleExport}
-                disabled={!file || isProcessing}
-                aria-label='Export video'
-                aria-disabled={!file || isProcessing ? "true" : undefined}
-                title={!file ? "Upload a video to enable export" : undefined}
+              disabled={!file || isProcessing}
+              aria-label='Export video'
+              aria-disabled={!file || isProcessing ? "true" : undefined}
+              title={!file ? "Upload a video to enable export" : undefined}
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
@@ -820,7 +851,7 @@ return () => {
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >
-             <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
+              <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
 
