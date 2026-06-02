@@ -6,10 +6,11 @@ export interface Preset {
   height: number;
 }
 
-export const PRESETS: Preset[] = [
-  { id: "vertical-9-16",      label: "9 : 16",    platform: "Reels · TikTok · Shorts", width: 1080,  height: 1920 },
+// Lowercase export to match VideoEditor.tsx references
+export const presets: Preset[] = [
+  { id: "vertical-9-16",       label: "9 : 16",    platform: "Reels · TikTok · Shorts", width: 1080,  height: 1920 },
   { id: "instagram-4-5",      label: "4 : 5",     platform: "Instagram Feed",            width: 1080,  height: 1350 },
-  { id: "square-1-1",         label: "1 : 1",     platform: "Square",                    width: 1080,  height: 1080 },
+  { id: "square-1-1",          label: "1 : 1",     platform: "Square",                    width: 1080,  height: 1080 },
   { id: "landscape-16-9",     label: "16 : 9",    platform: "YouTube · Landscape",       width: 1920,  height: 1080 },
   { id: "twitter-hd",         label: "16 : 9",    platform: "Twitter / X",               width: 1280,  height: 720  },
   { id: "ultrawide-21-9",     label: "21 : 9",    platform: "Ultrawide",                 width: 2560,  height: 1080 },
@@ -20,7 +21,10 @@ export const PRESETS: Preset[] = [
   { id: "custom",             label: "Custom",    platform: "Set your own",              width: 1920,  height: 1080 },
 ];
 
+// Uppercase alias to maintain backward compatibility with any other modules
+export const PRESETS = presets;
+
 /** Returns the preset matching the given ID, or undefined if no match is found. */
 export function getPresetById(id: string): Preset | undefined {
-  return PRESETS.find((p) => p.id === id);
+  return presets.find((p) => p.id === id);
 }

@@ -25,7 +25,27 @@
   --error-hover: #fecaca;
 }
 
-/* ── Dark mode tokens ── */
+/* ── Dark mode tokens (Supporting both media queries and class selectors) ── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2e3147;
+    --text: #f0f0f5;
+    --muted: #8b8fa8;
+    --accent: #4f6ef7;
+    --accent-hover: #3a57d4;
+    --accent-muted: rgba(79, 110, 247, 0.12);
+    --radius: 10px;
+    --shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    --warning: #fbbf24;
+    --error: #f87171;
+    --error-bg: #7f1d1d;
+    --error-border: #991b1b;
+    --error-hover: #991b1b;
+  }
+}
+
 .dark {
   --bg: #0f1117;
   --surface: #1a1d27;
@@ -97,18 +117,12 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+h1, h2, h3, h4, h5, h6 {
   color: var(--text);
   font-weight: 700;
 }
 
-p,
-li {
+p, li {
   color: color-mix(in srgb, var(--text) 95%, transparent);
 }
 
@@ -116,26 +130,20 @@ button {
   transition: all 0.2s ease;
 }
 
-input,
-select,
-textarea {
+input, select, textarea {
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+input:focus, select:focus, textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-muted);
   outline: none;
 }
 
 /* Smooth transitions for all themed elements */
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: ease;
   transition-duration: 200ms;
@@ -147,7 +155,8 @@ textarea:focus {
   border-radius: var(--radius);
 }
 
-detail > summary {
+/* Corrected typo from detail to details */
+details > summary {
   list-style: none;
 }
 details > summary::-webkit-details-marker {
