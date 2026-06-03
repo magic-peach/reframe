@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo, RefObject } from "react";
+import Image from "next/image";
 import { EditRecipe, TextOverlay, OverlayPosition } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ export default function VideoPreview({
   const [currentTime, setCurrentTime] = useState(0);
   const [isMuted, setIsMuted] = useState(!recipe?.keepAudio);
   const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
+  const [overlayNaturalSize, setOverlayNaturalSize] = useState({ width: 1, height: 1 });
   const adjustmentFilter = useMemo(() => {
     const brightness = 1 + (recipe?.brightness ?? 0);
     const contrast = recipe?.contrast ?? 1;
@@ -52,13 +54,26 @@ export default function VideoPreview({
     return `brightness(${brightness}) contrast(${contrast}) saturate(${saturation})`;
   }, [recipe?.brightness, recipe?.contrast, recipe?.saturation]);
 
+  const togglePlayback = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [videoRef]);
+
   useEffect(() => {
     if (!overlayFile) {
       setOverlayUrl(null);
+      setOverlayNaturalSize({ width: 1, height: 1 });
       return;
     }
     const url = URL.createObjectURL(overlayFile);
     setOverlayUrl(url);
+    setOverlayNaturalSize({ width: 1, height: 1 });
     return () => URL.revokeObjectURL(url);
   }, [overlayFile]);
   
@@ -270,6 +285,7 @@ export default function VideoPreview({
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
+        target.tagName === "BUTTON" ||
         target.tagName === "TEXTAREA" ||
         target.isContentEditable
       ) {
@@ -279,11 +295,7 @@ export default function VideoPreview({
       const video = videoRef.current;
       if (video) {
         e.preventDefault(); // Prevent default page scroll
-        if (video.paused) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
+        togglePlayback();
       }
     }
   };
@@ -329,14 +341,10 @@ export default function VideoPreview({
         </div>
 
         {/* CLICK-TO-PLAY LAYER */}
-        <div 
-          className="absolute inset-0 z-10 cursor-pointer"
-          onClick={() => {
-            if (videoRef.current) {
-              if (videoRef.current.paused) videoRef.current.play();
-              else videoRef.current.pause();
-            }
-          }}
+        <button
+          type="button"
+          className="absolute inset-0 z-10 cursor-pointer border-0 bg-transparent p-0"
+          onClick={togglePlayback}
           aria-label="Play/Pause Video"
         />
 
@@ -346,10 +354,7 @@ export default function VideoPreview({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              if (videoRef.current) {
-                if (videoRef.current.paused) videoRef.current.play();
-                else videoRef.current.pause();
-              }
+              togglePlayback();
             }}
             className="text-white hover:text-[var(--accent)] transition-colors"
             aria-label={isPlaying ? "Pause" : "Play"}
@@ -435,10 +440,20 @@ export default function VideoPreview({
 
         {/* IMAGE OVERLAY LAYER */}
         {overlayUrl && containerDimensions.width > 0 && (
-          <img
+          <Image
             src={overlayUrl}
             alt="Overlay"
-            className="absolute pointer-events-none z-30"
+            width={overlayNaturalSize.width}
+            height={overlayNaturalSize.height}
+            unoptimized
+            className="absolute pointer-events-none z-30 h-auto"
+            onLoad={(event) => {
+              const img = event.currentTarget;
+              setOverlayNaturalSize({
+                width: img.naturalWidth || 1,
+                height: img.naturalHeight || 1,
+              });
+            }}
             style={{
               width: previewOverlaySize,
               opacity: overlayOpacity / 100,
