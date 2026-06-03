@@ -265,8 +265,8 @@ export default function VideoPreview({
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all duration-300 group"
-        style={{ aspectRatio: targetRatio }}
+        className="relative w-full mx-auto rounded-lg overflow-hidden bg-[var(--bg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all duration-300 group"
+        style={{ aspectRatio: targetRatio, maxWidth: `calc(65vh * ${targetRatio})` }}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"
