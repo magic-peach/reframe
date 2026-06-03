@@ -1,18 +1,26 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useMemo, RefObject } from "react";
-import Image from "next/image";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  type RefObject,
+} from "react";
+
 import {
   EditRecipe,
   TextOverlay,
-  OverlayPosition,
   TimelineTrack,
   MultiTrackEditorState,
+  OverlayPosition,
 } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera, Play, Pause, Volume2, VolumeX } from "lucide-react";
+import Image from "next/image";
 import ComparisonPreview from "./ComparisonPreview";
 import DraggableTextOverlays from "./DraggableTextOverlays";
 
@@ -26,7 +34,6 @@ interface Props {
   // Phase 1 MVP: Multi-track support
   multiTrackState?: MultiTrackEditorState | null;
   multiTrackVideoRefs?: Record<string, RefObject<HTMLVideoElement | null>>;
-
   // Legacy / simple overlay support (used for quick single-layer edits)
   overlayFile?: File | null;
   overlayPosition?: OverlayPosition;
@@ -446,6 +453,43 @@ export default function VideoPreview({
             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
         </div>
+
+        {/* Phase 1 MVP: Multi-track overlay rendering */}
+        {multiTrackState && multiTrackVideoRefs && multiTrackState.timelineTracks.length > 1 && (
+          <div className="absolute inset-0 pointer-events-none" role="region" aria-label="Multi-track overlay layers">
+            {multiTrackState.timelineTracks
+              .filter((track) => track.visible && track.type === "video" && track.source && track.zIndex > 0)
+              .sort((a, b) => a.zIndex - b.zIndex)
+              .map((track) => {
+                const videoRef = multiTrackVideoRefs[track.id];
+                if (!videoRef) return null;
+
+                return (
+                  <video
+                    key={track.id}
+                    ref={videoRef}
+                    className="absolute"
+                    style={{
+                      left: track.position.x === -1 ? "50%" : `${track.position.x}px`,
+                      top: track.position.y === -1 ? "50%" : `${track.position.y}px`,
+                      width: `${track.scale * 100}%`,
+                      height: "auto",
+                      opacity: track.opacity / 100,
+                      transform:
+                        track.position.x === -1 && track.position.y === -1
+                          ? "translate(-50%, -50%)"
+                          : "none",
+                      zIndex: track.zIndex,
+                    }}
+                    muted
+                    playsInline
+                  >
+                    <track kind="captions" />
+                  </video>
+                );
+              })}
+          </div>
+        )}
 
         {/* Phase 1 MVP: Multi-track overlay rendering */}
         {multiTrackState && multiTrackVideoRefs && multiTrackState.timelineTracks.length > 1 && (

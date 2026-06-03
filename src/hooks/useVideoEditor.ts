@@ -13,6 +13,7 @@ import {
   removeTrackFromTimeline,
   updateTrackInTimeline,
   createTimelineTrack,
+  validateMultiTrackState,
 } from "@/lib/timeline";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
@@ -195,7 +196,6 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
- 
   // Phase 1 MVP: Multi-track timeline support
   const [multiTrackState, setMultiTrackState] = useState<MultiTrackEditorState>(createMultiTrackState);
 
@@ -218,40 +218,49 @@ export function useVideoEditor() {
   }, [addTrack]);
 
   const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-    setRecipe((prev) => {
-      let next = { ...prev, ...patch };
+ setRecipe((prev) => {
+  const next = { ...prev, ...patch };
 
-      if (patch.rotate !== undefined && prev.rotate !== undefined) {
-        const rotDiff = Math.abs(patch.rotate - prev.rotate);
-        if (rotDiff === 90 || rotDiff === 270) {
-          if (prev.preset === "custom") {
-            next.customWidth = prev.customHeight;
-            next.customHeight = prev.customWidth;
+  if (patch.rotate !== undefined && prev.rotate !== undefined) {
+    const rotDiff = Math.abs(patch.rotate - prev.rotate);
+
+    if (rotDiff === 90 || rotDiff === 270) {
+      if (prev.preset === "custom") {
+        next.customWidth = prev.customHeight;
+        next.customHeight = prev.customWidth;
+      } else {
+        const currentPreset = getPresetById(prev.preset);
+
+        if (currentPreset) {
+          const targetRatio = currentPreset.height / currentPreset.width;
+
+          const matchingPreset = PRESETS.find(
+            (p) =>
+              p.id !== "custom" &&
+              Math.abs(p.width / p.height - targetRatio) < 0.01
+          );
+
+          if (matchingPreset) {
+            next.preset = matchingPreset.id;
           } else {
-            const currentPreset = getPresetById(prev.preset);
-            if (currentPreset) {
-              const targetRatio = currentPreset.height / currentPreset.width;
-              // Find a preset with the flipped ratio (allow small float differences)
-              const matchingPreset = PRESETS.find(p => p.id !== "custom" && Math.abs(p.width / p.height - targetRatio) < 0.01);
-              if (matchingPreset) {
-                next.preset = matchingPreset.id;
-              } else {
-                next.preset = "custom";
-                next.customWidth = currentPreset.height;
-                next.customHeight = currentPreset.width;
-              }
-            }
+            next.preset = "custom";
+            next.customWidth = currentPreset.height;
+            next.customHeight = currentPreset.width;
           }
         }
       }
+    }
+  }
 
-      // GIF has no audio — force keepAudio off
-      if (next.format === "gif") {
-        next.keepAudio = false;
-      }
-      return next;
-    });
+  // GIF has no audio — force keepAudio off
+  if (next.format === "gif") {
+    next.keepAudio = false;
+  }
+
+  return next;
+});
   }, []);
+
   const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
     switch (key) {
       case "preset":
