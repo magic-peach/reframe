@@ -149,23 +149,21 @@ export default function VideoPreview({
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
-  /**
-   * Track preview container dimensions for text overlay positioning.
-   */
   useEffect(() => {
-    const updateDimensions = () => {
-      if (previewContainerRef.current) {
-        const rect = previewContainerRef.current.getBoundingClientRect();
+    const el = previewContainerRef.current;
+    if (!el) return;
+    
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
         setContainerDimensions({
-          width: rect.width,
-          height: rect.height,
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
         });
       }
-    };
-
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
+    });
+    
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
