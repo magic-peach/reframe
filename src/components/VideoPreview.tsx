@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useCallback, RefObject } from "react";
 import { EditRecipe, TextOverlay } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
-import { Camera } from "lucide-react";
+import { Camera, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import ComparisonPreview from "./ComparisonPreview";
 import DraggableTextOverlays from "./DraggableTextOverlays";
 
@@ -32,6 +32,30 @@ export default function VideoPreview({
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showGridOverlay, setShowGridOverlay] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isMuted, setIsMuted] = useState(!recipe?.keepAudio);
+  
+  useEffect(() => {
+    setIsMuted(!recipe?.keepAudio);
+  }, [recipe?.keepAudio]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
+
+    return () => {
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+    };
+  }, [videoRef]);
+
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0,
@@ -159,6 +183,8 @@ export default function VideoPreview({
         video.pause();
         video.currentTime = start;
       }
+      
+      setCurrentTime(video.currentTime);
     };
 
     video.addEventListener("timeupdate", handleTimeUpdate);
@@ -171,14 +197,20 @@ export default function VideoPreview({
     ? { width: recipe.customWidth, height: recipe.customHeight }
     : recipe ? getPresetById(recipe.preset) : null;
 
-  const targetRatio = preset ? preset.width / preset.height : 16 / 9;
+  const isRotated = recipe?.rotate === 90 || recipe?.rotate === 270;
+  
+  const targetW = preset ? preset.width : 16;
+  const targetH = preset ? preset.height : 9;
+
+  const targetRatio = targetW / targetH;
 
   const overlay = (() => {
     if (!recipe || !showOverlay || !preset) return null;
 
-    // Use the dynamic target ratio instead of hardcoded 16:9
-    const containerRatio = targetRatio;
-    const outputRatio = preset.width / preset.height;
+    // Both containerRatio and outputRatio must use the same rotation-aware
+    // dimensions so the bar math stays consistent regardless of rotation.
+    const containerRatio = targetRatio;   // targetW / targetH, already swapped for 90°/270°
+    const outputRatio = targetW / targetH; // identical to containerRatio — bars are zero when output fits exactly
 
     if (recipe.framing === "fit") {
       if (outputRatio > containerRatio) {
@@ -233,7 +265,7 @@ export default function VideoPreview({
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all duration-300"
+        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all duration-300 group"
         style={{ aspectRatio: targetRatio }}
         tabIndex={0}
         onKeyDown={handleKeyDown}
@@ -241,26 +273,96 @@ export default function VideoPreview({
       >
         {isLoading && (
           <div
-            className="absolute inset-0 animate-pulse bg-[var(--surface)] rounded-xl transition-opacity duration-300"
+            className="absolute inset-0 animate-pulse bg-[var(--surface)] rounded-xl transition-opacity duration-300 z-10"
             aria-label="Loading video preview"
           />
         )}
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video
-          ref={videoRef}
-          controls
-          className={cn("w-full h-full object-contain transition-all duration-300", isLoading ? "opacity-0" : "opacity-100")}
-          style={{ transform: `rotate(${recipe?.rotate || 0}deg)` }}
-          onLoadedData={() => setIsLoading(false)}
-          playsInline
-          muted={!recipe?.keepAudio}
+        
+        {/* 1. ROTATED VIDEO LAYER */}
+        <div 
+          className="absolute top-1/2 left-1/2 flex items-center justify-center pointer-events-none z-0" 
+          style={{ 
+            width: isRotated ? (containerDimensions.height || '100%') : '100%',
+            height: isRotated ? (containerDimensions.width || '100%') : '100%',
+            transform: `translate(-50%, -50%) rotate(${recipe?.rotate || 0}deg)` 
+          }}
         >
-          <track kind="captions" />
-        </video>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            ref={videoRef}
+            className={cn("w-full h-full object-contain transition-all duration-300", isLoading ? "opacity-0" : "opacity-100")}
+            onLoadedData={() => setIsLoading(false)}
+            playsInline
+            muted={isMuted}
+          >
+            <track kind="captions" />
+          </video>
+        </div>
+
+        {/* CLICK-TO-PLAY LAYER */}
+        <div 
+          className="absolute inset-0 z-10 cursor-pointer"
+          onClick={() => {
+            if (videoRef.current) {
+              if (videoRef.current.paused) videoRef.current.play();
+              else videoRef.current.pause();
+            }
+          }}
+          aria-label="Play/Pause Video"
+        />
+
+        {/* 2. FIXED UI LAYER */}
+        <div className={cn("absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-3 z-40 transition-opacity duration-300", isPlaying ? "opacity-0 group-hover:opacity-100 focus-within:opacity-100" : "opacity-100")}>
+          <button 
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                if (videoRef.current.paused) videoRef.current.play();
+                else videoRef.current.pause();
+              }
+            }}
+            className="text-white hover:text-[var(--accent)] transition-colors"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+          </button>
+          
+          <input 
+            type="range"
+            min={0}
+            max={videoRef.current?.duration || 100}
+            step="0.01"
+            value={currentTime}
+            onChange={(e) => {
+              if (videoRef.current) {
+                videoRef.current.currentTime = Number(e.target.value);
+              }
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="flex-1 accent-[var(--accent)] h-1 cursor-pointer"
+            aria-label="Timeline"
+          />
+          
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                videoRef.current.muted = !videoRef.current.muted;
+                setIsMuted(videoRef.current.muted);
+              }
+            }}
+            className="text-white hover:text-[var(--accent)] transition-colors"
+            aria-label={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </button>
+        </div>
 
         {/* Letterbox / Crop overlay */}
         {overlay && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute inset-0 pointer-events-none z-20" aria-hidden="true">
             {overlay.mode === "fit" ? (
               // Letterbox: semi-transparent bars outside the content area
               <>
@@ -292,7 +394,7 @@ export default function VideoPreview({
 
         {/* 3x3 Grid Overlay */}
         {showGridOverlay && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute inset-0 pointer-events-none z-20" aria-hidden="true">
             {/* Vertical lines */}
             <div className="absolute top-0 bottom-0 left-1/3 border-l-2 border-dotted border-black" />
             <div className="absolute top-0 bottom-0 right-1/3 border-l-2 border-dotted border-black" />
@@ -319,7 +421,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={() => setShowOverlay((v) => !v)}
-            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-40 pointer-events-auto ${
               showOverlay
                 ? "bg-[var(--accent)] text-white"
                 : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
@@ -337,7 +439,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={() => setShowGridOverlay((v) => !v)}
-            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-40 pointer-events-auto ${
               showGridOverlay
                 ? "bg-[var(--accent)] text-white"
                 : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
@@ -355,7 +457,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={() => setShowComparison((v) => !v)}
-            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-40 pointer-events-auto ${
               showComparison
                 ? "bg-[var(--accent)] text-white"
                 : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
@@ -373,7 +475,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={handleGrabFrame}
-            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
+            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-40 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
             aria-label="Grab frame as PNG"
             title="Download current frame as PNG"
           >

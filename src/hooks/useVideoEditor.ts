@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
-import { getPresetById } from "@/lib/presets";
+import { getPresetById, PRESETS } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
@@ -188,16 +188,41 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
- const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-  setRecipe((prev) => {
-    const next = { ...prev, ...patch };
-    // GIF has no audio — force keepAudio off
-    if (next.format === "gif") {
-      next.keepAudio = false;
-    }
-    return next;
-  });
-}, []);
+  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+    setRecipe((prev) => {
+      let next = { ...prev, ...patch };
+
+      if (patch.rotate !== undefined && prev.rotate !== undefined) {
+        const rotDiff = Math.abs(patch.rotate - prev.rotate);
+        if (rotDiff === 90 || rotDiff === 270) {
+          if (prev.preset === "custom") {
+            next.customWidth = prev.customHeight;
+            next.customHeight = prev.customWidth;
+          } else {
+            const currentPreset = getPresetById(prev.preset);
+            if (currentPreset) {
+              const targetRatio = currentPreset.height / currentPreset.width;
+              // Find a preset with the flipped ratio (allow small float differences)
+              const matchingPreset = PRESETS.find(p => p.id !== "custom" && Math.abs(p.width / p.height - targetRatio) < 0.01);
+              if (matchingPreset) {
+                next.preset = matchingPreset.id;
+              } else {
+                next.preset = "custom";
+                next.customWidth = currentPreset.height;
+                next.customHeight = currentPreset.width;
+              }
+            }
+          }
+        }
+      }
+
+      // GIF has no audio — force keepAudio off
+      if (next.format === "gif") {
+        next.keepAudio = false;
+      }
+      return next;
+    });
+  }, []);
   const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
     switch (key) {
       case "preset":
@@ -362,8 +387,11 @@ export function useVideoEditor() {
 
   const recommendedPreset = useMemo(() => {
     if (!videoMetadata) return null;
-    return getPresetById(suggestPreset(videoMetadata.width, videoMetadata.height)) ?? null;
-  }, [videoMetadata]);
+    const isRotated = recipe.rotate === 90 || recipe.rotate === 270;
+    const w = isRotated ? videoMetadata.height : videoMetadata.width;
+    const h = isRotated ? videoMetadata.width : videoMetadata.height;
+    return getPresetById(suggestPreset(w, h)) ?? null;
+  }, [videoMetadata, recipe.rotate]);
 
   const handleFileSelect = useCallback(async (selectedFile: File) => {
     setResult(null);
@@ -437,6 +465,7 @@ export function useVideoEditor() {
           ...prev,
           trimStart: 0,
           trimEnd: null,
+          rotate: 0,
           ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
         };
       });
