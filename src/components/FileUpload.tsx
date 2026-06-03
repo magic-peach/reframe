@@ -92,11 +92,6 @@ export default function FileUpload({
       return;
     }
 
-    if (file.size > 500 * 1024 * 1024) {
-      setError("File size exceeds 500MB limit. Please select a smaller video.");
-      return;
-    }
-
     if (file.size > MAX_FILE_SIZE) {
       setError(
         `File too large (${formatBytes(file.size)}). Maximum allowed size is 2GB.`
@@ -246,17 +241,6 @@ export default function FileUpload({
       {fileError && (
         <p className="text-sm text-[var(--error)] text-center">{fileError}</p>
       )}
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
     </div>
   );
 
@@ -306,6 +290,16 @@ export default function FileUpload({
           </p>
         )}
         {currentFile ? <FileInfo /> : <DropZone />}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="video/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+          }}
+        />
       </div>
     </>
   );
