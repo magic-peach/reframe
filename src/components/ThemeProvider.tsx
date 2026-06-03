@@ -20,17 +20,23 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 function getCurrentTheme(): Theme {
-  if (
-    typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark")
-  ) {
-    return "dark";
+  if (typeof window !== "undefined") {
+    const savedTheme = localStorage.getItem("theme");
+
+    if (savedTheme === "dark" || savedTheme === "light") {
+      return savedTheme;
+    }
+
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "dark";
+    }
   }
+
   return "light";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(getCurrentTheme);
+  const [theme, setThemeState] = useState<Theme>("light");;
 
   const applyTheme = useCallback(
     (next: Theme, persist = true) => {
@@ -49,6 +55,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setThemeState(getCurrentTheme());
+    const currentTheme = getCurrentTheme();
+    applyTheme(currentTheme, false);
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e: MediaQueryListEvent) => {
