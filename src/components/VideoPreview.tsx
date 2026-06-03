@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
-import { useEffect, useRef, useState, useCallback, RefObject } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo, RefObject } from "react";
 import { EditRecipe, TextOverlay, OverlayPosition } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,13 @@ export default function VideoPreview({
   const [currentTime, setCurrentTime] = useState(0);
   const [isMuted, setIsMuted] = useState(!recipe?.keepAudio);
   const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
+  const adjustmentFilter = useMemo(() => {
+    const brightness = 1 + (recipe?.brightness ?? 0);
+    const contrast = recipe?.contrast ?? 1;
+    const saturation = recipe?.saturation ?? 1;
+
+    return `brightness(${brightness}) contrast(${contrast}) saturate(${saturation})`;
+  }, [recipe?.brightness, recipe?.contrast, recipe?.saturation]);
 
   useEffect(() => {
     if (!overlayFile) {
@@ -312,6 +319,7 @@ export default function VideoPreview({
           <video
             ref={videoRef}
             className={cn("w-full h-full object-contain transition-all duration-300", isLoading ? "opacity-0" : "opacity-100")}
+            style={{ filter: adjustmentFilter }}
             onLoadedData={() => setIsLoading(false)}
             playsInline
             muted={isMuted}
