@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
-import { EditRecipe, TextOverlay } from "@/lib/types";
+import { EditRecipe, TextOverlay, OverlayPosition } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera, Play, Pause, Volume2, VolumeX } from "lucide-react";
@@ -16,6 +16,10 @@ interface Props {
   selectedTextId?: string | null;
   onSelectText?: (id: string | null) => void;
   onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
+  overlayFile?: File | null;
+  overlayPosition?: OverlayPosition;
+  overlaySize?: number;
+  overlayOpacity?: number;
 }
 
 export default function VideoPreview({
@@ -25,6 +29,10 @@ export default function VideoPreview({
   selectedTextId = null,
   onSelectText,
   onUpdateText,
+  overlayFile,
+  overlayPosition = "bottom-right",
+  overlaySize = 150,
+  overlayOpacity = 100,
 }: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
@@ -35,6 +43,17 @@ export default function VideoPreview({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isMuted, setIsMuted] = useState(!recipe?.keepAudio);
+  const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!overlayFile) {
+      setOverlayUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(overlayFile);
+    setOverlayUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [overlayFile]);
   
   useEffect(() => {
     setIsMuted(!recipe?.keepAudio);
@@ -201,6 +220,10 @@ export default function VideoPreview({
   const targetH = preset ? preset.height : 9;
 
   const targetRatio = targetW / targetH;
+  
+  const scale = containerDimensions.width > 0 ? containerDimensions.width / targetW : 1;
+  const previewOverlaySize = overlaySize * scale;
+  const previewPadding = 20 * scale;
 
   const overlay = (() => {
     if (!recipe || !showOverlay || !preset) return null;
@@ -400,6 +423,23 @@ export default function VideoPreview({
             <div className="absolute left-0 right-0 top-1/3 border-t-2 border-dotted border-black" />
             <div className="absolute left-0 right-0 bottom-1/3 border-t-2 border-dotted border-black" />
           </div>
+        )}
+
+        {/* IMAGE OVERLAY LAYER */}
+        {overlayUrl && containerDimensions.width > 0 && (
+          <img
+            src={overlayUrl}
+            alt="Overlay"
+            className="absolute pointer-events-none z-30"
+            style={{
+              width: previewOverlaySize,
+              opacity: overlayOpacity / 100,
+              ...(overlayPosition === "top-left" ? { top: previewPadding, left: previewPadding } : {}),
+              ...(overlayPosition === "top-right" ? { top: previewPadding, right: previewPadding } : {}),
+              ...(overlayPosition === "bottom-left" ? { bottom: previewPadding, left: previewPadding } : {}),
+              ...(overlayPosition === "bottom-right" ? { bottom: previewPadding, right: previewPadding } : {}),
+            }}
+          />
         )}
 
         {/* Draggable Text Overlays */}
