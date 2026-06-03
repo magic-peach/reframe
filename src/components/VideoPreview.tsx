@@ -3,7 +3,11 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo, RefObject } from "react";
 import Image from "next/image";
-import { EditRecipe, TextOverlay, OverlayPosition } from "@/lib/types";
+import {
+  EditRecipe,
+  TextOverlay,
+  OverlayPosition,
+} from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera, Play, Pause, Volume2, VolumeX } from "lucide-react";
@@ -317,14 +321,14 @@ export default function VideoPreview({
             aria-label="Loading video preview"
           />
         )}
-        
+
         {/* 1. ROTATED VIDEO LAYER */}
-        <div 
-          className="absolute top-1/2 left-1/2 flex items-center justify-center pointer-events-none z-0" 
-          style={{ 
-            width: isRotated ? (containerDimensions.height || '100%') : '100%',
-            height: isRotated ? (containerDimensions.width || '100%') : '100%',
-            transform: `translate(-50%, -50%) rotate(${recipe?.rotate || 0}deg)` 
+        <div
+          className="absolute top-1/2 left-1/2 flex items-center justify-center pointer-events-none z-0"
+          style={{
+            width: isRotated ? (containerDimensions.height || "100%") : "100%",
+            height: isRotated ? (containerDimensions.width || "100%") : "100%",
+            transform: `translate(-50%, -50%) rotate(${recipe?.rotate || 0}deg)`,
           }}
         >
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -350,7 +354,7 @@ export default function VideoPreview({
 
         {/* 2. FIXED UI LAYER */}
         <div className={cn("absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-3 z-40 transition-opacity duration-300", isPlaying ? "opacity-0 group-hover:opacity-100 focus-within:opacity-100" : "opacity-100")}>
-          <button 
+          <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
@@ -361,8 +365,8 @@ export default function VideoPreview({
           >
             {isPlaying ? <Pause size={18} /> : <Play size={18} />}
           </button>
-          
-          <input 
+
+          <input
             type="range"
             min={0}
             max={videoRef.current?.duration || 100}
@@ -377,7 +381,7 @@ export default function VideoPreview({
             className="flex-1 accent-[var(--accent)] h-1 cursor-pointer"
             aria-label="Timeline"
           />
-          
+
           <button
             type="button"
             onClick={(e) => {
