@@ -1,13 +1,21 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { analyzeFileRisk, FileRiskLevel } from "@/lib/fileSizeRisk";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import {
+  createMultiTrackState,
+  addTrackToTimeline,
+  removeTrackFromTimeline,
+  updateTrackInTimeline,
+  createTimelineTrack,
+  validateMultiTrackState,
+} from "@/lib/timeline";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
@@ -132,6 +140,19 @@ function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   }
 }
 
+/**
+ * Migrates old recipes to include missing properties from newer versions.
+ * Ensures backwards compatibility when loading recipes created with older versions.
+ */
+function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
+  return {
+    ...DEFAULT_RECIPE,
+    ...recipe,
+    // Ensure textOverlays is always an array
+    textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
+  };
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -146,14 +167,15 @@ export function useVideoEditor() {
     const encoded = params.get("settings");
     if (encoded) {
       const decoded = decodeRecipe(encoded);
-      if (decoded) return { ...DEFAULT_RECIPE, ...decoded };
+      if (decoded) {
+        return migrateRecipe(decoded);
+      }
     }
-    return {
-      ...DEFAULT_RECIPE,
+    return migrateRecipe({
       soundOnCompletion:
         typeof window !== "undefined" &&
         localStorage.getItem("soundOnCompletion") === "true",
-    };
+    });
   });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
@@ -176,7 +198,29 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
- const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+
+  // Phase 1 MVP: Multi-track timeline support
+  const [multiTrackState, setMultiTrackState] = useState<MultiTrackEditorState>(createMultiTrackState);
+
+  const addTrack = useCallback((track: TimelineTrack) => {
+    setMultiTrackState(prev => addTrackToTimeline(prev, track));
+  }, []);
+
+  const removeTrack = useCallback((trackId: string) => {
+    setMultiTrackState(prev => removeTrackFromTimeline(prev, trackId));
+  }, []);
+
+  const updateTrack = useCallback((trackId: string, updates: Partial<TimelineTrack>) => {
+    setMultiTrackState(prev => updateTrackInTimeline(prev, trackId, updates));
+  }, []);
+
+  const addVideoTrack = useCallback((videoFile: File, startTime: number = 0) => {
+    const track = createTimelineTrack("video", videoFile, startTime);
+    addTrack(track);
+    return track;
+  }, [addTrack]);
+
+  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
     const next = { ...prev, ...patch };
     // GIF has no audio — force keepAudio off
@@ -729,5 +773,11 @@ export function useVideoEditor() {
     currentTime,
     toggleSound,
     fileRisk,
+    // Phase 1 MVP: Multi-track timeline support
+    multiTrackState,
+    addTrack,
+    removeTrack,
+    updateTrack,
+    addVideoTrack,
   };
 }
