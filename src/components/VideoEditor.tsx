@@ -371,7 +371,7 @@ return () => {
         exportStartedAt={exportStartedAt}
         onCancel={cancelExport}
       />
-      <OnboardingTour />
+      <OnboardingTour hasFile={!!file} />
 
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {status === "exporting" && `Exporting video: ${progress}%`}
