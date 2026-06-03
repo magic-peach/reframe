@@ -399,6 +399,9 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
   targetW = Math.round(targetW / 2) * 2;
   targetH = Math.round(targetH / 2) * 2;
 
+  // Target canvas dimensions are defined entirely by the preset.
+  // We do not swap them based on rotation, because the preset determines the final output aspect ratio.
+
   const ext = request.file.name.split(".").pop() ?? "mp4";
   const inputName = `input_${sessionId}.${ext}`;
 

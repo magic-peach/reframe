@@ -273,7 +273,7 @@ export default function VideoEditor() {
   } catch (err) {
     console.error("Failed to restore editor state", err);
   }
-}, []);
+}, [setOverlayOpacity, setOverlayPosition, setOverlaySize, updateRecipe]);
 
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -443,6 +443,10 @@ return () => {
                     selectedTextId={selectedTextId}
                     onSelectText={setSelectedTextId}
                     onUpdateText={handleUpdateTextOverlay}
+                    overlayFile={overlayFile}
+                    overlayPosition={overlayPosition}
+                    overlaySize={overlaySize}
+                    overlayOpacity={overlayOpacity}
                   />
 
                   <div className="mt-3">

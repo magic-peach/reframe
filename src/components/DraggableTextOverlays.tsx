@@ -216,7 +216,7 @@ export default function DraggableTextOverlays({
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 pointer-events-none"
+      className="absolute inset-0 pointer-events-none z-30"
       style={{ width: containerWidth, height: containerHeight }}
     >
       {textOverlays.map((overlay) => {
