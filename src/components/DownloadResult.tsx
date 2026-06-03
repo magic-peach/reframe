@@ -136,6 +136,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
 
       <div className="flex flex-wrap gap-2 pt-2">
         <a
+          data-testid="download-button"
           href={isValid ? result.blobUrl : undefined}
           download={isValid ? filename : undefined}
           className={cn(
@@ -166,6 +167,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
           Preview
         </a>
         <button
+          data-testid="reset-button"
           type="button"
           title="Reset and upload a new video"
           aria-label="Upload a new video"

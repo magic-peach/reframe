@@ -134,6 +134,7 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
               <div className="h-1 w-full bg-film-100 rounded-full overflow-hidden">
                 <div
                   role="progressbar"
+                  data-testid="export-progress"
                   aria-valuenow={progress}
                   aria-valuemin={0}
                   aria-valuemax={100}
