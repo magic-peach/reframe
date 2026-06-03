@@ -3,7 +3,13 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo, RefObject } from "react";
 import Image from "next/image";
-import { EditRecipe, TextOverlay, OverlayPosition } from "@/lib/types";
+import {
+  EditRecipe,
+  TextOverlay,
+  OverlayPosition,
+  TimelineTrack,
+  MultiTrackEditorState,
+} from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera, Play, Pause, Volume2, VolumeX } from "lucide-react";
@@ -17,6 +23,11 @@ interface Props {
   selectedTextId?: string | null;
   onSelectText?: (id: string | null) => void;
   onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
+  // Phase 1 MVP: Multi-track support
+  multiTrackState?: MultiTrackEditorState | null;
+  multiTrackVideoRefs?: Record<string, RefObject<HTMLVideoElement | null>>;
+
+  // Legacy / simple overlay support (used for quick single-layer edits)
   overlayFile?: File | null;
   overlayPosition?: OverlayPosition;
   overlaySize?: number;
@@ -30,6 +41,11 @@ export default function VideoPreview({
   selectedTextId = null,
   onSelectText,
   onUpdateText,
+  // Multi-track system (primary architecture)
+  multiTrackState,
+  multiTrackVideoRefs,
+
+  // Legacy/simple overlay system (quick single-layer edits)
   overlayFile,
   overlayPosition = "bottom-right",
   overlaySize = 150,
@@ -103,6 +119,9 @@ export default function VideoPreview({
   });
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
+  
+  // Phase 1 MVP: Multi-track URL management
+  const multiTrackUrlRefs = useRef<Record<string, string | null>>({});
 
   const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
@@ -179,6 +198,40 @@ export default function VideoPreview({
       }
     };
   }, [file, videoRef]);
+
+  // Phase 1 MVP: Setup multi-track video sources
+  useEffect(() => {
+    if (!multiTrackState || !multiTrackVideoRefs) return;
+
+    multiTrackState.timelineTracks.forEach((track) => {
+      if (track.type !== "video" || !track.source) return;
+
+      const videoRef = multiTrackVideoRefs[track.id];
+      if (!videoRef?.current) return;
+
+      // Cleanup old URL
+      if (multiTrackUrlRefs.current[track.id]) {
+        URL.revokeObjectURL(multiTrackUrlRefs.current[track.id]!);
+      }
+
+      // Create new URL and load
+      const url = URL.createObjectURL(track.source);
+      multiTrackUrlRefs.current[track.id] = url;
+      videoRef.current.src = url;
+      videoRef.current.load();
+
+      // Auto-play for preview
+      videoRef.current.play().catch(() => {});
+    });
+
+    return () => {
+      // Cleanup URLs on unmount
+      Object.values(multiTrackUrlRefs.current).forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+      multiTrackUrlRefs.current = {};
+    };
+  }, [multiTrackState, multiTrackVideoRefs]);
 
   useEffect(() => {
     if (!videoRef.current || !recipe) return;
@@ -317,14 +370,14 @@ export default function VideoPreview({
             aria-label="Loading video preview"
           />
         )}
-        
+
         {/* 1. ROTATED VIDEO LAYER */}
-        <div 
-          className="absolute top-1/2 left-1/2 flex items-center justify-center pointer-events-none z-0" 
-          style={{ 
-            width: isRotated ? (containerDimensions.height || '100%') : '100%',
-            height: isRotated ? (containerDimensions.width || '100%') : '100%',
-            transform: `translate(-50%, -50%) rotate(${recipe?.rotate || 0}deg)` 
+        <div
+          className="absolute top-1/2 left-1/2 flex items-center justify-center pointer-events-none z-0"
+          style={{
+            width: isRotated ? (containerDimensions.height || "100%") : "100%",
+            height: isRotated ? (containerDimensions.width || "100%") : "100%",
+            transform: `translate(-50%, -50%) rotate(${recipe?.rotate || 0}deg)`,
           }}
         >
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -350,7 +403,7 @@ export default function VideoPreview({
 
         {/* 2. FIXED UI LAYER */}
         <div className={cn("absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-3 z-40 transition-opacity duration-300", isPlaying ? "opacity-0 group-hover:opacity-100 focus-within:opacity-100" : "opacity-100")}>
-          <button 
+          <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
@@ -361,8 +414,8 @@ export default function VideoPreview({
           >
             {isPlaying ? <Pause size={18} /> : <Play size={18} />}
           </button>
-          
-          <input 
+
+          <input
             type="range"
             min={0}
             max={videoRef.current?.duration || 100}
@@ -377,7 +430,7 @@ export default function VideoPreview({
             className="flex-1 accent-[var(--accent)] h-1 cursor-pointer"
             aria-label="Timeline"
           />
-          
+
           <button
             type="button"
             onClick={(e) => {
@@ -393,6 +446,43 @@ export default function VideoPreview({
             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </button>
         </div>
+
+        {/* Phase 1 MVP: Multi-track overlay rendering */}
+        {multiTrackState && multiTrackVideoRefs && multiTrackState.timelineTracks.length > 1 && (
+          <div className="absolute inset-0 pointer-events-none" role="region" aria-label="Multi-track overlay layers">
+            {multiTrackState.timelineTracks
+              .filter((track) => track.visible && track.type === "video" && track.source && track.zIndex > 0)
+              .sort((a, b) => a.zIndex - b.zIndex)
+              .map((track) => {
+                const videoRef = multiTrackVideoRefs[track.id];
+                if (!videoRef) return null;
+
+                return (
+                  <video
+                    key={track.id}
+                    ref={videoRef}
+                    className="absolute"
+                    style={{
+                      left: track.position.x === -1 ? "50%" : `${track.position.x}px`,
+                      top: track.position.y === -1 ? "50%" : `${track.position.y}px`,
+                      width: `${track.scale * 100}%`,
+                      height: "auto",
+                      opacity: track.opacity / 100,
+                      transform:
+                        track.position.x === -1 && track.position.y === -1
+                          ? "translate(-50%, -50%)"
+                          : "none",
+                      zIndex: track.zIndex,
+                    }}
+                    muted
+                    playsInline
+                  >
+                    <track kind="captions" />
+                  </video>
+                );
+              })}
+          </div>
+        )}
 
         {/* Letterbox / Crop overlay */}
         {overlay && (
