@@ -144,6 +144,29 @@ export default function VideoPreview({
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !recipe) return;
+
+    const handleTimeUpdate = () => {
+      // If duration is not yet available, fallback to a safe large number to prevent immediate stops
+      const start = recipe.trimStart || 0;
+      const end = recipe.trimEnd !== null ? recipe.trimEnd : (video.duration || Infinity);
+
+      if (video.currentTime < start) {
+        video.currentTime = start;
+      } else if (video.currentTime >= end && end > 0) {
+        video.pause();
+        video.currentTime = start;
+      }
+    };
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, [recipe, videoRef]);
+
   const preset = recipe?.preset === "custom"
     ? { width: recipe.customWidth, height: recipe.customHeight }
     : recipe ? getPresetById(recipe.preset) : null;
