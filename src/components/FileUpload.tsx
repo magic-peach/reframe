@@ -6,6 +6,7 @@ import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
 import { cn, formatBytes, formatDuration } from "@/lib/utils";
 import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
+import { validateVideoMagicBytes } from "@/utils/video-validation";
 
 interface Props {
   onFileSelect: (file: File) => void;
@@ -83,38 +84,53 @@ export default function FileUpload({
   }, []);
 
   // ── File validation ───────────────────────────────────
-  const handleFile = useCallback((file: File) => {
+  const handleFile = useCallback(async (file: File) => {
     setError("");
     setWarning("");
 
-    if (!file.type.startsWith("video/")) {
-      setError("Please drop a valid video file (MP4, MOV, AVI, WebM, etc.)");
-      return;
-    }
+    try {
+      if (!file.type.startsWith("video/")) {
+        setError("Please drop a valid video file (MP4, MOV, AVI, WebM, etc.)");
+        return;
+      }
 
-    if (file.size > 500 * 1024 * 1024) {
-      setError("File size exceeds 500MB limit. Please select a smaller video.");
-      return;
-    }
+      // Magic-byte check: verify the actual file header, not just its extension
+      // or the browser-supplied MIME type (which is derived from the extension
+      // and can be spoofed by renaming any file to *.mp4).
+      const isRealVideo = await validateVideoMagicBytes(file);
+      if (!isRealVideo) {
+        setError(
+          "File does not appear to be a valid video. Please upload an MP4, WebM, AVI, MOV, or other supported format."
+        );
+        return;
+      }
 
-    if (file.size > MAX_FILE_SIZE) {
-      setError(
-        `File too large (${formatBytes(file.size)}). Maximum allowed size is 2GB.`
-      );
-      return;
-    }
+      if (file.size > 500 * 1024 * 1024) {
+        setError("File size exceeds 500MB limit. Please select a smaller video.");
+        return;
+      }
 
-    if (file.size > WARNING_FILE_SIZE) {
-      const estimatedMinutes = Math.max(
-        1,
-        Math.round(file.size / (100 * 1024 * 1024))
-      );
-      setWarning(
-        `Large file detected (${formatBytes(file.size)}). Processing may take ~${estimatedMinutes} minutes.`
-      );
-    }
+      if (file.size > MAX_FILE_SIZE) {
+        setError(
+          `File too large (${formatBytes(file.size)}). Maximum allowed size is 2GB.`
+        );
+        return;
+      }
 
-    onFileSelect(file);
+      if (file.size > WARNING_FILE_SIZE) {
+        const estimatedMinutes = Math.max(
+          1,
+          Math.round(file.size / (100 * 1024 * 1024))
+        );
+        setWarning(
+          `Large file detected (${formatBytes(file.size)}). Processing may take ~${estimatedMinutes} minutes.`
+        );
+      }
+
+      onFileSelect(file);
+    } catch {
+      setError("Could not read the file. Please try again with a different file.");
+    }
   }, [onFileSelect]);
 
   // ── Drop zone (inner) handler ─────────────────────────
