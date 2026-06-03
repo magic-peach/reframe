@@ -144,43 +144,35 @@ export default function VideoPreview({
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
+  const preset = recipe?.preset === "custom"
+    ? { width: recipe.customWidth, height: recipe.customHeight }
+    : recipe ? getPresetById(recipe.preset) : null;
+
+  const targetRatio = preset ? preset.width / preset.height : 16 / 9;
+
   const overlay = (() => {
-    if (!recipe || !showOverlay) return null;
+    if (!recipe || !showOverlay || !preset) return null;
 
-    const preset = recipe.preset === "custom"
-      ? { width: recipe.customWidth, height: recipe.customHeight }
-      : getPresetById(recipe.preset);
-
-    if (!preset) return null;
-
-    // Preview container is 16:9
-    const containerW = 16;
-    const containerH = 9;
-    const containerRatio = containerW / containerH;   // 1.777…
+    // Use the dynamic target ratio instead of hardcoded 16:9
+    const containerRatio = targetRatio;
     const outputRatio = preset.width / preset.height;
 
     if (recipe.framing === "fit") {
-      // Letterbox: the output video fits entirely inside 16:9, padded with bars.
       if (outputRatio > containerRatio) {
-        // Wider output → pillarbox bars on top & bottom
         const contentH = (containerRatio / outputRatio) * 100;
         const barH = (100 - contentH) / 2;
         return { mode: "fit", barTop: `${barH}%`, barBottom: `${barH}%`, barLeft: "0", barRight: "0" };
       } else {
-        // Taller output → letterbox bars on left & right
         const contentW = (outputRatio / containerRatio) * 100;
         const barW = (100 - contentW) / 2;
         return { mode: "fit", barTop: "0", barBottom: "0", barLeft: `${barW}%`, barRight: `${barW}%` };
       }
     } else {
-      // Fill / crop: the output fills the entire 16:9 preview — show a box representing what survives the crop.
       if (outputRatio < containerRatio) {
-        // Output is taller → crops top & bottom
         const visibleH = (outputRatio / containerRatio) * 100;
         const cropH = (100 - visibleH) / 2;
         return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };
       } else {
-        // Output is wider → crops left & right
         const visibleW = (containerRatio / outputRatio) * 100;
         const cropW = (100 - visibleW) / 2;
         return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
@@ -218,7 +210,8 @@ export default function VideoPreview({
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all duration-300"
+        style={{ aspectRatio: targetRatio }}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"
@@ -233,7 +226,8 @@ export default function VideoPreview({
         <video
           ref={videoRef}
           controls
-          className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+          className={cn("w-full h-full object-contain transition-all duration-300", isLoading ? "opacity-0" : "opacity-100")}
+          style={{ transform: `rotate(${recipe?.rotate || 0}deg)` }}
           onLoadedData={() => setIsLoading(false)}
           playsInline
           muted={!recipe?.keepAudio}
