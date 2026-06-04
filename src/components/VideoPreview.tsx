@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
 import { EditRecipe, TextOverlay, OverlayElement } from "@/lib/types";
+import { EditRecipe, TextOverlay, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
@@ -20,6 +21,9 @@ interface Props {
   overlayElements?: OverlayElement[];
   onUpdateOverlay?: (id: string, patch: Partial<OverlayElement>) => void;
   onRemoveOverlay?: (id: string) => void;
+  // Phase 1 MVP: Multi-track support
+  multiTrackState?: MultiTrackEditorState | null;
+  multiTrackVideoRefs?: Record<string, RefObject<HTMLVideoElement | null>>;
 }
 
 export default function VideoPreview({
@@ -32,18 +36,24 @@ export default function VideoPreview({
   overlayElements = [],
   onUpdateOverlay,
   onRemoveOverlay,
+  multiTrackState,
+  multiTrackVideoRefs,
 }: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [showGridOverlay, setShowGridOverlay] = useState(false);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0,
   });
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
+  
+  // Phase 1 MVP: Multi-track URL management
+  const multiTrackUrlRefs = useRef<Record<string, string | null>>({});
 
   const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
@@ -120,6 +130,40 @@ export default function VideoPreview({
       }
     };
   }, [file, videoRef]);
+
+  // Phase 1 MVP: Setup multi-track video sources
+  useEffect(() => {
+    if (!multiTrackState || !multiTrackVideoRefs) return;
+
+    multiTrackState.timelineTracks.forEach((track) => {
+      if (track.type !== "video" || !track.source) return;
+
+      const videoRef = multiTrackVideoRefs[track.id];
+      if (!videoRef?.current) return;
+
+      // Cleanup old URL
+      if (multiTrackUrlRefs.current[track.id]) {
+        URL.revokeObjectURL(multiTrackUrlRefs.current[track.id]!);
+      }
+
+      // Create new URL and load
+      const url = URL.createObjectURL(track.source);
+      multiTrackUrlRefs.current[track.id] = url;
+      videoRef.current.src = url;
+      videoRef.current.load();
+
+      // Auto-play for preview
+      videoRef.current.play().catch(() => {});
+    });
+
+    return () => {
+      // Cleanup URLs on unmount
+      Object.values(multiTrackUrlRefs.current).forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+      multiTrackUrlRefs.current = {};
+    };
+  }, [multiTrackState, multiTrackVideoRefs]);
 
   useEffect(() => {
     if (!videoRef.current || !recipe) return;
@@ -248,6 +292,43 @@ export default function VideoPreview({
           <track kind="captions" />
         </video>
 
+        {/* Phase 1 MVP: Multi-track overlay rendering */}
+        {multiTrackState && multiTrackVideoRefs && multiTrackState.timelineTracks.length > 1 && (
+          <div className="absolute inset-0 pointer-events-none" role="region" aria-label="Multi-track overlay layers">
+            {multiTrackState.timelineTracks
+              .filter((track) => track.visible && track.type === "video" && track.source && track.zIndex > 0)
+              .sort((a, b) => a.zIndex - b.zIndex)
+              .map((track) => {
+                const videoRef = multiTrackVideoRefs[track.id];
+                if (!videoRef) return null;
+
+                return (
+                  <video
+                    key={track.id}
+                    ref={videoRef}
+                    className="absolute"
+                    style={{
+                      left: track.position.x === -1 ? "50%" : `${track.position.x}px`,
+                      top: track.position.y === -1 ? "50%" : `${track.position.y}px`,
+                      width: `${track.scale * 100}%`,
+                      height: "auto",
+                      opacity: track.opacity / 100,
+                      transform:
+                        track.position.x === -1 && track.position.y === -1
+                          ? "translate(-50%, -50%)"
+                          : "none",
+                      zIndex: track.zIndex,
+                    }}
+                    muted
+                    playsInline
+                  >
+                    <track kind="captions" />
+                  </video>
+                );
+              })}
+          </div>
+        )}
+
         {/* Letterbox / Crop overlay */}
         {overlay && (
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
@@ -275,6 +356,18 @@ export default function VideoPreview({
                 />
               </>
             )}
+          </div>
+        )}
+
+        {/* 3x3 Grid Overlay */}
+        {showGridOverlay && (
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            {/* Vertical lines */}
+            <div className="absolute top-0 bottom-0 left-1/3 border-l-2 border-dotted border-black" />
+            <div className="absolute top-0 bottom-0 right-1/3 border-l-2 border-dotted border-black" />
+            {/* Horizontal lines */}
+            <div className="absolute left-0 right-0 top-1/3 border-t-2 border-dotted border-black" />
+            <div className="absolute left-0 right-0 bottom-1/3 border-t-2 border-dotted border-black" />
           </div>
         )}
 
@@ -317,6 +410,24 @@ export default function VideoPreview({
             title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
           >
             {showOverlay ? "Hide overlay" : "Show overlay"}
+          </button>
+        )}
+
+        {/* Grid overlay button */}
+        {recipe && !isLoading && (
+          <button
+            type="button"
+            onClick={() => setShowGridOverlay((v) => !v)}
+            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+              showGridOverlay
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+            }`}
+            aria-pressed={showGridOverlay}
+            aria-label={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
+            title={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
+          >
+            {showGridOverlay ? "Hide grid" : "Show grid"}
           </button>
         )}
 

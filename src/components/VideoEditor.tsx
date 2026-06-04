@@ -231,6 +231,19 @@ export default function VideoEditor() {
 
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  useEffect(() => {
+  if (!file) return;
+
+  localStorage.setItem(
+    "editorState",
+    JSON.stringify({
+      recipe,
+      overlayPosition,
+      overlaySize,
+      overlayOpacity,
+    })
+  );
+}, [recipe, overlayPosition, overlaySize, overlayOpacity, file]);
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
@@ -241,6 +254,33 @@ export default function VideoEditor() {
     export: false,
     emoji: false,
   });
+  useEffect(() => {
+  const saved = localStorage.getItem("editorState");
+
+  if (!saved) return;
+
+  try {
+    const parsed = JSON.parse(saved);
+
+    if (parsed.recipe) {
+      updateRecipe(parsed.recipe);
+    }
+
+    if (parsed.overlayPosition) {
+      setOverlayPosition(parsed.overlayPosition);
+    }
+
+    if (parsed.overlaySize) {
+      setOverlaySize(parsed.overlaySize);
+    }
+
+    if (parsed.overlayOpacity) {
+      setOverlayOpacity(parsed.overlayOpacity);
+    }
+  } catch (err) {
+    console.error("Failed to restore editor state", err);
+  }
+}, []);
 
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -270,6 +310,7 @@ export default function VideoEditor() {
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
+      
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       downloadRef.current.scrollIntoView({
         behavior: prefersReducedMotion ? "instant" : "smooth",
@@ -277,6 +318,20 @@ export default function VideoEditor() {
       });
     }
   }, [status]);
+  useEffect(() => {
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (file) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+};
+
+window.addEventListener("beforeunload", handleBeforeUnload);
+
+return () => {
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+};
+}, [file]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
@@ -635,36 +690,6 @@ export default function VideoEditor() {
                       setOverlayOpacity={setOverlayOpacity}
                     />
                   </Section>
-                  <details className="group">
-                  <summary className="flex items-center gap-2 cursor-pointer select-none list-none
-                    text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] py-1">
-                    <span className="text-film-500 opacity-80 transition-transform duration-200 group-open:rotate-90">›</span>
-                    Advanced settings
-                    <div className="flex-1 h-px bg-[var(--border)]" />
-                  </summary>
-
-                  <div className="mt-4 space-y-4">
-                    <AccordionSection
-                      id="rotation"
-                      icon={<RotateCw size={12} />}
-                      title="Rotation"
-                      isOpen={openSections.rotation}
-                      onToggle={() => toggleSection("rotation")}
-                    >
-                      <RotateControl recipe={recipe} onChange={updateRecipe} />
-                    </AccordionSection>
-
-                    <AccordionSection
-                      id="export"
-                      icon={<SlidersHorizontal size={12} />}
-                      title="Export"
-                      isOpen={openSections.export}
-                      onToggle={() => toggleSection("export")}
-                    >
-                      <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                    </AccordionSection>
-                  </div>
-                </details>
                 </div>
               </div>
             )}
