@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
@@ -15,9 +15,17 @@ import {
   createTimelineTrack,
   validateMultiTrackState,
 } from "@/lib/timeline";
+import {
+  getStoredSoundPreference,
+  loadPersistedRecipe,
+  migrateRecipe as migratePersistedRecipe,
+  persistRecipe,
+  persistSoundPreference,
+  RECIPE_STORAGE_KEY,
+  LEGACY_SETTINGS_KEY,
+} from "@/lib/editorPersistence";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
-  const STORAGE_KEY = "reframe:recipe";
 
 export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
@@ -139,19 +147,6 @@ function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   }
 }
 
-/**
- * Migrates old recipes to include missing properties from newer versions.
- * Ensures backwards compatibility when loading recipes created with older versions.
- */
-function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
-  return {
-    ...DEFAULT_RECIPE,
-    ...recipe,
-    // Ensure textOverlays is always an array
-    textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
-  };
-}
-
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
@@ -167,14 +162,12 @@ export function useVideoEditor() {
     if (encoded) {
       const decoded = decodeRecipe(encoded);
       if (decoded) {
-        return migrateRecipe(decoded);
+        return migratePersistedRecipe(decoded);
       }
     }
-    return migrateRecipe({
-      soundOnCompletion:
-        typeof window !== "undefined" &&
-        localStorage.getItem("soundOnCompletion") === "true",
-    });
+    return loadPersistedRecipe(localStorage, migratePersistedRecipe({
+      soundOnCompletion: getStoredSoundPreference(localStorage),
+    }));
   });
   const [history, setHistory] = useState<EditRecipe[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -439,6 +432,7 @@ export function useVideoEditor() {
             soundOnCompletion: initialSoundOnCompletion
           }));
         }
+        setRecipe((current) => loadPersistedRecipe(localStorage, current));
       }
     } catch (e) {
       // ignore
@@ -474,26 +468,12 @@ export function useVideoEditor() {
     }
   }, [recipe]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem("reframe-settings", JSON.stringify({
-        preset: recipe.preset,
-        quality: recipe.quality,
-        speed: recipe.speed,
-        customWidth: recipe.customWidth,
-        customHeight: recipe.customHeight
-      }));
-    } catch (e) {
-      // ignore
-    }
-  }, [recipe.preset, recipe.quality, recipe.speed, recipe.customWidth, recipe.customHeight]);
-
   // Persist the full recipe (debounced)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const timer = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(recipe));
+        persistRecipe(localStorage, recipe);
       } catch {
         // ignore
       }
@@ -739,7 +719,8 @@ export function useVideoEditor() {
     setRecipe(DEFAULT_RECIPE);
     pushHistory(DEFAULT_RECIPE);
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(RECIPE_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_SETTINGS_KEY);
     } catch {
       // ignore
     }
@@ -769,14 +750,15 @@ export function useVideoEditor() {
     setError(null);
     setExportStartedAt(null);
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(RECIPE_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_SETTINGS_KEY);
     } catch {
       // ignore
     }
   }, [result, initHistory]);
 
   useEffect(() => {
-    localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
+    persistSoundPreference(localStorage, recipe.soundOnCompletion);
   }, [recipe.soundOnCompletion]);
 
   const seekTo = useCallback((time: number) => {
