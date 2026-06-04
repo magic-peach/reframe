@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { loadOverlayState, persistOverlayState } from "@/lib/editorPersistence";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -225,19 +226,20 @@ export default function VideoEditor() {
 
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const initialOverlayState = useRef({
+    overlayPosition,
+    overlaySize,
+    overlayOpacity,
+  });
   useEffect(() => {
-  if (!file) return;
+    if (!file) return;
 
-  localStorage.setItem(
-    "editorState",
-    JSON.stringify({
-      recipe,
+    persistOverlayState(localStorage, {
       overlayPosition,
       overlaySize,
       overlayOpacity,
-    })
-  );
-}, [recipe, overlayPosition, overlaySize, overlayOpacity, file]);
+    });
+  }, [overlayPosition, overlaySize, overlayOpacity, file]);
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
@@ -248,32 +250,16 @@ export default function VideoEditor() {
     export: false,
   });
   useEffect(() => {
-  const saved = localStorage.getItem("editorState");
+    const restored = loadOverlayState(localStorage, {
+      overlayPosition: initialOverlayState.current.overlayPosition,
+      overlaySize: initialOverlayState.current.overlaySize,
+      overlayOpacity: initialOverlayState.current.overlayOpacity,
+    });
 
-  if (!saved) return;
-
-  try {
-    const parsed = JSON.parse(saved);
-
-    if (parsed.recipe) {
-      updateRecipe(parsed.recipe);
-    }
-
-    if (parsed.overlayPosition) {
-      setOverlayPosition(parsed.overlayPosition);
-    }
-
-    if (parsed.overlaySize) {
-      setOverlaySize(parsed.overlaySize);
-    }
-
-    if (parsed.overlayOpacity) {
-      setOverlayOpacity(parsed.overlayOpacity);
-    }
-  } catch (err) {
-    console.error("Failed to restore editor state", err);
-  }
-}, []);
+    if (restored.overlayPosition) setOverlayPosition(restored.overlayPosition);
+    if (typeof restored.overlaySize === "number") setOverlaySize(restored.overlaySize);
+    if (typeof restored.overlayOpacity === "number") setOverlayOpacity(restored.overlayOpacity);
+  }, [setOverlayOpacity, setOverlayPosition, setOverlaySize]);
 
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
