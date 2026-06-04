@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { loadOverlayState, persistOverlayState } from "@/lib/editorPersistence";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -226,6 +227,20 @@ export default function VideoEditor() {
 
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const initialOverlayState = useRef({
+    overlayPosition,
+    overlaySize,
+    overlayOpacity,
+  });
+  useEffect(() => {
+    if (!file) return;
+
+    persistOverlayState(localStorage, {
+      overlayPosition,
+      overlaySize,
+      overlayOpacity,
+    });
+  }, [overlayPosition, overlaySize, overlayOpacity, file]);
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
@@ -235,6 +250,17 @@ export default function VideoEditor() {
     audio: false,
     export: false,
   });
+  useEffect(() => {
+    const restored = loadOverlayState(localStorage, {
+      overlayPosition: initialOverlayState.current.overlayPosition,
+      overlaySize: initialOverlayState.current.overlaySize,
+      overlayOpacity: initialOverlayState.current.overlayOpacity,
+    });
+
+    if (restored.overlayPosition) setOverlayPosition(restored.overlayPosition);
+    if (typeof restored.overlaySize === "number") setOverlaySize(restored.overlaySize);
+    if (typeof restored.overlayOpacity === "number") setOverlayOpacity(restored.overlayOpacity);
+  }, [setOverlayOpacity, setOverlayPosition, setOverlaySize]);
 
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -264,6 +290,7 @@ export default function VideoEditor() {
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
+      
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       downloadRef.current.scrollIntoView({
         behavior: prefersReducedMotion ? "instant" : "smooth",
@@ -271,6 +298,20 @@ export default function VideoEditor() {
       });
     }
   }, [status]);
+  useEffect(() => {
+const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (file) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+};
+
+window.addEventListener("beforeunload", handleBeforeUnload);
+
+return () => {
+  window.removeEventListener("beforeunload", handleBeforeUnload);
+};
+}, [file]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
