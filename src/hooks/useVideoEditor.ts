@@ -1,12 +1,20 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import {
+  createMultiTrackState,
+  addTrackToTimeline,
+  removeTrackFromTimeline,
+  updateTrackInTimeline,
+  createTimelineTrack,
+  validateMultiTrackState,
+} from "@/lib/timeline";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
   const STORAGE_KEY = "reframe:recipe";
@@ -188,7 +196,29 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
- const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+
+  // Phase 1 MVP: Multi-track timeline support
+  const [multiTrackState, setMultiTrackState] = useState<MultiTrackEditorState>(createMultiTrackState);
+
+  const addTrack = useCallback((track: TimelineTrack) => {
+    setMultiTrackState(prev => addTrackToTimeline(prev, track));
+  }, []);
+
+  const removeTrack = useCallback((trackId: string) => {
+    setMultiTrackState(prev => removeTrackFromTimeline(prev, trackId));
+  }, []);
+
+  const updateTrack = useCallback((trackId: string, updates: Partial<TimelineTrack>) => {
+    setMultiTrackState(prev => updateTrackInTimeline(prev, trackId, updates));
+  }, []);
+
+  const addVideoTrack = useCallback((videoFile: File, startTime: number = 0) => {
+    const track = createTimelineTrack("video", videoFile, startTime);
+    addTrack(track);
+    return track;
+  }, [addTrack]);
+
+  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
     const next = { ...prev, ...patch };
     // GIF has no audio — force keepAudio off
@@ -729,5 +759,11 @@ export function useVideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    // Phase 1 MVP: Multi-track timeline support
+    multiTrackState,
+    addTrack,
+    removeTrack,
+    updateTrack,
+    addVideoTrack,
   };
 }
