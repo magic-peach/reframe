@@ -1,11 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Github, Twitter, Instagram, Linkedin, ArrowRight, ShieldCheck, Zap, Globe, ExternalLink, Lock, Mail } from "lucide-react";
+import { Github, Twitter, Instagram, Linkedin, ArrowRight, ShieldCheck, Zap, Globe, ExternalLink, Lock, Mail, CheckCircle, XCircle, X } from "lucide-react";
 
 export default function Footer() {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [email, setEmail] = useState("");
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setToast({ message: "Please enter a valid email address.", type: "error" });
+      return;
+    }
+    setToast({ message: "You're subscribed! Thanks for staying updated", type: "success" });
+    setEmail("");
+    setIsExpanded(false);
+  };
 
   return (
     <footer className="w-full border-t border-[var(--border)] bg-[var(--bg)] text-[var(--text)] px-6 py-16 mt-20 transition-colors duration-300">
@@ -66,8 +86,8 @@ export default function Footer() {
               </button>
             ) : (
               <div id="updates-signup-form" className="w-full sm:w-72 px-4 flex items-center bg-[var(--surface)] border border-[var(--accent)] rounded-lg transition-all duration-500">
-                <form aria-label="Updates signup form" onSubmit={(e) => { e.preventDefault(); setIsExpanded(false); }} className="flex w-full items-center">
-                  <input type="email" placeholder="ENTER EMAIL" className="bg-transparent border-none text-[10px] font-bold tracking-widest text-[var(--text)] focus:outline-none w-full py-3 placeholder:opacity-30" aria-label="Email address for updates" onBlur={() => setIsExpanded(false)} />
+                <form aria-label="Updates signup form" onSubmit={handleSubscribe} className="flex w-full items-center">
+                  <input type="email" placeholder="ENTER EMAIL" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-transparent border-none text-[10px] font-bold tracking-widest text-[var(--text)] focus:outline-none w-full py-3 placeholder:opacity-30" aria-label="Email address for updates" onBlur={() => setIsExpanded(false)} />
                   <button aria-label="Submit email for updates" type="submit" className="text-[var(--accent)] hover:text-[var(--accent-hover)] p-1">
                     <ArrowRight size={16} aria-hidden="true" />
                   </button>
@@ -108,6 +128,26 @@ export default function Footer() {
           Processing happens locally
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-bold transition-all duration-300
+            ${toast.type === "success"
+              ? "bg-green-600 text-white"
+              : "bg-red-500 text-white"
+            }`}
+        >
+          {toast.type === "success"
+            ? <CheckCircle size={18} className="shrink-0" />
+            : <XCircle size={18} className="shrink-0" />
+          }
+          <span>{toast.message}</span>
+          <button onClick={() => setToast(null)} className="ml-2 opacity-70 hover:opacity-100" aria-label="Dismiss">
+            <X size={14} />
+          </button>
+        </div>
+      )}
     </footer>
   );
 }
