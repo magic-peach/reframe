@@ -169,13 +169,12 @@ export default function FileUpload({
       </p>
 
       {fileError && (
-        <p className="text-xs text-[var(--error)] mt-2 font-medium">{fileError}</p>
+        <p className="text-sm text-[var(--error)] text-center">{fileError}</p>
       )}
     </div>
   );
 
   const DropZone = () => (
-  <>
     <div
       id="upload-zone"
       role="button"
