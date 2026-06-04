@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 
 const TOUR_KEY = "reframe_onboarding_complete";
@@ -48,6 +48,7 @@ const TOUR_STEPS: TourStep[] = [
 
 const PADDING = 12;
 const TOOLTIP_OFFSET = 16;
+const VIEWPORT_MARGIN = 8;
 
 interface Rect {
   top: number;
@@ -65,6 +66,9 @@ function getTooltipStyle(
   const tw = tooltip?.offsetWidth ?? 320;
   const th = tooltip?.offsetHeight ?? 140;
 
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
   const sr = {
     top: rect.top - PADDING,
     left: rect.left - PADDING,
@@ -72,53 +76,42 @@ function getTooltipStyle(
     height: rect.height + PADDING * 2,
   };
 
-  let style: React.CSSProperties;
+  let top: number;
+  let left: number;
 
   switch (position) {
     case "top":
-      style = {
-        top: sr.top - th - TOOLTIP_OFFSET,
-        left: sr.left + sr.width / 2 - tw / 2,
-      };
+      top = sr.top - th - TOOLTIP_OFFSET;
+      left = sr.left + sr.width / 2 - tw / 2;
       break;
     case "left":
-      style = {
-        top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left - tw - TOOLTIP_OFFSET,
-      };
+      top = sr.top + sr.height / 2 - th / 2;
+      left = sr.left - tw - TOOLTIP_OFFSET;
       break;
     case "right":
-      style = {
-        top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left + sr.width + TOOLTIP_OFFSET,
-      };
+      top = sr.top + sr.height / 2 - th / 2;
+      left = sr.left + sr.width + TOOLTIP_OFFSET;
       break;
     case "bottom":
     default:
-      style = {
-        top: sr.top + sr.height + TOOLTIP_OFFSET,
-        left: sr.left + sr.width / 2 - tw / 2,
-      };
+      top = sr.top + sr.height + TOOLTIP_OFFSET;
+      left = sr.left + sr.width / 2 - tw / 2;
       break;
   }
 
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const margin = 8;
+  // Clamp within viewport so the tooltip is never cut off
+  left = Math.max(VIEWPORT_MARGIN, Math.min(left, vw - tw - VIEWPORT_MARGIN));
+  top = Math.max(VIEWPORT_MARGIN, Math.min(top, vh - th - VIEWPORT_MARGIN));
 
-  if (typeof style.left === "number") {
-    style.left = Math.max(margin, Math.min(style.left, vw - tw - margin));
-  }
-  if (typeof style.top === "number") {
-    style.top = Math.max(margin, Math.min(style.top, vh - th - margin));
-  }
+  return { top, left };
 
-  return style;
+  return { top, left };
 }
 
 interface SpotlightProps {
   rect: Rect;
 }
+
 
 function Spotlight({ rect }: SpotlightProps) {
   const r = {
@@ -186,6 +179,11 @@ function Tooltip({
   onSkip,
   tooltipRef,
 }: TooltipProps) {
+  const [, forceUpdate] = useState(0);
+  useLayoutEffect(() => {
+    forceUpdate((n) => n + 1);
+  }, [stepIndex]);
+
   const style = getTooltipStyle(rect, step.position, tooltipRef);
   const isLast = stepIndex === totalSteps - 1;
 
@@ -195,7 +193,7 @@ function Tooltip({
       role="dialog"
       aria-modal="true"
       aria-label={`Onboarding step ${stepIndex + 1} of ${totalSteps}: ${step.title}`}
-      className="fixed z-[9999] w-80 rounded-xl shadow-2xl border
+  className="fixed z-[9999] w-80 max-w-[calc(100vw-16px)] rounded-xl shadow-2xl border
         bg-[var(--surface)]
         border-[var(--border)]
         text-[var(--text)]
