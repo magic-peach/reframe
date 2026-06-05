@@ -44,8 +44,8 @@ function Section({ icon, title, children, delay = 0 }: SectionProps) {
       <div className="flex items-center gap-2">
         <span className="text-film-500 opacity-80">{icon}</span>
         <h3 className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
-          {title}
-        </h3>
+  {title}
+</h3>
         <div className="flex-1 h-px bg-[var(--border)]" />
       </div>
       {children}
@@ -82,7 +82,7 @@ function AccordionSection({
       >
         <div className="flex items-center gap-2">
           <span className="text-film-500 opacity-80">{icon}</span>
-          <span className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">{title}</span>
+          <h2 className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]"></h2>
         </div>
         <svg
           aria-hidden="true"
