@@ -1,0 +1,1 @@
+export default function LazyComponent() { return <div>Lazy Loaded Content</div>; }
