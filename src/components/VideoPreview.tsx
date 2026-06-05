@@ -1,11 +1,11 @@
 /* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
-import { useEffect, useRef, useState, useCallback, RefObject } from "react";
-import { EditRecipe, TextOverlay, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
+import { useEffect, useRef, useState, useCallback, useMemo, RefObject } from "react";
+import { EditRecipe, TextOverlay, MultiTrackEditorState, OverlayPosition } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
-import { Camera } from "lucide-react";
+import { Camera, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import ComparisonPreview from "./ComparisonPreview";
 import DraggableTextOverlays from "./DraggableTextOverlays";
 
@@ -16,9 +16,14 @@ interface Props {
   selectedTextId?: string | null;
   onSelectText?: (id: string | null) => void;
   onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
+
   // Phase 1 MVP: Multi-track support
   multiTrackState?: MultiTrackEditorState | null;
   multiTrackVideoRefs?: Record<string, RefObject<HTMLVideoElement | null>>;
+  overlayFile?: File | null;
+  overlayPosition?: OverlayPosition;
+  overlaySize?: number;
+  overlayOpacity?: number;
 }
 
 export default function VideoPreview({
@@ -30,6 +35,10 @@ export default function VideoPreview({
   onUpdateText,
   multiTrackState,
   multiTrackVideoRefs,
+  overlayFile,
+  overlayPosition = "bottom-right",
+  overlaySize = 150,
+  overlayOpacity = 100,
 }: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
@@ -37,13 +46,55 @@ export default function VideoPreview({
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showGridOverlay, setShowGridOverlay] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isMuted, setIsMuted] = useState(!recipe?.keepAudio);
+  const [overlayUrl, setOverlayUrl] = useState<string | null>(null);
+  const adjustmentFilter = useMemo(() => {
+    const brightness = 1 + (recipe?.brightness ?? 0);
+    const contrast = recipe?.contrast ?? 1;
+    const saturation = recipe?.saturation ?? 1;
+
+    return `brightness(${brightness}) contrast(${contrast}) saturate(${saturation})`;
+  }, [recipe?.brightness, recipe?.contrast, recipe?.saturation]);
+
+  useEffect(() => {
+    if (!overlayFile) {
+      setOverlayUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(overlayFile);
+    setOverlayUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [overlayFile]);
+
+  useEffect(() => {
+    setIsMuted(!recipe?.keepAudio);
+  }, [recipe?.keepAudio]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
+
+    return () => {
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+    };
+  }, [videoRef]);
+
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0,
   });
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
-  
+
   // Phase 1 MVP: Multi-track URL management
   const multiTrackUrlRefs = useRef<Record<string, string | null>>({});
 
@@ -167,62 +218,87 @@ export default function VideoPreview({
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
-  /**
-   * Track preview container dimensions for text overlay positioning.
-   */
   useEffect(() => {
-    const updateDimensions = () => {
-      if (previewContainerRef.current) {
-        const rect = previewContainerRef.current.getBoundingClientRect();
+    const el = previewContainerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
         setContainerDimensions({
-          width: rect.width,
-          height: rect.height,
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
         });
       }
-    };
+    });
 
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !recipe) return;
+
+    const handleTimeUpdate = () => {
+      // If duration is not yet available, fallback to a safe large number to prevent immediate stops
+      const start = recipe.trimStart || 0;
+      const end = recipe.trimEnd !== null ? recipe.trimEnd : (video.duration || Infinity);
+
+      if (video.currentTime < start) {
+        video.currentTime = start;
+      } else if (video.currentTime >= end && end > 0) {
+        video.pause();
+        video.currentTime = start;
+      }
+
+      setCurrentTime(video.currentTime);
+    };
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, [recipe, videoRef]);
+
+  const preset = recipe?.preset === "custom"
+    ? { width: recipe.customWidth, height: recipe.customHeight }
+    : recipe ? getPresetById(recipe.preset) : null;
+
+  const isRotated = recipe?.rotate === 90 || recipe?.rotate === 270;
+
+  const targetW = preset ? preset.width : 16;
+  const targetH = preset ? preset.height : 9;
+
+  const targetRatio = targetW / targetH;
+
+  const scale = containerDimensions.width > 0 ? containerDimensions.width / targetW : 1;
+  const previewOverlaySize = overlaySize * scale;
+  const previewPadding = 20 * scale;
+
   const overlay = (() => {
-    if (!recipe || !showOverlay) return null;
+    if (!recipe || !showOverlay || !preset) return null;
 
-    const preset = recipe.preset === "custom"
-      ? { width: recipe.customWidth, height: recipe.customHeight }
-      : getPresetById(recipe.preset);
-
-    if (!preset) return null;
-
-    // Preview container is 16:9
-    const containerW = 16;
-    const containerH = 9;
-    const containerRatio = containerW / containerH;   // 1.777…
-    const outputRatio = preset.width / preset.height;
+    // Both containerRatio and outputRatio must use the same rotation-aware
+    // dimensions so the bar math stays consistent regardless of rotation.
+    const containerRatio = targetRatio;   // targetW / targetH, already swapped for 90°/270°
+    const outputRatio = targetW / targetH; // identical to containerRatio — bars are zero when output fits exactly
 
     if (recipe.framing === "fit") {
-      // Letterbox: the output video fits entirely inside 16:9, padded with bars.
       if (outputRatio > containerRatio) {
-        // Wider output → pillarbox bars on top & bottom
         const contentH = (containerRatio / outputRatio) * 100;
         const barH = (100 - contentH) / 2;
         return { mode: "fit", barTop: `${barH}%`, barBottom: `${barH}%`, barLeft: "0", barRight: "0" };
       } else {
-        // Taller output → letterbox bars on left & right
         const contentW = (outputRatio / containerRatio) * 100;
         const barW = (100 - contentW) / 2;
         return { mode: "fit", barTop: "0", barBottom: "0", barLeft: `${barW}%`, barRight: `${barW}%` };
       }
     } else {
-      // Fill / crop: the output fills the entire 16:9 preview — show a box representing what survives the crop.
       if (outputRatio < containerRatio) {
-        // Output is taller → crops top & bottom
         const visibleH = (outputRatio / containerRatio) * 100;
         const cropH = (100 - visibleH) / 2;
         return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };
       } else {
-        // Output is wider → crops left & right
         const visibleW = (containerRatio / outputRatio) * 100;
         const cropW = (100 - visibleW) / 2;
         return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
@@ -260,28 +336,103 @@ export default function VideoPreview({
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        className="relative w-full mx-auto rounded-lg overflow-hidden bg-[var(--bg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] transition-all duration-300 group"
+        style={{ aspectRatio: targetRatio, maxWidth: `calc(65vh * ${targetRatio})` }}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"
       >
         {isLoading && (
           <div
-            className="absolute inset-0 animate-pulse bg-[var(--surface)] rounded-xl transition-opacity duration-300"
+            className="absolute inset-0 animate-pulse bg-[var(--surface)] rounded-xl transition-opacity duration-300 z-10"
             aria-label="Loading video preview"
           />
         )}
-        {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video
-          ref={videoRef}
-          controls
-          className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
-          onLoadedData={() => setIsLoading(false)}
-          playsInline
-          muted={!recipe?.keepAudio}
+
+        {/* 1. ROTATED VIDEO LAYER */}
+        <div
+          className="absolute top-1/2 left-1/2 flex items-center justify-center pointer-events-none z-0"
+          style={{
+            width: isRotated ? (containerDimensions.height || '100%') : '100%',
+            height: isRotated ? (containerDimensions.width || '100%') : '100%',
+            transform: `translate(-50%, -50%) rotate(${recipe?.rotate || 0}deg)`
+          }}
         >
-          <track kind="captions" />
-        </video>
+          {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+          <video
+            ref={videoRef}
+            className={cn("w-full h-full object-contain transition-all duration-300", isLoading ? "opacity-0" : "opacity-100")}
+            style={{ filter: adjustmentFilter }}
+            onLoadedData={() => setIsLoading(false)}
+            playsInline
+            muted={isMuted}
+          >
+            <track kind="captions" />
+          </video>
+        </div>
+
+        {/* CLICK-TO-PLAY LAYER */}
+        <button
+          type="button"
+          className="absolute inset-0 z-10 cursor-pointer appearance-none bg-transparent border-0 p-0"
+          onClick={() => {
+            if (videoRef.current) {
+              if (videoRef.current.paused) videoRef.current.play();
+              else videoRef.current.pause();
+            }
+          }}
+          aria-label="Play/Pause Video"
+        />
+
+        {/* 2. FIXED UI LAYER */}
+        <div className={cn("absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-3 z-40 transition-opacity duration-300", isPlaying ? "opacity-0 group-hover:opacity-100 focus-within:opacity-100" : "opacity-100")}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                if (videoRef.current.paused) videoRef.current.play();
+                else videoRef.current.pause();
+              }
+            }}
+            className="text-white hover:text-[var(--accent)] transition-colors"
+            aria-label={isPlaying ? "Pause" : "Play"}
+          >
+            {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+          </button>
+
+
+          <input
+            type="range"
+            min={0}
+            max={videoRef.current?.duration || 100}
+            step="0.01"
+            value={currentTime}
+            onChange={(e) => {
+              if (videoRef.current) {
+                videoRef.current.currentTime = Number(e.target.value);
+              }
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="flex-1 accent-[var(--accent)] h-1 cursor-pointer"
+            aria-label="Timeline"
+          />
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (videoRef.current) {
+                videoRef.current.muted = !videoRef.current.muted;
+                setIsMuted(videoRef.current.muted);
+              }
+            }}
+            className="text-white hover:text-[var(--accent)] transition-colors"
+            aria-label={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </button>
+        </div>
 
         {/* Phase 1 MVP: Multi-track overlay rendering */}
         {multiTrackState && multiTrackVideoRefs && multiTrackState.timelineTracks.length > 1 && (
@@ -322,7 +473,7 @@ export default function VideoPreview({
 
         {/* Letterbox / Crop overlay */}
         {overlay && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute inset-0 pointer-events-none z-20" aria-hidden="true">
             {overlay.mode === "fit" ? (
               // Letterbox: semi-transparent bars outside the content area
               <>
@@ -354,7 +505,7 @@ export default function VideoPreview({
 
         {/* 3x3 Grid Overlay */}
         {showGridOverlay && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute inset-0 pointer-events-none z-20" aria-hidden="true">
             {/* Vertical lines */}
             <div className="absolute top-0 bottom-0 left-1/3 border-l-2 border-dotted border-black" />
             <div className="absolute top-0 bottom-0 right-1/3 border-l-2 border-dotted border-black" />
@@ -362,6 +513,23 @@ export default function VideoPreview({
             <div className="absolute left-0 right-0 top-1/3 border-t-2 border-dotted border-black" />
             <div className="absolute left-0 right-0 bottom-1/3 border-t-2 border-dotted border-black" />
           </div>
+        )}
+
+        {/* IMAGE OVERLAY LAYER */}
+        {overlayUrl && containerDimensions.width > 0 && (
+          <img
+            src={overlayUrl}
+            alt="Overlay"
+            className="absolute pointer-events-none z-30"
+            style={{
+              width: previewOverlaySize,
+              opacity: overlayOpacity / 100,
+              ...(overlayPosition === "top-left" ? { top: previewPadding, left: previewPadding } : {}),
+              ...(overlayPosition === "top-right" ? { top: previewPadding, right: previewPadding } : {}),
+              ...(overlayPosition === "bottom-left" ? { bottom: previewPadding, left: previewPadding } : {}),
+              ...(overlayPosition === "bottom-right" ? { bottom: previewPadding, right: previewPadding } : {}),
+            }}
+          />
         )}
 
         {/* Draggable Text Overlays */}
@@ -381,7 +549,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={() => setShowOverlay((v) => !v)}
-            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-40 pointer-events-auto ${
               showOverlay
                 ? "bg-[var(--accent)] text-white"
                 : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
@@ -399,7 +567,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={() => setShowGridOverlay((v) => !v)}
-            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-40 pointer-events-auto ${
               showGridOverlay
                 ? "bg-[var(--accent)] text-white"
                 : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
@@ -417,7 +585,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={() => setShowComparison((v) => !v)}
-            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
+            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-40 pointer-events-auto ${
               showComparison
                 ? "bg-[var(--accent)] text-white"
                 : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
@@ -435,7 +603,7 @@ export default function VideoPreview({
           <button
             type="button"
             onClick={handleGrabFrame}
-            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
+            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-40 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
             aria-label="Grab frame as PNG"
             title="Download current frame as PNG"
           >
