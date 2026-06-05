@@ -429,6 +429,10 @@ return () => {
                     selectedTextId={selectedTextId}
                     onSelectText={setSelectedTextId}
                     onUpdateText={handleUpdateTextOverlay}
+                    overlayFile={overlayFile}
+                    overlayPosition={overlayPosition}
+                    overlaySize={overlaySize}
+                    overlayOpacity={overlayOpacity}
                   />
 
                   <div className="mt-3">
