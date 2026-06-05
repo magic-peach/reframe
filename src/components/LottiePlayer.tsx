@@ -29,11 +29,14 @@ export default function LottiePlayer({
     import("lottie-web").then((mod) => {
       if (cancelled || !containerRef.current) return;
       const lottie = mod.default ?? mod;
+      const prefersReducedMotion =
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
       anim = lottie.loadAnimation({
         container: containerRef.current,
         renderer: "svg",
-        loop,
-        autoplay,
+        loop: prefersReducedMotion ? false : loop,
+        autoplay: prefersReducedMotion ? false : autoplay,
         animationData,
       });
     }).catch((error) => {
