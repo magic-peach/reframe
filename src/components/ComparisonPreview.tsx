@@ -175,7 +175,10 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           ref={leftVideoRef}
-          className="absolute inset-0 w-full h-full object-contain"
+          className="absolute inset-0 w-full h-full object-contain transition-all duration-300"
+          style={{
+            transform: `rotate(${recipe?.rotate || 0}deg)`,
+          }}
           playsInline
           muted
         >
@@ -192,7 +195,10 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
           <video
             ref={rightVideoRef}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-contain transition-all duration-300"
+            style={{
+              transform: `rotate(${recipe?.rotate || 0}deg)`,
+            }}
             playsInline
             muted
             autoPlay

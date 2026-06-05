@@ -275,7 +275,13 @@ export default function VideoPreview({
         <video
           ref={videoRef}
           controls
-          className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+          className={cn(
+            "w-full h-full object-contain transition-all duration-300",
+            isLoading ? "opacity-0" : "opacity-100"
+          )}
+          style={{
+            transform: `rotate(${recipe?.rotate || 0}deg)`,
+          }}
           onLoadedData={() => setIsLoading(false)}
           playsInline
           muted={!recipe?.keepAudio}
