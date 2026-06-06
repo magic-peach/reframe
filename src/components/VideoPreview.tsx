@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
-import { EditRecipe, TextOverlay } from "@/lib/types";
+import { EditRecipe, TextOverlay, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
@@ -16,6 +16,9 @@ interface Props {
   selectedTextId?: string | null;
   onSelectText?: (id: string | null) => void;
   onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
+  // Phase 1 MVP: Multi-track support
+  multiTrackState?: MultiTrackEditorState | null;
+  multiTrackVideoRefs?: Record<string, RefObject<HTMLVideoElement | null>>;
 }
 
 export default function VideoPreview({
@@ -25,6 +28,8 @@ export default function VideoPreview({
   selectedTextId = null,
   onSelectText,
   onUpdateText,
+  multiTrackState,
+  multiTrackVideoRefs,
 }: Props) {
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
@@ -38,6 +43,9 @@ export default function VideoPreview({
   });
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
+  
+  // Phase 1 MVP: Multi-track URL management
+  const multiTrackUrlRefs = useRef<Record<string, string | null>>({});
 
   const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
@@ -114,6 +122,40 @@ export default function VideoPreview({
       }
     };
   }, [file, videoRef]);
+
+  // Phase 1 MVP: Setup multi-track video sources
+  useEffect(() => {
+    if (!multiTrackState || !multiTrackVideoRefs) return;
+
+    multiTrackState.timelineTracks.forEach((track) => {
+      if (track.type !== "video" || !track.source) return;
+
+      const videoRef = multiTrackVideoRefs[track.id];
+      if (!videoRef?.current) return;
+
+      // Cleanup old URL
+      if (multiTrackUrlRefs.current[track.id]) {
+        URL.revokeObjectURL(multiTrackUrlRefs.current[track.id]!);
+      }
+
+      // Create new URL and load
+      const url = URL.createObjectURL(track.source);
+      multiTrackUrlRefs.current[track.id] = url;
+      videoRef.current.src = url;
+      videoRef.current.load();
+
+      // Auto-play for preview
+      videoRef.current.play().catch(() => {});
+    });
+
+    return () => {
+      // Cleanup URLs on unmount
+      Object.values(multiTrackUrlRefs.current).forEach((url) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+      multiTrackUrlRefs.current = {};
+    };
+  }, [multiTrackState, multiTrackVideoRefs]);
 
   useEffect(() => {
     if (!videoRef.current || !recipe) return;
@@ -240,6 +282,43 @@ export default function VideoPreview({
         >
           <track kind="captions" />
         </video>
+
+        {/* Phase 1 MVP: Multi-track overlay rendering */}
+        {multiTrackState && multiTrackVideoRefs && multiTrackState.timelineTracks.length > 1 && (
+          <div className="absolute inset-0 pointer-events-none" role="region" aria-label="Multi-track overlay layers">
+            {multiTrackState.timelineTracks
+              .filter((track) => track.visible && track.type === "video" && track.source && track.zIndex > 0)
+              .sort((a, b) => a.zIndex - b.zIndex)
+              .map((track) => {
+                const videoRef = multiTrackVideoRefs[track.id];
+                if (!videoRef) return null;
+
+                return (
+                  <video
+                    key={track.id}
+                    ref={videoRef}
+                    className="absolute"
+                    style={{
+                      left: track.position.x === -1 ? "50%" : `${track.position.x}px`,
+                      top: track.position.y === -1 ? "50%" : `${track.position.y}px`,
+                      width: `${track.scale * 100}%`,
+                      height: "auto",
+                      opacity: track.opacity / 100,
+                      transform:
+                        track.position.x === -1 && track.position.y === -1
+                          ? "translate(-50%, -50%)"
+                          : "none",
+                      zIndex: track.zIndex,
+                    }}
+                    muted
+                    playsInline
+                  >
+                    <track kind="captions" />
+                  </video>
+                );
+              })}
+          </div>
+        )}
 
         {/* Letterbox / Crop overlay */}
         {overlay && (

@@ -114,7 +114,7 @@ export default function Footer() {
               <button
                 type="submit"
                 aria-label="Subscribe to updates"
-                className="text-[var(--accent)] hover:text-[var(--accent-hover)] transition p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] rounded"
+                onMouseDown={(e) => e.preventDefault()} className="text-[var(--accent)] hover:text-[var(--accent-hover)] transition p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] rounded"
               >
                 <ArrowRight size={16} />
               </button>
