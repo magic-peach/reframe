@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { loadOverlayState, persistOverlayState } from "@/lib/editorPersistence";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -209,6 +210,20 @@ export default function VideoEditor() {
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const initialOverlayState = useRef({
+    overlayPosition,
+    overlaySize,
+    overlayOpacity,
+  });
+  useEffect(() => {
+    if (!file) return;
+
+    persistOverlayState(localStorage, {
+      overlayPosition,
+      overlaySize,
+      overlayOpacity,
+    });
+  }, [overlayPosition, overlaySize, overlayOpacity, file]);
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true, trim: false, rotation: false, text: false, audio: false, export: false,
@@ -331,6 +346,17 @@ export default function VideoEditor() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [file]);
+  useEffect(() => {
+    const restored = loadOverlayState(localStorage, {
+      overlayPosition: initialOverlayState.current.overlayPosition,
+      overlaySize: initialOverlayState.current.overlaySize,
+      overlayOpacity: initialOverlayState.current.overlayOpacity,
+    });
+
+    if (restored.overlayPosition) setOverlayPosition(restored.overlayPosition);
+    if (typeof restored.overlaySize === "number") setOverlaySize(restored.overlaySize);
+    if (typeof restored.overlayOpacity === "number") setOverlayOpacity(restored.overlayOpacity);
+  }, [setOverlayOpacity, setOverlayPosition, setOverlaySize]);
 
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));

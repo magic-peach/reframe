@@ -77,6 +77,49 @@ export type ExportStatus =
 
 export const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
 export const WARNING_FILE_SIZE = 500 * 1024 * 1024; // 500MB
+/**
+ * Phase 1 MVP: Multi-track timeline support
+ * Supports video and image layers with positioning and opacity
+ * Phase 1 limited to max 2 active video tracks due to FFmpeg.wasm constraints
+ */
+export interface TimelineTrack {
+  id: string;
+  type: "video" | "image";
+  source: File | null;
+
+  // Timing
+  startTime: number; // seconds
+  duration: number; // seconds (for image), or derived from video duration
+
+  // Layering
+  zIndex: number;
+  visible: boolean;
+  opacity: number; // 0-100
+
+  // Transform
+  position: {
+    x: number; // pixels or -1 for auto-center
+    y: number; // pixels or -1 for auto-center
+  };
+  scale: number; // 1.0 = 100%
+  rotation: 0 | 90 | 180 | 270;
+}
+
+/**
+ * Extended editor state for multi-track support
+ * Incrementally introduced; maintains backward compatibility with single-track workflow
+ */
+export interface MultiTrackEditorState {
+  timelineTracks: TimelineTrack[];
+  activeTrackId: string | null;
+  maxActiveTracks: number; // Phase 1: 2, future: unlimited
+}
+
+export const MAX_FILE_SIZE =
+  2 * 1024 * 1024 * 1024;
+
+export const WARNING_FILE_SIZE =
+  500 * 1024 * 1024; // 500MB
 
 export function isValidRecipe(value: unknown): value is EditRecipe {
   if (!value || typeof value !== "object") return false;
