@@ -20,49 +20,23 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 function getCurrentTheme(): Theme {
-  if (
-    typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark")
-  ) {
-    return "dark";
+  if (typeof window !== "undefined") {
+    const savedTheme = localStorage.getItem("theme");
+
+    if (savedTheme === "dark" || savedTheme === "light") {
+      return savedTheme;
+    }
+
+    if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      return "dark";
+    }
   }
+
   return "light";
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
-
-  // On mount: read localStorage or fall back to system preference.
-  // The inline <script> in layout.tsx already applied the class to <html>;
-  // we just sync React state here so the toggle button shows the right icon.
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("theme") as Theme | null;
-      if (stored === "light" || stored === "dark") {
-        setThemeState(stored);
-      } else {
-        const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)"
-        ).matches;
-        setThemeState(prefersDark ? "dark" : "light");
-      }
-    } catch {
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-      setThemeState(prefersDark ? "dark" : "light");
-    }
-
-    // Listen for OS-level preference changes (only when no manual override)
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem("theme")) {
-        applyTheme(e.matches ? "dark" : "light", false);
-      }
-    };
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const applyTheme = useCallback(
     (next: Theme, persist = true) => {
@@ -83,6 +57,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setThemeState(getCurrentTheme());
+    const currentTheme = getCurrentTheme();
+    applyTheme(currentTheme, false);
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e: MediaQueryListEvent) => {

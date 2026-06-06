@@ -68,7 +68,7 @@ export default function Footer() {
               <div id="updates-signup-form" className="w-full sm:w-72 px-4 flex items-center bg-[var(--surface)] border border-[var(--accent)] rounded-lg transition-all duration-500">
                 <form aria-label="Updates signup form" onSubmit={(e) => { e.preventDefault(); setIsExpanded(false); }} className="flex w-full items-center">
                   <input type="email" placeholder="ENTER EMAIL" className="bg-transparent border-none text-[10px] font-bold tracking-widest text-[var(--text)] focus:outline-none w-full py-3 placeholder:opacity-30" aria-label="Email address for updates" onBlur={() => setIsExpanded(false)} />
-                  <button aria-label="Submit email for updates" type="submit" className="text-[var(--accent)] hover:text-[var(--accent-hover)] p-1">
+                  <button aria-label="Submit email for updates" type="submit" onMouseDown={(e) => e.preventDefault()} className="text-[var(--accent)] hover:text-[var(--accent-hover)] p-1">
                     <ArrowRight size={16} aria-hidden="true" />
                   </button>
                 </form>
