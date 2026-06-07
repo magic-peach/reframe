@@ -56,7 +56,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    setThemeState(getCurrentTheme());
     const currentTheme = getCurrentTheme();
     applyTheme(currentTheme, false);
 
