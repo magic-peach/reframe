@@ -8,7 +8,7 @@ import { cn, formatBytes, formatDuration } from "@/lib/utils";
 import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
 
 interface Props {
-  onFileSelect: (file: File) => void;
+  onFileSelect: (file: File | null) => void;
   currentFile: File | null;
   fileError: string;
   duration: number;
@@ -229,9 +229,21 @@ export default function FileUpload({
         </p>
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
-        <FolderOpen size={14} />
-        MP4 / MOV / AVI / WebM
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
+            <FolderOpen size={14} />
+            MP4 / MOV / AVI / WebM
+          </div>
+          <p className="text-xs text-[var(--muted)]">Max file size: 2 GB</p>
+        </div>
+        
+        {error && (
+          <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center gap-2">
+            <span className="text-red-500">❌</span>
+            {error}
+          </div>
+        )}
       </div>
 
       <p className="text-xs text-[var(--muted)] text-center">
