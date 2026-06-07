@@ -155,20 +155,7 @@ export function useVideoEditor() {
     height: number;
     duration: number;
   } | null>(null);
-  const [recipe, setRecipe] = useState<EditRecipe>(() => {
-    if (typeof window === "undefined") return { ...DEFAULT_RECIPE };
-    const params = new URLSearchParams(window.location.search);
-    const encoded = params.get("settings");
-    if (encoded) {
-      const decoded = decodeRecipe(encoded);
-      if (decoded) {
-        return migratePersistedRecipe(decoded);
-      }
-    }
-    return loadPersistedRecipe(localStorage, migratePersistedRecipe({
-      soundOnCompletion: getStoredSoundPreference(localStorage),
-    }));
-  });
+  const [recipe, setRecipe] = useState<EditRecipe>({ ...DEFAULT_RECIPE });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
@@ -258,6 +245,15 @@ export function useVideoEditor() {
     if (typeof window === "undefined") return;
     try {
       const params = new URLSearchParams(window.location.search);
+      const encoded = params.get("settings");
+      if (encoded) {
+        const decoded = decodeRecipe(encoded);
+        if (decoded) {
+          setRecipe(migratePersistedRecipe(decoded));
+          return;
+        }
+      }
+
       const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
       const hasRecipeParams = recipeKeys.some(key => params.has(key));
 
@@ -290,7 +286,10 @@ export function useVideoEditor() {
           }));
         }
       } else {
-        setRecipe((current) => loadPersistedRecipe(localStorage, current));
+        setRecipe((current) => loadPersistedRecipe(localStorage, migratePersistedRecipe({
+          ...current,
+          soundOnCompletion: getStoredSoundPreference(localStorage),
+        })));
       }
     } catch (e) {
       // ignore
