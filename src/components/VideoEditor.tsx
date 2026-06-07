@@ -717,7 +717,7 @@ return () => {
                   onClick={resetSettings}
                   className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
                 >
-                  Reset all settings
+                  Clear saved session
                 </button>
               </div>
             </div>

@@ -24,6 +24,7 @@ import {
   RECIPE_STORAGE_KEY,
   LEGACY_SETTINGS_KEY,
 } from "@/lib/editorPersistence";
+import { saveSessionFile, loadSessionFile, clearSessionFile } from "@/lib/sessionDB";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
 
@@ -256,6 +257,22 @@ export function useVideoEditor() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    
+    // Auto-restore saved video session
+    loadSessionFile().then(async (savedFile) => {
+      if (savedFile) {
+        try {
+          const { width, height, duration: dur } = await extractMetadata(savedFile);
+          setDuration(dur);
+          setVideoMetadata({ width, height, duration: dur });
+          setFile(savedFile);
+        } catch (e) {
+          console.error("Failed to restore video session:", e);
+          clearSessionFile().catch(console.error);
+        }
+      }
+    }).catch(console.error);
+
     try {
       const params = new URLSearchParams(window.location.search);
       const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
@@ -412,6 +429,7 @@ export function useVideoEditor() {
         setDuration(dur);
         setVideoMetadata({ width, height, duration: dur });
         setFile(selectedFile);
+        saveSessionFile(selectedFile).catch(console.error);
 
         if (dimensionCheck === "warning") {
           console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
@@ -626,6 +644,7 @@ export function useVideoEditor() {
     try {
       localStorage.removeItem(RECIPE_STORAGE_KEY);
       localStorage.removeItem(LEGACY_SETTINGS_KEY);
+      clearSessionFile().catch(console.error);
     } catch {
       // ignore
     }
@@ -657,6 +676,7 @@ export function useVideoEditor() {
     try {
       localStorage.removeItem(RECIPE_STORAGE_KEY);
       localStorage.removeItem(LEGACY_SETTINGS_KEY);
+      clearSessionFile().catch(console.error);
     } catch {
       // ignore
     }
