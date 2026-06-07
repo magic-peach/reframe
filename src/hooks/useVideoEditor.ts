@@ -344,12 +344,18 @@ export function useVideoEditor() {
     return getPresetById(suggestPreset(videoMetadata.width, videoMetadata.height)) ?? null;
   }, [videoMetadata]);
 
-  const handleFileSelect = useCallback(async (selectedFile: File) => {
+  const handleFileSelect = useCallback((selectedFile: File | null) => {
     setResult(null);
     setStatus("idle");
     setError(null);
     setFile(null);
     setVideoMetadata(null);
+    
+    if (!selectedFile) {
+      setFileError("");
+      return;
+    }
+
     if (!selectedFile.type.startsWith("video/")) {
       setFileError("Please upload a video file only.");
       return;
@@ -379,50 +385,54 @@ export function useVideoEditor() {
       return;
     }
 
-    const isVideo = await verifyMagicBytes(selectedFile);
-    if (!isVideo) {
-      setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
-      setStatus("error");
-      return;
-    }
+    // Run validation and metadata extraction in background
+    (async () => {
+      try {
+        const isVideo = await verifyMagicBytes(selectedFile);
+        if (!isVideo) {
+          setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
+          setStatus("error");
+          return;
+        }
 
-    try {
-      const { width, height, duration: dur } = await extractMetadata(selectedFile);
+        const { width, height, duration: dur } = await extractMetadata(selectedFile);
 
-      // Layer 5: Resolution check
-      const dimensionCheck = validateDimensions(width, height);
-      if (dimensionCheck === "blocked") {
-        const suggested = getDownscaledDimensions(width, height);
-        setError(
-          `Layer 5 Validation Failed: Resolution too high (${width}×${height}). ` +
-          `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
-        );
+        // Layer 5: Resolution check
+        const dimensionCheck = validateDimensions(width, height);
+        if (dimensionCheck === "blocked") {
+          const suggested = getDownscaledDimensions(width, height);
+          setError(
+            `Layer 5 Validation Failed: Resolution too high (${width}×${height}). ` +
+            `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
+          );
+          setStatus("error");
+          return;
+        }
+
+        setDuration(dur);
+        setVideoMetadata({ width, height, duration: dur });
+        setFile(selectedFile);
+
+        if (dimensionCheck === "warning") {
+          console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
+        }
+        setRecipe((prev) => {
+          const suggestedPreset = suggestPreset(width, height);
+          const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
+
+          return {
+            ...prev,
+            trimStart: 0,
+            trimEnd: null,
+            ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
+          };
+        });
+      } catch (err) {
+        setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
         setStatus("error");
-        return;
       }
+    })();
 
-      setDuration(dur);
-      setVideoMetadata({ width, height, duration: dur });
-      setFile(selectedFile);
-
-      if (dimensionCheck === "warning") {
-        console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
-      }
-      setRecipe((prev) => {
-        const suggestedPreset = suggestPreset(width, height);
-        const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
-
-        return {
-          ...prev,
-          trimStart: 0,
-          trimEnd: null,
-          ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
-        };
-      });
-    } catch (err) {
-      setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-      setStatus("error");
-    }
   }, []);
 
   const handleExport = useCallback(async () => {
