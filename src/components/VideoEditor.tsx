@@ -313,7 +313,11 @@ return () => {
 }, [file]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
-  const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    setIsMac(typeof navigator !== "undefined" && /Mac/i.test(navigator.platform));
+  }, []);
 
   const intervalSeconds = useMemo(() => {
     if (duration <= 30) return 2;
