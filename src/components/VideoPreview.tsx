@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
-import { EditRecipe, TextOverlay, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
+import { EditRecipe, Subtitle, TextOverlay, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
@@ -37,6 +37,7 @@ export default function VideoPreview({
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showGridOverlay, setShowGridOverlay] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0,
@@ -167,6 +168,20 @@ export default function VideoPreview({
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(video.currentTime);
+    };
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => {
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+    };
+  }, [videoRef]);
+
   /**
    * Track preview container dimensions for text overlay positioning.
    */
@@ -282,6 +297,31 @@ export default function VideoPreview({
         >
           <track kind="captions" />
         </video>
+        {/* Subtitles Layer */}
+{recipe?.subtitles?.length ? (
+  <div className="absolute inset-0 pointer-events-none z-20">
+    {recipe.subtitles
+      .filter((sub) => currentTime >= sub.startTime && currentTime <= sub.endTime)
+      .map((sub) => (
+        <div
+          key={sub.id}
+          style={{
+            position: "absolute",
+            left: `${sub.x}%`,
+            top: `${sub.y}%`,
+            transform: "translate(-50%, -50%)",
+            color: "#ffffff",
+            fontSize: `${sub.fontSize}px`,
+            fontWeight: 600,
+            textShadow: "0 2px 6px rgba(0,0,0,0.8)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {sub.text}
+        </div>
+      ))}
+  </div>
+) : null}
 
         {/* Phase 1 MVP: Multi-track overlay rendering */}
         {multiTrackState && multiTrackVideoRefs && multiTrackState.timelineTracks.length > 1 && (
@@ -315,6 +355,7 @@ export default function VideoPreview({
                   >
                     <track kind="captions" />
                   </video>
+                  
                 );
               })}
           </div>

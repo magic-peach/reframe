@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
@@ -199,33 +199,102 @@ function KeyboardShortcutsPanel() {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
-    result, error, exportStartedAt, updateRecipe,
-    handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
+    file,
+    duration,
+    recipe,
+    addSubtitle,
+    generateSubtitles, // ✅ ADD THIS HERE
+    status,
+    progress,
+    result,
+    error,
+    exportStartedAt,
+    updateRecipe,
+    handleFileSelect,
+    fileError,
+    handleExport,
+    cancelExport,
+    reset,
+    resetSettings,
     videoRef,
     seekTo,
-    overlayFile, setOverlayFile,
-    overlayPosition, setOverlayPosition,
-    overlaySize, setOverlaySize,
-    overlayOpacity, setOverlayOpacity,
+    overlayFile,
+    setOverlayFile,
+    overlayPosition,
+    setOverlayPosition,
+    overlaySize,
+    setOverlaySize,
+    overlayOpacity,
+    setOverlayOpacity,
     recommendedPreset,
     currentTime,
     toggleSound,
   } = useVideoEditor();
 
-  useKeyboardShortcuts({
-    file,
-    recipe,
-    resetSettings,
-    updateRecipe,
-    handleExport,
-    status,
-    cancelExport,
-    onToggleShortcutsModal: () => {},
-  });
-
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
+  const handleGenerateSubtitles = useCallback(async () => {
+    if (!file) return;
+    setIsTranscribing(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Subtitle generation failed.");
+      }
+
+      const segments = Array.isArray(data.segments) ? data.segments : [];
+      const fallbackDuration = duration && duration > 0 ? duration : 999999;
+      const subtitles = segments.length > 0
+        ? segments.map((segment: any) => ({
+            id: crypto.randomUUID(),
+            text: String(segment.text || "").trim(),
+            startTime: Number.isFinite(segment.start) ? segment.start : 0,
+            endTime: Number.isFinite(segment.end) ? segment.end : fallbackDuration,
+            x: 50,
+            y: 90,
+            fontSize: 24,
+            color: "#ffffff",
+          }))
+        : data.text
+        ? [
+            {
+              id: crypto.randomUUID(),
+              text: String(data.text).trim(),
+              startTime: 0,
+              endTime: fallbackDuration,
+              x: 50,
+              y: 90,
+              fontSize: 24,
+              color: "#ffffff",
+            },
+          ]
+        : [];
+
+      if (subtitles.length === 0) {
+        throw new Error("No subtitles were generated.");
+      }
+
+      updateRecipe({ subtitles });
+    } catch (err: any) {
+      console.error("Subtitle generation error:", err);
+      alert(err?.message || "Unable to generate subtitles. Please try again.");
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, [duration, file, updateRecipe]);
+
   const initialOverlayState = useRef({
     overlayPosition,
     overlaySize,
@@ -499,6 +568,25 @@ return () => {
                       onSelectText={setSelectedTextId}
                     />
                   </AccordionSection>
+                  <Section
+  icon={<Type size={12} />}
+  title="Subtitles"
+  delay={115}
+>
+  <button
+    type="button"
+    onClick={handleGenerateSubtitles}
+    disabled={isTranscribing}
+    className="w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm hover:bg-[var(--surface-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+  >
+    {isTranscribing ? "Generating subtitles…" : "Generate Subtitles"}
+  </button>
+
+  <div className="mt-3 text-xs">
+    {recipe.subtitles.length} subtitle(s)
+  </div>
+</Section>
+                  
                 </div>
                 <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
                   <AccordionSection

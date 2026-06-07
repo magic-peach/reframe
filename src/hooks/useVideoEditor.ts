@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
+import {
+  EditRecipe,
+  ExportResult,
+  ExportStatus,
+  MAX_FILE_SIZE,
+  OverlayPosition,
+  TimelineTrack,
+  MultiTrackEditorState,
+  Subtitle,
+} from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
@@ -210,17 +219,112 @@ export function useVideoEditor() {
     addTrack(track);
     return track;
   }, [addTrack]);
-
-  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
-    const next = { ...prev, ...patch };
-    // GIF has no audio — force keepAudio off
+    const next = {
+      ...prev,
+      subtitles: prev.subtitles ?? [], // ✅ safety
+      ...patch,
+    };
+
     if (next.format === "gif") {
       next.keepAudio = false;
     }
+
     return next;
   });
 }, []);
+
+const addSubtitle = useCallback(() => {
+  const newSubtitle: Subtitle = {
+    id: crypto.randomUUID(),
+    text: "Sample Subtitle",
+    startTime: 0,
+    endTime: 3,
+    x: 50,
+    y: 85,
+    fontSize: 24,
+    color: "#ffffff",
+  };
+
+  updateRecipe({
+    subtitles: [...(recipe.subtitles ?? []), newSubtitle],
+  });
+}, [recipe.subtitles, updateRecipe]);
+
+const removeSubtitle = useCallback((id: string) => {
+  updateRecipe({
+    subtitles: (recipe.subtitles ?? []).filter((s) => s.id !== id),
+  });
+}, [recipe.subtitles, updateRecipe]);
+
+const updateSubtitle = useCallback(
+  (id: string, updates: Partial<Subtitle>) => {
+    updateRecipe({
+      subtitles: (recipe.subtitles ?? []).map((s) =>
+        s.id === id ? { ...s, ...updates } : s
+      ),
+    });
+  },
+  [recipe.subtitles, updateRecipe]
+);
+const generateSubtitles = useCallback(() => {
+  const video = videoRef.current;
+  if (!video) return;
+
+  const SpeechRecognition =
+    (window as any).SpeechRecognition ||
+    (window as any).webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("Speech Recognition not supported (use Chrome)");
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = false;
+  recognition.lang = "en-US";
+
+  let startTime = 0;
+  const tempSubtitles: Subtitle[] = [];
+
+  recognition.onresult = (event: any) => {
+    const transcript =
+      event.results[event.results.length - 1][0].transcript;
+
+    const currentTime = video.currentTime;
+
+    tempSubtitles.push({
+      id: crypto.randomUUID(),
+      text: transcript,
+      startTime,
+      endTime: currentTime,
+      x: 50,
+      y: 85,
+      fontSize: 24,
+      color: "#ffffff", // ✅ white subtitles
+    });
+
+    startTime = currentTime;
+  };
+
+  recognition.onerror = (err: any) => {
+    console.error("Speech recognition error:", err);
+  };
+
+  recognition.start();
+  video.play();
+
+  video.onended = () => {
+    recognition.stop();
+
+    updateRecipe({
+      subtitles: tempSubtitles,
+    });
+  };
+}, [videoRef, updateRecipe]);
+
   const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
     switch (key) {
       case "preset":
@@ -642,7 +746,6 @@ export function useVideoEditor() {
     setExportStartedAt(null);
   }, []);
 
-
   const reset = useCallback(() => {
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setFile(null);
@@ -726,5 +829,9 @@ export function useVideoEditor() {
     removeTrack,
     updateTrack,
     addVideoTrack,
+    addSubtitle,
+removeSubtitle,
+updateSubtitle,
+generateSubtitles,
   };
 }

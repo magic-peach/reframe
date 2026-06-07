@@ -16,7 +16,11 @@ export function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
   return {
     ...DEFAULT_RECIPE,
     ...recipe,
-    textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
+    textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays
+      : [],
+    subtitles: Array.isArray(recipe.subtitles)
+      ? recipe.subtitles
+      : [],
   };
 }
 

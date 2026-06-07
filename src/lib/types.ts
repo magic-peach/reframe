@@ -1,4 +1,18 @@
-export const RECIPE_VERSION = 1;
+export interface Subtitle {
+  id: string;
+
+  text: string;
+
+  startTime: number;
+  endTime: number;
+
+  x: number;
+  y: number;
+
+  fontSize: number;
+  color: string;
+}
+export const RECIPE_VERSION = 2;
 
 /**
  * Text overlay data structure for rendering custom text on videos.
@@ -35,6 +49,7 @@ export interface EditRecipe {
   saturation: number;
   soundOnCompletion: boolean;
   textOverlays: TextOverlay[];
+  subtitles: Subtitle[];
   version: number;
 }
 
@@ -142,6 +157,8 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
   if (!Array.isArray(v.textOverlays)) return false;
+  if (!Array.isArray(v.subtitles)) return false;
 
   return true;
 }
+
