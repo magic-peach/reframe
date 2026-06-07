@@ -297,20 +297,7 @@ export default function VideoEditor() {
       });
     }
   }, [status]);
-  useEffect(() => {
-const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-  if (file) {
-    e.preventDefault();
-    e.returnValue = "";
-  }
-};
 
-window.addEventListener("beforeunload", handleBeforeUnload);
-
-return () => {
-  window.removeEventListener("beforeunload", handleBeforeUnload);
-};
-}, [file]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
   const [isMac, setIsMac] = useState(false);
