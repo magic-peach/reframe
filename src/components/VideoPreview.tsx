@@ -5,9 +5,10 @@ import { useEffect, useRef, useState, useCallback, RefObject } from "react";
 import { EditRecipe, TextOverlay, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
-import { Camera } from "lucide-react";
+import { Camera, Play } from "lucide-react";
 import ComparisonPreview from "./ComparisonPreview";
 import DraggableTextOverlays from "./DraggableTextOverlays";
+import { useCanvasPreview } from "@/hooks/useCanvasPreview";
 
 interface Props {
   file: File | null;
@@ -37,12 +38,25 @@ export default function VideoPreview({
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showGridOverlay, setShowGridOverlay] = useState(false);
+  const [livePreview, setLivePreview] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0,
   });
   const previewContainerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const onLoadedRef = useRef<(() => void) | null>(null);
+
+  // Canvas live preview: mirror the video frame with rotation/framing/colour
+  // applied so edits show instantly. Export stays FFmpeg-based (preview only).
+  useCanvasPreview({
+    videoRef,
+    canvasRef,
+    containerRef: previewContainerRef,
+    recipe,
+    enabled: livePreview,
+  });
   
   // Phase 1 MVP: Multi-track URL management
   const multiTrackUrlRefs = useRef<Record<string, string | null>>({});
@@ -167,6 +181,31 @@ export default function VideoPreview({
     videoRef.current.playbackRate = recipe.speed;
   }, [recipe, videoRef]);
 
+  // Track play/pause so the live-preview overlay can show a play affordance
+  // (the native <video> controls are hidden while the canvas preview is active).
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const sync = () => setIsPaused(video.paused);
+    sync();
+    video.addEventListener("play", sync);
+    video.addEventListener("pause", sync);
+    return () => {
+      video.removeEventListener("play", sync);
+      video.removeEventListener("pause", sync);
+    };
+  }, [videoRef, file]);
+
+  const togglePlayback = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [videoRef]);
+
   /**
    * Track preview container dimensions for text overlay positioning.
    */
@@ -274,14 +313,45 @@ export default function VideoPreview({
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           ref={videoRef}
-          controls
-          className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+          controls={!(livePreview && !!recipe)}
+          className={cn(
+            "w-full h-full object-contain transition-opacity duration-300",
+            // While the canvas preview is active the raw <video> is the frame
+            // source only — keep it in the DOM/playing but visually hidden so we
+            // don't show the un-transformed frame underneath the canvas.
+            isLoading || (livePreview && recipe) ? "opacity-0" : "opacity-100",
+            livePreview && recipe && "pointer-events-none"
+          )}
           onLoadedData={() => setIsLoading(false)}
           playsInline
           muted={!recipe?.keepAudio}
         >
           <track kind="captions" />
         </video>
+
+        {/* Canvas live preview — mirrors the frame with rotation/framing/colour */}
+        {livePreview && !isLoading && recipe && (
+          <canvas
+            ref={canvasRef}
+            onClick={togglePlayback}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+            role="img"
+            aria-label="Live preview of crop, rotation and colour edits"
+          />
+        )}
+
+        {/* Play affordance when paused in live-preview mode */}
+        {livePreview && !isLoading && isPaused && (
+          <button
+            type="button"
+            onClick={togglePlayback}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 grid place-items-center w-14 h-14 rounded-full bg-black/55 text-white pointer-events-auto hover:bg-black/70 transition-colors"
+            aria-label="Play video"
+            title="Play"
+          >
+            <Play className="w-6 h-6 translate-x-[1px]" fill="currentColor" />
+          </button>
+        )}
 
         {/* Phase 1 MVP: Multi-track overlay rendering */}
         {multiTrackState && multiTrackVideoRefs && multiTrackState.timelineTracks.length > 1 && (
@@ -320,8 +390,9 @@ export default function VideoPreview({
           </div>
         )}
 
-        {/* Letterbox / Crop overlay */}
-        {overlay && (
+        {/* Letterbox / Crop overlay — redundant while the canvas preview already
+            renders the true framing, so only show it for the raw <video>. */}
+        {overlay && !livePreview && (
           <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
             {overlay.mode === "fit" ? (
               // Letterbox: semi-transparent bars outside the content area
@@ -376,72 +447,97 @@ export default function VideoPreview({
           />
         )}
 
-        {/* Toggle button */}
+        {/* Top-left controls */}
         {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowOverlay((v) => !v)}
-            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showOverlay
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showOverlay}
-            aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-            title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-          >
-            {showOverlay ? "Hide overlay" : "Show overlay"}
-          </button>
+          <div className="absolute top-2 left-2 flex flex-wrap gap-2 z-10">
+            {/* Live preview toggle */}
+            <button
+              type="button"
+              onClick={() => setLivePreview((v) => !v)}
+              className={`px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors pointer-events-auto ${
+                livePreview
+                  ? "bg-[var(--accent)] text-white"
+                  : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+              }`}
+              aria-pressed={livePreview}
+              aria-label={livePreview ? "Disable live preview" : "Enable live preview"}
+              title={
+                livePreview
+                  ? "Live preview on — edits render on the canvas instantly"
+                  : "Live preview off — showing the raw player"
+              }
+            >
+              {livePreview ? "Live: on" : "Live: off"}
+            </button>
+
+            {/* Framing overlay — only useful against the raw <video> */}
+            {!livePreview && (
+              <button
+                type="button"
+                onClick={() => setShowOverlay((v) => !v)}
+                className={`px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors pointer-events-auto ${
+                  showOverlay
+                    ? "bg-[var(--accent)] text-white"
+                    : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+                }`}
+                aria-pressed={showOverlay}
+                aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
+                title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
+              >
+                {showOverlay ? "Hide overlay" : "Show overlay"}
+              </button>
+            )}
+
+            {/* Grid overlay button */}
+            <button
+              type="button"
+              onClick={() => setShowGridOverlay((v) => !v)}
+              className={`px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors pointer-events-auto ${
+                showGridOverlay
+                  ? "bg-[var(--accent)] text-white"
+                  : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+              }`}
+              aria-pressed={showGridOverlay}
+              aria-label={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
+              title={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
+            >
+              {showGridOverlay ? "Hide grid" : "Show grid"}
+            </button>
+          </div>
         )}
 
-        {/* Grid overlay button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowGridOverlay((v) => !v)}
-            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showGridOverlay
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showGridOverlay}
-            aria-label={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
-            title={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
-          >
-            {showGridOverlay ? "Hide grid" : "Show grid"}
-          </button>
-        )}
-
-        {/* Compare button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowComparison((v) => !v)}
-            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showComparison
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showComparison}
-            aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
-            title={showComparison ? "Hide comparison preview" : "Show comparison preview"}
-          >
-            Compare
-          </button>
-        )}
-
-        {/* Grab frame button */}
+        {/* Top-right controls */}
         {!isLoading && (
-          <button
-            type="button"
-            onClick={handleGrabFrame}
-            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
-            aria-label="Grab frame as PNG"
-            title="Download current frame as PNG"
-          >
-            <Camera className="w-3 h-3" />
-            Grab frame
-          </button>
+          <div className="absolute top-2 right-2 flex flex-wrap gap-2 z-10">
+            {recipe && (
+              <button
+                type="button"
+                onClick={() => setShowComparison((v) => !v)}
+                className={`px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors pointer-events-auto ${
+                  showComparison
+                    ? "bg-[var(--accent)] text-white"
+                    : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+                }`}
+                aria-pressed={showComparison}
+                aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
+                title={showComparison ? "Hide comparison preview" : "Show comparison preview"}
+              >
+                Compare
+              </button>
+            )}
+
+            {/* Grab frame button */}
+            <button
+              type="button"
+              onClick={handleGrabFrame}
+              className="px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
+              aria-label="Grab frame as PNG"
+              title="Download current frame as PNG"
+            >
+              <Camera className="w-3 h-3" />
+              Grab frame
+            </button>
+          </div>
         )}
       </div>
 
