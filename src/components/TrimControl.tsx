@@ -25,7 +25,11 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
     recipe.trimStart.toString()
   );
 
-  const { waveform, isLoading: waveformLoading } = useAudioWaveform(file);
+  const {
+    waveform,
+    status: waveformStatus,
+    isLoading: waveformLoading,
+  } = useAudioWaveform(file);
   const hasAudio = waveform.length > 0;
 
   useEffect(() => {
@@ -235,6 +239,30 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
           />
         </div>
       )}
+
+      {file && (
+        <div className="space-y-1">
+          {waveformStatus === "disabled" ? (
+            <div
+              role="img"
+              aria-label="Audio waveform preview disabled for large file"
+              className="flex h-16 w-full items-center justify-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-3"
+            >
+              <p className="font-heading text-center text-[10px] text-[var(--muted)]">
+                Waveform preview is disabled for very large files to keep the
+                editor responsive.
+              </p>
+            </div>
+          ) : (
+            <WaveformCanvas
+              samples={waveform}
+              loading={waveformLoading}
+              hasAudio={hasAudio}
+            />
+          )}
+        </div>
+      )}
+
       <div className="flex gap-3">
         <div className="flex-1">
           <label
