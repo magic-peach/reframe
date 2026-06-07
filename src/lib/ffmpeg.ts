@@ -46,9 +46,14 @@ type WorkerResponse =
   | WorkerCancelledResponse;
 
 let ffmpegWorker: Worker | null = null;
-let workerReady: Promise<void> | null = null;
-let workerReadyResolve: (() => void) | null = null;
-let workerReadyReject: ((reason?: any) => void) | null = null;
+// True once the worker has reported the WASM runtime finished loading.
+let ffmpegLoaded = false;
+// Shared in-flight initialization. Concurrent loadFFmpeg() callers await this
+// single promise, so the underlying runtime is only ever loaded once even when
+// several callers trigger a load at the same time.
+let ffmpegLoadingPromise: Promise<void> | null = null;
+let resolveLoad: (() => void) | null = null;
+let rejectLoad: ((reason?: unknown) => void) | null = null;
 let pendingExport: {
   id: string;
   resolve: (result: ExportResult) => void;
@@ -68,35 +73,40 @@ function createWorker(): Worker {
   ffmpegWorker.onerror = (event) => {
     const message = event.message || "FFmpeg worker error";
     const error = new FFmpegLoadError(message);
-    workerReadyReject?.(error);
+    failLoad(error);
     pendingExport?.reject(error);
     resetWorker();
   };
-
-  workerReady = new Promise((resolve, reject) => {
-    workerReadyResolve = resolve;
-    workerReadyReject = reject;
-  });
 
   return ffmpegWorker;
 }
 
 function resetWorker() {
   ffmpegWorker = null;
-  workerReady = null;
-  workerReadyResolve = null;
-  workerReadyReject = null;
+  ffmpegLoaded = false;
+  ffmpegLoadingPromise = null;
+  resolveLoad = null;
+  rejectLoad = null;
   pendingExport = null;
   pendingProgress = null;
+}
+
+// Reject the shared loading promise (if one is in flight) and clear its settle
+// handlers so the loader is never left stuck in a half-initialized state.
+function failLoad(error: unknown) {
+  rejectLoad?.(error);
+  resolveLoad = null;
+  rejectLoad = null;
 }
 
 function handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
   const data = event.data;
 
   if (data.type === "ready") {
-    workerReadyResolve?.();
-    workerReadyResolve = null;
-    workerReadyReject = null;
+    ffmpegLoaded = true;
+    resolveLoad?.();
+    resolveLoad = null;
+    rejectLoad = null;
     pendingProgress?.(100);
     return;
   }
@@ -130,10 +140,7 @@ function handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
       return;
     }
 
-    workerReadyReject?.(new FFmpegLoadError(data.message));
-    workerReady = null;
-    workerReadyResolve = null;
-    workerReadyReject = null;
+    failLoad(new FFmpegLoadError(data.message));
     resetWorker();
     return;
   }
@@ -148,54 +155,76 @@ function handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
   }
 }
 
-async function ensureWorker() {
+function ensureWorker(): Worker {
   if (!ffmpegWorker) {
     createWorker();
   }
+  return ffmpegWorker!;
+}
+
+// Begin a single worker initialization cycle: create the worker, register the
+// shared settle handlers, and trigger the worker's one-time load. The returned
+// promise resolves on "ready" and rejects (after resetting state) on failure.
+function startLoad(): Promise<void> {
+  const worker = ensureWorker();
+  const promise = new Promise<void>((resolve, reject) => {
+    resolveLoad = resolve;
+    rejectLoad = reject;
+  });
+  worker.postMessage({ type: "load" });
+  return promise;
 }
 
 export async function loadFFmpeg(
   signal?: AbortSignal,
   onProgress?: (percent: number) => void
 ): Promise<void> {
-  // 1. Capture if the worker is uninitialized before ensureWorker runs
-  const isFirstLoad = !ffmpegWorker; 
-  
-  await ensureWorker();
-
-  if (workerReady && workerReadyResolve === null) {
+  // Fast path: the runtime is already initialized — never load twice.
+  if (ffmpegLoaded) {
     onProgress?.(100);
     return;
   }
 
-  // 2. Use the captured flag to securely trigger the worker's internal load phase
-  if (isFirstLoad) {
-    ffmpegWorker!.postMessage({ type: "load" });
-  }
-
-  pendingProgress = onProgress ?? null;
-
   if (signal?.aborted) {
-    ffmpegWorker?.postMessage({ type: "cancel" });
     throw new DOMException("Aborted", "AbortError");
   }
 
-  const cleanup = () => {
-    signal?.removeEventListener("abort", onAbort);
-  };
+  // Latest caller's progress callback wins (mirrors prior behavior).
+  if (onProgress) {
+    pendingProgress = onProgress;
+  }
 
+  // Start the initialization exactly once. Any caller that arrives while a load
+  // is in flight joins the same promise instead of kicking off a second
+  // ffmpeg.load() (and a second set of listeners) on the same runtime.
+  if (!ffmpegLoadingPromise) {
+    ffmpegLoadingPromise = startLoad();
+  }
+  const loadingPromise = ffmpegLoadingPromise;
+
+  if (!signal) {
+    await loadingPromise;
+    onProgress?.(100);
+    return;
+  }
+
+  // Per-caller abort: rejects only this caller's wait while leaving the shared
+  // load intact for other in-flight callers.
+  let abortReject: ((reason: unknown) => void) | null = null;
+  const abortPromise = new Promise<never>((_, reject) => {
+    abortReject = reject;
+  });
   const onAbort = () => {
     ffmpegWorker?.postMessage({ type: "cancel" });
-    workerReadyReject?.(new DOMException("Aborted", "AbortError"));
-    cleanup();
+    abortReject?.(new DOMException("Aborted", "AbortError"));
   };
-
-  signal?.addEventListener("abort", onAbort, { once: true });
+  signal.addEventListener("abort", onAbort, { once: true });
 
   try {
-    await workerReady;
+    await Promise.race([loadingPromise, abortPromise]);
+    onProgress?.(100);
   } finally {
-    cleanup();
+    signal.removeEventListener("abort", onAbort);
   }
 }
 
