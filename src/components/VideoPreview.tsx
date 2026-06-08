@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
-import { EditRecipe, TextOverlay, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
+import { EditRecipe, TextOverlay, MultiTrackEditorState } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
@@ -319,7 +319,7 @@ export default function VideoPreview({
             right: `${boxRight}%`,
           }}
         >
-          {/* THE VIDEOS WITH NATIVE CONTROLS RESTORED */}
+          {/* THE VIDEO WITH NATIVE CONTROLS RESTORED */}
           <video
             ref={videoRef}
             controls
@@ -379,148 +379,133 @@ export default function VideoPreview({
           )}
         </div>
 
-        {/* 3x3 Grid Overlay */}
+        {/* Letterbox / Crop preview overlays derived from layout calculations */}
+        {showOverlay && recipe && (
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            {recipe.framing === "fit" ? (
+              <>
+                <div className="absolute left-0 right-0 top-0 bg-black/60" style={{ height: `${boxTop}%` }} />
+                <div className="absolute left-0 right-0 bottom-0 bg-black/60" style={{ height: `${boxBottom}%` }} />
+                <div className="absolute top-0 bottom-0 left-0 bg-black/60" style={{ width: `${boxLeft}%` }} />
+                <div className="absolute top-0 bottom-0 right-0 bg-black/60" style={{ width: `${boxRight}%` }} />
+              </>
+            ) : (
+              <>
+                <div className="absolute left-0 right-0 top-0 bg-black/40" style={{ height: `${boxTop}%` }} />
+                <div className="absolute left-0 right-0 bottom-0 bg-black/40" style={{ height: `${boxBottom}%` }} />
+                <div className="absolute top-0 bottom-0 left-0 bg-black/40" style={{ width: `${boxLeft}%` }} />
+                <div className="absolute top-0 bottom-0 right-0 bg-black/40" style={{ width: `${boxRight}%` }} />
+                <div
+                  className="absolute border-2 border-dashed border-blue-500 pointer-events-none"
+                  style={{
+                    top: `${boxTop}%`,
+                    bottom: `${boxBottom}%`,
+                    left: `${boxLeft}%`,
+                    right: `${boxRight}%`,
+                  }}
+                />
+              </>
+            )}
+          </div>
+        )}
 
         {/* 3x3 Grid Overlay */}
-        {
-          showGridOverlay && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              aria-hidden="true"
-            >
-              {/* Vertical lines */}
-              <div className="absolute top-0 bottom-0 left-1/3 border-l-2 border-dotted border-black" />
-              <div className="absolute top-0 bottom-0 right-1/3 border-l-2 border-dotted border-black" />
-              {/* Horizontal lines */}
-              <div className="absolute left-0 right-0 top-1/3 border-t-2 border-dotted border-black" />
-              <div className="absolute left-0 right-0 bottom-1/3 border-t-2 border-dotted border-black" />
-            </div>
-          )
-        }
+        {showGridOverlay && (
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+            {/* Vertical lines */}
+            <div className="absolute top-0 bottom-0 left-1/3 border-l-2 border-dotted border-black" />
+            <div className="absolute top-0 bottom-0 right-1/3 border-l-2 border-dotted border-black" />
+            {/* Horizontal lines */}
+            <div className="absolute left-0 right-0 top-1/3 border-t-2 border-dotted border-black" />
+            <div className="absolute left-0 right-0 bottom-1/3 border-t-2 border-dotted border-black" />
+          </div>
+        )}
 
         {/* Draggable Text Overlays */}
-        {
-          recipe && !isLoading && containerDimensions.width > 0 && (
-            <DraggableTextOverlays
-              recipe={recipe}
-              containerWidth={containerDimensions.width}
-              containerHeight={containerDimensions.height}
-              selectedTextId={selectedTextId ?? null}
-              onSelectText={onSelectText || (() => { })}
-              onUpdateText={onUpdateText || (() => { })}
-            />
-          )
-        }
-
-        {
-          recipe && !isLoading && containerDimensions.width > 0 && (
-            <DraggableTextOverlays
-              recipe={recipe}
-              containerWidth={containerDimensions.width}
-              containerHeight={containerDimensions.height}
-              selectedTextId={selectedTextId ?? null}
-              onSelectText={onSelectText || (() => { })}
-              onUpdateText={onUpdateText || (() => { })}
-            />
-          )
-        }
+        {recipe && !isLoading && containerDimensions.width > 0 && (
+          <DraggableTextOverlays
+            recipe={recipe}
+            containerWidth={containerDimensions.width}
+            containerHeight={containerDimensions.height}
+            selectedTextId={selectedTextId ?? null}
+            onSelectText={onSelectText || (() => { })}
+            onUpdateText={onUpdateText || (() => { })}
+          />
+        )}
 
         {/* Framing Overlay Toggle Button */}
-        {
-          recipe && !isLoading && (
-            <button
-              type="button"
-              onClick={() => setShowOverlay((v) => !v)}
-              className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${showOverlay
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-                }`}
-              aria-pressed={showOverlay}
-              aria-label={
-                showOverlay ? "Hide framing overlay" : "Show framing overlay"
-              }
-              title={
-                showOverlay ? "Hide framing overlay" : "Show framing overlay"
-              }
-            >
-              {showOverlay ? "Hide overlay" : "Show overlay"}
-            </button>
-          )
-        }
+        {recipe && !isLoading && (
+          <button
+            type="button"
+            onClick={() => setShowOverlay((v) => !v)}
+            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${showOverlay
+              ? "bg-[var(--accent)] text-white"
+              : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+              }`}
+            aria-pressed={showOverlay}
+            aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
+            title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
+          >
+            {showOverlay ? "Hide overlay" : "Show overlay"}
+          </button>
+        )}
 
         {/* Grid Overlay Toggle Button */}
-        {
-          recipe && !isLoading && (
-            <button
-              type="button"
-              onClick={() => setShowGridOverlay((v) => !v)}
-              className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${showGridOverlay
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-                }`}
-              aria-pressed={showGridOverlay}
-              aria-label={
-                showGridOverlay ? "Hide grid overlay" : "Show grid overlay"
-              }
-              title={showGridOverlay ? "Hide grid overlay" : "Show grid"}
-            >
-              {showGridOverlay ? "Hide grid" : "Show grid"}
-            </button>
-          )
-        }
+        {recipe && !isLoading && (
+          <button
+            type="button"
+            onClick={() => setShowGridOverlay((v) => !v)}
+            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${showGridOverlay
+              ? "bg-[var(--accent)] text-white"
+              : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+              }`}
+            aria-pressed={showGridOverlay}
+            aria-label={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
+            title={showGridOverlay ? "Hide grid overlay" : "Show grid"}
+          >
+            {showGridOverlay ? "Hide grid" : "Show grid"}
+          </button>
+        )}
 
         {/* Compare button */}
-        {
-          recipe && !isLoading && (
-            <button
-              type="button"
-              onClick={() => setShowComparison((v) => !v)}
-              className={cn(
-                "absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto",
-                showComparison
-                  ? "bg-[var(--accent)] text-white"
-                  : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)]",
-              )}
-              aria-pressed={showComparison}
-              aria-label={
-                showComparison
-                  ? "Hide comparison preview"
-                  : "Show comparison preview"
-              }
-              title={
-                showComparison
-                  ? "Hide comparison preview"
-                  : "Show comparison preview"
-              }
-            >
-              Compare
-            </button>
-          )
-        }
+        {recipe && !isLoading && (
+          <button
+            type="button"
+            onClick={() => setShowComparison((v) => !v)}
+            className={cn(
+              "absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto",
+              showComparison
+                ? "bg-[var(--accent)] text-white"
+                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)]",
+            )}
+            aria-pressed={showComparison}
+            aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
+            title={showComparison ? "Hide comparison preview" : "Show comparison preview"}
+          >
+            Compare
+          </button>
+        )}
 
         {/* Grab frame button */}
-        {
-          !isLoading && (
-            <button
-              type="button"
-              onClick={handleGrabFrame}
-              className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-20 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] flex items-center gap-1"
-              aria-label="Grab frame as PNG"
-              title="Download current frame as PNG"
-            >
-              <Camera className="w-3 h-3" />
-              Grab frame
-            </button>
-          )
-        }
-      </div >
+        {!isLoading && (
+          <button
+            type="button"
+            onClick={handleGrabFrame}
+            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-20 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] flex items-center gap-1"
+            aria-label="Grab frame as PNG"
+            title="Download current frame as PNG"
+          >
+            <Camera className="w-3 h-3" />
+            Grab frame
+          </button>
+        )}
+      </div>
 
       {showComparison && file && (
         <div className="mt-4">
           <ComparisonPreview file={file} recipe={recipe} videoRef={videoRef} />
         </div>
-      )
-      }
+      )}
     </>
   );
 }

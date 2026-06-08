@@ -317,6 +317,17 @@ export default function VideoEditor() {
     audio: false,
     export: false,
   });
+
+  const getCoordinatesFromPreset = (preset: string) => {
+    switch (preset) {
+      case "top-left": return { x: 10, y: 10 };
+      case "top-right": return { x: 90, y: 10 };
+      case "bottom-left": return { x: 10, y: 90 };
+      case "bottom-right": return { x: 90, y: 90 };
+      default: return { x: 50, y: 50 };
+    }
+  };
+
   useEffect(() => {
     const restored = loadOverlayState(localStorage, {
       overlayPosition: initialOverlayState.current.overlayPosition,
@@ -324,21 +335,19 @@ export default function VideoEditor() {
       overlayOpacity: initialOverlayState.current.overlayOpacity,
     });
 
-    if (restored.overlayPosition) setOverlayPosition(restored.overlayPosition);
+    if (restored.overlayPosition) {
+      if (typeof restored.overlayPosition === 'string') {
+        // Convert the string preset to {x, y} coordinates
+        setOverlayPosition(getCoordinatesFromPreset(restored.overlayPosition));
+      } else {
+        // It's already an object, use it directly
+        setOverlayPosition(restored.overlayPosition);
+      }
+    }
+
     if (typeof restored.overlaySize === "number") setOverlaySize(restored.overlaySize);
     if (typeof restored.overlayOpacity === "number") setOverlayOpacity(restored.overlayOpacity);
-
-    const saved = localStorage.getItem("editorState");
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved);
-      if (parsed.recipe) {
-        updateRecipe(parsed.recipe);
-      }
-    } catch (err) {
-      console.error("Failed to restore editor state", err);
-    }
-  }, [setOverlayOpacity, setOverlayPosition, setOverlaySize, updateRecipe]);
+  }, [setOverlayOpacity, setOverlayPosition, setOverlaySize]);
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   const downloadRef = useRef<HTMLDivElement>(null);
