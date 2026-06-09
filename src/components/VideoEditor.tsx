@@ -16,6 +16,9 @@ import {
   Layers, Crop, Scissors, RotateCw, Volume2,
   SlidersHorizontal, Zap, AlertTriangle, Github
 } from "lucide-react";
+import CustomTemplateManager from "./CustomTemplateManager";
+
+import {saveTemplate,} from "@/lib/templateStorage";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -50,6 +53,19 @@ export default function VideoEditor() {
   } = useVideoEditor();
 
   const isProcessing = status === "loading-engine" || status === "exporting";
+  const handleSaveTemplate = () => {
+  const name = prompt(
+    "Template name"
+  );
+
+  if (!name) return;
+
+  saveTemplate({
+    id: crypto.randomUUID(),
+    name,
+    recipe,
+  });
+};
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
@@ -132,15 +148,33 @@ export default function VideoEditor() {
             "space-y-5",
             isProcessing && "pointer-events-none opacity-50"
           )}>
-            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
-              <Section icon={<Layers size={12} />} title="Output size">
-                <PresetSelector recipe={recipe} onChange={updateRecipe} />
-              </Section>
+           <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
 
-              <Section icon={<Crop size={12} />} title="Framing" delay={100}>
-                <FramingControl recipe={recipe} onChange={updateRecipe} />
-              </Section>
-            </div>
+  <Section icon={<Layers size={12} />} title="Templates">
+    <button
+      type="button"
+      onClick={handleSaveTemplate}
+      className="w-full rounded-lg border border-[var(--border)] py-2 text-sm"
+    >
+      Save Current Template
+    </button>
+
+    <CustomTemplateManager
+      onApplyTemplate={(savedRecipe) =>
+        updateRecipe(savedRecipe)
+      }
+    />
+  </Section>
+
+  <Section icon={<Layers size={12} />} title="Output size">
+    <PresetSelector recipe={recipe} onChange={updateRecipe} />
+  </Section>
+
+  <Section icon={<Crop size={12} />} title="Framing" delay={100}>
+    <FramingControl recipe={recipe} onChange={updateRecipe} />
+  </Section>
+
+</div>
 
             <button
               type="button"
