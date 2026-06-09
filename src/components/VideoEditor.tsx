@@ -289,7 +289,7 @@ export default function VideoEditor() {
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
-      
+
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       downloadRef.current.scrollIntoView({
         behavior: prefersReducedMotion ? "instant" : "smooth",
@@ -313,6 +313,16 @@ return () => {
 }, [file]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
+  const currentStep =
+  !file
+    ? 0
+    : status === "idle"
+    ? 1
+    : status === "loading-engine" || status === "exporting"
+    ? 2
+    : status === "done"
+    ? 3
+    : 1;
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const intervalSeconds = useMemo(() => {
@@ -398,7 +408,7 @@ return () => {
       <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
       No login. No ads. 100% private.
     </div>
-  </div>  
+  </div>
   <div
     className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
     style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
@@ -407,6 +417,29 @@ return () => {
     No login. No ads. 100% private - your video never leaves your device.
   </div>
     </header>
+    <div className="mb-8">
+  <div className="flex items-center justify-center gap-4 flex-wrap">
+    {["Upload", "Configure", "Export", "Download"].map((step, index) => (
+      <div
+        key={step}
+        aria-current={currentStep === index ? "step" : undefined}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium",
+          currentStep === index
+            ? "border-film-500 bg-film-50"
+            : index < currentStep
+            ? "border-green-500 bg-green-50"
+            : "border-[var(--border)] bg-[var(--surface)]"
+        )}
+      >
+        <span>
+          {index < currentStep ? "✓" : index === currentStep ? "●" : "○"}
+        </span>
+        <span>{step}</span>
+      </div>
+    ))}
+  </div>
+</div>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
