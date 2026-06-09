@@ -1,31 +1,77 @@
 "use client";
 
 import FocusTrap from "focus-trap-react";
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, memo, useState, useMemo } from "react";
 import { ExportStatus } from "@/lib/types";
-import LottiePlayer from "./LottiePlayer";
-import spinnerAnim from "@/lib/lottie/spinner.json";
 import TipCarousel from "./TipCarousel";
+import { ExportWorkflow, ExportStage } from "./ExportWorkflow";
+import { Stack, Text, Box, rem } from "@mantine/core";
 
 interface Props {
   status: ExportStatus;
   progress: number;
-  exportStartedAt?: number | null;
   onCancel?: () => void;
+  exportStartedAt: number | null;
 }
 
-function formatElapsed(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
+const ProcessingOrbit = memo(() => (
+  <div className="mx-auto w-16 h-16 relative flex items-center justify-center">
+    {/* Subtle outer track */}
+    <div className="absolute inset-0 rounded-full border-[2px] border-white/5 opacity-30" />
+    
+    {/* Orbiting particles */}
+    <div className="absolute inset-0 animate-[spin_3s_linear_infinite]">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[var(--accent)] rounded-full shadow-[0_0_8px_var(--accent)]" />
+    </div>
+    <div className="absolute inset-0 animate-[spin_2s_linear_infinite_reverse]">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-[var(--accent)]/60 rounded-full shadow-[0_0_6px_var(--accent)]" />
+    </div>
 
-export default function ExportOverlay({ status, progress, exportStartedAt, onCancel }: Props) {
+    {/* Spinning segmented ring with more weight and glow */}
+    <svg className="animate-[spin_1.5s_linear_infinite] w-12 h-12 absolute text-[var(--accent)] drop-shadow-[0_0_12px_rgba(59,130,246,0.4)]" viewBox="0 0 24 24" fill="none">
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+
+    {/* Center pulse */}
+    <div className="w-3 h-3 bg-[var(--accent)] rounded-full animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
+  </div>
+));
+ProcessingOrbit.displayName = "ProcessingOrbit";
+
+export default function ExportOverlay({ status, progress, onCancel }: Props) {
   const visible = status === "loading-engine" || status === "exporting";
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
-  const [elapsedMs, setElapsedMs] = useState(0);
+  
+  // ETA Calculation
+  const startTimeRef = useRef<number | null>(null);
+  const [eta, setEta] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (status === "exporting" && progress > 5 && startTimeRef.current === null) {
+      startTimeRef.current = Date.now();
+    }
+    
+    if (status === "exporting" && progress > 5 && startTimeRef.current !== null) {
+      const elapsed = Date.now() - startTimeRef.current;
+      const estimatedTotal = (elapsed / progress) * 100;
+      const remaining = estimatedTotal - elapsed;
+      
+      if (remaining > 0) {
+        const seconds = Math.ceil(remaining / 1000);
+        if (seconds > 60) {
+          setEta(`${Math.floor(seconds / 60)}m ${seconds % 60}s`);
+        } else {
+          setEta(`${seconds}s`);
+        }
+      }
+    }
+
+    if (!visible) {
+      startTimeRef.current = null;
+      setEta(undefined);
+    }
+  }, [status, progress, visible]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -59,24 +105,43 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
     }
   }, [visible]);
 
-  useEffect(() => {
-    if (status !== "exporting" || !exportStartedAt) {
-      setElapsedMs(0);
-      return;
+  const isLoading = status === "loading-engine";
+
+  const exportStage: ExportStage = useMemo(() => {
+    if (isLoading) return "preparing";
+    if (progress === 0) return "preparing";
+    if (progress >= 99) return "finalizing";
+    return "processing";
+  }, [isLoading, progress]);
+
+  const getProgressMessage = () => {
+    if (isLoading) {
+      return {
+        title: "Initializing Engine",
+        description: "Downloading the video engine. This only happens once.",
+      };
     }
-
-    const updateElapsed = () => {
-      setElapsedMs(Date.now() - exportStartedAt);
+    if (progress === 0) {
+      return {
+        title: "Preparing Media",
+        description: "Optimizing assets for the export pipeline.",
+      };
+    }
+    if (progress >= 99) {
+      return {
+        title: "Finalizing Output",
+        description: "Encoding metadata and saving your file.",
+      };
+    }
+    return {
+      title: "Exporting",
+      description: "Processing your video locally with hardware acceleration.",
     };
+  };
 
-    updateElapsed();
-    const timer = window.setInterval(updateElapsed, 1000);
-    return () => window.clearInterval(timer);
-  }, [status, exportStartedAt]);
+  const { title, description } = getProgressMessage();
 
   if (!visible) return null;
-
-  const isLoading = status === "loading-engine";
 
   return (
     <FocusTrap
@@ -92,10 +157,10 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--bg)] backdrop-blur-sm"
+        className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[var(--bg)]/95 backdrop-blur-xl"
       >
         <div
-          className="text-center space-y-6 max-w-xs px-6 animate-fade-in"
+          className="text-center space-y-8 w-full max-w-[90%] sm:max-w-md px-6 animate-fade-in"
           aria-live="polite"
         >
           <div
@@ -104,66 +169,68 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
             className="sr-only"
             aria-hidden="true"
           />
-          <div className="mx-auto w-20 h-20">
-            <LottiePlayer
-              animationData={spinnerAnim}
-              loop
-              autoplay
-              aria-hidden="true"
-            />
-          </div>
+          <Box mt="md">
+            <ProcessingOrbit />
+          </Box>
+
           <div className="export-text">
-            <h2 className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">
-              {isLoading ? "Loading engine" : "Exporting"}
+            <Stack gap={4} className="transition-all duration-500">
+              <Stack gap={1}>
+            <h2 
+              key={title}
+                  className="font-heading font-bold text-2xl tracking-tight text-[var(--text)] animate-fade-in"
+            >
+              {title}
             </h2>
-            <p className="text-sm text-[var(--muted)] mt-1">
-              {isLoading
-                ? "Downloading the video engine. This only happens once."
-                : "Processing your video locally."}
-            </p>
-            <p className="text-xs font-heading font-semibold text-film-600 mt-2 uppercase tracking-wide">
-              Do not close or refresh this tab
-            </p>
+            <Text 
+              key={description}
+              size="xs"
+              c="dimmed"
+              className="animate-fade-in max-w-[320px] mx-auto leading-relaxed"
+            >
+              {description}
+            </Text>
+          </Stack>
+              <Text 
+                size="xs" 
+                fw={700} 
+                tt="uppercase" 
+                lts="0.1em" 
+                c="red.6"
+                className="animate-pulse"
+                style={{ fontSize: rem(9) }}
+              >
+                Do not close or refresh this tab
+              </Text>
+            </Stack>
           </div>
+
           <span className="sr-only">
-            {status === "loading-engine"
-              ? `Loading video engine: ${progress}%`
-              : `Exporting: ${progress}%, ${formatElapsed(elapsedMs)} elapsed`}
+            {isLoading ? "Loading video engine" : "Exporting"}: {Math.round(progress)}%
           </span>
-            <div className="w-full space-y-2">
-              <div className="h-1 w-full bg-film-100 rounded-full overflow-hidden">
-                <div
-                  role="progressbar"
-                  aria-valuenow={progress}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label={isLoading ? "Engine download progress" : "Export progress"}
-                  className="h-full bg-film-600 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between gap-4 text-xs font-heading font-semibold text-[var(--muted)]">
-                <span>{progress}%</span>
-                {!isLoading && (
-                  <span>{formatElapsed(elapsedMs)} elapsed</span>
-                )}
-              </div>
-              <TipCarousel />
-              {!isLoading && (
-              <div className="flex flex-col items-center gap-3 mt-4">
-                <button
-                  type="button"
-                  onClick={() => onCancel?.()}
-                  className="inline-flex items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--text)] transition-colors hover:opacity-95 active:scale-[0.98]"
-                >
-                  Cancel Export
-                </button>
-                <p className="text-[var(--text)] text-xs">
-                  Press Escape to cancel
-                </p>
-              </div>
-              )}
-            </div>
+          <Box w="100%">
+            <ExportWorkflow stage={exportStage} progress={progress} eta={eta} />
+          </Box>
+
+          <Box w="100%">
+            <TipCarousel />
+          </Box>
+
+          {!isLoading && (
+            <Stack gap="xs" align="center">
+              <button
+                type="button"
+                onClick={() => onCancel?.()}
+                className="group relative inline-flex items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--surface)] px-8 py-3 text-sm font-bold text-[var(--text)]/80 transition-all hover:bg-[var(--bg)] hover:text-[var(--text)] active:scale-[0.98] shadow-lg overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                Cancel Export
+              </button>
+              <Text size="xs" fw={700} tt="uppercase" lts="0.1em" c="dimmed" style={{ fontSize: rem(9) }}>
+                Press <span className="text-[var(--text)]">Esc</span> to cancel
+              </Text>
+            </Stack>
+          )}
         </div>
       </div>
     </FocusTrap>
