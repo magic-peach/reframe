@@ -29,6 +29,7 @@ export default function FileUpload({
   const dragCounterRef = useRef(0);
 
   // ── Keyboard shortcut Ctrl+O ──────────────────────────
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o") {
@@ -168,23 +169,11 @@ export default function FileUpload({
       </p>
 
       {fileError && (
-        <p className="text-xs text-[var(--error)] mt-2 font-medium">{fileError}</p>
+        <p className="text-sm text-[var(--error)] text-center">{fileError}</p>
       )}
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
     </div>
   );
 
-  // ── Drop zone (inner) ─────────────────────────────────
   const DropZone = () => (
     <div
       id="upload-zone"
@@ -200,6 +189,7 @@ export default function FileUpload({
       onClick={() => inputRef.current?.click()}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
           inputRef.current?.click();
         }
       }}
