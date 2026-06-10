@@ -169,6 +169,96 @@ export function useVideoEditor() {
       soundOnCompletion: getStoredSoundPreference(localStorage),
     }));
   });
+  const [history, setHistory] = useState<EditRecipe[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const historyRef = useRef<{ list: EditRecipe[]; index: number }>({ list: [], index: -1 });
+  const isUndoingOrRedoing = useRef(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Keep historyRef in sync
+  useEffect(() => {
+    historyRef.current = { list: history, index: historyIndex };
+  }, [history, historyIndex]);
+
+  const pushHistory = useCallback((nextRecipe: EditRecipe) => {
+    if (isUndoingOrRedoing.current) return;
+
+    const { list, index } = historyRef.current;
+    
+    // If the next recipe is identical to the one at the current index, don't push
+    if (index >= 0 && JSON.stringify(list[index]) === JSON.stringify(nextRecipe)) {
+      return;
+    }
+
+    const newList = [...list.slice(0, index + 1), nextRecipe];
+    setHistory(newList);
+    setHistoryIndex(newList.length - 1);
+  }, []);
+
+  const debouncedPushHistory = useCallback((nextRecipe: EditRecipe) => {
+    if (isUndoingOrRedoing.current) return;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      pushHistory(nextRecipe);
+    }, 400); // 400ms debounce
+  }, [pushHistory]);
+
+  const initHistory = useCallback((initialRecipe: EditRecipe) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    setHistory([initialRecipe]);
+    setHistoryIndex(0);
+    historyRef.current = { list: [initialRecipe], index: 0 };
+  }, []);
+
+  const undo = useCallback(() => {
+    // Flush any pending history changes
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+      
+      const { list, index } = historyRef.current;
+      if (index >= 0 && JSON.stringify(list[index]) !== JSON.stringify(recipe)) {
+        const newList = [...list.slice(0, index + 1), recipe];
+        historyRef.current = { list: newList, index: newList.length - 1 };
+      }
+    }
+
+    const { list, index } = historyRef.current;
+    if (index > 0) {
+      isUndoingOrRedoing.current = true;
+      const prevRecipe = list[index - 1];
+      if (prevRecipe) {
+        setRecipe(prevRecipe);
+        setHistoryIndex(index - 1);
+      }
+      setTimeout(() => {
+        isUndoingOrRedoing.current = false;
+      }, 0);
+    }
+  }, [recipe]);
+
+  const redo = useCallback(() => {
+    const { list, index } = historyRef.current;
+    if (index < list.length - 1) {
+      isUndoingOrRedoing.current = true;
+      const nextRecipe = list[index + 1];
+      if (nextRecipe) {
+        setRecipe(nextRecipe);
+        setHistoryIndex(index + 1);
+      }
+      setTimeout(() => {
+        isUndoingOrRedoing.current = false;
+      }, 0);
+    }
+  }, []);
+
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
@@ -218,9 +308,10 @@ export function useVideoEditor() {
     if (next.format === "gif") {
       next.keepAudio = false;
     }
+    debouncedPushHistory(next);
     return next;
   });
-}, []);
+}, [debouncedPushHistory]);
   const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
     switch (key) {
       case "preset":
@@ -261,6 +352,11 @@ export function useVideoEditor() {
       const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
       const hasRecipeParams = recipeKeys.some(key => params.has(key));
 
+      let initialSoundOnCompletion = false;
+      try {
+        initialSoundOnCompletion = localStorage.getItem("soundOnCompletion") === "true";
+      } catch {}
+
       if (hasRecipeParams) {
         const updatedPatch: Partial<EditRecipe> = {};
         recipeKeys.forEach((key) => {
@@ -286,10 +382,56 @@ export function useVideoEditor() {
         if (Object.keys(updatedPatch).length > 0) {
           setRecipe(prev => ({
             ...prev,
+            soundOnCompletion: initialSoundOnCompletion,
             ...updatedPatch
+          }));
+        } else {
+          setRecipe(prev => ({
+            ...prev,
+            soundOnCompletion: initialSoundOnCompletion
           }));
         }
       } else {
+        // Try full recipe restore first (new key)
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (isValidRecipe(parsed)) {
+              setRecipe({
+                ...parsed,
+                soundOnCompletion: initialSoundOnCompletion
+              });
+              return;
+            }
+          }
+        } catch {
+          // ignore parse/validation errors and fall back to legacy
+        }
+
+        // Legacy partial settings (keep for backward compatibility)
+        const saved = localStorage.getItem("reframe-settings");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const sanitizeDimension = (val: unknown, fallback: number): number => {
+            const n = Number(val);
+            return Number.isFinite(n) && n >= 16 && n <= 7680 ? n : fallback;
+          };
+          setRecipe(prev => ({
+            ...prev,
+            soundOnCompletion: initialSoundOnCompletion,
+            preset: parsed.preset ?? prev.preset,
+            quality: parsed.quality ?? prev.quality,
+            speed: parsed.speed ?? prev.speed,
+            customWidth: sanitizeDimension(parsed.customWidth, prev.customWidth),
+            customHeight: sanitizeDimension(parsed.customHeight, prev.customHeight),
+          }));
+        } else {
+          setRecipe(prev => ({
+            ...prev,
+            soundOnCompletion: initialSoundOnCompletion
+          }));
+        }
         setRecipe((current) => loadPersistedRecipe(localStorage, current));
       }
     } catch (e) {
@@ -563,49 +705,7 @@ export function useVideoEditor() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [status]);
   
-  useEffect(() => {
-    const handleKeydown = (e: KeyboardEvent) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key === "Enter" &&
-        file &&
-        status !== "loading-engine" &&
-        status !== "exporting"
-      ) {
-        handleExport();
-      }
-    };
 
-    document.addEventListener("keydown", handleKeydown);
-    return () => {
-      document.removeEventListener("keydown", handleKeydown);
-    };
-  }, [file, status, handleExport]);
-
-  // M key: toggle audio mute — only when a file is loaded and focus isn't in a text field
-  useEffect(() => {
-    if (!file) return;
-
-    const handleMuteShortcut = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== "m" || e.ctrlKey || e.metaKey || e.altKey) return;
-
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      setRecipe((prev) => ({ ...prev, keepAudio: !prev.keepAudio }));
-    };
-
-    document.addEventListener("keydown", handleMuteShortcut);
-    return () => {
-      document.removeEventListener("keydown", handleMuteShortcut);
-    };
-  }, [file]);
 
   useEffect(()=>{
     return ()=>{
@@ -618,18 +718,22 @@ export function useVideoEditor() {
   useEffect(() => {
     return () => {
       terminateFFmpeg();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
   }, []);
 
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
+    pushHistory(DEFAULT_RECIPE);
     try {
       localStorage.removeItem(RECIPE_STORAGE_KEY);
       localStorage.removeItem(LEGACY_SETTINGS_KEY);
     } catch {
       // ignore
     }
-  }, []);
+  }, [pushHistory]);
 
   const cancelExport = useCallback(() => {
     exportCancelledRef.current = true;
@@ -642,13 +746,13 @@ export function useVideoEditor() {
     setExportStartedAt(null);
   }, []);
 
-
   const reset = useCallback(() => {
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setFile(null);
     setVideoMetadata(null);
     setDuration(0);
     setRecipe(DEFAULT_RECIPE);
+    initHistory(DEFAULT_RECIPE);
     setStatus("idle");
     setProgress(0);
     setResult(null);
@@ -660,12 +764,12 @@ export function useVideoEditor() {
     } catch {
       // ignore
     }
-  }, [result]);
-
+  }, [result, initHistory]);
 
   useEffect(() => {
     persistSoundPreference(localStorage, recipe.soundOnCompletion);
   }, [recipe.soundOnCompletion]);
+
   const seekTo = useCallback((time: number) => {
     if (videoRef.current) {
       videoRef.current.currentTime = time;
@@ -680,8 +784,11 @@ export function useVideoEditor() {
   },[]);
 
   const toggleSound = useCallback(() => {
-  updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
-}, [recipe.soundOnCompletion, updateRecipe]);
+    updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
+  }, [recipe.soundOnCompletion, updateRecipe]);
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1 && historyIndex !== -1;
 
   return {
     file,
@@ -720,6 +827,10 @@ export function useVideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
     // Phase 1 MVP: Multi-track timeline support
     multiTrackState,
     addTrack,

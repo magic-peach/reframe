@@ -354,13 +354,16 @@ export default function OnboardingTour() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") dismiss();
       if (e.key === "ArrowRight" || e.key === "Enter") {
-        if (stepIndex < TOUR_STEPS.length - 1) setStepIndex((i) => i + 1);
-        else dismiss();
+        setStepIndex((i) => {
+          if (i < TOUR_STEPS.length - 1) return i + 1;
+          dismiss();
+          return i;
+        });
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [visible, stepIndex, dismiss]);
+  }, [visible, dismiss]);
 
   if (!visible || !targetRect || !currentStep) return null;
 
@@ -380,8 +383,11 @@ export default function OnboardingTour() {
         totalSteps={TOUR_STEPS.length}
         rect={targetRect}
         onNext={() => {
-          if (stepIndex < TOUR_STEPS.length - 1) setStepIndex((i) => i + 1);
-          else dismiss();
+          setStepIndex((i) => {
+            if (i < TOUR_STEPS.length - 1) return i + 1;
+            dismiss();
+            return i;
+          });
         }}
         onSkip={dismiss}
         tooltipRef={tooltipRef}
