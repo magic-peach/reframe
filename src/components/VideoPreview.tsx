@@ -1,14 +1,19 @@
-/* eslint-disable jsx-a11y/no-static-element-interactions, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions */
 "use client";
 
+import { useRef, useState, useEffect } from "react";
+import { TextOverlay, EditRecipe } from "@/lib/types";
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
 import { EditRecipe, TextOverlay, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
-import { Camera } from "lucide-react";
-import ComparisonPreview from "./ComparisonPreview";
-import DraggableTextOverlays from "./DraggableTextOverlays";
 
+interface VideoPreviewProps {
+  file: File;
+  recipe: EditRecipe;
+  videoRef: React.RefObject<HTMLVideoElement | null> | React.MutableRefObject<HTMLVideoElement | null> | ((instance: HTMLVideoElement | null) => void);
+  selectedTextId: string | null;
+  onSelectText: (id: string | null) => void;
+  onUpdateText: (id: string, updates: Partial<TextOverlay>) => void;
 interface Props {
   file: File | null;
   recipe?: EditRecipe;
@@ -25,9 +30,17 @@ export default function VideoPreview({
   file,
   recipe,
   videoRef,
-  selectedTextId = null,
+  selectedTextId,
   onSelectText,
   onUpdateText,
+}: VideoPreviewProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [videoUrl, setVideoUrl] = useState<string>("");
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
+  const overlayStartPos = useRef({ x: 0, y: 0 });
+
+  // Generate local binary Object URL for the HTML5 Video stream wrapper
   multiTrackState,
   multiTrackVideoRefs,
 }: Props) {
@@ -77,49 +90,46 @@ export default function VideoPreview({
   }, [videoRef]);
 
   useEffect(() => {
-    if (!file) return;
-
-    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-    setIsLoading(true);
-    const id = ++lastId.current;
     const url = URL.createObjectURL(file);
+    setVideoUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
+  // Read framing styles dynamically based on chosen preset ratios
+  const getAspectRatioClass = () => {
+    switch (recipe.preset) {
+      case "vertical-9-16": return "aspect-[9/16] max-h-[500px]";
+      case "instagram-4-5": return "aspect-[4/5] max-h-[500px]";
+      case "square-1-1": return "aspect-square max-h-[450px]";
+      case "landscape-16-9": return "aspect-[16/9] max-w-full";
+      default: return "aspect-video max-w-full";
     }
-    urlRef.current = url;
+  };
 
-    const video = videoRef.current;
-    if (!video) return;
+  const handleMouseDown = (e: React.MouseEvent, overlay: TextOverlay) => {
+    e.stopPropagation();
+    onSelectText(overlay.id);
+    setIsDragging(true);
+    
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    overlayStartPos.current = { x: overlay.x, y: overlay.y };
+  };
 
-    video.src = url;
-    video.load();
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !selectedTextId || !containerRef.current) return;
 
-    const handleLoaded = () => {
-      if (lastId.current !== id) return;
-      video.play().catch(() => {});
-    };
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const deltaX = e.clientX - dragStartPos.current.x;
+      const deltaY = e.clientY - dragStartPos.current.y;
 
-    onLoadedRef.current = handleLoaded;
+      const percentDeltaX = (deltaX / containerRect.width) * 100;
+      const percentDeltaY = (deltaY / containerRect.height) * 100;
 
-    video.addEventListener("loadeddata", handleLoaded);
+      const newX = Math.max(0, Math.min(90, overlayStartPos.current.x + percentDeltaX));
+      const newY = Math.max(0, Math.min(95, overlayStartPos.current.y + percentDeltaY));
 
-    return () => {
-      if (onLoadedRef.current) {
-        video.removeEventListener("loadeddata", onLoadedRef.current);
-        onLoadedRef.current = null;
-      }
-
-      if (video) {
-        video.pause();
-        video.removeAttribute("src");
-        video.load();
-      }
-
-      if (urlRef.current === url) {
-        URL.revokeObjectURL(urlRef.current);
-        urlRef.current = null;
-      }
+      onUpdateText(selectedTextId, { x: newX, y: newY });
     };
   }, [file, videoRef]);
 
@@ -162,115 +172,41 @@ export default function VideoPreview({
     videoRef.current.muted = !recipe.keepAudio;
   }, [recipe, videoRef]);
 
-  useEffect(() => {
-    if (!videoRef.current || !recipe) return;
-    videoRef.current.playbackRate = recipe.speed;
-  }, [recipe, videoRef]);
-
-  /**
-   * Track preview container dimensions for text overlay positioning.
-   */
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (previewContainerRef.current) {
-        const rect = previewContainerRef.current.getBoundingClientRect();
-        setContainerDimensions({
-          width: rect.width,
-          height: rect.height,
-        });
-      }
+    const handleMouseUp = () => {
+      setIsDragging(false);
     };
 
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
-
-  const overlay = (() => {
-    if (!recipe || !showOverlay) return null;
-
-    const preset = recipe.preset === "custom"
-      ? { width: recipe.customWidth, height: recipe.customHeight }
-      : getPresetById(recipe.preset);
-
-    if (!preset) return null;
-
-    // Preview container is 16:9
-    const containerW = 16;
-    const containerH = 9;
-    const containerRatio = containerW / containerH;   // 1.777…
-    const outputRatio = preset.width / preset.height;
-
-    if (recipe.framing === "fit") {
-      // Letterbox: the output video fits entirely inside 16:9, padded with bars.
-      if (outputRatio > containerRatio) {
-        // Wider output → pillarbox bars on top & bottom
-        const contentH = (containerRatio / outputRatio) * 100;
-        const barH = (100 - contentH) / 2;
-        return { mode: "fit", barTop: `${barH}%`, barBottom: `${barH}%`, barLeft: "0", barRight: "0" };
-      } else {
-        // Taller output → letterbox bars on left & right
-        const contentW = (outputRatio / containerRatio) * 100;
-        const barW = (100 - contentW) / 2;
-        return { mode: "fit", barTop: "0", barBottom: "0", barLeft: `${barW}%`, barRight: `${barW}%` };
-      }
-    } else {
-      // Fill / crop: the output fills the entire 16:9 preview — show a box representing what survives the crop.
-      if (outputRatio < containerRatio) {
-        // Output is taller → crops top & bottom
-        const visibleH = (outputRatio / containerRatio) * 100;
-        const cropH = (100 - visibleH) / 2;
-        return { mode: "fill", barTop: `${cropH}%`, barBottom: `${cropH}%`, barLeft: "0", barRight: "0" };
-      } else {
-        // Output is wider → crops left & right
-        const visibleW = (containerRatio / outputRatio) * 100;
-        const cropW = (100 - visibleW) / 2;
-        return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
-      }
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
     }
-  })();
 
-  if (!file) return null;
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.code === "Space") {
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      const video = videoRef.current;
-      if (video) {
-        e.preventDefault(); // Prevent default page scroll
-        if (video.paused) {
-          video.play().catch(() => {});
-        } else {
-          video.pause();
-        }
-      }
-    }
-  };
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, selectedTextId, onUpdateText]);
 
   return (
-    <>
-      <div
-        ref={previewContainerRef}
-        role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-        aria-label="Video preview (press Space to play/pause)"
-      >
-        {isLoading && (
-          <div
-            className="absolute inset-0 animate-pulse bg-[var(--surface)] rounded-xl transition-opacity duration-300"
-            aria-label="Loading video preview"
-          />
+    <div className="w-full flex justify-center items-center bg-black/90 rounded-xl overflow-hidden p-2 border border-[var(--border)] min-h-[300px]">
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+      <div 
+        ref={containerRef}
+        onClick={() => onSelectText(null)}
+        className={cn(
+          "relative bg-zinc-900 shadow-2xl transition-all overflow-hidden group outline-none cursor-pointer",
+          getAspectRatioClass()
         )}
+      >
+        {/* Native Browser HTML5 Streaming Canvas */}
+        {videoUrl && (
+          <video
+            ref={videoRef as React.RefObject<HTMLVideoElement | null>} 
+            src={videoUrl}
+            className={cn(
+              "w-full h-full pointer-events-none select-none",
+              // 👇 FIXED: Changed the evaluation check to match your actual "fill" | "fit" types
+              (recipe.framing ?? "fit") === "fill" ? "object-cover" : "object-contain"
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video
           ref={videoRef}
@@ -349,107 +285,40 @@ export default function VideoPreview({
                 />
               </>
             )}
-          </div>
-        )}
-
-        {/* 3x3 Grid Overlay */}
-        {showGridOverlay && (
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-            {/* Vertical lines */}
-            <div className="absolute top-0 bottom-0 left-1/3 border-l-2 border-dotted border-black" />
-            <div className="absolute top-0 bottom-0 right-1/3 border-l-2 border-dotted border-black" />
-            {/* Horizontal lines */}
-            <div className="absolute left-0 right-0 top-1/3 border-t-2 border-dotted border-black" />
-            <div className="absolute left-0 right-0 bottom-1/3 border-t-2 border-dotted border-black" />
-          </div>
-        )}
-
-        {/* Draggable Text Overlays */}
-        {recipe && !isLoading && containerDimensions.width > 0 && (
-          <DraggableTextOverlays
-            recipe={recipe}
-            containerWidth={containerDimensions.width}
-            containerHeight={containerDimensions.height}
-            selectedTextId={selectedTextId ?? null}
-            onSelectText={onSelectText || (() => {})}
-            onUpdateText={onUpdateText || (() => {})}
+            style={{
+              filter: `brightness(${1 + (recipe.brightness ?? 0)}) contrast(${recipe.contrast ?? 1})`,
+              transform: `rotate(${recipe.rotation ?? 0}deg)`
+            }}
+            muted
+            playsInline
+            loop
+            autoPlay
           />
         )}
 
-        {/* Toggle button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowOverlay((v) => !v)}
-            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showOverlay
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showOverlay}
-            aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-            title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
+        {/* Live Absolute Position Coordinate Text Overlay Mapping Layer */}
+        {(recipe.textOverlays || []).map((overlay: TextOverlay) => (
+          /* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events */
+          <div
+            key={overlay.id}
+            onMouseDown={(e) => handleMouseDown(e, overlay)}
+            style={{
+              top: `${overlay.y}%`,
+              left: `${overlay.x}%`,
+              color: overlay.color || "#ffffff",
+              fontSize: `${overlay.fontSize || 24}px`,
+              fontFamily: overlay.fontFamily || "Inter",
+              transform: "translate(-50%, -50%)",
+            }}
+            className={cn(
+              "absolute cursor-move select-none whitespace-nowrap px-2 py-1 rounded transition-shadow font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] hover:bg-white/10 border border-transparent outline-none",
+              selectedTextId === overlay.id && "border-blue-500 bg-black/40 ring-2 ring-blue-500/50"
+            )}
           >
-            {showOverlay ? "Hide overlay" : "Show overlay"}
-          </button>
-        )}
-
-        {/* Grid overlay button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowGridOverlay((v) => !v)}
-            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showGridOverlay
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showGridOverlay}
-            aria-label={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
-            title={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
-          >
-            {showGridOverlay ? "Hide grid" : "Show grid"}
-          </button>
-        )}
-
-        {/* Compare button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowComparison((v) => !v)}
-            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showComparison
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showComparison}
-            aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
-            title={showComparison ? "Hide comparison preview" : "Show comparison preview"}
-          >
-            Compare
-          </button>
-        )}
-
-        {/* Grab frame button */}
-        {!isLoading && (
-          <button
-            type="button"
-            onClick={handleGrabFrame}
-            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
-            aria-label="Grab frame as PNG"
-            title="Download current frame as PNG"
-          >
-            <Camera className="w-3 h-3" />
-            Grab frame
-          </button>
-        )}
+            {overlay.text || "Type your caption..."}
+          </div>
+        ))}
       </div>
-
-      {showComparison && file && (
-        <div className="mt-4">
-          <ComparisonPreview file={file} recipe={recipe} videoRef={videoRef} />
-        </div>
-      )}
-    </>
+    </div>
   );
 }

@@ -34,7 +34,8 @@ export function getFrameExportTransform(
   sourceHeight: number
 ): FrameExportTransform {
   const { width, height } = resolveOutputSize(recipe);
-  const rotated = recipe.rotate === 90 || recipe.rotate === 270;
+  // 👇 FIXED: Changed 'recipe.rotate' to 'recipe.rotation'
+  const rotated = recipe.rotation === 90 || recipe.rotation === 270;
 
   const fittedWidth = rotated ? sourceHeight : sourceWidth;
   const fittedHeight = rotated ? sourceWidth : sourceHeight;
@@ -46,7 +47,8 @@ export function getFrameExportTransform(
   return {
     width,
     height,
-    rotation: (recipe.rotate * Math.PI) / 180,
+    // 👇 FIXED: Changed 'recipe.rotate' to 'recipe.rotation'
+    rotation: (recipe.rotation * Math.PI) / 180,
     scale,
   };
 }

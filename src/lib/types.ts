@@ -22,7 +22,7 @@ export interface EditRecipe {
   framing: "fit" | "fill";
   trimStart: number;
   trimEnd: number | null;
-  rotate: 0 | 90 | 180 | 270;
+  rotation: 0 | 90 | 180 | 270; // Changed from rotate to rotation to align with VideoEditor state maps
   keepAudio: boolean;
   normalizeAudio: boolean;
   speed: number;
@@ -75,6 +75,8 @@ export type ExportStatus =
   | "done"
   | "error";
 
+export const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
+export const WARNING_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 /**
  * Phase 1 MVP: Multi-track timeline support
  * Supports video and image layers with positioning and opacity
@@ -130,13 +132,14 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (v.framing !== "fit" && v.framing !== "fill") return false;
   if (typeof v.trimStart !== "number" || !isFinite(v.trimStart)) return false;
   if (!(v.trimEnd === null || (typeof v.trimEnd === "number" && isFinite(v.trimEnd)))) return false;
-  if (![0, 90, 180, 270].includes(v.rotate)) return false;
+  if (![0, 90, 180, 270].includes(v.rotation)) return false; // Fixed key verification from rotate to rotation
   if (typeof v.keepAudio !== "boolean") return false;
   if (typeof v.normalizeAudio !== "boolean") return false;
   if (typeof v.speed !== "number" || !isFinite(v.speed)) return false;
   if (typeof v.quality !== "number" || !isFinite(v.quality)) return false;
   if (!["mp4", "webm", "mkv", "gif"].includes(v.format)) return false;
   if (typeof v.stabilization !== "boolean") return false;
+  if (typeof v.denoise !== "boolean") return false; // Added explicit validation mapping for denoise
   if (typeof v.brightness !== "number" || !isFinite(v.brightness)) return false;
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;

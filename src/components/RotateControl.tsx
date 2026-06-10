@@ -4,18 +4,24 @@ import { EditRecipe } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
 
+// Create a local type intersection so TypeScript knows 'rotate' exists on this object
+type RecipeWithRotation = EditRecipe & { rotate?: number };
+
 interface Props {
-  recipe: EditRecipe;
-  onChange: (patch: Partial<EditRecipe>) => void;
+  recipe: RecipeWithRotation;
+  onChange: (patch: Partial<RecipeWithRotation>) => void;
 }
 
 const ROTATIONS = [0, 90, 180, 270] as const;
 
 export default function RotateControl({ recipe, onChange }: Props) {
+  // Safe fallback to 0 if 'rotate' is undefined on the recipe state
+  const currentRotation = typeof recipe.rotate === "number" ? recipe.rotate : 0;
+
   return (
     <div className="flex gap-2">
       {ROTATIONS.map((deg) => {
-        const active = recipe.rotate === deg;
+        const active = currentRotation === deg;
         return (
           <button
             type="button"
@@ -30,6 +36,14 @@ export default function RotateControl({ recipe, onChange }: Props) {
                 : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-300 hover:bg-film-50/30"
             )}
           >
+            <RotateCw 
+              size={15} 
+              aria-hidden="true" 
+              style={{ transform: `rotate(${deg}deg)`, transformOrigin: 'center' }} 
+              className="transition-transform" 
+            />
+            {deg}°
+          </BaseButton>
             <RotateCw
               size={15}
               aria-hidden="true"

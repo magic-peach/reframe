@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe, TextOverlay } from "@/lib/types";
 import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
@@ -26,6 +27,7 @@ import {
 } from "@/lib/editorPersistence";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
+const STORAGE_KEY = "reframe:recipe";
 
 export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
@@ -33,12 +35,12 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
     const video = document.createElement("video");
     const timeout = setTimeout(() => {
       URL.revokeObjectURL(url);
-      reject( new Error("Video metaData load timeout — the file may be too large or the device too slow. Please try again.") );
+      reject(new Error("Video metadata load timeout — the file may be too large or the device too slow. Please try again."));
     }, 5000);
 
     video.preload = "metadata";
     video.onloadedmetadata = () => {
-      clearTimeout(timeout)
+      clearTimeout(timeout);
       resolve({
         width: video.videoWidth,
         height: video.videoHeight,
@@ -47,7 +49,7 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
       URL.revokeObjectURL(url);
     };
     video.onerror = () => {
-      clearTimeout(timeout)
+      clearTimeout(timeout);
       URL.revokeObjectURL(url);
       reject(new Error("Failed to load video metadata"));
     };
@@ -67,100 +69,74 @@ function verifyMagicBytes(file: File): Promise<boolean> {
       const hex = Array.from(arr).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
       const ascii = String.fromCharCode(...arr);
 
-      // WebM / MKV
-      if (hex.startsWith("1A45DFA3")) resolve(true);
-      // AVI
-      else if (hex.startsWith("52494646")) resolve(true);
-      // MP4 / MOV (checks for 'ftyp' in first 12 bytes)
-      else if (ascii.substring(0, 12).includes("ftyp")) resolve(true);
-      else resolve(false);
+      if (hex.startsWith("1A45DFA3")) resolve(true); // WebM / MKV
+      if (hex.startsWith("52494646")) resolve(true); // AVI
+      if (ascii.substring(0, 12).includes("ftyp")) resolve(true); // MP4 / MOV
+      resolve(false);
     };
     reader.onerror = () => resolve(false);
     reader.readAsArrayBuffer(file.slice(0, 12));
   });
 }
 
-function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
+function validateRecipe(recipe: EditRecipe, duration: number): string | null {
   const validations: Array<[boolean, string]> = [
-    [
-      recipe.trimStart < 0,
-      "Trim start time cannot be less than 0 seconds.",
-    ],
-    [
-      recipe.trimEnd !== null && duration > 0 && recipe.trimEnd > duration,
-      `Trim end time cannot exceed the video duration (${Math.floor(duration)}s).`,
-    ],
-    [
-      recipe.trimEnd !== null 
-        ? recipe.trimStart >= recipe.trimEnd 
-        : (duration > 0 && recipe.trimStart >= duration),
-      "Trim start time must be earlier than the end time.",
-    ],
-    [
-      recipe.preset === "custom" && (Number.isNaN(recipe.customWidth) || recipe.customWidth < 16 || recipe.customWidth > 7680),
-      "Width must be between 16px and 7680px.",
-    ],
-    [
-      recipe.preset === "custom" && (Number.isNaN(recipe.customHeight) || recipe.customHeight < 16 || recipe.customHeight > 7680),
-      "Height must be between 16px and 7680px.",
-    ],
-    [
-      !(SPEED_STEPS as readonly number[]).includes(recipe.speed),
-      "Please select a valid playback speed.",
-    ],
-    [
-      recipe.quality < 18 || recipe.quality > 30,
-      "Quality must be between 18 and 30.",
-    ],
-    [
-      recipe.brightness < -1 || recipe.brightness > 1,
-      "Brightness must be between -1 and 1.",
-    ],
-
-    [
-      recipe.contrast < 0 || recipe.contrast > 2,
-      "Contrast must be between 0 and 2.",
-    ],
-
-    [
-      recipe.saturation < 0 || recipe.saturation > 3,
-      "Saturation must be between 0 and 3.",
-    ],
+    [recipe.trimStart < 0, "Trim start time cannot be less than 0 seconds."],
+    [recipe.trimEnd !== null && duration > 0 && recipe.trimEnd > duration, `Trim end time cannot exceed the video duration (${Math.floor(duration)}s).`],
+    [recipe.trimEnd !== null ? recipe.trimStart >= recipe.trimEnd : (duration > 0 && recipe.trimStart >= duration), "Trim start time must be earlier than the end time."],
+    [recipe.preset === "custom" && (Number.isNaN(recipe.customWidth) || recipe.customWidth < 16 || recipe.customWidth > 7680), "Width must be between 16px and 7680px."],
+    [recipe.preset === "custom" && (Number.isNaN(recipe.customHeight) || recipe.customHeight < 16 || recipe.customHeight > 7680), "Height must be between 16px and 7680px."],
+    [!(SPEED_STEPS as readonly number[]).includes(recipe.speed), "Please select a valid playback speed."],
+    [recipe.quality < 18 || recipe.quality > 30, "Quality must be between 18 and 30."],
+    [recipe.brightness < -1 || recipe.brightness > 1, "Brightness must be between -1 and 1."],
+    [recipe.contrast < 0 || recipe.contrast > 2, "Contrast must be between 0 and 2."],
+    [recipe.saturation < 0 || recipe.saturation > 3, "Saturation must be between 0 and 3."],
   ];
 
-  return (
-    validations.find(([condition]) => condition)?.[1] ??
-    null
-  );
-}
-
-function encodeRecipe(recipe: EditRecipe): string {
-  return btoa(JSON.stringify(recipe));
+  return validations.find(([condition]) => condition)?.[1] ?? null;
 }
 
 function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   try {
-    const decoded = JSON.parse(atob(encoded));
-    return decoded as Partial<EditRecipe>;
+    return JSON.parse(atob(encoded)) as Partial<EditRecipe>;
   } catch {
     return null;
   }
 }
 
+function migrateRecipe(recipe: Partial<EditRecipe>): EditRecipe {
+  return {
+    ...DEFAULT_RECIPE,
+    ...recipe,
+    textOverlays: Array.isArray(recipe.textOverlays) ? recipe.textOverlays : [],
+  };
+}
+
 export function useVideoEditor() {
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number>(0);
-  const [videoMetadata, setVideoMetadata] = useState<{
-    width: number;
-    height: number;
-    duration: number;
-  } | null>(null);
+  const [videoMetadata, setVideoMetadata] = useState<{ width: number; height: number; duration: number } | null>(null);
+  
   const [recipe, setRecipe] = useState<EditRecipe>(() => {
     if (typeof window === "undefined") return { ...DEFAULT_RECIPE };
     const params = new URLSearchParams(window.location.search);
     const encoded = params.get("settings");
     if (encoded) {
       const decoded = decodeRecipe(encoded);
+      if (decoded) return migrateRecipe(decoded);
+    }
+    
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (isValidRecipe(parsed)) return migrateRecipe(parsed);
+      }
+    } catch {}
+
+    return migrateRecipe({
+      soundOnCompletion: typeof window !== "undefined" && localStorage.getItem("soundOnCompletion") === "true",
+    });
       if (decoded) {
         return migratePersistedRecipe(decoded);
       }
@@ -169,12 +145,14 @@ export function useVideoEditor() {
       soundOnCompletion: getStoredSoundPreference(localStorage),
     }));
   });
+
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
   const [exportStartedAt, setExportStartedAt] = useState<number | null>(null);
+  
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -189,6 +167,12 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
+
+  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+    setRecipe((prev) => {
+      const next = { ...prev, ...patch };
+      if (next.format === "gif") {
+        next.keepAudio = false;
 
   // Phase 1 MVP: Multi-track timeline support
   const [multiTrackState, setMultiTrackState] = useState<MultiTrackEditorState>(createMultiTrackState);
@@ -292,11 +276,20 @@ export function useVideoEditor() {
       } else {
         setRecipe((current) => loadPersistedRecipe(localStorage, current));
       }
-    } catch (e) {
-      // ignore
-    }
+      return next;
+    });
   }, []);
 
+  const handleUpdateText = useCallback((id: string, updates: Partial<TextOverlay>) => {
+    setRecipe((prev) => ({
+      ...prev,
+      textOverlays: prev.textOverlays.map((text) =>
+        text.id === id ? { ...text, ...updates } : text
+      ),
+    }));
+  }, []);
+
+  // Centralized, Quota-Safe Sync Engine
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -331,11 +324,16 @@ export function useVideoEditor() {
     if (typeof window === "undefined") return;
     const timer = setTimeout(() => {
       try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(recipe));
+        localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
+      } catch (err) {
+        console.warn("Storage write limit triggered. Freeing editor cache space.", err);
+        localStorage.removeItem(STORAGE_KEY);
         persistRecipe(localStorage, recipe);
       } catch {
         // ignore
       }
-    }, 500);
+    }, 400);
     return () => clearTimeout(timer);
   }, [recipe]);
 
@@ -363,7 +361,6 @@ export function useVideoEditor() {
 
     setFileError("");
 
-    // LAYER 0: Size check
     if (selectedFile.size > MAX_FILE_SIZE) {
       setError(`Validation Failed: File too large. Maximum size is 2GB.`);
       setStatus("error");
@@ -379,6 +376,22 @@ export function useVideoEditor() {
       return;
     }
 
+    const isVideo = await verifyMagicBytes(selectedFile);
+    if (!isVideo) {
+      setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
+      setStatus("error");
+      return;
+    }
+
+    try {
+      const { width, height, duration: dur } = await extractMetadata(selectedFile);
+      const dimensionCheck = validateDimensions(width, height);
+      if (dimensionCheck === "blocked") {
+        const suggested = getDownscaledDimensions(width, height);
+        setError(`Layer 5 Validation Failed: Resolution too high (${width}×${height}). Maximum supported is 8K. Safe size: ${suggested.width}×${suggested.height}.`);
+        setStatus("error");
+        return;
+      }
     if (!selectedFile.type.startsWith("video/")) {
       setError(`Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || 'unknown'}`);
       setStatus("error");
@@ -431,15 +444,27 @@ export function useVideoEditor() {
         setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
         setStatus("error");
       }
+      setRecipe((prev) => {
+        const suggestedPreset = suggestPreset(width, height);
+        const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
+        return {
+          ...prev,
+          trimStart: 0,
+          trimEnd: null,
+          ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
+        };
+      });
+    } catch (err) {
+      setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+      setStatus("error");
+    }
     })();
 
   }, []);
 
   const handleExport = useCallback(async () => {
     if (!file) return;
-    if (status === "loading-engine" || status === "exporting") {
-      return;
-    }
+    if (status === "loading-engine" || status === "exporting") return;
 
     const validationError = validateRecipe(recipe, duration);
     if (validationError) {
@@ -472,18 +497,8 @@ export function useVideoEditor() {
         recipe,
         setProgress,
         abortController.signal,
-        {
-          file: musicFile,
-          musicVolume,
-          originalAudioVolume,
-          loopMusic,
-        },
-        {
-          file: overlayFile,
-          position: overlayPosition,
-          size: overlaySize,
-          opacity: overlayOpacity,
-        }
+        { file: musicFile, musicVolume, originalAudioVolume, loopMusic },
+        { file: overlayFile, position: overlayPosition, size: overlaySize, opacity: overlayOpacity }
       );
       if (exportCancelledRef.current) return;
 
@@ -492,10 +507,9 @@ export function useVideoEditor() {
         exportDurationMs: Date.now() - startedAt,
       });
       setStatus("done");
-     }  catch (err) {
+    } catch (err) {
       if (exportCancelledRef.current) return;
-
-      console.error("export failed:", err);
+      console.error("Export execution failed:", err);
       if (err instanceof FFmpegLoadError) {
         setError(err.message);
       } else if (err instanceof Error && err.message.includes('network')) {
@@ -507,123 +521,49 @@ export function useVideoEditor() {
       }
       setExportStartedAt(null);
       setStatus("error");
-    }
-    finally {
+    } finally {
       if (exportAbortControllerRef.current === abortController) {
         exportAbortControllerRef.current = null;
       }
     }
-  }, [
-    duration,
-    file,
-    loopMusic,
-    musicFile,
-    musicVolume,
-    originalAudioVolume,
-    overlayFile,
-    overlayOpacity,
-    overlayPosition,
-    overlaySize,
-    recipe,
-    result,
-    status,
-  ]);
-
+  }, [duration, file, loopMusic, musicFile, musicVolume, originalAudioVolume, overlayFile, overlayOpacity, overlayPosition, overlaySize, recipe, result, status]);
 
   useEffect(() => {
-    if (status === "exporting") {
-      document.title = `Exporting ${progress}% | Reframe`;
-    } else if (status === "loading-engine") {
-      document.title = `Loading engine... | Reframe`;
-    } else if (status === "done") {
-      document.title = `Export complete | Reframe`;
-    } else if (file) {
-      document.title = `Editing: ${file.name} | Reframe`;
-    } else {
-      document.title = DEFAULT_TITLE;
-    }
-    return () => {
-      document.title = DEFAULT_TITLE;
-    };
+    if (status === "exporting") document.title = `Exporting ${progress}% | Reframe`;
+    else if (status === "loading-engine") document.title = `Loading engine... | Reframe`;
+    else if (status === "done") document.title = `Export complete | Reframe`;
+    else if (file) document.title = `Editing: ${file.name} | Reframe`;
+    else document.title = DEFAULT_TITLE;
+    return () => { document.title = DEFAULT_TITLE; };
   }, [status, progress, file]);
 
   useEffect(() => {
-    const shouldWarn =
-      status === "exporting" ||
-      status === "loading-engine";
-
+    const shouldWarn = status === "exporting" || status === "loading-engine";
     if (!shouldWarn) return;
-
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
       e.returnValue = "";
     };
-
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [status]);
-  
+
   useEffect(() => {
-    const handleKeydown = (e: KeyboardEvent) => {
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        e.key === "Enter" &&
-        file &&
-        status !== "loading-engine" &&
-        status !== "exporting"
-      ) {
-        handleExport();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeydown);
-    return () => {
-      document.removeEventListener("keydown", handleKeydown);
-    };
-  }, [file, status, handleExport]);
-
-  // M key: toggle audio mute — only when a file is loaded and focus isn't in a text field
-  useEffect(() => {
-    if (!file) return;
-
-    const handleMuteShortcut = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== "m" || e.ctrlKey || e.metaKey || e.altKey) return;
-
-      const target = e.target as HTMLElement;
-      if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
-      ) {
-        return;
-      }
-
-      setRecipe((prev) => ({ ...prev, keepAudio: !prev.keepAudio }));
-    };
-
-    document.addEventListener("keydown", handleMuteShortcut);
-    return () => {
-      document.removeEventListener("keydown", handleMuteShortcut);
-    };
-  }, [file]);
-
-  useEffect(()=>{
-    return ()=>{
-      if(result?.blobUrl){
-        URL.revokeObjectURL(result.blobUrl);
-      }
+    if (result?.blobUrl) {
+      const currentBlob = result.blobUrl;
+      return () => URL.revokeObjectURL(currentBlob);
     }
-   },[result?.blobUrl])
+  }, [result?.blobUrl]);
 
   useEffect(() => {
-    return () => {
-      terminateFFmpeg();
-    };
+    return () => { terminateFFmpeg(); };
   }, []);
 
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
     try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
       localStorage.removeItem(RECIPE_STORAGE_KEY);
       localStorage.removeItem(LEGACY_SETTINGS_KEY);
     } catch {
@@ -642,7 +582,6 @@ export function useVideoEditor() {
     setExportStartedAt(null);
   }, []);
 
-
   const reset = useCallback(() => {
     if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
     setFile(null);
@@ -655,6 +594,10 @@ export function useVideoEditor() {
     setError(null);
     setExportStartedAt(null);
     try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  }, [result]);
+
       localStorage.removeItem(RECIPE_STORAGE_KEY);
       localStorage.removeItem(LEGACY_SETTINGS_KEY);
     } catch {
@@ -671,19 +614,25 @@ export function useVideoEditor() {
       videoRef.current.currentTime = time;
     }
   }, []);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     const handleTimeUpdate = () => setCurrentTime(video.currentTime);
     video.addEventListener("timeupdate", handleTimeUpdate);
     return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  },[]);
+  }, []);
 
   const toggleSound = useCallback(() => {
-  updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
-}, [recipe.soundOnCompletion, updateRecipe]);
+    updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
+  }, [recipe.soundOnCompletion, updateRecipe]);
 
   return {
+    file, duration, recipe, status, progress, exportStartedAt, result, error, videoRef, seekTo,
+    updateRecipe, handleUpdateText, handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
+    musicFile, setMusicFile, musicVolume, setMusicVolume, originalAudioVolume, setOriginalAudioVolume, loopMusic, setLoopMusic,
+    overlayFile, setOverlayFile, overlayPosition, setOverlayPosition, overlaySize, setOverlaySize, overlayOpacity, setOverlayOpacity,
+    recommendedPreset, currentTime, toggleSound,
     file,
     duration,
     recipe,

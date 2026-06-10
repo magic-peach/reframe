@@ -4,7 +4,6 @@ import { buildTextFilter } from "./text-overlay";
 
 export class FFmpegLoadError extends Error {}
 
-
 type SerializedFile = {
   name: string;
   type: string;
@@ -61,7 +60,6 @@ function createWorker(): Worker {
     throw new Error("Web Workers are not available in this environment.");
   }
 
-  // MUST be strictly inline for Next.js/Webpack to detect and compile the worker chunk
   ffmpegWorker = new Worker(new URL("./ffmpeg.worker.ts", import.meta.url), { type: "module" });
   
   ffmpegWorker.onmessage = handleWorkerMessage;
@@ -158,7 +156,6 @@ export async function loadFFmpeg(
   signal?: AbortSignal,
   onProgress?: (percent: number) => void
 ): Promise<void> {
-  // 1. Capture if the worker is uninitialized before ensureWorker runs
   const isFirstLoad = !ffmpegWorker; 
   
   await ensureWorker();
@@ -168,7 +165,6 @@ export async function loadFFmpeg(
     return;
   }
 
-  // 2. Use the captured flag to securely trigger the worker's internal load phase
   if (isFirstLoad) {
     ffmpegWorker!.postMessage({ type: "load" });
   }
@@ -274,13 +270,15 @@ export async function exportVideo(
   if (musicFilePayload) transfers.push(musicFilePayload.data);
   if (overlayFilePayload) transfers.push(overlayFilePayload.data);
 
+  const rawDuration = await getVideoDuration(file);
+
   ffmpegWorker.postMessage(
     {
       type: "export",
       id: sessionId,
       file: filePayload,
       recipe,
-      videoDuration: await getVideoDuration(file),
+      videoDuration: rawDuration > 0 ? rawDuration : (recipe.trimEnd ?? 30),
       musicFile: musicFilePayload,
       musicOptions: sanitizedMusicOptions,
       overlayFile: overlayFilePayload,
@@ -337,11 +335,11 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     filters.push("deshake");
   }
 
-  if (recipe.rotate === 90) {
+  if (recipe.rotation === 90) {
     filters.push("transpose=1");
-  } else if (recipe.rotate === 180) {
+  } else if (recipe.rotation === 180) {
     filters.push("transpose=1,transpose=1");
-  } else if (recipe.rotate === 270) {
+  } else if (recipe.rotation === 270) {
     filters.push("transpose=2");
   }
 
@@ -357,8 +355,6 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     );
   }
 
-  // Normalize timestamps only when needed — trim or speed change both
-  // require a clean 0-based timeline to produce correct output duration.
   if (recipe.trimStart > 0 || recipe.trimEnd !== null || recipe.speed !== 1) {
     filters.push("setpts=PTS-STARTPTS");
   }
@@ -383,7 +379,6 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     );
   }
 
-  // Add text overlays
   const textOverlays = recipe.textOverlays || [];
   textOverlays.forEach((overlay) => {
     filters.push(buildTextFilter(overlay, targetW, targetH));
@@ -422,7 +417,7 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
   return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
 }
 
-function buildArguments(
+export function buildArguments(
   recipe: EditRecipe,
   format: "mp4" | "webm" | "mkv" | "gif",
   outputName: string,
@@ -438,7 +433,11 @@ function buildArguments(
   hasOriginalAudio: boolean,
   videoDuration: number
 ): string[] {
-  const vf = buildVideoFilter(recipe, targetW, targetH);
+  // Safe validation check against dynamic inputs
+  const resolvedWidth = recipe.preset === "custom" ? (recipe.customWidth || 1920) : targetW;
+  const resolvedHeight = recipe.preset === "custom" ? (recipe.customHeight || 1080) : targetH;
+
+  const vf = buildVideoFilter(recipe, resolvedWidth, resolvedHeight);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
   const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
@@ -469,31 +468,31 @@ function buildArguments(
       videoOut = "[vbase]";
     }
 
-if (hasOverlay) {
-  const scaledW = overlayOptions!.size;
-  const alpha = (overlayOptions!.opacity / 100).toFixed(2);
-  const posMap: Record<string, string> = {
-    "top-left":     "20:20",
-    "top-right":    "main_w-w-20:20",
-    "bottom-left":  "20:main_h-h-20",
-    "bottom-right": "main_w-w-20:main_h-h-20",
-  };
+    if (hasOverlay) {
+      const scaledW = overlayOptions!.size;
+      const alpha = (overlayOptions!.opacity / 100).toFixed(2);
+      const posMap: Record<string, string> = {
+        "top-left":     "20:20",
+        "top-right":    "main_w-w-20:20",
+        "bottom-left":  "20:main_h-h-20",
+        "bottom-right": "main_w-w-20:main_h-h-20",
+      };
 
-interface PositionCoords {
-    x: number;
-    y: number;
-  }
+      interface PositionCoords {
+        x: number;
+        y: number;
+      }
 
-  const pos = typeof overlayOptions?.position === "string"
-    ? (posMap[overlayOptions.position] ?? "main_w-w-20:main_h-h-20")
-    : overlayOptions?.position
-    ? `(main_w)*${(overlayOptions.position as PositionCoords).x}/100:(main_h)*${(overlayOptions.position as PositionCoords).y}/100`
-    : "main_w-w-20:main_h-h-20";
+      const pos = typeof overlayOptions?.position === "string"
+        ? (posMap[overlayOptions.position] ?? "main_w-w-20:main_h-h-20")
+        : overlayOptions?.position
+        ? `(main_w)*${(overlayOptions.position as PositionCoords).x}/100:(main_h)*${(overlayOptions.position as PositionCoords).y}/100`
+        : "main_w-w-20:main_h-h-20";
 
-  filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
-  filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
-  videoOut = "[vout]";
-}
+      filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
+      filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
+      videoOut = "[vout]";
+    }
 
     let audioOut = "";
     if (shouldKeepAudio) {
@@ -556,10 +555,9 @@ interface PositionCoords {
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
   }
 
-  // Add explicit output duration when speed != 1 to prevent slight duration
-  // overshoot caused by encoder/filter pipeline frame flush at stream end.
   if (recipe.speed !== 1) {
-    const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
+    const validDuration = videoDuration > 0 ? videoDuration : 30;
+    const sourceDuration = (recipe.trimEnd ?? validDuration) - recipe.trimStart;
     const outputDuration = sourceDuration / recipe.speed;
     args.push("-t", outputDuration.toFixed(6));
   }
