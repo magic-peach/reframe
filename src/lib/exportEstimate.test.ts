@@ -49,10 +49,19 @@ describe("estimateExportSize", () => {
     expect(long / short).toBeCloseTo(4, 0);
   });
 
-  test("higher resolution (4k) produces a larger estimate than 720p", () => {
-    const hd  = estimateExportSize(makeRecipe({ preset: "720p" }), 60);
-    const uhd = estimateExportSize(makeRecipe({ preset: "4k"   }), 60);
-    expect(uhd).toBeGreaterThan(hd);
+  test("higher resolution presets produce larger estimates than square presets", () => {
+    const square = estimateExportSize(makeRecipe({ preset: "square-1-1" }), 60);
+    const landscape = estimateExportSize(makeRecipe({ preset: "landscape-16-9" }), 60);
+    expect(landscape).toBeGreaterThan(square);
+  });
+
+  test("real editor presets use their actual dimensions", () => {
+    const vertical = estimateExportSize(makeRecipe({ preset: "vertical-9-16" }), 60);
+    const square = estimateExportSize(makeRecipe({ preset: "square-1-1" }), 60);
+    const ultrawide = estimateExportSize(makeRecipe({ preset: "ultrawide-21-9" }), 60);
+
+    expect(vertical).not.toBeCloseTo(square);
+    expect(ultrawide).toBeGreaterThan(square);
   });
 
   test("trim reduces effective duration and therefore file size", () => {
