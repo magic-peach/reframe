@@ -265,6 +265,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
           {invalidStart && (
             <p
               id="trim-start-error"
+              role="alert"
               className="font-heading animate-fade-in mt-1.5 flex items-center gap-1 text-[10px] text-red-500"
             >
               <AlertCircle size={10} className="shrink-0" />
@@ -302,6 +303,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
           {invalidEnd && (
             <p
               id="trim-end-error"
+              role="alert"
               className="font-heading animate-fade-in mt-1.5 flex items-center gap-1 text-[10px] text-red-500"
             >
               <AlertCircle size={10} className="shrink-0" />
