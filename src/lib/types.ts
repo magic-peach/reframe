@@ -22,27 +22,22 @@ export interface EditRecipe {
   framing: "fit" | "fill";
   trimStart: number;
   trimEnd: number | null;
-  rotate: 0 | 90 | 180 | 270;
-  keepAudio: boolean;
-  normalizeAudio: boolean;
+  rotate: number;
   speed: number;
   quality: number;
   format: "mp4" | "webm" | "mkv" | "gif";
-  stabilization: boolean;
-  denoise: boolean;
+  keepAudio: boolean;
+  soundOnCompletion: boolean;
+  textOverlays?: TextOverlay[];
   brightness: number;
   contrast: number;
   saturation: number;
-  soundOnCompletion: boolean;
-  textOverlays: TextOverlay[];
-  version: number;
+  normalizeAudio: boolean;
+  stabilization: boolean;
+  denoise: boolean;
+  version?: number;
 }
-
-export type OverlayPosition =
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-right";
+export type OverlayPosition = { x: number; y: number } | "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 export interface ImageOverlayOptions {
   file: File | null;

@@ -15,9 +15,9 @@ interface ImageOverlayPanelProps {
 }
 
 const POSITIONS: { value: OverlayPosition; icon: React.ReactNode; label: string }[] = [
-  { value: "top-left",     icon: <ArrowUpLeft size={11} />,  label: "TL" },
-  { value: "top-right",    icon: <ArrowUpRight size={11} />, label: "TR" },
-  { value: "bottom-left",  icon: <ArrowDownLeft size={11} />, label: "BL" },
+  { value: "top-left", icon: <ArrowUpLeft size={11} />, label: "TL" },
+  { value: "top-right", icon: <ArrowUpRight size={11} />, label: "TR" },
+  { value: "bottom-left", icon: <ArrowDownLeft size={11} />, label: "BL" },
   { value: "bottom-right", icon: <ArrowDownRight size={11} />, label: "BR" },
 ];
 
@@ -60,16 +60,15 @@ export default function ImageOverlayPanel({
 
   return (
     <div className="w-full text-[11px] text-[var(--text)] space-y-3">
-      
+
       {/* Side-by-Side Area */}
       <div className="flex gap-2.5 items-center w-full">
-        
+
         {/* Left Side: Dynamic Upload / Preview Square */}
-        <label htmlFor="overlay-file-input" className={`w-14 h-11 shrink-0 rounded-lg overflow-hidden flex flex-col items-center justify-center transition border ${
-          overlayFile 
+        <label htmlFor="overlay-file-input" className={`w-14 h-11 shrink-0 rounded-lg overflow-hidden flex flex-col items-center justify-center transition border ${overlayFile
             ? "border-[var(--border)] bg-[var(--bg)] pointer-events-none"
             : "border-dashed border-[var(--border)] hover:bg-[var(--accent-muted)] text-[var(--muted)] hover:text-[var(--text)] cursor-pointer"
-        }`}>
+          }`}>
           {thumbUrl ? (
             <Image
               src={thumbUrl}
@@ -140,14 +139,13 @@ export default function ImageOverlayPanel({
             <div className="grid grid-cols-4 gap-1 flex-1">
               {POSITIONS.map(({ value, icon, label }) => (
                 <button
-                  key={value}
+                  key={value as string}
                   type="button"
                   onClick={() => setOverlayPosition(value)}
-                  className={`rounded border py-0.5 text-center text-[10px] transition flex items-center justify-center gap-0.5 ${
-                    overlayPosition === value
+                  className={`rounded border py-0.5 text-center text-[10px] transition flex items-center justify-center gap-0.5 ${overlayPosition === value
                       ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
                       : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
-                  }`}
+                    }`}
                 >
                   <span className={overlayPosition === value ? "text-[var(--accent)]" : "text-[var(--muted)]"}>
                     {icon}
@@ -165,33 +163,30 @@ export default function ImageOverlayPanel({
               <button
                 type="button"
                 onClick={() => setOverlaySize(100)}
-                className={`rounded border py-0.5 text-center text-[10px] transition ${
-                  isSmallSize
+                className={`rounded border py-0.5 text-center text-[10px] transition ${isSmallSize
                     ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
                     : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
-                }`}
+                  }`}
               >
                 Small
               </button>
               <button
                 type="button"
                 onClick={() => setOverlaySize(250)}
-                className={`rounded border py-0.5 text-center text-[10px] transition ${
-                  isMediumSize
+                className={`rounded border py-0.5 text-center text-[10px] transition ${isMediumSize
                     ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
                     : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
-                }`}
+                  }`}
               >
                 Medium
               </button>
               <button
                 type="button"
                 onClick={() => setOverlaySize(450)}
-                className={`rounded border py-0.5 text-center text-[10px] transition ${
-                  isLargeSize
+                className={`rounded border py-0.5 text-center text-[10px] transition ${isLargeSize
                     ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
                     : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
-                }`}
+                  }`}
               >
                 Large
               </button>
@@ -205,33 +200,30 @@ export default function ImageOverlayPanel({
               <button
                 type="button"
                 onClick={() => setOverlayOpacity(25)}
-                className={`rounded border py-0.5 text-center text-[10px] transition ${
-                  isFaintOpacity
+                className={`rounded border py-0.5 text-center text-[10px] transition ${isFaintOpacity
                     ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
                     : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
-                }`}
+                  }`}
               >
                 25%
               </button>
               <button
                 type="button"
                 onClick={() => setOverlayOpacity(60)}
-                className={`rounded border py-0.5 text-center text-[10px] transition ${
-                  isMediumOpacity
+                className={`rounded border py-0.5 text-center text-[10px] transition ${isMediumOpacity
                     ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
                     : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
-                }`}
+                  }`}
               >
                 60%
               </button>
               <button
                 type="button"
                 onClick={() => setOverlayOpacity(100)}
-                className={`rounded border py-0.5 text-center text-[10px] transition ${
-                  isSolidOpacity
+                className={`rounded border py-0.5 text-center text-[10px] transition ${isSolidOpacity
                     ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
                     : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
-                }`}
+                  }`}
               >
                 100%
               </button>
