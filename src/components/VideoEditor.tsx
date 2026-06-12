@@ -20,6 +20,8 @@ import ImageOverlay from "./ImageOverlay"
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
+import UndoToast from "./UndoToast";
+
 import {
   Layers, Crop, Scissors, RotateCw, Volume2, Type,
   SlidersHorizontal, Zap, AlertTriangle, Github, Copy
@@ -209,6 +211,10 @@ export default function VideoEditor() {
     overlaySize, setOverlaySize,
     overlayOpacity, setOverlayOpacity,
     recommendedPreset,
+    resetSettings: handleReset,
+    handleUndo,
+    showUndoToast,
+    handleToastDismiss,
     currentTime,
     toggleSound,
   } = useVideoEditor();
@@ -714,7 +720,7 @@ return () => {
                 </button>
                 <button
                   type="button"
-                  onClick={resetSettings}
+                  onClick={handleReset}
                   className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
                 >
                   Reset all settings
@@ -758,6 +764,12 @@ return () => {
           </div>
         </div>
       </div>
+      <UndoToast
+  visible={showUndoToast}
+  onUndo={handleUndo}
+  onDismiss={handleToastDismiss}
+  duration={5000}
+/>
     </div>
   );
 }

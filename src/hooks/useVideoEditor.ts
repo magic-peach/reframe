@@ -31,6 +31,9 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const video = document.createElement("video");
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+
     const timeout = setTimeout(() => {
       URL.revokeObjectURL(url);
       reject( new Error("Video metaData load timeout — the file may be too large or the device too slow. Please try again.") );
@@ -178,6 +181,9 @@ export function useVideoEditor() {
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+const [previousRecipe, setPreviousRecipe] = useState<typeof DEFAULT_RECIPE | null>(null);
+const [showUndoToast, setShowUndoToast] = useState(false);
 
   const [musicFile, setMusicFile] = useState<File | null>(null);
   const [musicVolume, setMusicVolume] = useState(70);
@@ -615,6 +621,7 @@ export function useVideoEditor() {
     }
    },[result?.blobUrl])
 
+  // ADD THIS INSTEAD:
   useEffect(() => {
     return () => {
       terminateFFmpeg();
@@ -622,7 +629,22 @@ export function useVideoEditor() {
   }, []);
 
   const resetSettings = useCallback(() => {
+    setPreviousRecipe({ ...recipe });
     setRecipe(DEFAULT_RECIPE);
+    setShowUndoToast(true);
+  }, [recipe]);
+
+  const handleUndo = useCallback(() => {
+    if (previousRecipe) {
+      setRecipe(previousRecipe);
+      setPreviousRecipe(null);
+    }
+    setShowUndoToast(false);
+  }, [previousRecipe]);
+
+  const handleToastDismiss = useCallback(() => {
+    setShowUndoToast(false);
+    setPreviousRecipe(null);
     try {
       localStorage.removeItem(RECIPE_STORAGE_KEY);
       localStorage.removeItem(LEGACY_SETTINGS_KEY);
@@ -684,6 +706,10 @@ export function useVideoEditor() {
 }, [recipe.soundOnCompletion, updateRecipe]);
 
   return {
+    
+    showUndoToast,       
+    handleUndo,          
+    handleToastDismiss,  
     file,
     duration,
     recipe,
