@@ -8,14 +8,24 @@ import {
   renameTemplate,
 } from "@/lib/templateStorage";
 
+interface TemplateRecipe {
+  [key: string]: unknown;
+}
+
+interface SavedTemplate {
+  id: string;
+  name: string;
+  recipe: TemplateRecipe;
+}
+
 interface Props {
-  onApplyTemplate: (recipe: any) => void;
+  onApplyTemplate: (recipe: TemplateRecipe) => void;
 }
 
 export default function CustomTemplateManager({
   onApplyTemplate,
 }: Props) {
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<SavedTemplate[]>([]);
 
   const refreshTemplates = () => {
     setTemplates(getTemplates());
@@ -57,9 +67,9 @@ export default function CustomTemplateManager({
                   template.name
                 );
 
-                if (!name) return;
+                if (!name?.trim()) return;
 
-                renameTemplate(template.id, name);
+                renameTemplate(template.id, name.trim());
                 refreshTemplates();
               }}
               className="text-xs px-2 py-1 border rounded"
