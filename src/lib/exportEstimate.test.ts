@@ -5,7 +5,7 @@ import { describe, test, expect } from "vitest";
 // Minimal recipe factory — only the fields estimateExportSize cares about
 function makeRecipe(overrides: Partial<EditRecipe> = {}): EditRecipe {
   return {
-    preset: "1080p",
+    preset: "landscape-16-9",
     customWidth: 1920,
     customHeight: 1080,
     quality: 23,       // default CRF
@@ -49,10 +49,33 @@ describe("estimateExportSize", () => {
     expect(long / short).toBeCloseTo(4, 0);
   });
 
-  test("higher resolution (4k) produces a larger estimate than 720p", () => {
-    const hd  = estimateExportSize(makeRecipe({ preset: "720p" }), 60);
-    const uhd = estimateExportSize(makeRecipe({ preset: "4k"   }), 60);
-    expect(uhd).toBeGreaterThan(hd);
+  test("larger preset dimensions produce a larger estimate", () => {
+    const hd = estimateExportSize(makeRecipe({ preset: "twitter-hd" }), 60);
+    const panoramic = estimateExportSize(makeRecipe({ preset: "instagram-panoramic" }), 60);
+    expect(panoramic).toBeGreaterThan(hd);
+  });
+
+  test("preset IDs resolve dimensions from the preset list instead of custom fallback", () => {
+    const presetHd = estimateExportSize(
+      makeRecipe({
+        preset: "twitter-hd",
+        customWidth: 1920,
+        customHeight: 1080,
+        format: "gif",
+      }),
+      10
+    );
+    const customLandscape = estimateExportSize(
+      makeRecipe({
+        preset: "custom",
+        customWidth: 1920,
+        customHeight: 1080,
+        format: "gif",
+      }),
+      10
+    );
+
+    expect(presetHd).toBeLessThan(customLandscape);
   });
 
   test("trim reduces effective duration and therefore file size", () => {
