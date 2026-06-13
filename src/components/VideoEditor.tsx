@@ -430,18 +430,6 @@ return () => {
                     onSelectText={setSelectedTextId}
                     onUpdateText={handleUpdateTextOverlay}
                   />
-
-                  <div className="mt-3">
-                    <ThumbnailStrip
-                      videoSrc={videoSrc}
-                      duration={duration}
-                      currentTime={currentTime}
-                      trimStart={recipe.trimStart ?? 0}
-                      trimEnd={recipe.trimEnd ?? duration}
-                      onSeek={seekTo}
-                      intervalSeconds={intervalSeconds}
-                    />
-                  </div>
                 </div>
               )}
             </div>
@@ -469,7 +457,9 @@ return () => {
                       recipe={recipe}
                       onChange={updateRecipe}
                       duration={duration}
-                      file={file}
+                      file={file} 
+                      seekTo={seekTo}
+                      videoRef={videoRef}
                     />
                   </AccordionSection>
 
