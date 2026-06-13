@@ -16,7 +16,7 @@ import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
 import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
-import ImageOverlay from "./ImageOverlay"
+import ImageOverlay from "./ImageOverlay";
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
@@ -27,6 +27,9 @@ import {
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { loadOverlayState, persistOverlayState } from "@/lib/editorPersistence";
+import CustomTemplateManager from "./CustomTemplateManager";
+
+import { saveTemplate, } from "@/lib/templateStorage";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -123,37 +126,37 @@ function KeyboardShortcutsPanel() {
   const [open, setOpen] = useState(false);
 
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
-  {
-    keys: [
-      <Kbd key="ctrl">Ctrl</Kbd>,
-      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="shift">Shift</Kbd>,
-      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="e">E</Kbd>
-    ],
-    label: "Export video",
-  },
-  {
-    keys: [<Kbd key="m">M</Kbd>],
-    label: "Toggle audio mute",
-  },
-  {
-    keys: [<Kbd key="r">R</Kbd>],
-    label: "Reset all settings",
-  },
-  {
-    keys: [<Kbd key="esc">Esc</Kbd>],
-    label: "Cancel export",
-  },
-  {
-    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
-    label: "Switch preset by index",
-  },
-  {
-    keys: [<Kbd key="question">?</Kbd>],
-    label: "Toggle this panel",
-  },
-];
+    {
+      keys: [
+        <Kbd key="ctrl">Ctrl</Kbd>,
+        <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
+        <Kbd key="shift">Shift</Kbd>,
+        <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
+        <Kbd key="e">E</Kbd>
+      ],
+      label: "Export video",
+    },
+    {
+      keys: [<Kbd key="m">M</Kbd>],
+      label: "Toggle audio mute",
+    },
+    {
+      keys: [<Kbd key="r">R</Kbd>],
+      label: "Reset all settings",
+    },
+    {
+      keys: [<Kbd key="esc">Esc</Kbd>],
+      label: "Cancel export",
+    },
+    {
+      keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
+      label: "Switch preset by index",
+    },
+    {
+      keys: [<Kbd key="question">?</Kbd>],
+      label: "Toggle this panel",
+    },
+  ];
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
@@ -221,7 +224,7 @@ export default function VideoEditor() {
     handleExport,
     status,
     cancelExport,
-    onToggleShortcutsModal: () => {},
+    onToggleShortcutsModal: () => { },
   });
 
   const [copied, setCopied] = useState(false);
@@ -289,7 +292,7 @@ export default function VideoEditor() {
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
-      
+
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       downloadRef.current.scrollIntoView({
         behavior: prefersReducedMotion ? "instant" : "smooth",
@@ -298,19 +301,19 @@ export default function VideoEditor() {
     }
   }, [status]);
   useEffect(() => {
-const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-  if (file) {
-    e.preventDefault();
-    e.returnValue = "";
-  }
-};
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (file) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
 
-window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
-return () => {
-  window.removeEventListener("beforeunload", handleBeforeUnload);
-};
-}, [file]);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [file]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
@@ -337,8 +340,8 @@ return () => {
     const qualityLabel = recipe.quality <= 21
       ? "High"
       : recipe.quality <= 25
-      ? "Balanced"
-      : "Small file";
+        ? "Balanced"
+        : "Small file";
 
     return `Exporting to ${width}×${height} ${recipe.format.toUpperCase()} • ${framingLabel} • ${speedLabel} • Quality: ${qualityLabel}`;
   }, [recipe]);
@@ -348,6 +351,23 @@ return () => {
       if (videoSrc) URL.revokeObjectURL(videoSrc);
     };
   }, [videoSrc]);
+  const handleSaveTemplate = () => {
+    const name = prompt("Template name");
+
+    if (!name?.trim()) return;
+
+    saveTemplate({
+      id:
+        typeof crypto !== "undefined" &&
+          crypto.randomUUID
+          ? crypto.randomUUID()
+          : Date.now().toString(),
+      name: name.trim(),
+      recipe: { ...recipe },
+    });
+
+    alert("Template saved!");
+  };
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
@@ -367,46 +387,46 @@ return () => {
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
         <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
-        <div
-          className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
-          style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
-          aria-label="Reframe — video editor"
-        >
-        <h1
-          className="font-display leading-none tracking-widest2 text-[var(--text)] break-words text-center transition-all"
-          style={{ fontSize: 'clamp(2rem,10vw,4rem)', viewTransitionName: 'reframe-text' }}
-        >
-          REFRAME
-        </h1>
-        <p
-          className="font-heading text-[var(--muted)] uppercase tracking-widest text-center"
-          style={{
-            fontSize: 'clamp(0.7rem,2vw,0.875rem)',
-            marginTop: 'clamp(0.25rem,1vw,0.5rem)',
-          }}
-        >
-          Your video, any format
-        </p>
-    <div
-      className="flex md:hidden items-center justify-center gap-2 font-heading font-semibold uppercase tracking-widest text-[var(--muted)] border-t border-[var(--border)]"
-      style={{
-        fontSize: 'clamp(0.6rem,1.5vw,0.75rem)',
-        marginTop: 'clamp(0.5rem,2vw,0.75rem)',
-        paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
-      }}
-    >
-      <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-      No login. No ads. 100% private.
-    </div>
-  </div>  
-  <div
-    className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
-    style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
-  >
-    <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
-    No login. No ads. 100% private - your video never leaves your device.
-  </div>
-    </header>
+          <div
+            className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
+            style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
+            aria-label="Reframe — video editor"
+          >
+            <h1
+              className="font-display leading-none tracking-widest2 text-[var(--text)] break-words text-center transition-all"
+              style={{ fontSize: 'clamp(2rem,10vw,4rem)', viewTransitionName: 'reframe-text' }}
+            >
+              REFRAME
+            </h1>
+            <p
+              className="font-heading text-[var(--muted)] uppercase tracking-widest text-center"
+              style={{
+                fontSize: 'clamp(0.7rem,2vw,0.875rem)',
+                marginTop: 'clamp(0.25rem,1vw,0.5rem)',
+              }}
+            >
+              Your video, any format
+            </p>
+            <div
+              className="flex md:hidden items-center justify-center gap-2 font-heading font-semibold uppercase tracking-widest text-[var(--muted)] border-t border-[var(--border)]"
+              style={{
+                fontSize: 'clamp(0.6rem,1.5vw,0.75rem)',
+                marginTop: 'clamp(0.5rem,2vw,0.75rem)',
+                paddingTop: 'clamp(0.5rem,2vw,0.75rem)',
+              }}
+            >
+              <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
+              No login. No ads. 100% private.
+            </div>
+          </div>
+          <div
+            className="flex flex-wrap justify-center text-center items-center gap-2 text-sm font-heading font-semibold uppercase tracking-widest text-[var(--muted)] pb-1"
+            style={{ justifyContent: 'center', textAlign: 'center', margin: '0', width: 'auto' }}
+          >
+            <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)] inline-block animate-pulse" />
+            No login. No ads. 100% private - your video never leaves your device.
+          </div>
+        </header>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
@@ -456,170 +476,122 @@ return () => {
                 "grid grid-cols-1 gap-4",
                 isProcessing && "pointer-events-none opacity-50"
               )}>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
-                  <AccordionSection
-                    id="trim"
-                    icon={<Scissors size={12} />}
-                    title="Trim"
-                    isOpen={openSections.trim}
-                    onToggle={() => toggleSection("trim")}
-                    delay={50}
-                  >
-                    <TrimControl
-                      recipe={recipe}
-                      onChange={updateRecipe}
-                      duration={duration}
-                      file={file}
-                    />
-                  </AccordionSection>
+               <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+  <AccordionSection
+    id="trim"
+    icon={<Scissors size={12} />}
+    title="Trim"
+    isOpen={openSections.trim}
+    onToggle={() => toggleSection("trim")}
+    delay={50}
+  >
+    <TrimControl
+      recipe={recipe}
+      onChange={updateRecipe}
+      duration={duration}
+      file={file}
+    />
+  </AccordionSection>
 
-                  <AccordionSection
-                    id="rotation"
-                    icon={<RotateCw size={12} />}
-                    title="Rotation"
-                    isOpen={openSections.rotation}
-                    onToggle={() => toggleSection("rotation")}
-                    delay={100}
-                  >
-                    <RotateControl recipe={recipe} onChange={updateRecipe} />
-                  </AccordionSection>
+  <hr className="border-white/10 my-2" />
 
-                  <AccordionSection
-                    id="text"
-                    icon={<Type size={12} />}
-                    title="Text Overlay"
-                    isOpen={openSections.text}
-                    onToggle={() => toggleSection("text")}
-                    delay={110}
-                  >
-                    <TextControls
-                      recipe={recipe}
-                      onChange={updateRecipe}
-                      selectedTextId={selectedTextId}
-                      onSelectText={setSelectedTextId}
-                    />
-                  </AccordionSection>
-                </div>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
-                  <AccordionSection
-                    id="audio"
-                    icon={<Volume2 size={12} />}
-                    title="Audio & Speed"
-                    isOpen={openSections.audio}
-                    onToggle={() => toggleSection("audio")}
-                    delay={150}
-                  >
-                    <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
-                  </AccordionSection>
-                  <Section
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Adjustments"
-                    delay={175}
-                  >
-                    <div className="space-y-5">
-                      {/* Brightness */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="brightness-slider">Brightness</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ brightness: 0 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset brightness"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="brightness-slider"
-                          type="range"
-                          min="-1"
-                          max="1"
-                          step="0.1"
-                          value={recipe.brightness}
-                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
-                          aria-label="Adjust brightness"
-                          className="w-full accent-film-600"
-                        />
-                      </div>
-                      {/* Contrast */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="contrast-slider">Contrast</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ contrast: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-contrast"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="contrast-slider"
-                          type="range"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={recipe.contrast}
-                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
-                          aria-label="Adjust contrast"
-                          className="w-full accent-film-600"
-                        />
-                      </div>
-                      {/* Saturation */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="saturation-slider">Saturation</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ saturation: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-saturation"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="saturation-slider"
-                          type="range"
-                          min="0"
-                          max="3"
-                          step="0.1"
-                          value={recipe.saturation}
-                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
-                          aria-label="Adjust saturation"
-                          className="w-full accent-film-600"
-                        />
-                      </div>
-                    </div>
-                  </Section>
-                  <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
-                    <FormatSelector recipe={recipe} onChange={updateRecipe} />
-                  </Section>
-                  <AccordionSection
-                    id="export"
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Export"
-                    isOpen={openSections.export}
-                    onToggle={() => toggleSection("export")}
-                    delay={200}
-                  >
-                    <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                  </AccordionSection>
-                  <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
-                    <ImageOverlay
-                      overlayFile={overlayFile}
-                      setOverlayFile={setOverlayFile}
-                      overlayPosition={overlayPosition}
-                      setOverlayPosition={setOverlayPosition}
-                      overlaySize={overlaySize}
-                      setOverlaySize={setOverlaySize}
-                      overlayOpacity={overlayOpacity}
-                      setOverlayOpacity={setOverlayOpacity}
-                    />
-                  </Section>
-                </div>
+  <AccordionSection
+    id="rotation"
+    icon={<RotateCw size={12} />}
+    title="Rotation"
+    isOpen={openSections.rotation}
+    onToggle={() => toggleSection("rotation")}
+    delay={100}
+  >
+    <RotateControl recipe={recipe} onChange={updateRecipe} />
+  </AccordionSection>
+
+  <hr className="border-white/10 my-2" />
+
+  <AccordionSection
+    id="text"
+    icon={<Type size={12} />}
+    title="Text Overlay"
+    isOpen={openSections.text}
+    onToggle={() => toggleSection("text")}
+    delay={110}
+  >
+    <TextControls
+      recipe={recipe}
+      onChange={updateRecipe}
+      selectedTextId={selectedTextId}
+      onSelectText={setSelectedTextId}
+    />
+  </AccordionSection>
+</div>
+               <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+  <AccordionSection
+    id="audio"
+    icon={<Volume2 size={12} />}
+    title="Audio & Speed"
+    isOpen={openSections.audio}
+    onToggle={() => toggleSection("audio")}
+    delay={150}
+  >
+    <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
+  </AccordionSection>
+
+  <hr className="border-white/10 my-2" />
+
+  <Section
+    icon={<SlidersHorizontal size={12} />}
+    title="Adjustments"
+    delay={175}
+  >
+    ...
+  </Section>
+
+  <hr className="border-white/10 my-2" />
+
+  <Section
+    icon={<SlidersHorizontal size={12} />}
+    title="Output format"
+    delay={190}
+  >
+    <FormatSelector recipe={recipe} onChange={updateRecipe} />
+  </Section>
+
+  <hr className="border-white/10 my-2" />
+
+  <AccordionSection
+    id="export"
+    icon={<SlidersHorizontal size={12} />}
+    title="Export"
+    isOpen={openSections.export}
+    onToggle={() => toggleSection("export")}
+    delay={200}
+  >
+    <ExportSettings
+      recipe={recipe}
+      duration={duration}
+      onChange={updateRecipe}
+    />
+  </AccordionSection>
+
+  <hr className="border-white/10 my-2" />
+
+  <Section
+    icon={<Layers size={12} />}
+    title="Image overlay"
+    delay={120}
+  >
+    <ImageOverlay
+      overlayFile={overlayFile}
+      setOverlayFile={setOverlayFile}
+      overlayPosition={overlayPosition}
+      setOverlayPosition={setOverlayPosition}
+      overlaySize={overlaySize}
+      setOverlaySize={setOverlaySize}
+      overlayOpacity={overlayOpacity}
+      setOverlayOpacity={setOverlayOpacity}
+    />
+  </Section>
+</div>
               </div>
             )}
 
@@ -667,10 +639,12 @@ return () => {
             )}
           </div>
 
-          <div className={cn(
-            "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
-            (isProcessing || !file) && "pointer-events-none opacity-50"
-          )}>
+          <div
+            className={cn(
+              "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
+              (isProcessing || !file) && "pointer-events-none opacity-50"
+            )}
+          >
             {!file && (
               <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 animate-fade-in">
                 <p className="text-[10px] font-heading font-bold text-film-600 uppercase tracking-widest">
@@ -681,81 +655,82 @@ return () => {
                 </p>
               </div>
             )}
-            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6 animate-fade-in" style={{ animationDelay: "50ms" }}>
-              <AccordionSection
-                id="resize"
-                icon={<Layers size={12} />}
-                title="Resize & Aspect Ratio"
-                isOpen={openSections.resize}
-                onToggle={() => toggleSection("resize")}
-                delay={50}
-              >
-                {recommendedPreset && (
-                  <div className="mb-4 rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
-                    <p>
-                      We detected a {recommendedPreset.label.replace(/\s/g, "")} video → Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()} ({recommendedPreset.label.replace(/\s/g, "")})
-                    </p>
-                  </div>
-                )}
-                <div className="space-y-3">
-                  <PresetSelector recipe={recipe} onChange={updateRecipe} />
-                  <FramingControl recipe={recipe} onChange={updateRecipe} />
-                </div>
-              </AccordionSection>
 
-              <div className="pt-2 flex justify-center items-center gap-6">
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer"
-                >
-                  <Copy size={12} />
-                  {shareCopied ? "Copied!" : "Copy Link"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetSettings}
-                  className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
-                >
-                  Reset all settings
-                </button>
+            {/* Resize INFO ONLY (no duplicate controls) */}
+            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Layers size={12} className="text-film-500 opacity-80" />
+                  <span className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
+                    Resize & Aspect Ratio
+                  </span>
+                </div>
               </div>
+
+              {recommendedPreset && (
+                <div className="rounded-2xl border border-film-200 bg-film-50 p-3 text-sm text-film-700">
+                  <p>
+                    We detected a {recommendedPreset.label.replace(/\s/g, "")} video →
+                    Recommended: {(recommendedPreset.platform.split("·")[0] ?? "").trim()} (
+                    {recommendedPreset.label.replace(/\s/g, "")})
+                  </p>
+                </div>
+              )}
+
+              <p className="text-xs text-[var(--muted)]">
+                Resize controls are available in the left panel.
+              </p>
             </div>
 
+            {/* Copy + Reset */}
+            <div className="pt-2 flex justify-center items-center gap-6">
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer"
+              >
+                <Copy size={12} />
+                {shareCopied ? "Copied!" : "Copy Link"}
+              </button>
+
+              <button
+                type="button"
+                onClick={resetSettings}
+                className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+              >
+                Reset all settings
+              </button>
+            </div>
+
+            {/* Keyboard shortcuts */}
             <KeyboardShortcutsPanel />
 
+            {/* Export summary */}
             {file && (
               <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)] leading-relaxed">
                 {exportSummary}
               </p>
             )}
 
-            <button
-              id="export-button"
-              type="button"
-              onClick={handleExport}
-                disabled={!file || isProcessing}
-                aria-label='Export video'
-                aria-disabled={!file || isProcessing ? "true" : undefined}
-                title={!file ? "Upload a video to enable export" : undefined}
-              className={cn(
-                "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
-                "font-display text-2xl tracking-widest transition-all duration-200",
-                file && !isProcessing
-                  ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
-              )}
-            >
-             <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
-              {isProcessing ? "PROCESSING" : "EXPORT"}
-            </button>
+            {/* Templates */}
+            <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-4">
+              <Section icon={<Layers size={12} />} title="Templates">
+                <button
+                  type="button"
+                  onClick={handleSaveTemplate}
+                  className="w-full rounded-lg border border-[var(--border)] py-2 text-sm"
+                >
+                  Save Current Template
+                </button>
 
-            {file && !isProcessing && (
-              <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
-                {isMac ? "⌘" : "Ctrl"} + Enter to export
-              </p>
-            )}
+                <CustomTemplateManager
+                  onApplyTemplate={(savedRecipe) => updateRecipe(savedRecipe)}
+                />
+              </Section>
+            </div>
+
           </div>
+
         </div>
       </div>
     </div>
