@@ -44,9 +44,7 @@ export default function CustomTemplateManager({
 
           <div className="flex gap-2 flex-wrap">
             <button
-              onClick={() =>
-                onApplyTemplate(template.recipe)
-              }
+              onClick={() => onApplyTemplate(template.recipe)}
               className="text-xs px-2 py-1 border rounded"
             >
               Apply
@@ -62,7 +60,6 @@ export default function CustomTemplateManager({
                 if (!name) return;
 
                 renameTemplate(template.id, name);
-
                 refreshTemplates();
               }}
               className="text-xs px-2 py-1 border rounded"
@@ -73,7 +70,6 @@ export default function CustomTemplateManager({
             <button
               onClick={() => {
                 deleteTemplate(template.id);
-
                 refreshTemplates();
               }}
               className="text-xs px-2 py-1 border rounded"

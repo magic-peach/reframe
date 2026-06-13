@@ -9,9 +9,12 @@ const STORAGE_KEY = "reframe-custom-templates";
 export const getTemplates = (): CustomTemplate[] => {
   if (typeof window === "undefined") return [];
 
-  const data = localStorage.getItem(STORAGE_KEY);
-
-  return data ? JSON.parse(data) : [];
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
 };
 
 export const saveTemplate = (template: CustomTemplate) => {
@@ -23,11 +26,13 @@ export const saveTemplate = (template: CustomTemplate) => {
     STORAGE_KEY,
     JSON.stringify(templates)
   );
+
+  console.log("Saved templates:", templates);
 };
 
 export const deleteTemplate = (id: string) => {
   const updated = getTemplates().filter(
-    template => template.id !== id
+    (template) => template.id !== id
   );
 
   localStorage.setItem(
@@ -41,7 +46,7 @@ export const renameTemplate = (
   name: string
 ) => {
   const updated = getTemplates().map(
-    template =>
+    (template) =>
       template.id === id
         ? { ...template, name }
         : template
