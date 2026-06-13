@@ -671,14 +671,41 @@ export function useVideoEditor() {
       videoRef.current.currentTime = time;
     }
   }, []);
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
-    video.addEventListener("timeupdate", handleTimeUpdate);
-    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  },[]);
+ 
+useEffect(() => {
+  const video = videoRef.current;
+  if (!video) return;
 
+  let frameId: number;
+
+  const updateCurrentTime = () => {
+    setCurrentTime(video.currentTime);
+
+    if (!video.paused && !video.ended) {
+      frameId = requestAnimationFrame(updateCurrentTime);
+    }
+  };
+
+  const handlePlay = () => {
+    frameId = requestAnimationFrame(updateCurrentTime);
+  };
+
+  const handlePause = () => {
+    cancelAnimationFrame(frameId);
+  };
+
+  video.addEventListener("play", handlePlay);
+  video.addEventListener("pause", handlePause);
+  video.addEventListener("ended", handlePause);
+
+  return () => {
+    cancelAnimationFrame(frameId);
+
+    video.removeEventListener("play", handlePlay);
+    video.removeEventListener("pause", handlePause);
+    video.removeEventListener("ended", handlePause);
+  };
+}, []);
   const toggleSound = useCallback(() => {
   updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
 }, [recipe.soundOnCompletion, updateRecipe]);
