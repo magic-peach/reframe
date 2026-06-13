@@ -476,170 +476,122 @@ export default function VideoEditor() {
                 "grid grid-cols-1 gap-4",
                 isProcessing && "pointer-events-none opacity-50"
               )}>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
-                  <AccordionSection
-                    id="trim"
-                    icon={<Scissors size={12} />}
-                    title="Trim"
-                    isOpen={openSections.trim}
-                    onToggle={() => toggleSection("trim")}
-                    delay={50}
-                  >
-                    <TrimControl
-                      recipe={recipe}
-                      onChange={updateRecipe}
-                      duration={duration}
-                      file={file}
-                    />
-                  </AccordionSection>
+               <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+  <AccordionSection
+    id="trim"
+    icon={<Scissors size={12} />}
+    title="Trim"
+    isOpen={openSections.trim}
+    onToggle={() => toggleSection("trim")}
+    delay={50}
+  >
+    <TrimControl
+      recipe={recipe}
+      onChange={updateRecipe}
+      duration={duration}
+      file={file}
+    />
+  </AccordionSection>
 
-                  <AccordionSection
-                    id="rotation"
-                    icon={<RotateCw size={12} />}
-                    title="Rotation"
-                    isOpen={openSections.rotation}
-                    onToggle={() => toggleSection("rotation")}
-                    delay={100}
-                  >
-                    <RotateControl recipe={recipe} onChange={updateRecipe} />
-                  </AccordionSection>
+  <hr className="border-white/10 my-2" />
 
-                  <AccordionSection
-                    id="text"
-                    icon={<Type size={12} />}
-                    title="Text Overlay"
-                    isOpen={openSections.text}
-                    onToggle={() => toggleSection("text")}
-                    delay={110}
-                  >
-                    <TextControls
-                      recipe={recipe}
-                      onChange={updateRecipe}
-                      selectedTextId={selectedTextId}
-                      onSelectText={setSelectedTextId}
-                    />
-                  </AccordionSection>
-                </div>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
-                  <AccordionSection
-                    id="audio"
-                    icon={<Volume2 size={12} />}
-                    title="Audio & Speed"
-                    isOpen={openSections.audio}
-                    onToggle={() => toggleSection("audio")}
-                    delay={150}
-                  >
-                    <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
-                  </AccordionSection>
-                  <Section
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Adjustments"
-                    delay={175}
-                  >
-                    <div className="space-y-5">
-                      {/* Brightness */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="brightness-slider">Brightness</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ brightness: 0 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset brightness"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="brightness-slider"
-                          type="range"
-                          min="-1"
-                          max="1"
-                          step="0.1"
-                          value={recipe.brightness}
-                          onChange={(e) => updateRecipe({ brightness: Number(e.target.value) })}
-                          aria-label="Adjust brightness"
-                          className="w-full accent-film-600"
-                        />
-                      </div>
-                      {/* Contrast */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="contrast-slider">Contrast</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ contrast: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-contrast"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="contrast-slider"
-                          type="range"
-                          min="0"
-                          max="2"
-                          step="0.1"
-                          value={recipe.contrast}
-                          onChange={(e) => updateRecipe({ contrast: Number(e.target.value) })}
-                          aria-label="Adjust contrast"
-                          className="w-full accent-film-600"
-                        />
-                      </div>
-                      {/* Saturation */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="saturation-slider">Saturation</label>
-                          <button
-                            type="button"
-                            onClick={() => updateRecipe({ saturation: 1 })}
-                            className="text-film-500 hover:underline"
-                            aria-label="reset-saturation"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <input
-                          id="saturation-slider"
-                          type="range"
-                          min="0"
-                          max="3"
-                          step="0.1"
-                          value={recipe.saturation}
-                          onChange={(e) => updateRecipe({ saturation: Number(e.target.value) })}
-                          aria-label="Adjust saturation"
-                          className="w-full accent-film-600"
-                        />
-                      </div>
-                    </div>
-                  </Section>
-                  <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
-                    <FormatSelector recipe={recipe} onChange={updateRecipe} />
-                  </Section>
-                  <AccordionSection
-                    id="export"
-                    icon={<SlidersHorizontal size={12} />}
-                    title="Export"
-                    isOpen={openSections.export}
-                    onToggle={() => toggleSection("export")}
-                    delay={200}
-                  >
-                    <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
-                  </AccordionSection>
-                  <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
-                    <ImageOverlay
-                      overlayFile={overlayFile}
-                      setOverlayFile={setOverlayFile}
-                      overlayPosition={overlayPosition}
-                      setOverlayPosition={setOverlayPosition}
-                      overlaySize={overlaySize}
-                      setOverlaySize={setOverlaySize}
-                      overlayOpacity={overlayOpacity}
-                      setOverlayOpacity={setOverlayOpacity}
-                    />
-                  </Section>
-                </div>
+  <AccordionSection
+    id="rotation"
+    icon={<RotateCw size={12} />}
+    title="Rotation"
+    isOpen={openSections.rotation}
+    onToggle={() => toggleSection("rotation")}
+    delay={100}
+  >
+    <RotateControl recipe={recipe} onChange={updateRecipe} />
+  </AccordionSection>
+
+  <hr className="border-white/10 my-2" />
+
+  <AccordionSection
+    id="text"
+    icon={<Type size={12} />}
+    title="Text Overlay"
+    isOpen={openSections.text}
+    onToggle={() => toggleSection("text")}
+    delay={110}
+  >
+    <TextControls
+      recipe={recipe}
+      onChange={updateRecipe}
+      selectedTextId={selectedTextId}
+      onSelectText={setSelectedTextId}
+    />
+  </AccordionSection>
+</div>
+               <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+  <AccordionSection
+    id="audio"
+    icon={<Volume2 size={12} />}
+    title="Audio & Speed"
+    isOpen={openSections.audio}
+    onToggle={() => toggleSection("audio")}
+    delay={150}
+  >
+    <AudioSpeedControl recipe={recipe} onChange={updateRecipe} />
+  </AccordionSection>
+
+  <hr className="border-white/10 my-2" />
+
+  <Section
+    icon={<SlidersHorizontal size={12} />}
+    title="Adjustments"
+    delay={175}
+  >
+    ...
+  </Section>
+
+  <hr className="border-white/10 my-2" />
+
+  <Section
+    icon={<SlidersHorizontal size={12} />}
+    title="Output format"
+    delay={190}
+  >
+    <FormatSelector recipe={recipe} onChange={updateRecipe} />
+  </Section>
+
+  <hr className="border-white/10 my-2" />
+
+  <AccordionSection
+    id="export"
+    icon={<SlidersHorizontal size={12} />}
+    title="Export"
+    isOpen={openSections.export}
+    onToggle={() => toggleSection("export")}
+    delay={200}
+  >
+    <ExportSettings
+      recipe={recipe}
+      duration={duration}
+      onChange={updateRecipe}
+    />
+  </AccordionSection>
+
+  <hr className="border-white/10 my-2" />
+
+  <Section
+    icon={<Layers size={12} />}
+    title="Image overlay"
+    delay={120}
+  >
+    <ImageOverlay
+      overlayFile={overlayFile}
+      setOverlayFile={setOverlayFile}
+      overlayPosition={overlayPosition}
+      setOverlayPosition={setOverlayPosition}
+      overlaySize={overlaySize}
+      setOverlaySize={setOverlaySize}
+      overlayOpacity={overlayOpacity}
+      setOverlayOpacity={setOverlayOpacity}
+    />
+  </Section>
+</div>
               </div>
             )}
 
