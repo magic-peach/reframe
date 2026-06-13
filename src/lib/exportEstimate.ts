@@ -1,23 +1,14 @@
 import { EditRecipe } from "./types";
+import { PRESETS } from "./presets";
 
 // ---------------------------------------------------------------------------
 // Preset dimension map
-// Keep in sync with src/lib/presets.ts. Width × height for every named preset.
+// Derived from src/lib/presets.ts so estimator IDs stay aligned with the UI.
 // ---------------------------------------------------------------------------
-const PRESET_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  "1080p":       { width: 1920, height: 1080 },
-  "720p":        { width: 1280, height: 720  },
-  "480p":        { width: 854,  height: 480  },
-  "360p":        { width: 640,  height: 360  },
-  "4k":          { width: 3840, height: 2160 },
-  "2k":          { width: 2560, height: 1440 },
-  // Square / portrait presets
-  "square-1080": { width: 1080, height: 1080 },
-  "square-720":  { width: 720,  height: 720  },
-  "portrait-1080": { width: 1080, height: 1920 },
-  "portrait-720":  { width: 720,  height: 1280 },
-  // Fallback — if a preset name is unrecognised we fall through to customWidth/H
-};
+const PRESET_DIMENSIONS: Record<string, { width: number; height: number }> =
+  Object.fromEntries(
+    PRESETS.map(({ id, width, height }) => [id, { width, height }])
+  );
 
 /**
  * Resolve the actual output pixel dimensions for a recipe.
