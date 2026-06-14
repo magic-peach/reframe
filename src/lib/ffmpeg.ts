@@ -73,8 +73,8 @@ export async function loadFFmpeg(
     }
 
     await ffmpeg.load({
-      coreURL: await toBlobURL(coreURL, "text/javascript"),
-      wasmURL: await toBlobURL(wasmURL, "application/wasm"),
+      coreURL: await fetchWithIntegrity(coreURL, "text/javascript"),
+      wasmURL: await fetchWithIntegrity(wasmURL, "application/wasm"),
       ...(workerURL && {
         workerURL: await toBlobURL(workerURL, "text/javascript"),
       }),
