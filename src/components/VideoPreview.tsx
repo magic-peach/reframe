@@ -47,6 +47,108 @@ export default function VideoPreview({
   // Phase 1 MVP: Multi-track URL management
   const multiTrackUrlRefs = useRef<Record<string, string | null>>({});
 
+  const [overlayUrl, setOverlayUrl] = useState<string>("");
+  const overlayDragRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!overlayFile) {
+      setOverlayUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(overlayFile);
+    setOverlayUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [overlayFile]);
+
+  const getOverlayStyle = () => {
+    if (!overlayFile) return {};
+
+    if (overlayX === undefined || overlayY === undefined || overlayX === null || overlayY === null) {
+      const spacing = "20px";
+      if (overlayPosition === "top-left") {
+        return { left: spacing, top: spacing };
+      }
+      if (overlayPosition === "top-right") {
+        return { right: spacing, top: spacing };
+      }
+      if (overlayPosition === "bottom-left") {
+        return { left: spacing, bottom: spacing };
+      }
+      return { right: spacing, bottom: spacing };
+    }
+
+    return {
+      left: `${overlayX}%`,
+      top: `${overlayY}%`,
+    };
+  };
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+
+    const getCoords = (evt: any) => {
+      if (evt.touches && evt.touches.length > 0) {
+        return { x: evt.touches[0].clientX, y: evt.touches[0].clientY };
+      }
+      return { x: evt.clientX, y: evt.clientY };
+    };
+
+    const startCoords = getCoords(e);
+    const startX = startCoords.x;
+    const startY = startCoords.y;
+
+    let currentLeft = 20;
+    let currentTop = 20;
+
+    const overlayElement = overlayDragRef.current;
+    if (overlayElement) {
+      const overlayRect = overlayElement.getBoundingClientRect();
+      currentLeft = overlayRect.left - rect.left;
+      currentTop = overlayRect.top - rect.top;
+    }
+
+    const onMove = (moveEvent: MouseEvent | TouchEvent) => {
+      const moveCoords = getCoords(moveEvent);
+      const curX = moveCoords.x;
+      const curY = moveCoords.y;
+
+      const dx = curX - startX;
+      const dy = curY - startY;
+
+      let newLeft = currentLeft + dx;
+      let newTop = currentTop + dy;
+
+      const overlayW = overlaySize ?? 150;
+      const overlayH = overlayElement ? overlayElement.clientHeight : overlayW * 0.75;
+
+      newLeft = Math.max(0, Math.min(rect.width - overlayW, newLeft));
+      newTop = Math.max(0, Math.min(rect.height - overlayH, newTop));
+
+      const pctX = (newLeft / rect.width) * 100;
+      const pctY = (newTop / rect.height) * 100;
+
+      if (setOverlayX) setOverlayX(parseFloat(pctX.toFixed(2)));
+      if (setOverlayY) setOverlayY(parseFloat(pctY.toFixed(2)));
+    };
+
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onUp);
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onUp);
+  };
+
   const handleGrabFrame = useCallback(() => {
     const video = videoRef.current;
     if (!video || video.readyState < 2) return;
@@ -276,6 +378,11 @@ export default function VideoPreview({
           ref={videoRef}
           controls
           className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+          style={{
+            filter: recipe
+              ? `brightness(${1 + recipe.brightness}) contrast(${recipe.contrast}) saturate(${recipe.saturation})`
+              : undefined,
+          }}
           onLoadedData={() => setIsLoading(false)}
           playsInline
           muted={!recipe?.keepAudio}
@@ -447,7 +554,17 @@ export default function VideoPreview({
 
       {showComparison && file && (
         <div className="mt-4">
-          <ComparisonPreview file={file} recipe={recipe} videoRef={videoRef} />
+          <ComparisonPreview
+            file={file}
+            recipe={recipe}
+            videoRef={videoRef}
+            overlayFile={overlayFile}
+            overlayPosition={overlayPosition}
+            overlaySize={overlaySize}
+            overlayOpacity={overlayOpacity}
+            overlayX={overlayX}
+            overlayY={overlayY}
+          />
         </div>
       )}
     </>

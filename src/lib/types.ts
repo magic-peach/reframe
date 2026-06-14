@@ -27,7 +27,7 @@ export interface EditRecipe {
   normalizeAudio: boolean;
   speed: number;
   quality: number;
-  format: "mp4" | "webm" | "mkv" | "gif";
+  format: "mp4" | "webm" | "mkv" | "gif" | "mp3" | "wav";
   stabilization: boolean;
   denoise: boolean;
   brightness: number;
@@ -49,6 +49,8 @@ export interface ImageOverlayOptions {
   position: OverlayPosition;
   size: number;
   opacity: number;
+  x?: number;
+  y?: number;
 }
 
 export interface BackgroundMusicOptions {
@@ -135,7 +137,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.normalizeAudio !== "boolean") return false;
   if (typeof v.speed !== "number" || !isFinite(v.speed)) return false;
   if (typeof v.quality !== "number" || !isFinite(v.quality)) return false;
-  if (!["mp4", "webm", "mkv", "gif"].includes(v.format)) return false;
+  if (!["mp4", "webm", "mkv", "gif", "mp3", "wav"].includes(v.format)) return false;
   if (typeof v.stabilization !== "boolean") return false;
   if (typeof v.brightness !== "number" || !isFinite(v.brightness)) return false;
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
