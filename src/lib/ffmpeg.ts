@@ -325,7 +325,7 @@ function buildArguments(
           filterParts.push(`[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
           audioOut = "[aout]";
         } else {
-          filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
+          filterParts.push(`[${musicIdx}:a]volume=${musicVol},apad[aout]`);
           audioOut = "[aout]";
         }
       } else if (hasOriginalAudio && af) {
@@ -345,6 +345,10 @@ function buildArguments(
       args.push("-map", audioOut);
     } else if (hasOriginalAudio) {
       args.push("-map", "0:a");
+    }
+    
+    if (hasMusicTrack && !hasOriginalAudio && !isAudioOnly) {
+      args.push("-shortest");
     }
   } else {
     if (vf) args.push("-vf", vf);
