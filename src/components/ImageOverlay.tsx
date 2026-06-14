@@ -59,16 +59,16 @@ export default function ImageOverlayPanel({
   const isSolidOpacity = overlayOpacity > 75;
 
   return (
-    <div className="w-full text-[11px] text-white space-y-3">
+    <div className="w-full text-[11px] text-[var(--text)] space-y-3">
       
       {/* Side-by-Side Area */}
       <div className="flex gap-2.5 items-center w-full">
         
         {/* Left Side: Dynamic Upload / Preview Square */}
-        <label className={`w-14 h-11 shrink-0 rounded-lg overflow-hidden flex flex-col items-center justify-center transition border ${
+        <label htmlFor="overlay-file-input" className={`w-14 h-11 shrink-0 rounded-lg overflow-hidden flex flex-col items-center justify-center transition border ${
           overlayFile 
-            ? "border-[var(--border)] bg-black/40 pointer-events-none" 
-            : "border-dashed border-[#2d4266] hover:bg-white/5 text-[#c7d8f7] hover:text-white cursor-pointer"
+            ? "border-[var(--border)] bg-[var(--bg)] pointer-events-none"
+            : "border-dashed border-[var(--border)] hover:bg-[var(--accent-muted)] text-[var(--muted)] hover:text-[var(--text)] cursor-pointer"
         }`}>
           {thumbUrl ? (
             <Image
@@ -86,17 +86,19 @@ export default function ImageOverlayPanel({
             </>
           )}
           <input
+            id="overlay-file-input"
             ref={inputRef}
             type="file"
             accept="image/png,image/jpeg,image/webp"
             onChange={handleUpload}
             className="hidden"
             disabled={!!overlayFile}
+            aria-label="Upload overlay image"
           />
         </label>
 
         {/* Right Side: Horizontal Details Card */}
-        <div className="flex-1 min-w-0 h-11 rounded-lg border border-[var(--border)] bg-[#121d30]/20 flex items-center justify-between px-3 gap-2.5">
+        <div className="flex-1 min-w-0 h-11 rounded-lg border border-[var(--border)] bg-[var(--bg)] flex items-center justify-between px-3 gap-2.5">
           {overlayFile ? (
             <>
               {/* File Info block */}
@@ -116,7 +118,7 @@ export default function ImageOverlayPanel({
                 type="button"
                 onClick={() => setOverlayFile(null)}
                 aria-label="Remove overlay image"
-                className="w-6 h-6 rounded flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition shrink-0"
+                className="w-6 h-6 rounded flex items-center justify-center bg-[var(--error-bg)] hover:bg-[var(--error-hover)] text-[var(--error)] border border-[var(--error-border)] transition shrink-0"
               >
                 <Trash2 size={11} aria-hidden="true" />
               </button>
@@ -143,11 +145,11 @@ export default function ImageOverlayPanel({
                   onClick={() => setOverlayPosition(value)}
                   className={`rounded border py-0.5 text-center text-[10px] transition flex items-center justify-center gap-0.5 ${
                     overlayPosition === value
-                      ? "border-film-500 text-white bg-film-600/10"
-                      : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
+                      ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
+                      : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
                   }`}
                 >
-                  <span className={overlayPosition === value ? "text-film-400" : "text-[var(--muted)]"}>
+                  <span className={overlayPosition === value ? "text-[var(--accent)]" : "text-[var(--muted)]"}>
                     {icon}
                   </span>
                   <span>{label}</span>
@@ -165,8 +167,8 @@ export default function ImageOverlayPanel({
                 onClick={() => setOverlaySize(100)}
                 className={`rounded border py-0.5 text-center text-[10px] transition ${
                   isSmallSize
-                    ? "border-film-500 text-white bg-film-600/10"
-                    : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
+                    ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
+                    : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
                 }`}
               >
                 Small
@@ -176,8 +178,8 @@ export default function ImageOverlayPanel({
                 onClick={() => setOverlaySize(250)}
                 className={`rounded border py-0.5 text-center text-[10px] transition ${
                   isMediumSize
-                    ? "border-film-500 text-white bg-film-600/10"
-                    : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
+                    ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
+                    : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
                 }`}
               >
                 Medium
@@ -187,8 +189,8 @@ export default function ImageOverlayPanel({
                 onClick={() => setOverlaySize(450)}
                 className={`rounded border py-0.5 text-center text-[10px] transition ${
                   isLargeSize
-                    ? "border-film-500 text-white bg-film-600/10"
-                    : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
+                    ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
+                    : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
                 }`}
               >
                 Large
@@ -205,8 +207,8 @@ export default function ImageOverlayPanel({
                 onClick={() => setOverlayOpacity(25)}
                 className={`rounded border py-0.5 text-center text-[10px] transition ${
                   isFaintOpacity
-                    ? "border-film-500 text-white bg-film-600/10"
-                    : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
+                    ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
+                    : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
                 }`}
               >
                 25%
@@ -216,8 +218,8 @@ export default function ImageOverlayPanel({
                 onClick={() => setOverlayOpacity(60)}
                 className={`rounded border py-0.5 text-center text-[10px] transition ${
                   isMediumOpacity
-                    ? "border-film-500 text-white bg-film-600/10"
-                    : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
+                    ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
+                    : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
                 }`}
               >
                 60%
@@ -227,8 +229,8 @@ export default function ImageOverlayPanel({
                 onClick={() => setOverlayOpacity(100)}
                 className={`rounded border py-0.5 text-center text-[10px] transition ${
                   isSolidOpacity
-                    ? "border-film-500 text-white bg-film-600/10"
-                    : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
+                    ? "border-[var(--accent)] text-[var(--text)] bg-[var(--accent-muted)]"
+                    : "border-[var(--border)] text-[var(--muted)] hover:bg-[var(--accent-muted)]"
                 }`}
               >
                 100%
