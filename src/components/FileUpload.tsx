@@ -8,7 +8,7 @@ import { cn, formatBytes, formatDuration } from "@/lib/utils";
 import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
 
 interface Props {
-  onFileSelect: (file: File) => void;
+  onFileSelect: (file: File | null) => void;
   currentFile: File | null;
   fileError: string;
   duration: number;
@@ -92,11 +92,6 @@ export default function FileUpload({
       return;
     }
 
-    if (file.size > 500 * 1024 * 1024) {
-      setError("File size exceeds 500MB limit. Please select a smaller video.");
-      return;
-    }
-
     if (file.size > MAX_FILE_SIZE) {
       setError(
         `File too large (${formatBytes(file.size)}). Maximum allowed size is 2GB.`
@@ -127,7 +122,7 @@ export default function FileUpload({
 
   // ── File info (shown after upload) ───────────────────
   const FileInfo = () => (
-    <div className="px-4 py-3 bg-film-50 border border-film-200 rounded-lg">
+    <div className="px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow)]">
       <div className="flex flex-col lg:flex-row lg:items-center gap-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div className="hidden lg:flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--surface)] border border-[var(--border)] shrink-0">
@@ -136,18 +131,18 @@ export default function FileUpload({
           <Film size={18} className="lg:hidden text-film-600 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-0.5">
-              <p className="text-sm font-semibold text-film-700 truncate max-w-[320px] xl:max-w-[420px]">
+              <p className="text-sm font-semibold text-[var(--text)] truncate max-w-[320px] xl:max-w-[420px]">
                 {currentFile?.name}
               </p>
               {currentFile && (
-                <span className="px-2 py-0.5 bg-gray-700 text-white font-bold tracking-wider rounded text-[10px] uppercase shrink-0">
+                <span className="px-2 py-0.5 bg-[var(--accent-muted)] text-[var(--text)] font-bold tracking-wider rounded text-[10px] uppercase shrink-0">
                   {currentFile.name.includes(".")
                     ? currentFile.name.split(".").pop()
                     : "VIDEO"}
                 </span>
               )}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+            <div className="text-xs text-[var(--muted)] mt-1 space-y-0.5">
               <p>{formatBytes(currentFile?.size ?? 0)}</p>
               <p>
                 {duration > 0
@@ -168,12 +163,12 @@ export default function FileUpload({
         </button>
       </div>
 
-      <p className="text-xs text-gray-500 mt-3 break-words">
+      <p className="text-xs text-[var(--muted)] mt-3 break-words">
         Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
       </p>
 
       {fileError && (
-        <p className="text-xs text-red-500 mt-2 font-medium">{fileError}</p>
+        <p className="text-xs text-[var(--error)] mt-2 font-medium">{fileError}</p>
       )}
 
       <input
@@ -212,7 +207,7 @@ export default function FileUpload({
         "group flex flex-col items-center justify-center gap-4 py-12 px-6",
         "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden",
         dragging
-          ? "border-film-500 bg-film-50/50 scale-[1.02] shadow-[0_0_40px_-10px_rgba(230,57,70,0.4)] ring-4 ring-film-500/30"
+          ? "border-[var(--accent)] bg-[var(--accent-muted)] scale-[1.02] shadow-[var(--shadow)] ring-4 ring-[var(--accent-muted)]"
           : "border-[var(--border)] bg-[var(--bg)] hover:border-film-400 hover:bg-film-50/40"
       )}
     >
@@ -234,29 +229,30 @@ export default function FileUpload({
         </p>
       </div>
 
-      <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
-        <FolderOpen size={14} />
-        MP4 / MOV / AVI / WebM
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center gap-2 px-4 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-sm font-heading font-medium text-[var(--muted)]">
+            <FolderOpen size={14} />
+            MP4 / MOV / AVI / WebM
+          </div>
+          <p className="text-xs text-[var(--muted)]">Max file size: 2 GB</p>
+        </div>
+        
+        {error && (
+          <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center gap-2">
+            <span className="text-red-500">❌</span>
+            {error}
+          </div>
+        )}
       </div>
 
-      <p className="text-xs text-gray-500 text-center">
+      <p className="text-xs text-[var(--muted)] text-center">
         Supports: MP4, MOV, AVI, MKV, WebM, and most video formats up to 2GB
       </p>
 
       {fileError && (
-        <p className="text-sm text-red-500 text-center">{fileError}</p>
+        <p className="text-sm text-[var(--error)] text-center">{fileError}</p>
       )}
-
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
     </div>
   );
 
@@ -296,16 +292,26 @@ export default function FileUpload({
       {/* ── Normal upload UI ── */}
       <div className="space-y-2">
         {error && (
-          <p role="alert" className="text-sm text-red-500">
+          <p role="alert" className="text-sm text-[var(--error)]">
             {error}
           </p>
         )}
         {warning && (
-          <p role="alert" className="text-sm text-yellow-500">
+          <p role="alert" className="text-sm text-[var(--warning)]">
             {warning}
           </p>
         )}
         {currentFile ? <FileInfo /> : <DropZone />}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="video/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+          }}
+        />
       </div>
     </>
   );
