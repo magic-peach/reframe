@@ -1,5 +1,20 @@
 export const RECIPE_VERSION = 1;
 
+/**
+ * Text overlay data structure for rendering custom text on videos.
+ */
+export interface TextOverlay {
+  id: string;
+  text: string;
+  x: number; // Percentage (0-100) from left
+  y: number; // Percentage (0-100) from top
+  fontSize: number; // In pixels
+  color: string; // Hex color
+  fontWeight: "normal" | "bold" | "900";
+  fontFamily?: string; // Font family name (e.g., "Arial", "Inter", "CustomFont")
+  fontPath?: string; // Path/URL to custom font file for export
+}
+
 export interface EditRecipe {
   preset: string;
   customWidth: number;
@@ -19,7 +34,7 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
-  reverse: boolean;
+  textOverlays: TextOverlay[];
   version: number;
 }
 
@@ -51,7 +66,8 @@ export interface ExportResult {
   size: number;
   width: number;
   height: number;
-  format: "mp4" | "webm" | "mkv" | "gif" | "mp3" | "wav";
+  format: "mp4" | "webm" | "mkv" | "gif";
+  exportDurationMs?: number;
 }
 
 export type ExportStatus =
@@ -60,6 +76,44 @@ export type ExportStatus =
   | "exporting"
   | "done"
   | "error";
+
+/**
+ * Phase 1 MVP: Multi-track timeline support
+ * Supports video and image layers with positioning and opacity
+ * Phase 1 limited to max 2 active video tracks due to FFmpeg.wasm constraints
+ */
+export interface TimelineTrack {
+  id: string;
+  type: "video" | "image";
+  source: File | null;
+
+  // Timing
+  startTime: number; // seconds
+  duration: number; // seconds (for image), or derived from video duration
+
+  // Layering
+  zIndex: number;
+  visible: boolean;
+  opacity: number; // 0-100
+
+  // Transform
+  position: {
+    x: number; // pixels or -1 for auto-center
+    y: number; // pixels or -1 for auto-center
+  };
+  scale: number; // 1.0 = 100%
+  rotation: 0 | 90 | 180 | 270;
+}
+
+/**
+ * Extended editor state for multi-track support
+ * Incrementally introduced; maintains backward compatibility with single-track workflow
+ */
+export interface MultiTrackEditorState {
+  timelineTracks: TimelineTrack[];
+  activeTrackId: string | null;
+  maxActiveTracks: number; // Phase 1: 2, future: unlimited
+}
 
 export const MAX_FILE_SIZE =
   2 * 1024 * 1024 * 1024;
@@ -89,7 +143,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
-  if (typeof v.reverse !== "boolean") return false;
+  if (!Array.isArray(v.textOverlays)) return false;
 
   return true;
 }
