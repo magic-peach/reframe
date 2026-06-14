@@ -424,7 +424,7 @@ function buildAudioTrimFilter(recipe: EditRecipe): string {
 
 function buildArguments(
   recipe: EditRecipe,
-  format: "mp4" | "webm" | "mkv" | "gif",
+  format: "mp4" | "webm" | "mkv" | "gif" | "mp3" | "wav",
   outputName: string,
   inputName: string,
   targetW: number,
@@ -438,16 +438,73 @@ function buildArguments(
   hasOriginalAudio: boolean,
   videoDuration: number
 ): string[] {
+  const isAudioOnly = format === "mp3" || format === "wav";
+
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
+  const audioReverse = hasOriginalAudio && recipe.reverse ? "areverse" : "";
   const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
-  const afParts = [audioTrim, audioSpeed].filter(Boolean);
+  const afParts = [audioTrim, audioReverse, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
   const musicIdx = 1;
   const overlayIdx = hasMusicTrack ? 2 : 1;
 
   const args: string[] = [];
+
+  if (isAudioOnly) {
+    args.push("-i", inputName);
+    if (hasMusicTrack) {
+      if (musicOptions!.loopMusic) args.push("-stream_loop", "-1");
+      args.push("-i", musicInputName);
+    }
+
+    const needsFilterComplex = hasMusicTrack;
+    const shouldKeepAudio = (recipe.keepAudio && hasOriginalAudio) || hasMusicTrack;
+
+    if (shouldKeepAudio) {
+      if (needsFilterComplex) {
+        const filterParts: string[] = [];
+        const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
+        if (hasOriginalAudio && recipe.keepAudio) {
+          const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
+          const origChain = afParts.length > 0
+            ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
+            : `[0:a]volume=${origVol}[orig]`;
+          filterParts.push(origChain);
+          filterParts.push(`[${musicIdx}:a]volume=${musicVol}[music]`);
+          filterParts.push(`[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
+        } else {
+          filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
+        }
+        if (filterParts.length > 0) {
+          args.push("-filter_complex", filterParts.join(";"));
+          args.push("-map", "[aout]");
+        }
+      } else {
+        if (af && hasOriginalAudio) {
+          args.push("-af", af);
+        }
+        if (hasOriginalAudio) {
+          args.push("-map", "0:a");
+        }
+      }
+
+      if (format === "mp3") {
+        args.push("-c:a", "libmp3lame", "-q:a", "2");
+      } else {
+        args.push("-c:a", "pcm_s16le");
+      }
+    } else {
+      args.push("-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo", "-t", "1");
+      args.push("-c:a", format === "mp3" ? "libmp3lame" : "pcm_s16le");
+    }
+
+    args.push("-vn");
+    args.push(outputName);
+    return args;
+  }
+
   args.push("-i", inputName);
   if (hasMusicTrack) {
     if (musicOptions!.loopMusic) args.push("-stream_loop", "-1");
@@ -458,7 +515,7 @@ function buildArguments(
   }
 
   const needsFilterComplex = hasOverlay || hasMusicTrack;
-  const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
+  const shouldKeepAudio = (recipe.keepAudio && hasOriginalAudio) || hasMusicTrack;
 
   if (needsFilterComplex) {
     const filterParts: string[] = [];
@@ -499,7 +556,7 @@ interface PositionCoords {
     if (shouldKeepAudio) {
       if (hasMusicTrack) {
         const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
-        if (hasOriginalAudio) {
+        if (hasOriginalAudio && recipe.keepAudio) {
           const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
           const origChain = afParts.length > 0
             ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
@@ -509,7 +566,7 @@ interface PositionCoords {
           filterParts.push(`[orig][music]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
           audioOut = "[aout]";
         } else {
-          filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
+          filterParts.push(`[${musicIdx}:a]volume=${musicVol},apad[aout]`);
           audioOut = "[aout]";
         }
       } else if (hasOriginalAudio && af) {
@@ -527,8 +584,12 @@ interface PositionCoords {
       args.push("-an");
     } else if (audioOut) {
       args.push("-map", audioOut);
-    } else if (hasOriginalAudio) {
+    } else if (hasOriginalAudio && recipe.keepAudio) {
       args.push("-map", "0:a");
+    }
+    
+    if (hasMusicTrack && !hasOriginalAudio && !isAudioOnly) {
+      args.push("-shortest");
     }
   } else {
     if (vf) args.push("-vf", vf);

@@ -33,6 +33,7 @@ export default function ExportSettings({
       : "Small file";
 
   const isGif = recipe.format === "gif";
+  const isAudio = recipe.format === "mp3" || recipe.format === "wav";
 
   const estimatedSize =
     formatEstimatedSize(
@@ -41,6 +42,36 @@ export default function ExportSettings({
         duration
       )
     );
+
+  if (isAudio) {
+    return (
+      <div className="space-y-4">
+        <p className="text-xs text-[var(--muted)]">
+          Exporting as audio format. Video stabilization, noise reduction, and visual quality adjustments are automatically disabled.
+        </p>
+
+        <div className="flex items-center justify-between">
+          <label
+            htmlFor="sound-on-completion"
+            className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]"
+          >
+            Sound on completion
+          </label>
+
+          <input
+            id="sound-on-completion"
+            type="checkbox"
+            checked={recipe.soundOnCompletion}
+            onChange={(e) =>
+              onChange({ soundOnCompletion: e.target.checked })
+            }
+            aria-label="Play sound when export completes"
+            className="accent-film-600 cursor-pointer"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

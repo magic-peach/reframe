@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
-import { EditRecipe } from "@/lib/types";
+import { EditRecipe, OverlayPosition } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 
@@ -10,14 +10,65 @@ interface Props {
   file: File | null;
   recipe?: EditRecipe;
   videoRef: RefObject<HTMLVideoElement | null>;
+  overlayFile?: File | null;
+  overlayPosition?: OverlayPosition;
+  overlaySize?: number;
+  overlayOpacity?: number;
+  overlayX?: number | null;
+  overlayY?: number | null;
 }
 
-export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
+export default function ComparisonPreview({
+  file,
+  recipe,
+  videoRef,
+  overlayFile,
+  overlayPosition,
+  overlaySize,
+  overlayOpacity,
+  overlayX,
+  overlayY,
+}: Props) {
   const leftVideoRef = useRef<HTMLVideoElement>(null);
   const rightVideoRef = useRef<HTMLVideoElement>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const [overlayUrl, setOverlayUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (!overlayFile) {
+      setOverlayUrl("");
+      return;
+    }
+    const url = URL.createObjectURL(overlayFile);
+    setOverlayUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [overlayFile]);
+
+  const getOverlayStyle = () => {
+    if (!overlayFile) return {};
+
+    if (overlayX === undefined || overlayY === undefined || overlayX === null || overlayY === null) {
+      const spacing = "20px";
+      if (overlayPosition === "top-left") {
+        return { left: spacing, top: spacing };
+      }
+      if (overlayPosition === "top-right") {
+        return { right: spacing, top: spacing };
+      }
+      if (overlayPosition === "bottom-left") {
+        return { left: spacing, bottom: spacing };
+      }
+      return { right: spacing, bottom: spacing };
+    }
+
+    return {
+      left: `${overlayX}%`,
+      top: `${overlayY}%`,
+    };
+  };
 
   // Calculate overlay for the right (reframed) side
   const overlay = (() => {
@@ -193,6 +244,11 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
           <video
             ref={rightVideoRef}
             className="w-full h-full object-contain"
+            style={{
+              filter: recipe
+                ? `brightness(${1 + recipe.brightness}) contrast(${recipe.contrast}) saturate(${recipe.saturation})`
+                : undefined,
+            }}
             playsInline
             muted
             autoPlay
@@ -200,6 +256,24 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
           >
             <track kind="captions" />
           </video>
+
+          {overlayFile && overlayUrl && (
+            <div
+              className="absolute pointer-events-none select-none"
+              style={{
+                width: `${overlaySize}px`,
+                opacity: (overlayOpacity ?? 100) / 100,
+                zIndex: 40,
+                ...getOverlayStyle(),
+              }}
+            >
+              <img
+                src={overlayUrl}
+                alt="Overlay asset"
+                className="w-full h-auto pointer-events-none"
+              />
+            </div>
+          )}
         </div>
 
         {/* Overlay on reframed side */}

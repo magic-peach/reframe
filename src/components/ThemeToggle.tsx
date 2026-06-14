@@ -28,6 +28,16 @@ export function ThemeToggle() {
     );
   }
 
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="relative flex items-center justify-center w-9 h-9 rounded-full bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] opacity-50"
+      />
+    );
+  }
+
   return (
     <button
        type="button"
