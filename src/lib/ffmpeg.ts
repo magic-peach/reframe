@@ -457,22 +457,61 @@ export async function exportVideo(
     // ── Two-pass GIF export ──────────────────────────────────────────────────
     if (recipe.format === "gif") {
       const vf = buildVideoFilter(recipe, targetW, targetH);
-      const vfWithPalette = vf ? `${vf},palettegen` : "palettegen";
-      const vfWithPaletteUse = vf
-        ? `[0:v]${vf}[x];[x][1:v]paletteuse`
-        : "[0:v][1:v]paletteuse";
+      
+      let filterComplexParts: string[] = [];
+      let videoOutNode = "0:v";
+      let gifArgs = ["-i", inputName];
+      let paletteInputIdx = 1;
 
-      // Pass 1: generate colour palette
+      if (vf) {
+        filterComplexParts.push(`[0:v]${vf}[vbase]`);
+        videoOutNode = "vbase";
+      }
+
+      if (hasOverlay && overlayOptions && overlayInputName) {
+        gifArgs.push("-i", overlayInputName);
+        paletteInputIdx = 2;
+        
+        const scaledW = overlayOptions.size;
+        const alpha = (overlayOptions.opacity / 100).toFixed(2);
+        const posMap: Record<string, string> = {
+          "top-left":     "20:20",
+          "top-right":    "W-w-20:20",
+          "bottom-left":  "20:H-h-20",
+          "bottom-right": "W-w-20:H-h-20",
+        };
+        let pos = posMap[overlayOptions.position] ?? "W-w-20:H-h-20";
+        if (overlayOptions.x !== undefined && overlayOptions.y !== undefined) {
+          const xPct = (overlayOptions.x / 100).toFixed(4);
+          const yPct = (overlayOptions.y / 100).toFixed(4);
+          pos = `W*${xPct}:H*${yPct}`;
+        }
+        
+        filterComplexParts.push(`[1:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
+        
+        const inputNode = videoOutNode === "0:v" ? "[0:v]" : `[${videoOutNode}]`;
+        filterComplexParts.push(`${inputNode}[logo]overlay=${pos}[vwithlogo]`);
+        videoOutNode = "vwithlogo";
+      }
+
+      const baseFilterStr = filterComplexParts.join(";");
+      const pass1FilterComplex = baseFilterStr 
+        ? `${baseFilterStr};[${videoOutNode}]palettegen`
+        : `[0:v]palettegen`;
+        
       const pass1Code = await ffmpeg.exec(
-        ["-i", inputName, "-vf", vfWithPalette, "-y", paletteName],
+        [...gifArgs, "-filter_complex", pass1FilterComplex, "-y", paletteName],
         undefined,
         { signal }
       );
       if (pass1Code !== 0) throw new Error("GIF palette generation failed");
 
-      // Pass 2: render GIF using the palette
+      const pass2FilterComplex = baseFilterStr
+        ? `${baseFilterStr};[${videoOutNode}][${paletteInputIdx}:v]paletteuse`
+        : `[0:v][${paletteInputIdx}:v]paletteuse`;
+
       const pass2Code = await ffmpeg.exec(
-        ["-i", inputName, "-i", paletteName, "-lavfi", vfWithPaletteUse, "-y", outputName],
+        [...gifArgs, "-i", paletteName, "-filter_complex", pass2FilterComplex, "-y", outputName],
         undefined,
         { signal }
       );
