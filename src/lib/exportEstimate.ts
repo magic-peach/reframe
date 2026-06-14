@@ -94,6 +94,13 @@ export function estimateExportSize(recipe: EditRecipe, duration: number): number
   // 2. Speed affects wall-clock output length
   const outputDuration = trimmedDuration / Math.max(recipe.speed, 0.25);
 
+  if (recipe.format === "mp3") {
+    return (0.192 * outputDuration) / 8;
+  }
+  if (recipe.format === "wav") {
+    return (1.411 * outputDuration) / 8;
+  }
+
   // 3. Resolve pixel dimensions from preset or custom fields safely
   const { width, height } = getOutputDimensions(recipe);
 

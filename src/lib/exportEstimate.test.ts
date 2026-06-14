@@ -93,6 +93,14 @@ describe("estimateExportSize", () => {
     const size = estimateExportSize(makeRecipe({ trimStart: 10, trimEnd: 10 }), 60);
     expect(size).toBeGreaterThan(0);
   });
+
+  test("mp3 and wav return accurate audio-only size estimations", () => {
+    const mp3Size = estimateExportSize(makeRecipe({ format: "mp3" }), 60);
+    const wavSize = estimateExportSize(makeRecipe({ format: "wav" }), 60);
+    expect(wavSize).toBeGreaterThan(mp3Size);
+    expect(mp3Size).toBeCloseTo((0.192 * 60) / 8, 4);
+    expect(wavSize).toBeCloseTo((1.411 * 60) / 8, 4);
+  });
 });
 
 // ---------------------------------------------------------------------------

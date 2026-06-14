@@ -2,7 +2,7 @@
 
 import { EditRecipe } from "@/lib/types"
 import { SPEED_STEPS } from "@/lib/constants";
-import { Volume2, VolumeX, Gauge, AlertTriangle } from "lucide-react";
+import { Volume2, VolumeX, Gauge, AlertTriangle, Rewind } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -21,7 +21,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
     return "Very Fast";
   };
 
-  const isModified = recipe.speed !== 1 || !recipe.keepAudio;
+  const isModified = recipe.speed !== 1 || !recipe.keepAudio || recipe.reverse;
 
   return (
     <div className="space-y-4">
@@ -30,7 +30,7 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
           <button
             type="button"
             aria-label="Reset audio settings to default"
-            onClick={() => onChange({ speed: 1, keepAudio: true })}
+            onClick={() => onChange({ speed: 1, keepAudio: true, reverse: false })}
             className="text-sm font-heading font-semibold uppercase tracking-wider text-film-600 hover:text-film-700 hover:underline transition-all duration-150"
           >
             Reset to Default
@@ -68,6 +68,28 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
         >
           M
         </kbd>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => onChange({ reverse: !recipe.reverse })}
+        aria-label={recipe.reverse ? "Disable reverse playback" : "Enable reverse playback"}
+        aria-pressed={recipe.reverse}
+        className={cn(
+          "w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-150",
+          "hover:scale-[1.01] active:scale-[0.99]",
+          recipe.reverse
+            ? "border-film-300 bg-film-50 text-film-700"
+            : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)]"
+        )}
+      >
+        <Rewind size={16} aria-hidden="true" />
+        <span className="sr-only">
+          {recipe.reverse ? "Turn reverse playback off" : "Turn reverse playback on"}
+        </span>
+        <span className="text-sm font-heading font-semibold flex-1 text-left">
+          Reverse Playback
+        </span>
       </button>
 
       <div>
