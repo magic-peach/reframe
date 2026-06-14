@@ -225,13 +225,13 @@ function buildArguments(
     }
 
     const needsFilterComplex = hasMusicTrack;
-    const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
+    const shouldKeepAudio = (recipe.keepAudio && hasOriginalAudio) || hasMusicTrack;
 
     if (shouldKeepAudio) {
       if (needsFilterComplex) {
         const filterParts: string[] = [];
         const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
-        if (hasOriginalAudio) {
+        if (hasOriginalAudio && recipe.keepAudio) {
           const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
           const origChain = afParts.length > 0
             ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
@@ -280,7 +280,7 @@ function buildArguments(
   }
 
   const needsFilterComplex = hasOverlay || hasMusicTrack;
-  const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
+  const shouldKeepAudio = (recipe.keepAudio && hasOriginalAudio) || hasMusicTrack;
 
   if (needsFilterComplex) {
     const filterParts: string[] = [];
@@ -315,7 +315,7 @@ function buildArguments(
     if (shouldKeepAudio) {
       if (hasMusicTrack) {
         const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
-        if (hasOriginalAudio) {
+        if (hasOriginalAudio && recipe.keepAudio) {
           const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
           const origChain = afParts.length > 0
             ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
@@ -343,7 +343,7 @@ function buildArguments(
       args.push("-an");
     } else if (audioOut) {
       args.push("-map", audioOut);
-    } else if (hasOriginalAudio) {
+    } else if (hasOriginalAudio && recipe.keepAudio) {
       args.push("-map", "0:a");
     }
     
@@ -437,7 +437,7 @@ export async function exportVideo(
 
   const afParts = [audioTrim, audioReverse, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
-    const hasMusicTrack = !!(musicOptions?.file && recipe.keepAudio);
+    const hasMusicTrack = !!(musicOptions?.file);
     const musicInputName = `music_input_${sessionId}.mp3`;
     if (hasMusicTrack) {
       await ffmpeg.writeFile(musicInputName, await fetchFile(musicOptions!.file!), { signal });
