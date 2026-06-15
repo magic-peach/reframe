@@ -29,6 +29,7 @@ export interface EditRecipe {
   quality: number;
   format: "mp4" | "webm" | "mkv" | "gif";
   stabilization: boolean;
+  reverse: boolean;
   denoise: boolean;
   brightness: number;
   contrast: number;
@@ -142,6 +143,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
   if (!Array.isArray(v.textOverlays)) return false;
+  if (typeof v.reverse !== "boolean") return false;
 
   return true;
 }

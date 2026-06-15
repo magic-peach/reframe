@@ -389,12 +389,18 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
     filters.push(buildTextFilter(overlay, targetW, targetH));
   });
 
+  if (recipe.reverse) {
+    filters.push("reverse");
+  }
+
   return filters.join(",");
 }
 
-export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+export function buildAudioFilter(speed: number, normalizeAudio: boolean, reverse = false): string {
   if (speed <= 0) return "";
   const filters: string[] = [];
+
+  if (reverse) filters.push("areverse");
 
   let remaining = speed;
   while (remaining < 0.5) {
@@ -440,7 +446,7 @@ function buildArguments(
 ): string[] {
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false, recipe.reverse) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 
