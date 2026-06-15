@@ -28,6 +28,8 @@ export function ThemeToggle() {
     );
   }
 
+  const isDark = theme === "dark";
+
   return (
     <button
        type="button"
