@@ -18,7 +18,7 @@ import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
 import { getPresetById } from "@/lib/presets";
-
+import FAQ from "./FAQ";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2, Type,
@@ -757,6 +757,9 @@ return () => {
             )}
           </div>
         </div>
+      </div>
+      <div className="max-w-6xl mx-auto px-4 pb-8 w-full border-[var(--border)]">
+        <FAQ />
       </div>
     </div>
   );
