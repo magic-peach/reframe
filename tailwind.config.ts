@@ -34,9 +34,20 @@ const config: Config = {
         shimmer: {
           "100%": { transform: "translateX(100%)" },
         },
+        exportReadyPulse: {
+          "0%, 100%": {
+            boxShadow: "var(--shadow)",
+            filter: "brightness(1)",
+          },
+          "50%": {
+            boxShadow: "0 0 0 3px var(--accent-muted), var(--shadow)",
+            filter: "brightness(1.03)",
+          },
+        },
       },
       animation: {
         shimmer: "shimmer 2s infinite",
+        "export-ready-pulse": "exportReadyPulse 2.4s ease-in-out infinite",
       },
     },
   },

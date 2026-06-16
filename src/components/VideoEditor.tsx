@@ -27,6 +27,10 @@ import {
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { loadOverlayState, persistOverlayState } from "@/lib/editorPersistence";
+import {
+  getExportButtonAnimationClass,
+  isReadyToExport,
+} from "@/lib/exportButtonAnimation";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -313,7 +317,7 @@ return () => {
 }, [file]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
-  const isReadyToExport = Boolean(file) && status === "idle";
+  const isReadyToExportState = isReadyToExport(Boolean(file), status);
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const intervalSeconds = useMemo(() => {
@@ -742,7 +746,7 @@ return () => {
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
-                isReadyToExport && "motion-safe:animate-pulse motion-reduce:animate-none",
+                getExportButtonAnimationClass(Boolean(file), status),
                 file && !isProcessing
                   ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
@@ -752,7 +756,7 @@ return () => {
               {isProcessing ? "PROCESSING" : "EXPORT"}
             </button>
 
-            {file && !isProcessing && (
+            {isReadyToExportState && (
               <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
                 {isMac ? "⌘" : "Ctrl"} + Enter to export
               </p>
