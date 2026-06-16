@@ -1,90 +1,125 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
-const DEFAULT_BAR_COUNT = 96;
+// Max file size before we skip waveform generation (500 MB)
+const MAX_WAVEFORM_FILE_SIZE = 500 * 1024 * 1024;
 
-type BrowserWindow = Window &
-  typeof globalThis & {
-    webkitAudioContext?: typeof AudioContext;
-  };
+// How many data points to render in the waveform
+const WAVEFORM_SAMPLES = 200;
 
-function downsampleWaveform(channelData: Float32Array, barCount: number): number[] {
-  const sampleSize = Math.max(1, Math.floor(channelData.length / barCount));
-  const peaks = Array.from({ length: barCount }, (_, index) => {
-    const start = index * sampleSize;
-    const end = Math.min(start + sampleSize, channelData.length);
-    let peak = 0;
-
-    for (let i = start; i < end; i += 1) {
-      peak = Math.max(peak, Math.abs(channelData[i] ?? 0));
-    }
-
-    return peak;
-  });
-
-  const maxPeak = Math.max(...peaks, 0.01);
-  return peaks.map((peak) => peak / maxPeak);
+interface UseAudioWaveformResult {
+  peaks: number[];        // normalized 0–1 amplitude values
+  isLoading: boolean;
+  error: string | null;
 }
 
-export function useAudioWaveform(
-  file: File | null,
-  barCount = DEFAULT_BAR_COUNT
-) {
-  const [waveform, setWaveform] = useState<number[]>([]);
+export function useAudioWaveform(file: File | null): UseAudioWaveformResult {
+  const [peaks, setPeaks] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
-    let isCancelled = false;
-    let audioContext: AudioContext | null = null;
+    if (!file) {
+      setPeaks([]);
+      return;
+    }
 
-    async function extractWaveform() {
-      if (!file) {
-        setWaveform([]);
-        setIsLoading(false);
-        return;
-      }
+    // --- Layer 1: File size guard ---
+    if (file.size > MAX_WAVEFORM_FILE_SIZE) {
+      setError("File too large to generate waveform preview (>500 MB).");
+      setPeaks([]);
+      return;
+    }
 
-      const AudioContextCtor =
-        window.AudioContext || (window as BrowserWindow).webkitAudioContext;
+    let cancelled = false;
 
-      if (!AudioContextCtor) {
-        setWaveform([]);
-        setIsLoading(false);
-        return;
-      }
-
+    const generateWaveform = async () => {
       setIsLoading(true);
+      setError(null);
 
       try {
-        audioContext = new AudioContextCtor();
-        const audioBuffer = await audioContext.decodeAudioData(
-          await file.arrayBuffer()
-        );
-        const channelData = audioBuffer.getChannelData(0);
-        const peaks = downsampleWaveform(channelData, barCount);
-
-        if (!isCancelled) {
-          setWaveform(peaks);
+        // Close any existing AudioContext to free memory
+        if (audioContextRef.current) {
+          await audioContextRef.current.close();
+          audioContextRef.current = null;
         }
-      } catch {
-        if (!isCancelled) {
-          setWaveform([]);
+
+        const AudioContextCtor =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext })
+            .webkitAudioContext;
+
+        audioContextRef.current = new AudioContextCtor();
+
+        // Read file into memory (unavoidable for decodeAudioData)
+        const arrayBuffer = await file.arrayBuffer();
+
+        if (cancelled) return;
+
+        const audioBuffer = await audioContextRef.current.decodeAudioData(
+          arrayBuffer
+        );
+
+        if (cancelled) return;
+
+        // --- Layer 2: Extract peaks immediately, release the big buffer ---
+        const channelData = audioBuffer.getChannelData(0); // mono / left channel
+        const blockSize = Math.floor(channelData.length / WAVEFORM_SAMPLES);
+
+        const extractedPeaks: number[] = [];
+
+        for (let i = 0; i < WAVEFORM_SAMPLES; i++) {
+          let max = 0;
+          const start = i * blockSize;
+          const end = start + blockSize;
+
+          for (let j = start; j < end; j++) {
+            const abs = Math.abs(channelData[j]);
+            if (abs > max) max = abs;
+          }
+
+          extractedPeaks.push(max);
+        }
+
+        // Normalize so the tallest peak = 1.0
+        const globalMax = Math.max(...extractedPeaks, 1e-6);
+        const normalizedPeaks = extractedPeaks.map((v) => v / globalMax);
+
+        // audioBuffer is now eligible for GC — we hold only the small peaks array
+        if (!cancelled) {
+          setPeaks(normalizedPeaks);
+        }
+
+        // Close context to free Web Audio resources
+        await audioContextRef.current.close();
+        audioContextRef.current = null;
+
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Waveform generation failed:", err);
+          setError("Could not generate waveform for this file.");
+          setPeaks([]);
         }
       } finally {
-        await audioContext?.close();
-        if (!isCancelled) {
+        if (!cancelled) {
           setIsLoading(false);
         }
       }
-    }
-
-    extractWaveform();
-
-    return () => {
-      isCancelled = true;
     };
-  }, [barCount, file]);
 
-  return { waveform, isLoading };
+    generateWaveform();
+
+    // Cleanup: cancel if file changes before decode finishes
+    return () => {
+      cancelled = true;
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    };
+  }, [file]);
+
+  return { peaks, isLoading, error };
 }
