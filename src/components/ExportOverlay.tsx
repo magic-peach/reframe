@@ -26,6 +26,8 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [announcement, setAnnouncement] = useState("");
+  const prevStatusRef = useRef<ExportStatus | null>(null);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -74,6 +76,17 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
     return () => window.clearInterval(timer);
   }, [status, exportStartedAt]);
 
+  useEffect(() => {
+    if (status === "loading-engine" && prevStatusRef.current !== "loading-engine") {
+      setAnnouncement("Loading video processing engine, please wait...");
+    } else if (status === "exporting" && prevStatusRef.current !== "exporting") {
+      setAnnouncement("Export started. Processing your video locally.");
+    } else if (!visible && prevStatusRef.current !== null) {
+      setAnnouncement("");
+    }
+    prevStatusRef.current = status;
+  }, [status, visible]);
+
   if (!visible) return null;
 
   const isLoading = status === "loading-engine";
@@ -94,6 +107,10 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
         tabIndex={-1}
         className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--bg)] backdrop-blur-sm"
       >
+        <div role="status" aria-live="polite" className="sr-only">
+          {announcement}
+        </div>
+
         <div
           className="text-center space-y-6 max-w-xs px-6 animate-fade-in"
           aria-live="polite"
