@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
-import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
+import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError, revokeBlobUrl } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
 import {
@@ -457,7 +457,7 @@ export function useVideoEditor() {
       setProgress(0);
       setError(null);
       setExportStartedAt(null);
-      if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
+      if (result?.blobUrl) revokeBlobUrl(result.blobUrl);
       setResult(null);
 
       await loadFFmpeg(abortController.signal, setProgress);
@@ -610,7 +610,7 @@ export function useVideoEditor() {
   useEffect(()=>{
     return ()=>{
       if(result?.blobUrl){
-        URL.revokeObjectURL(result.blobUrl);
+        revokeBlobUrl(result.blobUrl);
       }
     }
    },[result?.blobUrl])
@@ -644,7 +644,7 @@ export function useVideoEditor() {
 
 
   const reset = useCallback(() => {
-    if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
+    if (result?.blobUrl) revokeBlobUrl(result.blobUrl);
     setFile(null);
     setVideoMetadata(null);
     setDuration(0);

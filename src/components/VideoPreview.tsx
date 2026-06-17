@@ -79,14 +79,15 @@ export default function VideoPreview({
   useEffect(() => {
     if (!file) return;
 
-    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    // Revoke previous URL before creating new one
+    if (urlRef.current) {
+      URL.revokeObjectURL(urlRef.current);
+      urlRef.current = null;
+    }
+
     setIsLoading(true);
     const id = ++lastId.current;
     const url = URL.createObjectURL(file);
-
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
-    }
     urlRef.current = url;
 
     const video = videoRef.current;
@@ -116,6 +117,7 @@ export default function VideoPreview({
         video.load();
       }
 
+      // Only revoke if this is still the current URL (prevents race conditions)
       if (urlRef.current === url) {
         URL.revokeObjectURL(urlRef.current);
         urlRef.current = null;
@@ -123,39 +125,15 @@ export default function VideoPreview({
     };
   }, [file, videoRef]);
 
-  // Phase 1 MVP: Setup multi-track video sources
+  // Cleanup on component unmount
   useEffect(() => {
-    if (!multiTrackState || !multiTrackVideoRefs) return;
-
-    multiTrackState.timelineTracks.forEach((track) => {
-      if (track.type !== "video" || !track.source) return;
-
-      const videoRef = multiTrackVideoRefs[track.id];
-      if (!videoRef?.current) return;
-
-      // Cleanup old URL
-      if (multiTrackUrlRefs.current[track.id]) {
-        URL.revokeObjectURL(multiTrackUrlRefs.current[track.id]!);
-      }
-
-      // Create new URL and load
-      const url = URL.createObjectURL(track.source);
-      multiTrackUrlRefs.current[track.id] = url;
-      videoRef.current.src = url;
-      videoRef.current.load();
-
-      // Auto-play for preview
-      videoRef.current.play().catch(() => {});
-    });
-
     return () => {
-      // Cleanup URLs on unmount
-      Object.values(multiTrackUrlRefs.current).forEach((url) => {
-        if (url) URL.revokeObjectURL(url);
-      });
-      multiTrackUrlRefs.current = {};
+      if (urlRef.current) {
+        URL.revokeObjectURL(urlRef.current);
+        urlRef.current = null;
+      }
     };
-  }, [multiTrackState, multiTrackVideoRefs]);
+  }, []);
 
   useEffect(() => {
     if (!videoRef.current || !recipe) return;
