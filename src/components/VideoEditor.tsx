@@ -1,5 +1,6 @@
 "use client";
-
+import ThumbnailStrip from "./ThumbnailStrip";
+import { Strip } from "lucide-react";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import { TextOverlay } from "@/lib/types";
@@ -420,16 +421,17 @@ return () => {
                 </div>
               )}
 
-              {file && (
-                <div className="mt-4 animate-fade-in">
-                  <VideoPreview
-                    file={file}
-                    recipe={recipe}
-                    videoRef={videoRef}
-                    selectedTextId={selectedTextId}
-                    onSelectText={setSelectedTextId}
-                    onUpdateText={handleUpdateTextOverlay}
-                  />
+             {file && (
+  <div className="mt-4 animate-fade-in space-y-3">
+    <VideoPreview file={file} />
+    <ThumbnailStrip
+      file={file}
+      currentTime={currentTime}
+      duration={duration}
+      onSeek={setCurrentTime}
+    />
+  </div>
+)}
 
                   <div className="mt-3">
                     <ThumbnailStrip
