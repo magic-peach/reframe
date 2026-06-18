@@ -1,5 +1,7 @@
 "use client";
-
+import MultiTrackTimeline from "./MultiTrackTimeline";
+import { useMultiTrackTimeline } from "@/hooks/useMultiTrackTimeline";
+import { Layout } from "lucide-react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import FileUpload from "./FileUpload";
 import VideoPreview from "./VideoPreview";
@@ -52,6 +54,16 @@ export default function VideoEditor() {
 
   
   const isProcessing = status === "loading-engine" || status === "exporting";
+  const {
+  tracks,
+  duration: timelineDuration,
+  currentTime,
+  setCurrentTime,
+  addTrack,
+  addClip,
+  moveClip,
+  deleteClip,
+} = useMultiTrackTimeline(duration || 30);
 
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
@@ -221,7 +233,25 @@ export default function VideoEditor() {
                 </div>
               </div>
             )}
-
+          {/* Multi-Track Timeline */}
+{file && (
+  <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 animate-fade-in">
+    <Section icon={<Layout size={12} />} title="Multi-Track Timeline" delay={250}>
+      <MultiTrackTimeline
+        tracks={tracks}
+        duration={timelineDuration}
+        currentTime={currentTime}
+        onTimeChange={setCurrentTime}
+        onClipMove={moveClip}
+        onClipDelete={deleteClip}
+        onAddTrack={addTrack}
+      />
+      <p className="text-[10px] text-[var(--muted)] font-heading mt-2">
+        Click ruler to scrub · Drag clips to reposition · Add tracks with buttons above
+      </p>
+    </Section>
+  </div>
+)}
             {status === "error" && error && (
                  <div
                     role="status"
