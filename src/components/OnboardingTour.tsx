@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { createPortal } from "react-dom";
 
 const TOUR_KEY = "reframe_onboarding_complete";
@@ -40,7 +45,7 @@ const TOUR_STEPS: TourStep[] = [
     title: "Export your video",
     description:
       "Click Export (or press ⌘↵) to process your video locally — nothing ever leaves your device.",
-    position: "top",
+    position: "bottom",
   },
 ];
 
@@ -69,30 +74,48 @@ function getTooltipStyle(
     width: rect.width + PADDING * 2,
     height: rect.height + PADDING * 2,
   };
+const viewportWidth =
+  typeof window !== "undefined" ? window.innerWidth : 1024;
+  const isMobile = viewportWidth < 1024;
 
-  switch (position) {
-    case "top":
-      return {
-        top: sr.top - th - TOOLTIP_OFFSET,
-        left: sr.left + sr.width / 2 - tw / 2,
-      };
-    case "left":
-      return {
-        top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left - tw - TOOLTIP_OFFSET,
-      };
-    case "right":
-      return {
-        top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left + sr.width + TOOLTIP_OFFSET,
-      };
-    case "bottom":
-    default:
-      return {
-        top: sr.top + sr.height + TOOLTIP_OFFSET,
-        left: sr.left + sr.width / 2 - tw / 2,
-      };
-  }
+const viewportHeight =
+  typeof window !== "undefined" ? window.innerHeight : 768;
+
+const resolvedPosition = isMobile ? "bottom" : position;
+
+let top = 0;
+let left = 0;
+
+switch (resolvedPosition) {
+  case "top":
+    top = sr.top - th - TOOLTIP_OFFSET;
+    left = sr.left + sr.width / 2 - tw / 2;
+    break;
+
+  case "left":
+    top = sr.top + sr.height / 2 - th / 2;
+    left = sr.left - tw - TOOLTIP_OFFSET;
+    break;
+
+  case "right":
+    top = sr.top + sr.height / 2 - th / 2;
+    left = sr.left + sr.width + TOOLTIP_OFFSET;
+    break;
+
+  case "top":
+  default:
+    top = sr.top + sr.height + TOOLTIP_OFFSET;
+    left = sr.left + sr.width / 2 - tw / 2;
+    break;
+}
+
+top = Math.max(
+  16,
+  Math.min(top, viewportHeight - th - 16)
+);
+left = Math.max(16, Math.min(left, viewportWidth - tw - 16));
+
+return { top, left };
 }
 
 interface SpotlightProps {
@@ -166,7 +189,15 @@ function Tooltip({
   onSkip,
   tooltipRef,
 }: TooltipProps) {
-  const style = getTooltipStyle(rect, step.position, tooltipRef);
+ const [ready, setReady] = useState(false);
+
+useEffect(() => {
+  setReady(true);
+}, []);
+
+const style = ready
+  ? getTooltipStyle(rect, step.position, tooltipRef)
+  : { opacity: 0 };
   const isLast = stepIndex === totalSteps - 1;
 
   return (
@@ -175,7 +206,7 @@ function Tooltip({
       role="dialog"
       aria-modal="true"
       aria-label={`Onboarding step ${stepIndex + 1} of ${totalSteps}: ${step.title}`}
-      className="fixed z-[9999] w-80 rounded-xl shadow-2xl border
+      className="fixed z-[9999] w-[min(20rem,calc(100vw-2rem))] rounded-xl shadow-2xl border
         bg-[var(--surface)]
         border-[var(--border)]
         text-[var(--text)]
@@ -209,16 +240,13 @@ function Tooltip({
           >
             Skip tour
           </button>
-          <button
-            onClick={onNext}
-            ref={(el) => {
-              el?.focus();
-            }}
-            className="px-4 py-2 rounded-lg text-sm font-medium
-              bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
-              text-white transition-colors focus-visible:outline focus-visible:outline-2
-              focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
-          >
+         <button
+  onClick={onNext}
+  className="px-4 py-2 rounded-lg text-sm font-medium
+    bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
+    text-white transition-colors focus-visible:outline focus-visible:outline-2
+    focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+>
             {isLast ? "Done" : "Next →"}
           </button>
         </div>
@@ -243,20 +271,29 @@ export default function OnboardingTour() {
   const measureTarget = useCallback((id: string): Promise<Rect | null> => {
     return new Promise((resolve) => {
       const attempt = (tries: number) => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          setTimeout(() => {
-            const r = el.getBoundingClientRect();
-            resolve({
-              top: r.top,
-              left: r.left,
-              width: r.width,
-              height: r.height,
-            });
-          }, 400); // wait for scroll to finish
-          return;
-        }
+  const el = document.getElementById(id);
+
+if (el) {
+  if (tries === 5) {
+    el.scrollIntoView({
+      block: "center",
+      behavior: "smooth",
+    });
+  }
+
+  setTimeout(() => {
+    const r = el.getBoundingClientRect();
+
+    resolve({
+      top: r.top,
+      left: r.left,
+      width: r.width,
+      height: r.height,
+    });
+  }, 400);
+
+  return;
+}
         if (tries <= 0) {
           resolve(null);
           return;
@@ -303,7 +340,6 @@ export default function OnboardingTour() {
           if (cancelled) return;
           if (rect) {
             setTargetRect(rect);
-            setTimeout(() => tooltipRef.current?.focus(), 50);
             retryCount = 0;
           } else if (retryCount < maxRetries) {
             retryCount++;
@@ -331,22 +367,38 @@ export default function OnboardingTour() {
   // Re-measure on resize or scroll so spotlight stays anchored to target.
   // requestAnimationFrame prevents layout thrashing on rapid scroll/resize events.
   useEffect(() => {
-    if (!visible) return;
-    let rafId: number;
-    const remeasure = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(setTargetRect);
+  if (!visible) return;
+
+  let resizeTimer: number;
+
+  const remeasure = () => {
+    clearTimeout(resizeTimer);
+
+    resizeTimer = window.setTimeout(() => {
+      const el = document.getElementById(
+        TOUR_STEPS[stepIndex]?.targetId ?? ""
+      );
+
+      if (!el) return;
+
+      const r = el.getBoundingClientRect();
+
+      setTargetRect({
+        top: r.top,
+        left: r.left,
+        width: r.width,
+        height: r.height,
       });
-    };
-    window.addEventListener("resize", remeasure);
-    window.addEventListener("scroll", remeasure, true);
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", remeasure);
-      window.removeEventListener("scroll", remeasure, true);
-    };
-  }, [visible, stepIndex, measureTarget]);
+    }, 100);
+  };
+
+  window.addEventListener("resize", remeasure);
+
+  return () => {
+    clearTimeout(resizeTimer);
+    window.removeEventListener("resize", remeasure);
+  };
+}, [visible, stepIndex]);
 
   // Keyboard support
   useEffect(() => {

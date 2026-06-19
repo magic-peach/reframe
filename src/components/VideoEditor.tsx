@@ -78,7 +78,7 @@ function AccordionSection({
         aria-expanded={isOpen}
         aria-controls={`${id}-panel`}
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[var(--border)] transition-colors duration-150"
+       className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[var(--border)] transition-colors duration-150"
       >
         <div className="flex items-center gap-2">
           <span className="text-film-500 opacity-80">{icon}</span>
@@ -243,7 +243,7 @@ export default function VideoEditor() {
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
-    trim: false,
+    trim: true,
     rotation: false,
     text: false,
     audio: false,
@@ -365,8 +365,8 @@ return () => {
         {status === "error" && `Export failed: ${error}`}
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
-        <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
+   <div className="max-w-6xl mx-auto px-4 py-5 md:py-8 pb-6 flex-1 w-full">
+       <header className="mb-6 md:mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
         <div
           className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
           style={{ padding: 'clamp(0.75rem,3vw,1.25rem) clamp(1rem,5vw,2rem)', boxSizing: 'border-box' }}
@@ -456,7 +456,7 @@ return () => {
                 "grid grid-cols-1 gap-4",
                 isProcessing && "pointer-events-none opacity-50"
               )}>
-                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 space-y-6">
+                <div className="bg-[var(--surface)] rounded-xl border border-[var(--border)] p-4 md:p-5 space-y-5 md:space-y-6">
                   <AccordionSection
                     id="trim"
                     icon={<Scissors size={12} />}
@@ -668,7 +668,7 @@ return () => {
           </div>
 
           <div className={cn(
-            "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
+            "space-y-5 transition-opacity duration-300 lg:sticky lg:top-8 self-start",
             (isProcessing || !file) && "pointer-events-none opacity-50"
           )}>
             {!file && (
@@ -740,7 +740,7 @@ return () => {
                 title={!file ? "Upload a video to enable export" : undefined}
               className={cn(
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
-                "font-display text-2xl tracking-widest transition-all duration-200",
+               "font-display text-xl md:text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
