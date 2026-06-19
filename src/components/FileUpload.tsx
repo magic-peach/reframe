@@ -155,6 +155,7 @@ export default function FileUpload({
 
         <button
           type="button"
+          aria-label="Choose a different video file"
           onClick={() => inputRef.current?.click()}
           className="text-xs font-semibold text-film-600 hover:text-film-700 uppercase tracking-wide"
         >

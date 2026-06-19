@@ -71,7 +71,11 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
   <button
     type="button"
     onClick={onToggleSound}
-    aria-label={soundOnCompletion ? "Mute completion sound" : "Unmute completion sound"}
+    aria-label={
+      soundOnCompletion
+        ? "Disable export completion sound"
+        : "Enable export completion sound"
+    }
     className="p-2 rounded-lg border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--bg)] transition-colors"
     title={soundOnCompletion ? "Sound on" : "Sound off"}
   >
@@ -138,9 +142,10 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
         <a
           href={isValid ? result.blobUrl : undefined}
           download={isValid ? filename : undefined}
+          aria-label={`Download video as ${result.format.toUpperCase()}`}
           className={cn(
             "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
-            isValid 
+            isValid
               ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.99] cursor-pointer"
               : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
           )}
@@ -151,7 +156,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
           <Download size={15} aria-hidden="true" />
           Download {result.format.toUpperCase()}
         </a>
-        <NativeShareButton 
+        <NativeShareButton
           file={result.blob}
           fileName={filename}
           className="flex-1 min-w-[10rem] py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg"
@@ -168,7 +173,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
         <button
           type="button"
           title="Reset and upload a new video"
-          aria-label="Upload a new video"
+          aria-label="Reset editor and upload a new video"
           onClick={handleReset}
           className="flex items-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--muted)] text-sm rounded-lg hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] transition-colors"
         >
