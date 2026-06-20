@@ -71,7 +71,7 @@ bun install
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Changes to components reflect instantly with Next.js Fast Refresh.
+Open [http://localhost:3000](http://localhost:3000). Changes to components reflect instantly with [Next.js Fast Refresh](https://nextjs.org/docs/architecture/fast-refresh).
 
 ### Other Commands
 
@@ -372,13 +372,13 @@ Attach the recording directly to the PR by dragging the file into the GitHub com
 
 ## Development Tips
 
-- **Fast Refresh**: Changes to React components update instantly without losing state
-- **FFmpeg changes**: Changes to `src/lib/ffmpeg.ts` may require a full page reload
-- **Testing exports**: Keep a few small test videos (~5-10 MB) for quick export testing
-- **React DevTools**: Install the [React DevTools browser extension](https://react.dev/learn/react-developer-tools) for component inspection
-- **Network throttling**: Use Chrome DevTools Network tab → "Slow 3G" to test FFmpeg download behavior
-- **Mobile testing**: Chrome DevTools → Device Toolbar to test responsive layouts
-- **Accessibility testing**: Use [axe DevTools](https://www.deque.com/axe/devtools/) browser extension
+- **Next.js Fast Refresh**: Changes to React components update immediately in dev mode without restarting the server. Learn more in the [Next.js Fast Refresh docs](https://nextjs.org/docs/architecture/fast-refresh).
+- **FFmpeg changes**: Changes to `src/lib/ffmpeg.ts` may require a full page reload because FFmpeg WASM state can stay cached in the browser.
+- **FFmpeg downloads**: Use the [browser DevTools Network tab](https://developer.chrome.com/docs/devtools/network/) to monitor FFmpeg WASM downloads, cache behavior, and failed CDN requests.
+- **Testing exports**: Keep a few small test videos (~5-10 MB) for quick export testing.
+- **React DevTools**: Install the [React DevTools browser extension](https://react.dev/learn/react-developer-tools) for component inspection.
+- **Responsive checks**: Use the [Chrome DevTools Device Toolbar](https://developer.chrome.com/docs/devtools/device-mode/) to test mobile layouts before opening a PR.
+- **Accessibility checks**: Use the [axe DevTools browser extension](https://www.deque.com/axe/devtools/) to catch common accessibility issues.
 
 ---
 
@@ -419,3 +419,16 @@ We expect all contributors to follow our Code of Conduct to create a safe, welco
 - **Constructive feedback is encouraged.**
 
 Thank you for making Reframe better! 🎬
+
+## Cross-Origin Isolation & GitHub Pages
+
+This project uses `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy`
+headers to enable cross-origin isolation, which allows FFmpeg.wasm to run in
+multi-threaded mode for significantly faster video exports.
+
+**GitHub Pages does not support custom HTTP headers.**
+If you are deploying to GitHub Pages, cross-origin isolation cannot be enabled
+and FFmpeg will automatically fall back to single-threaded mode.
+
+For full multi-threading support, deploy to **Vercel**, **Netlify**, or
+**Cloudflare Pages** where custom headers are supported.
