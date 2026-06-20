@@ -76,16 +76,20 @@ function getTooltipStyle(
         top: sr.top - th - TOOLTIP_OFFSET,
         left: sr.left + sr.width / 2 - tw / 2,
       };
-    case "left":
-      return {
-        top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left - tw - TOOLTIP_OFFSET,
-      };
-    case "right":
-      return {
-        top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left + sr.width + TOOLTIP_OFFSET,
-      };
+   case "left":
+  return {
+    top: Math.max(16, sr.top + sr.height / 2 - th / 2),
+    left: Math.max(16, sr.left - tw - TOOLTIP_OFFSET),
+  };
+
+case "right":
+  return {
+    top: Math.max(16, sr.top + sr.height / 2 - th / 2),
+    left: Math.min(
+      window.innerWidth - tw - 16,
+      sr.left + sr.width + TOOLTIP_OFFSET,
+    ),
+  };
     case "bottom":
     default:
       return {
@@ -178,8 +182,7 @@ function Tooltip({
       className="fixed z-[9999] w-80 rounded-xl shadow-2xl border
         bg-[var(--surface)]
         border-[var(--border)]
-        text-[var(--text)]
-        transition-all duration-200"
+        text-[var(--text)]"
       style={{ ...style }}
       tabIndex={-1}
     >
