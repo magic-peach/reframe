@@ -6,6 +6,7 @@ import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
+import { useUndoRedo } from "@/hooks/useUndoRedo";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
 import {
   createMultiTrackState,
@@ -169,6 +170,11 @@ export function useVideoEditor() {
       soundOnCompletion: getStoredSoundPreference(localStorage),
     }));
   });
+
+  const history = useUndoRedo<EditRecipe>(recipe, { maxHistory: 25 });
+  const isApplyingHistoryRef = useRef(false);
+  const historyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
@@ -338,6 +344,39 @@ export function useVideoEditor() {
     }, 500);
     return () => clearTimeout(timer);
   }, [recipe]);
+
+  // Commit a history snapshot ~400ms after the recipe stops changing.
+  // This coalesces rapid slider drags (brightness/contrast/trim) into one entry.
+  useEffect(() => {
+    if (isApplyingHistoryRef.current) {
+      // This change came from undo/redo itself — don't re-push it.
+      isApplyingHistoryRef.current = false;
+      return;
+    }
+    if (historyDebounceRef.current) clearTimeout(historyDebounceRef.current);
+    historyDebounceRef.current = setTimeout(() => {
+      history.push(recipe);
+    }, 400);
+    return () => {
+      if (historyDebounceRef.current) clearTimeout(historyDebounceRef.current);
+    };
+  }, [recipe, history]);
+
+  const undo = useCallback(() => {
+    const previous = history.undo();
+    if (previous) {
+      isApplyingHistoryRef.current = true;
+      setRecipe(previous);
+    }
+  }, [history]);
+
+  const redo = useCallback(() => {
+    const next = history.redo();
+    if (next) {
+      isApplyingHistoryRef.current = true;
+      setRecipe(next);
+    }
+  }, [history]);
 
   const recommendedPreset = useMemo(() => {
     if (!videoMetadata) return null;
@@ -623,13 +662,14 @@ export function useVideoEditor() {
 
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
+    history.reset(DEFAULT_RECIPE);
     try {
       localStorage.removeItem(RECIPE_STORAGE_KEY);
       localStorage.removeItem(LEGACY_SETTINGS_KEY);
     } catch {
       // ignore
     }
-  }, []);
+  }, [history]);
 
   const cancelExport = useCallback(() => {
     exportCancelledRef.current = true;
@@ -649,6 +689,7 @@ export function useVideoEditor() {
     setVideoMetadata(null);
     setDuration(0);
     setRecipe(DEFAULT_RECIPE);
+    history.reset(DEFAULT_RECIPE);
     setStatus("idle");
     setProgress(0);
     setResult(null);
@@ -660,7 +701,7 @@ export function useVideoEditor() {
     } catch {
       // ignore
     }
-  }, [result]);
+  }, [result, history]);
 
 
   useEffect(() => {
@@ -726,5 +767,10 @@ export function useVideoEditor() {
     removeTrack,
     updateTrack,
     addVideoTrack,
+    // undo/redo support
+    undo,
+    redo,
+    canUndo: history.canUndo,
+    canRedo: history.canRedo,
   };
 }

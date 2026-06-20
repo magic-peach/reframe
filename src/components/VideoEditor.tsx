@@ -22,7 +22,7 @@ import { getPresetById } from "@/lib/presets";
 import { cn } from "@/lib/utils";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2, Type,
-  SlidersHorizontal, Zap, AlertTriangle, Github, Copy
+  SlidersHorizontal, Zap, AlertTriangle, Github, Copy, Undo2, Redo2,
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -153,6 +153,14 @@ function KeyboardShortcutsPanel() {
     keys: [<Kbd key="question">?</Kbd>],
     label: "Toggle this panel",
   },
+  {
+    keys: [<Kbd key="ctrl2">Ctrl</Kbd>, <span key="p1" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="z">Z</Kbd>],
+    label: "Undo",
+  },
+  {
+    keys: [<Kbd key="ctrl3">Ctrl</Kbd>, <span key="p2" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="shift2">Shift</Kbd>, <span key="p3" className="text-[var(--muted)] text-xs">+</span>, <Kbd key="z2">Z</Kbd>],
+    label: "Redo",
+  },
 ];
 
   return (
@@ -211,6 +219,7 @@ export default function VideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    undo, redo, canUndo, canRedo,
   } = useVideoEditor();
 
   useKeyboardShortcuts({
@@ -222,6 +231,7 @@ export default function VideoEditor() {
     status,
     cancelExport,
     onToggleShortcutsModal: () => {},
+    undo, redo,
   });
 
   const [copied, setCopied] = useState(false);
@@ -704,6 +714,28 @@ return () => {
               </AccordionSection>
 
               <div className="pt-2 flex justify-center items-center gap-6">
+                <button
+                  type="button"
+                  onClick={undo}
+                  disabled={!canUndo}
+                  aria-label="Undo last change"
+                  title="Undo (Ctrl+Z)"
+                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-film-500"
+                >
+                  <Undo2 size={12} />
+                  Undo
+                </button>
+                <button
+                  type="button"
+                  onClick={redo}
+                  disabled={!canRedo}
+                  aria-label="Redo last undone change"
+                  title="Redo (Ctrl+Shift+Z)"
+                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:text-film-500"
+                >
+                  <Redo2 size={12} />
+                  Redo
+                </button>
                 <button
                   type="button"
                   onClick={handleCopyLink}
