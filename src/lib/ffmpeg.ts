@@ -1,6 +1,7 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { ensureFontLoaded, getFontFamily } from "@/utils/fontLoader";
 
 export class FFmpegLoadError extends Error {}
 
@@ -21,6 +22,7 @@ type WorkerExportRequest = {
   musicOptions?: BackgroundMusicOptions;
   overlayFile?: SerializedFile;
   overlayOptions?: ImageOverlayOptions;
+  textOverlayFile?: SerializedFile;
 };
 
 type WorkerLoadResponse = { type: "ready" };
@@ -222,6 +224,19 @@ export async function exportVideo(
   }
 
   const sessionId = buildSessionId();
+  const { width: targetW, height: targetH } = getRecipeOutputSize(recipe);
+  const hasTextOverlays = (recipe.textOverlays || []).some((overlay) => overlay.text.trim());
+  const textOverlayFilePayload = hasTextOverlays
+    ? await renderTextOverlayFile(recipe, targetW, targetH, sessionId)
+    : undefined;
+
+  if (hasTextOverlays && !textOverlayFilePayload) {
+    throw new Error("Text overlays could not be rendered for export.");
+  }
+
+  const exportRecipe = hasTextOverlays
+    ? { ...recipe, textOverlays: [] }
+    : recipe;
   const arrayBuffer = await file.arrayBuffer();
   const filePayload: SerializedFile = {
     name: file.name,
@@ -273,18 +288,20 @@ export async function exportVideo(
   const transfers: Transferable[] = [arrayBuffer];
   if (musicFilePayload) transfers.push(musicFilePayload.data);
   if (overlayFilePayload) transfers.push(overlayFilePayload.data);
+  if (textOverlayFilePayload) transfers.push(textOverlayFilePayload.data);
 
   ffmpegWorker.postMessage(
     {
       type: "export",
       id: sessionId,
       file: filePayload,
-      recipe,
+      recipe: exportRecipe,
       videoDuration: await getVideoDuration(file),
       musicFile: musicFilePayload,
       musicOptions: sanitizedMusicOptions,
       overlayFile: overlayFilePayload,
       overlayOptions: sanitizedOverlayOptions,
+      textOverlayFile: textOverlayFilePayload,
     } as WorkerExportRequest,
     transfers
   );
@@ -323,6 +340,73 @@ function buildSessionId(): string {
     return crypto.randomUUID();
   }
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function getRecipeOutputSize(recipe: EditRecipe): { width: number; height: number } {
+  let width: number;
+  let height: number;
+
+  if (recipe.preset === "custom") {
+    width = recipe.customWidth;
+    height = recipe.customHeight;
+  } else {
+    const preset = getPresetById(recipe.preset);
+    width = preset?.width ?? 1920;
+    height = preset?.height ?? 1080;
+  }
+
+  return {
+    width: Math.round(width / 2) * 2,
+    height: Math.round(height / 2) * 2,
+  };
+}
+
+async function renderTextOverlayFile(
+  recipe: EditRecipe,
+  targetW: number,
+  targetH: number,
+  sessionId: string
+): Promise<SerializedFile | undefined> {
+  const textOverlays = (recipe.textOverlays || []).filter((overlay) => overlay.text.trim());
+  if (textOverlays.length === 0) return undefined;
+
+  await Promise.all(
+    textOverlays.map((overlay) => ensureFontLoaded(overlay.fontFamily, overlay.fontSize))
+  );
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return undefined;
+
+  ctx.clearRect(0, 0, targetW, targetH);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  textOverlays.forEach((overlay) => {
+    const x = (overlay.x / 100) * targetW;
+    const y = (overlay.y / 100) * targetH;
+    const weight =
+      overlay.fontWeight === "900" ? 900 : overlay.fontWeight === "bold" ? 700 : 400;
+
+    ctx.font = `${weight} ${overlay.fontSize}px ${getFontFamily(overlay.fontFamily)}`;
+    ctx.fillStyle = overlay.color;
+    ctx.shadowColor = "rgba(0, 0, 0, 0.8)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
+    ctx.fillText(overlay.text, x, y);
+  });
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) return undefined;
+
+  return {
+    name: `text_overlay_${sessionId}.png`,
+    type: "image/png",
+    data: await blob.arrayBuffer(),
+  };
 }
 
 export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {

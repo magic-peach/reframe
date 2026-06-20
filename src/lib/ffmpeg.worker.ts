@@ -27,6 +27,7 @@ type ExportRequest = {
   musicOptions?: BackgroundMusicOptions;
   overlayFile?: SerializedFile;
   overlayOptions?: ImageOverlayOptions;
+  textOverlayFile?: SerializedFile;
 };
 
 type LoadRequest = { type: "load" };
@@ -186,6 +187,8 @@ function buildArguments(
   hasOverlay: boolean,
   overlayInputName: string,
   overlayOptions: ImageOverlayOptions | undefined,
+  hasTextOverlay: boolean,
+  textOverlayInputName: string,
   hasOriginalAudio: boolean,
   videoDuration: number
 ): string[] {
@@ -196,7 +199,8 @@ function buildArguments(
   const af = afParts.join(",");
 
   const musicIdx = 1;
-  const overlayIdx = hasMusicTrack ? 2 : 1;
+  const overlayIdx = 1 + (hasMusicTrack ? 1 : 0);
+  const textOverlayIdx = 1 + (hasMusicTrack ? 1 : 0) + (hasOverlay ? 1 : 0);
 
   const args: string[] = [];
   args.push("-i", inputName);
@@ -207,8 +211,11 @@ function buildArguments(
   if (hasOverlay) {
     args.push("-i", overlayInputName);
   }
+  if (hasTextOverlay) {
+    args.push("-i", textOverlayInputName);
+  }
 
-  const needsFilterComplex = hasOverlay || hasMusicTrack;
+  const needsFilterComplex = hasOverlay || hasTextOverlay || hasMusicTrack;
   const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
 
   if (needsFilterComplex) {
@@ -245,6 +252,12 @@ interface PositionCoords {
   filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
   videoOut = "[vout]";
 }
+
+    if (hasTextOverlay) {
+      filterParts.push(`[${textOverlayIdx}:v]format=rgba[textlayer]`);
+      filterParts.push(`${videoOut}[textlayer]overlay=0:0[vtext]`);
+      videoOut = "[vtext]";
+    }
 
     let audioOut = "";
     if (shouldKeepAudio) {
@@ -429,6 +442,15 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     });
   }
 
+  const hasTextOverlay = !!request.textOverlayFile;
+  const textOverlayInputName = `text_overlay_${sessionId}.png`;
+  if (hasTextOverlay) {
+    cleanupFiles.add(textOverlayInputName);
+    await ffmpeg.writeFile(textOverlayInputName, serializeFileBuffer(request.textOverlayFile!), {
+      signal: activeExportAbortController?.signal,
+    });
+  }
+
   const videoDuration = request.videoDuration;
 
   const handleProgress = ({ progress }: { progress: number }) => {
@@ -442,10 +464,13 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
   try {
     if (recipe.format === "gif") {
       const vf = buildVideoFilter(recipe, targetW, targetH);
-      const vfWithPalette = vf ? `${vf},palettegen` : "palettegen";
-      const vfWithPaletteUse = vf
-        ? `[0:v]${vf}[x];[x][1:v]paletteuse`
-        : "[0:v][1:v]paletteuse";
+      const baseVideo = vf ? `[0:v]${vf}[vbase]` : "[0:v]null[vbase]";
+      const gifVideoForPalette = hasTextOverlay
+        ? `${baseVideo};[1:v]format=rgba[textlayer];[vbase][textlayer]overlay=0:0[gifbase];[gifbase]palettegen[paletteout]`
+        : `${baseVideo};[vbase]palettegen[paletteout]`;
+      const gifVideoWithPalette = hasTextOverlay
+        ? `${baseVideo};[1:v]format=rgba[textlayer];[vbase][textlayer]overlay=0:0[gifbase];[gifbase][2:v]paletteuse[gifout]`
+        : `${baseVideo};[vbase][1:v]paletteuse[gifout]`;
 
       const gifDurationArgs = recipe.speed !== 1
         ? (() => {
@@ -456,14 +481,38 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
         : [];
 
       const pass1Code = await ffmpeg.exec(
-        ["-i", inputName, "-vf", vfWithPalette, ...gifDurationArgs, "-y", paletteName],
+        [
+          "-i",
+          inputName,
+          ...(hasTextOverlay ? ["-i", textOverlayInputName] : []),
+          "-filter_complex",
+          gifVideoForPalette,
+          "-map",
+          "[paletteout]",
+          ...gifDurationArgs,
+          "-y",
+          paletteName,
+        ],
         undefined,
         { signal: activeExportAbortController?.signal }
       );
       if (pass1Code !== 0) throw new Error("GIF palette generation failed");
 
       const pass2Code = await ffmpeg.exec(
-        ["-i", inputName, "-i", paletteName, "-lavfi", vfWithPaletteUse, ...gifDurationArgs, "-y", outputName],
+        [
+          "-i",
+          inputName,
+          ...(hasTextOverlay ? ["-i", textOverlayInputName] : []),
+          "-i",
+          paletteName,
+          "-filter_complex",
+          gifVideoWithPalette,
+          "-map",
+          "[gifout]",
+          ...gifDurationArgs,
+          "-y",
+          outputName,
+        ],
         undefined,
         { signal: activeExportAbortController?.signal }
       );
@@ -511,6 +560,8 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
       hasOverlay,
       overlayInputName,
       request.overlayOptions,
+      hasTextOverlay,
+      textOverlayInputName,
       true,
       videoDuration
     );
@@ -534,6 +585,8 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
         hasOverlay,
         overlayInputName,
         request.overlayOptions,
+        hasTextOverlay,
+        textOverlayInputName,
         false,
         videoDuration
       );
@@ -556,6 +609,8 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
         hasOverlay,
         overlayInputName,
         request.overlayOptions,
+        hasTextOverlay,
+        textOverlayInputName,
         !missingAudioDetected,
         videoDuration
       );

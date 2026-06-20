@@ -58,6 +58,17 @@ export function getTextPercentPosition(
   };
 }
 
+function escapeDrawtextValue(value: string): string {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/'/g, "\\'")
+    .replace(/:/g, "\\:")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;")
+    .replace(/%/g, "\\%")
+    .replace(/\r?\n/g, "\\n");
+}
+
 /**
  * Generates a drawText FFmpeg filter for a single text overlay.
  * Escapes special characters and positions text on the output video.
@@ -69,34 +80,16 @@ export function buildTextFilter(
   targetHeight: number
 ): string {
   // Escape special characters for FFmpeg drawtext filter
-  const escapedText = overlay.text
-    .replace(/\\/g, "\\\\")
-    .replace(/'/g, "\\'")
-    .replace(/:/g, "\\:");
+  const escapedText = escapeDrawtextValue(overlay.text);
 
   // Convert percentage position to pixel position
   const pixelX = Math.round((overlay.x / 100) * targetWidth);
   const pixelY = Math.round((overlay.y / 100) * targetHeight);
 
-  // Build font parameters
-  const fontWeightParam = overlay.fontWeight === "900"
-    ? "bold"
-    : overlay.fontWeight === "bold"
-    ? "bold"
-    : "normal";
-
   // Get font file parameter for custom fonts (if available)
   const fontFileParam = getFFmpegFontArg(overlay.fontFamily, overlay.fontPath);
 
-  // Build the drawtext filter with font support
-  let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:fontweight=${fontWeightParam}`;
-
-  // Add font family if specified
-  if (overlay.fontFamily) {
-    // Sanitize font name for FFmpeg
-    const safeFontName = overlay.fontFamily.replace(/[^a-zA-Z0-9-]/g, "");
-    filter += `:fontfile='${safeFontName}'`;
-  }
+  let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}`;
 
   // Add custom font file path if available
   if (fontFileParam) {
