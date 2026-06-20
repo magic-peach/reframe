@@ -312,7 +312,9 @@ interface PositionCoords {
     const outputDuration = sourceDuration / recipe.speed;
     args.push("-t", outputDuration.toFixed(6));
   }
-
+  if (hasMusicTrack) {
+    args.push("-shortest");
+  }
   args.push(outputName);
   return args;
 }
