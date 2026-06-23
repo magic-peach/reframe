@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildVideoFilter } from "../ffmpeg";
+import { buildArguments } from "../video-filters";
 import { DEFAULT_RECIPE } from "../constants";
 
 const base = (overrides = {}) => ({ ...DEFAULT_RECIPE, ...overrides });
@@ -89,5 +90,49 @@ describe("buildVideoFilter", () => {
     expect(result).toContain("trim=start=2:end=8");
     expect(result).toContain("transpose=1");
     expect(result).toContain("setpts=0.5000*PTS");
+  });
+});
+
+describe("buildArguments — overlay positioning", () => {
+  const recipe = base();
+
+  const callArgs = (pos: string) =>
+    buildArguments(
+      recipe, "mp4", "out.mp4", "in.mp4", 1920, 1080,
+      false, "", undefined,
+      true, "overlay.png",
+      { file: null, size: 150, opacity: 100, position: pos as any },
+      false, 60
+    );
+
+  const joinArgs = (args: string[]) => args.join(" ");
+
+  it("top-right uses main_w-w-20:20", () => {
+    const args = callArgs("top-right");
+    expect(joinArgs(args)).toContain("main_w-w-20:20");
+    expect(joinArgs(args)).not.toContain("W-w-20");
+  });
+
+  it("bottom-left uses 20:main_h-h-20", () => {
+    const args = callArgs("bottom-left");
+    expect(joinArgs(args)).toContain("20:main_h-h-20");
+    expect(joinArgs(args)).not.toContain("H-h-20");
+  });
+
+  it("bottom-right uses main_w-w-20:main_h-h-20", () => {
+    const args = callArgs("bottom-right");
+    expect(joinArgs(args)).toContain("main_w-w-20:main_h-h-20");
+    expect(joinArgs(args)).not.toContain("W-w-20:H-h-20");
+  });
+
+  it("top-left uses 20:20", () => {
+    const args = callArgs("top-left");
+    expect(joinArgs(args)).toContain("overlay=20:20");
+  });
+
+  it("default fallback uses main_w/main_h", () => {
+    const args = callArgs("invalid-position" as any);
+    expect(joinArgs(args)).toContain("main_w-w-20:main_h-h-20");
+    expect(joinArgs(args)).not.toContain(":W-");
   });
 });
