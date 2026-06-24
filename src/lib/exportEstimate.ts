@@ -1,23 +1,5 @@
 import { EditRecipe } from "./types";
-
-// ---------------------------------------------------------------------------
-// Preset dimension map
-// Keep in sync with src/lib/presets.ts. Width × height for every named preset.
-// ---------------------------------------------------------------------------
-const PRESET_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  "1080p":       { width: 1920, height: 1080 },
-  "720p":        { width: 1280, height: 720  },
-  "480p":        { width: 854,  height: 480  },
-  "360p":        { width: 640,  height: 360  },
-  "4k":          { width: 3840, height: 2160 },
-  "2k":          { width: 2560, height: 1440 },
-  // Square / portrait presets
-  "square-1080": { width: 1080, height: 1080 },
-  "square-720":  { width: 720,  height: 720  },
-  "portrait-1080": { width: 1080, height: 1920 },
-  "portrait-720":  { width: 720,  height: 1280 },
-  // Fallback — if a preset name is unrecognised we fall through to customWidth/H
-};
+import { getPresetById } from "./presets";
 
 /**
  * Resolve the actual output pixel dimensions for a recipe.
@@ -26,12 +8,12 @@ const PRESET_DIMENSIONS: Record<string, { width: number; height: number }> = {
  */
 function getOutputDimensions(recipe: EditRecipe): { width: number; height: number } {
   if (recipe.preset !== "custom") {
-    const dims = PRESET_DIMENSIONS[recipe.preset];
-    if (dims) return dims;
+    const preset = getPresetById(recipe.preset);
+    if (preset) return { width: preset.width, height: preset.height };
   }
-  return { 
-    width: recipe.customWidth || 1920, 
-    height: recipe.customHeight || 1080 
+  return {
+    width: recipe.customWidth || 1920,
+    height: recipe.customHeight || 1080
   };
 }
 
@@ -103,13 +85,13 @@ export function estimateExportSize(recipe: EditRecipe, duration: number): number
     
     // Set base compression scaling factor for maximum quality (CRF 18)
     const BASE_COMPRESSION = 0.85;
-    
+
     // Linearly reduce compression ratio as CRF slider increases toward 30
     const qualityLossModifier = (recipe.quality - 18) * 0.035;
     const effectiveCompression = Math.max(BASE_COMPRESSION - qualityLossModifier, 0.35);
 
     const frames = outputDuration * GIF_FPS;
-    
+
     // Uncompressed raw/palette-mapped payload calculation (size in MB)
     return (width * height * frames * effectiveCompression) / (1024 * 1024);
   }
