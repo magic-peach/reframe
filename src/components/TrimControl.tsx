@@ -25,7 +25,11 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
     recipe.trimStart.toString()
   );
 
-  const { waveform, isLoading: waveformLoading } = useAudioWaveform(file);
+  const {
+    waveform,
+    isLoading: waveformLoading,
+    waveformError,
+  } = useAudioWaveform(file);
   const hasAudio = waveform.length > 0;
 
   useEffect(() => {
@@ -315,6 +319,11 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
         <p className="text-sm text-[var(--muted)] font-heading mt-1">
           Clip: {formatDuration(clipLength)} of{" "}
           {formatDuration(duration)}
+        </p>
+      )}
+      {waveformError && (
+        <p className="text-[10px] text-[var(--muted)] font-heading">
+          {waveformError}
         </p>
       )}
       {recipe.trimEnd !== null &&

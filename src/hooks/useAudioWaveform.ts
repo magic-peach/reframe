@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 
 const DEFAULT_BAR_COUNT = 96;
+export const MAX_WAVEFORM_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+const LARGE_FILE_WAVEFORM_MESSAGE =
+  "Waveform preview is disabled for files larger than 50 MB.";
 
 type BrowserWindow = Window &
   typeof globalThis & {
@@ -33,6 +36,7 @@ export function useAudioWaveform(
 ) {
   const [waveform, setWaveform] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [waveformError, setWaveformError] = useState<string | null>(null);
 
   useEffect(() => {
     let isCancelled = false;
@@ -41,6 +45,14 @@ export function useAudioWaveform(
     async function extractWaveform() {
       if (!file) {
         setWaveform([]);
+        setWaveformError(null);
+        setIsLoading(false);
+        return;
+      }
+
+      if (file.size > MAX_WAVEFORM_FILE_SIZE_BYTES) {
+        setWaveform([]);
+        setWaveformError(LARGE_FILE_WAVEFORM_MESSAGE);
         setIsLoading(false);
         return;
       }
@@ -50,11 +62,13 @@ export function useAudioWaveform(
 
       if (!AudioContextCtor) {
         setWaveform([]);
+        setWaveformError(null);
         setIsLoading(false);
         return;
       }
 
       setIsLoading(true);
+      setWaveformError(null);
 
       try {
         audioContext = new AudioContextCtor();
@@ -70,6 +84,7 @@ export function useAudioWaveform(
       } catch {
         if (!isCancelled) {
           setWaveform([]);
+          setWaveformError("Unable to generate waveform preview for this file.");
         }
       } finally {
         await audioContext?.close();
@@ -86,5 +101,5 @@ export function useAudioWaveform(
     };
   }, [barCount, file]);
 
-  return { waveform, isLoading };
+  return { waveform, isLoading, waveformError };
 }
