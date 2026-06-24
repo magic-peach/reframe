@@ -1,11 +1,12 @@
 import { estimateExportSize, formatEstimatedSize } from "./exportEstimate";
 import { EditRecipe } from "./types";
+import { PRESETS } from "./presets";
 import { describe, test, expect } from "vitest";
 
 // Minimal recipe factory — only the fields estimateExportSize cares about
 function makeRecipe(overrides: Partial<EditRecipe> = {}): EditRecipe {
   return {
-    preset: "1080p",
+    preset: "landscape-16-9",
     customWidth: 1920,
     customHeight: 1080,
     quality: 23,       // default CRF
@@ -13,6 +14,7 @@ function makeRecipe(overrides: Partial<EditRecipe> = {}): EditRecipe {
     trimStart: 0,
     trimEnd: null,
     format: "mp4",
+    keepAudio: true,
     // fields estimateExportSize doesn't touch — kept minimal
     stabilization: false,
     soundOnCompletion: false,
@@ -20,7 +22,11 @@ function makeRecipe(overrides: Partial<EditRecipe> = {}): EditRecipe {
     contrast: 1,
     saturation: 1,
     framing: "fit",
-    rotation: 0,
+    rotate: 0,
+    denoise: false,
+    normalizeAudio: false,
+    textOverlays: [],
+    version: 1,
     ...overrides,
   } as EditRecipe;
 }
@@ -49,9 +55,9 @@ describe("estimateExportSize", () => {
     expect(long / short).toBeCloseTo(4, 0);
   });
 
-  test("higher resolution (4k) produces a larger estimate than 720p", () => {
-    const hd  = estimateExportSize(makeRecipe({ preset: "720p" }), 60);
-    const uhd = estimateExportSize(makeRecipe({ preset: "4k"   }), 60);
+  test("higher resolution (ultrawide-21-9) produces a larger estimate than twitter-hd", () => {
+    const hd  = estimateExportSize(makeRecipe({ preset: "twitter-hd" }), 60);
+    const uhd = estimateExportSize(makeRecipe({ preset: "ultrawide-21-9" }), 60);
     expect(uhd).toBeGreaterThan(hd);
   });
 
@@ -80,7 +86,7 @@ describe("estimateExportSize", () => {
     expect(large).toBeGreaterThan(small);
   });
 
-  test("returns a reasonable size for a 1-minute 1080p CRF-23 mp4 (2–5 MB)", () => {
+  test("returns a reasonable size for a 1-minute 1080p CRF-23 mp4 (5–200 MB)", () => {
     // Real-world expectation: a 1-min 1080p H.264 file at CRF 23 is typically
     // 20–100 MB depending on content. Our estimate should be in the right ballpark.
     const size = estimateExportSize(makeRecipe(), 60);
@@ -92,6 +98,30 @@ describe("estimateExportSize", () => {
     // trimStart === trimEnd → clamped to 1 s minimum inside the function
     const size = estimateExportSize(makeRecipe({ trimStart: 10, trimEnd: 10 }), 60);
     expect(size).toBeGreaterThan(0);
+  });
+
+  test("all canonical preset IDs resolve to correct dimensions", () => {
+    // Ensures getOutputDimensions uses the real preset registry
+    for (const preset of PRESETS) {
+      if (preset.id === "custom") continue;
+      const withPreset = makeRecipe({ preset: preset.id });
+      const size = estimateExportSize(withPreset, 60);
+      expect(size).toBeGreaterThan(0);
+
+      // A wider/taller preset should yield a larger estimate than a very
+      // small custom preset at the same settings
+      const tiny = estimateExportSize(
+        makeRecipe({ preset: "custom", customWidth: 160, customHeight: 90 }),
+        60
+      );
+      expect(size).toBeGreaterThan(tiny);
+    }
+  });
+
+  test("muting audio produces a slightly smaller estimate", () => {
+    const withAudio    = estimateExportSize(makeRecipe({ keepAudio: true }), 60);
+    const withoutAudio = estimateExportSize(makeRecipe({ keepAudio: false }), 60);
+    expect(withoutAudio).toBeLessThan(withAudio);
   });
 });
 
@@ -119,4 +149,4 @@ describe("formatEstimatedSize", () => {
       expect(formatEstimatedSize(n)).toMatch(/^~/);
     });
   });
-});
+});
