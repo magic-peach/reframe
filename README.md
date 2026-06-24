@@ -46,6 +46,30 @@
 
 ---
 
+## Table of Contents
+
+- [Built With](#built-with)
+- [What is Reframe?](#what-is-reframe)
+- [Features](#features)
+- [Keyboard Shortcuts](#keyboard-shortcuts)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Development](#development)
+  - [Production Build](#production-build)
+- [Deploying](#deploying)
+  - [Deploying to Vercel](#deploying-to-vercel)
+  - [Alternative Static Hosts](#alternative-static-hosts)
+  - [Deploying to Netlify](#deploying-to-netlify)
+  - [Deploying to GitHub Pages](#deploying-to-github-pages)
+- [Architecture](#architecture)
+- [Development Tips](#development-tips)
+- [FAQ](#faq)
+- [Contributing](#contributing)
+- [Contributors](#contributors)
+- [Privacy](#privacy)
+- [License](#license)
+
 ## Built With
 
 <div align="center">
@@ -67,6 +91,8 @@ Reframe is a **browser-based video editor** — everything happens on your devic
 
 > Built for everyone — whether you're a creator resizing videos for social media, or just someone who wants to quickly trim and convert without installing bulky software.
 
+---
+
 ## Features
 
 - **Instant Resizing** — 11 preset formats (Reels, TikTok, YouTube, Instagram, etc.) + custom dimensions
@@ -81,6 +107,7 @@ Reframe is a **browser-based video editor** — everything happens on your devic
 Everything stays on your device. No servers. No tracking. No login.
 
 ---
+
 ## Keyboard Shortcuts
 
 | Shortcut | Action |
@@ -91,6 +118,8 @@ Everything stays on your device. No servers. No tracking. No login.
 | Escape | Cancel export |
 
 > On macOS, use `Cmd` instead of `Ctrl` for keyboard shortcuts.
+
+---
 
 ## Getting Started
 
@@ -112,7 +141,7 @@ bun install
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — component changes reflect instantly with [Next.js Fast Refresh](https://nextjs.org/docs/architecture/fast-refresh), so you usually do not need to restart the dev server. For FFmpeg reload notes and debugging tools, see the [Development Tips](CONTRIBUTING.md#development-tips).
+Open [http://localhost:3000](http://localhost:3000) — component changes reflect instantly with [Next.js Fast Refresh](https://nextjs.org/docs/architecture/fast-refresh), so you usually do not need to restart the dev server.
 
 ### Production Build
 
@@ -144,7 +173,7 @@ Reframe uses static export (`output: 'export'`) and can be deployed easily on Ve
 #### Option 1 — Vercel Dashboard (Recommended)
 
 1. Fork this repository
-2. Go to https://vercel.com/new
+2. Go to [Vercel New Project](https://vercel.com/new)
 3. Import your forked repository
 4. Configure:
    - Framework Preset: Next.js
@@ -203,49 +232,6 @@ You can also deploy Reframe on other static hosting providers:
 | **GitHub Pages**     | Deploy the generated `out/` folder to the `gh-pages` branch |
 | **Cloudflare Pages** | Connect your fork in Cloudflare Pages                       |
 
-### Deploying to Vercel
-
-The quickest way to get Reframe live:
-
-**Option 1 — Vercel Dashboard (Recommended)**
-
-1. Fork this repository on GitHub
-2. Go to [vercel.com/new](https://vercel.com/new) and import your fork
-3. Vercel auto-detects Next.js settings:
-   - **Framework Preset:** Next.js
-   - **Build Command:** `bun run build`
-   - **Output Directory:** `out`
-4. Click **Deploy** — your site will be live in ~2 minutes
-
-**Option 2 — Vercel CLI**
-
-```bash
-# Install Vercel CLI globally
-npm i -g vercel
-
-# Login to Vercel
-vercel login
-
-# Deploy from project root
-vercel --prod
-```
-
-> **Note:** FFmpeg.wasm requires COOP/COEP headers for SharedArrayBuffer support. On Vercel, add a `vercel.json` in your project root:
->
-> ```json
-> {
->   "headers": [
->     {
->       "source": "/(.*)",
->       "headers": [
->         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
->         { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
->       ]
->     }
->   ]
-> }
-> ```
-
 ### Deploying to Netlify
 
 1. Push your fork to GitHub
@@ -279,6 +265,7 @@ You can deploy the `out/` folder using:
 For detailed technical information about Reframe's architecture, design choices, and implementation details, see the [Architecture Documentation](docs/ARCHITECTURE.md).
 
 > Reframe requires WebAssembly (WASM) support to process videos in the browser.
+
 ---
 
 ## Development Tips
@@ -290,7 +277,7 @@ This project uses Next.js Fast Refresh in development mode. Most changes to Reac
 - State is often preserved during edits
 - Restarting `npm run dev` is usually unnecessary for UI changes
 
-Learn more: https://nextjs.org/docs/architecture/fast-refresh
+Learn more:  [Next.js Fast Refresh Documentation](https://nextjs.org/docs/architecture/fast-refresh)
 
 ---
 
@@ -303,7 +290,7 @@ If updates are not reflected:
 - Clear cached worker instances if necessary
 - Restart the development server only when required
 
-FFmpeg WASM reference: https://ffmpegwasm.netlify.app/docs/overview
+FFmpeg WASM reference: [FFmpeg.wasm Documentation](https://ffmpegwasm.netlify.app/docs/overview)
 
 ---
 
@@ -317,7 +304,7 @@ Use the browser DevTools **Network** tab to:
 - Detect failed `.wasm` or worker requests
 - Measure initialization performance
 
-Chrome DevTools: https://developer.chrome.com/docs/devtools/network
+Chrome DevTools: [Chrome DevTools Network Guide](https://developer.chrome.com/docs/devtools/network)
 
 ---
 
@@ -331,7 +318,7 @@ Helpful for:
 - Debugging hooks
 - Monitoring React component trees
 
-React DevTools: https://react.dev/learn/react-developer-tools
+React DevTools: [React Developer Tools](https://react.dev/learn/react-developer-tools)
 
 ---
 
@@ -356,7 +343,7 @@ Tips:
 - Use async stack traces
 - Inspect runtime variables during rendering
 
-JavaScript debugging guide: https://developer.chrome.com/docs/devtools/javascript
+JavaScript debugging guide: [Chrome DevTools JavaScript Debugging](https://developer.chrome.com/docs/devtools/javascript)
 
 ---
 
@@ -369,7 +356,7 @@ Recommendations:
 - Refresh the page after heavy processing tasks
 - Monitor memory usage in browser performance tools
 
-Performance tools: https://developer.chrome.com/docs/devtools/performance
+Performance tools: [Chrome DevTools Performance Guide](https://developer.chrome.com/docs/devtools/performance)
 
 ---
 
@@ -382,7 +369,26 @@ Example:
 npm run dev
 ```
 
-Environment variables guide: https://nextjs.org/docs/app/guides/environment-variables
+Environment variables guide: [Next.js Environment Variables Guide](https://nextjs.org/docs/app/guides/environment-variables)
+
+---
+
+## FAQ
+
+### Does Reframe upload my videos?
+No. All video processing happens locally in your browser.
+
+### Does Reframe work offline?
+Yes — after the initial load, most features can work offline.
+
+### Why is exporting sometimes slow?
+Reframe uses FFmpeg.wasm in the browser, which depends on your device performance.
+
+### Are my files stored anywhere?
+No. Your files never leave your device.
+
+### Which browsers are supported?
+Latest versions of Chrome, Edge, Firefox, and other modern Chromium-based browsers are recommended.
 
 ---
 
@@ -414,12 +420,14 @@ Reframe is an **official project in GirlScript Summer of Code (GSSoC) 2026**! We
 
 ---
 
+> 👉 New contributors should start by reading [CONTRIBUTING.md](CONTRIBUTING.md)
+
 ### How to Contribute
 
 1. **Find an issue** — Browse [open issues](https://github.com/magic-peach/reframe/issues) or pick one from the table above
 2. **Comment on the issue** — Say you'd like to work on it so we don't duplicate effort
 3. **Fork the repo** — Click the Fork button at the top right
-4. **Create a branch** — `git checkout -b feat/your-feature-name`
+4. **Create a branch** — `git checkout -b feature/your-feature-name`
 5. **Make your changes** — Code, test, and commit
 6. **Open a Pull Request** — Reference the issue number in your PR description
 7. **Get reviewed** — We'll review and merge your contribution!
@@ -439,15 +447,6 @@ Thank you to everyone who has contributed to Reframe! 🎉
 ## Privacy
 
 Reframe processes all videos **100% client-side**. Your video files are never uploaded to any server. You can even use Reframe offline (after first load). The source code is fully open for inspection.
----
-
-## Contributors
-
-Thanks to all the amazing people who have contributed to Reframe!
-
-[![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
-
-We welcome contributions of all kinds — code, documentation, design, and feedback. Check out our [Contributing Guide](CONTRIBUTING.md) to get started.
 
 ---
 
