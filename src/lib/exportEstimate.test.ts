@@ -5,7 +5,7 @@ import { describe, test, expect } from "vitest";
 // Minimal recipe factory — only the fields estimateExportSize cares about
 function makeRecipe(overrides: Partial<EditRecipe> = {}): EditRecipe {
   return {
-    preset: "1080p",
+    preset: "landscape-16-9",
     customWidth: 1920,
     customHeight: 1080,
     quality: 23,       // default CRF
@@ -49,9 +49,9 @@ describe("estimateExportSize", () => {
     expect(long / short).toBeCloseTo(4, 0);
   });
 
-  test("higher resolution (4k) produces a larger estimate than 720p", () => {
-    const hd  = estimateExportSize(makeRecipe({ preset: "720p" }), 60);
-    const uhd = estimateExportSize(makeRecipe({ preset: "4k"   }), 60);
+  test("higher resolution (dci-2k) produces a larger estimate than twitter-hd", () => {
+    const hd  = estimateExportSize(makeRecipe({ preset: "twitter-hd" }), 60);
+    const uhd = estimateExportSize(makeRecipe({ preset: "dci-2k"    }), 60);
     expect(uhd).toBeGreaterThan(hd);
   });
 
