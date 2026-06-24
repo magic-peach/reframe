@@ -178,6 +178,7 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
           className="absolute inset-0 w-full h-full object-contain"
           playsInline
           muted
+          aria-label="Original video"
         >
           <track kind="captions" />
         </video>
@@ -197,6 +198,7 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
             muted
             autoPlay
             loop
+            aria-label="Reframed video preview"
           >
             <track kind="captions" />
           </video>
