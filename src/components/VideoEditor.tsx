@@ -18,6 +18,9 @@ import ExportOverlay from "./ExportOverlay";
 import DownloadResult from "./DownloadResult";
 import ImageOverlay from "./ImageOverlay"
 import { getPresetById } from "@/lib/presets";
+import { useSmartTrim } from '@/hooks/useSmartTrim';
+import { SmartTrimControl } from './SmartTrimControl';
+import { SilenceTimeline } from './SilenceTimeline';
 
 import { cn } from "@/lib/utils";
 import {
@@ -212,6 +215,36 @@ export default function VideoEditor() {
     currentTime,
     toggleSound,
   } = useVideoEditor();
+
+  // Get video duration from existing state — adapt 'recipe.duration' or however
+// your existing hook exposes it. Example:
+const videoDuration = recipe?.duration ?? 0;
+
+const {
+  status: smartTrimStatus,
+  segments: silenceSegments,
+  runDetection,
+  toggleSegment,
+  selectAll,
+  deselectAll,
+  applyTrim,
+  reset: resetSmartTrim,
+  error: smartTrimError,
+} = useSmartTrim(videoDuration);
+
+// Handler: when user clicks "Apply Trim"
+const handleSmartTrimApply = () => {
+const { keepRanges } = applyTrim();
+  console.log('[SmartTrim] Keep ranges:', keepRanges);
+  // Phase 3 integration: feed keepRanges into the existing export recipe.
+  // For now, log them. You can map keepRanges[0] -> recipe trim start/end
+  // for single-range use cases, or queue multi-segment exports.
+  if (keepRanges.length > 0) {
+    // Example: apply first keep range to existing trim control
+    // setRecipe(prev => ({ ...prev, trimStart: keepRanges[0].start, trimEnd: keepRanges[0].end }));
+    alert(`Smart Trim ready: ${keepRanges.length} segment(s) to keep. Check console for ranges.`);
+  }
+};
 
   useKeyboardShortcuts({
     file,
@@ -761,3 +794,25 @@ return () => {
     </div>
   );
 }
+
+{/* Smart Trim Panel */}
+<SmartTrimControl
+  status={smartTrimStatus}
+  segments={silenceSegments}
+  onDetect={(noiseDb, minDuration) => file && runDetection(file, noiseDb, minDuration)}
+  onToggleSegment={toggleSegment}
+  onSelectAll={selectAll}
+  onDeselectAll={deselectAll}
+  onApply={handleSmartTrimApply}
+  onReset={resetSmartTrim}
+  error={smartTrimError}
+/>
+
+{/* Timeline overlay — place this beneath the video preview timeline */}
+{smartTrimStatus === 'done' && (
+  <SilenceTimeline
+    segments={silenceSegments}
+    duration={videoDuration}
+    onToggleSegment={toggleSegment}
+  />
+)}

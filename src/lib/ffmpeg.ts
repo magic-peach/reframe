@@ -221,6 +221,7 @@ export async function exportVideo(
     throw new Error("FFmpeg worker is not available.");
   }
 
+
   const sessionId = buildSessionId();
   const arrayBuffer = await file.arrayBuffer();
   const filePayload: SerializedFile = {
@@ -294,6 +295,81 @@ export async function exportVideo(
   } finally {
     signal?.removeEventListener("abort", onAbort);
   }
+}
+
+// ─── Smart-Trim: silence detection ──────────────────────────────────────────
+
+import type { SilenceSegment } from './types';
+
+/**
+ * Runs FFmpeg's silencedetect filter on the input file and returns
+ * an array of silent intervals. All processing is client-side (WASM).
+ *
+ * @param file         - The video File object from the user
+ * @param noiseDb      - Silence threshold in dB (default -30 dB)
+ * @param minDuration  - Minimum silence duration to report in seconds (default 0.5)
+ */
+export async function detectSilence(
+  file: File,
+  noiseDb: number = -30,
+  minDuration: number = 0.5
+): Promise<SilenceSegment[]> {
+  const { createFFmpeg, fetchFile } = await import('@ffmpeg/ffmpeg');
+
+  const ffmpeg = createFFmpeg({ log: false });
+  if (!ffmpeg.isLoaded()) {
+    await ffmpeg.load();
+  }
+
+  const inputName = 'smart_trim_input.mp4';
+  ffmpeg.FS('writeFile', inputName, await fetchFile(file));
+
+  // Capture log output — silencedetect writes to stderr
+  const logLines: string[] = [];
+  ffmpeg.setLogger(({ message }) => {
+    logLines.push(message);
+  });
+
+  // Run silencedetect filter; output is discarded (null sink)
+  await ffmpeg.run(
+    '-i', inputName,
+    '-af', `silencedetect=noise=${noiseDb}dB:duration=${minDuration}`,
+    '-f', 'null',
+    '-'
+  );
+
+  // Clean up FS
+  ffmpeg.FS('unlink', inputName);
+
+  // Parse the log output for silence_start / silence_end lines
+  const segments: SilenceSegment[] = [];
+  let currentStart: number | null = null;
+  let idCounter = 0;
+
+  for (const line of logLines) {
+    const startMatch = line.match(/silence_start:\s*([\d.]+)/);
+    const endMatch = line.match(/silence_end:\s*([\d.]+)/);
+
+    if (startMatch) {
+      currentStart = parseFloat(startMatch[1]);
+    }
+
+    if (endMatch && currentStart !== null) {
+      const end = parseFloat(endMatch[1]);
+      const duration = end - currentStart;
+      segments.push({
+        id: `silence_${idCounter++}`,
+        start: currentStart,
+        end,
+        duration,
+        selected: true, // pre-select all by default
+      });
+      currentStart = null;
+    }
+  }
+
+  console.log('[SmartTrim] Detected silence segments:', segments);
+  return segments;
 }
 
 async function getVideoDuration(file: File): Promise<number> {

@@ -145,3 +145,19 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
 
   return true;
 }
+
+// ─── Smart-Trim types ────────────────────────────────────────────────────────
+
+export interface SilenceSegment {
+  id: string;
+  start: number;  // seconds
+  end: number;    // seconds
+  duration: number;
+  selected: boolean; // whether this segment is marked for removal
+}
+
+export type SmartTrimStatus =
+  | 'idle'
+  | 'detecting'
+  | 'done'
+  | 'error';
