@@ -137,6 +137,8 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
                   aria-valuenow={progress}
                   aria-valuemin={0}
                   aria-valuemax={100}
+                  aria-label={isLoading? "Engine download progress": "Export progress"}
+                  data-testid="export-progress"
                   aria-label={isLoading ? "Engine download progress" : "Export progress"}
                   className="h-full bg-film-600 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}

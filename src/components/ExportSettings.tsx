@@ -32,8 +32,6 @@ export default function ExportSettings({
       ? "Balanced"
       : "Small file";
 
-  const isGif = recipe.format === "gif";
-
   const estimatedSize =
     formatEstimatedSize(
       estimateExportSize(
@@ -43,30 +41,12 @@ export default function ExportSettings({
     );
 
   return (
-    <>
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label
-            htmlFor="quality-control"
-            className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
-          >
-            <SlidersHorizontal size={10} />
-            Quality
-
-            <span
-              className="cursor-help"
-              title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file."
-            >
-              <InfoIcon size={14} />
-            </span>
-          </label>
-
-          <span className="text-sm font-heading font-bold text-film-600">
-            {label}
-
-            <span className="font-normal text-sm text-[var(--muted)] ml-2">
-              CRF {recipe.quality}
-            </span>
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <label htmlFor="quality-control" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2">
+          <SlidersHorizontal size={10} /> Quality
+          <span className="cursor-help" title="CRF (Constant Rate Factor): lower = higher quality, larger file. 18 = best quality, 30 = smallest file.">
+            <InfoIcon size={14} />
           </span>
         </div>
 
@@ -142,7 +122,7 @@ export default function ExportSettings({
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-2">
           <label
             htmlFor="stabilization-toggle"
             className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2"
@@ -158,7 +138,8 @@ export default function ExportSettings({
               checked={recipe.stabilization}
               onChange={(e) =>
                 onChange({
-                  stabilization: e.target.checked,
+                  stabilization:
+                    e.target.checked,
                 })
               }
               aria-label="Enable video stabilization"
@@ -174,7 +155,7 @@ export default function ExportSettings({
         <div className="flex justify-end">
           <span
             className={cn(
-              "text-xs",
+              "text-sm",
               recipe.stabilization
                 ? "text-[var(--error)] font-medium"
                 : "text-[var(--muted)]"

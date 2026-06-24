@@ -4,25 +4,34 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
-import { cn, formatBytes, formatDuration } from "@/lib/utils";
+import { cn, formatBytes } from "@/lib/utils";
 import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
 
 interface Props {
   onFileSelect: (file: File | null) => void;
   currentFile: File | null;
   fileError: string;
-  duration: number;
+}
+
+function formatDuration(seconds: number) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+
+  return `${mins.toString().padStart(2, "0")}:${secs
+    .toString()
+    .padStart(2, "0")}`;
 }
 
 export default function FileUpload({
   onFileSelect,
   currentFile,
   fileError,
-  duration,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [dragging, setDragging] = useState(false);
+  const [duration, setDuration] = useState<number | null>(null);
+
   const [pageDragging, setPageDragging] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
@@ -86,6 +95,7 @@ export default function FileUpload({
   const handleFile = useCallback((file: File) => {
     setError("");
     setWarning("");
+    setDuration(null);
 
     if (!file.type.startsWith("video/")) {
       setError("Please drop a valid video file (MP4, MOV, AVI, WebM, etc.)");
@@ -108,6 +118,18 @@ export default function FileUpload({
         `Large file detected (${formatBytes(file.size)}). Processing may take ~${estimatedMinutes} minutes.`
       );
     }
+
+    // Extract metadata safely
+    const video = document.createElement("video");
+    video.preload = "metadata";
+
+    const url = URL.createObjectURL(file);
+    video.src = url;
+
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(url);
+      setDuration(video.duration);
+    };
 
     onFileSelect(file);
   }, [onFileSelect]);
@@ -186,9 +208,10 @@ export default function FileUpload({
 
   // ── Drop zone (inner) ─────────────────────────────────
   const DropZone = () => (
-    <div
-      id="upload-zone"
+        <div
       role="button"
+      aria-label="Upload video file"
+      data-testid="file-upload-zone"
       tabIndex={0}
       aria-label="Video upload area. Drag and drop a video file or press Enter to browse."
       onDragOver={(e) => {
