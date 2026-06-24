@@ -137,10 +137,10 @@ export default function ExportSettings({
             aria-label="Play sound when export completes"
             className="accent-film-600 cursor-pointer"
           />
+
         </div>
         )}
       </div>
-
       <div>
         <div className="flex items-center justify-between mb-1">
           <label
