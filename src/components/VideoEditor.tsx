@@ -118,6 +118,48 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
+interface ExportButtonProps {
+  file: File | null;
+  isProcessing: boolean;
+  isExportReady: boolean;
+  onClick: () => void;
+  className?: string;
+}
+
+function ExportButton({
+  file,
+  isProcessing,
+  isExportReady,
+  onClick,
+  className,
+}: ExportButtonProps) {
+  const enabled = Boolean(file) && !isProcessing;
+
+  return (
+    <button
+      id="export-button"
+      type="button"
+      onClick={onClick}
+      disabled={!file || isProcessing}
+      aria-label="Export video"
+      aria-disabled={!file || isProcessing ? "true" : undefined}
+      title={!file ? "Upload a video to enable export" : undefined}
+      className={cn(
+        "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
+        "font-display text-2xl tracking-widest transition-all duration-200",
+        enabled
+          ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
+          : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed",
+        isExportReady && "motion-safe:animate-pulse motion-reduce:animate-none",
+        className,
+      )}
+    >
+      <Zap size={20} />
+      {isProcessing ? "PROCESSING" : "EXPORT"}
+    </button>
+  );
+}
+
 /** Collapsible panel that lists all keyboard shortcuts. */
 function KeyboardShortcutsPanel() {
   const [open, setOpen] = useState(false);
@@ -313,6 +355,7 @@ return () => {
 }, [file]);
 
   const isProcessing = status === "loading-engine" || status === "exporting";
+  const isExportReady = Boolean(file) && status === "idle";
   const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
 
   const intervalSeconds = useMemo(() => {
@@ -407,7 +450,12 @@ return () => {
     No login. No ads. 100% private - your video never leaves your device.
   </div>
     </header>
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
+        <div
+          className={cn(
+            "grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5",
+            file && !isProcessing && "max-lg:pb-28",
+          )}
+        >
 
           <div className="space-y-4 min-w-0">
             <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in">
@@ -668,8 +716,8 @@ return () => {
           </div>
 
           <div className={cn(
-            "space-y-5 transition-opacity duration-300 sticky top-8 self-start",
-            (isProcessing || !file) && "pointer-events-none opacity-50"
+            "space-y-5 transition-opacity duration-300 lg:sticky lg:top-20 lg:self-start",
+            (isProcessing || !file) && "pointer-events-none opacity-50",
           )}>
             {!file && (
               <div className="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 animate-fade-in">
@@ -730,33 +778,35 @@ return () => {
               </p>
             )}
 
-            <button
-              id="export-button"
-              type="button"
+            <ExportButton
+              file={file}
+              isProcessing={isProcessing}
+              isExportReady={isExportReady}
               onClick={handleExport}
-                disabled={!file || isProcessing}
-                aria-label='Export video'
-                aria-disabled={!file || isProcessing ? "true" : undefined}
-                title={!file ? "Upload a video to enable export" : undefined}
-              className={cn(
-                "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
-                "font-display text-2xl tracking-widest transition-all duration-200",
-                file && !isProcessing
-                  ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
-                  : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
-              )}
-            >
-             <Zap size={20} className={cn(file && !isProcessing && "animate-pulse")} />
-              {isProcessing ? "PROCESSING" : "EXPORT"}
-            </button>
+              className="hidden lg:flex"
+            />
 
             {file && !isProcessing && (
-              <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
+              <p className="hidden lg:block text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
                 {isMac ? "⌘" : "Ctrl"} + Enter to export
               </p>
             )}
           </div>
         </div>
+
+        {file && !isProcessing && (
+          <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--border)] bg-[var(--bg)]/95 backdrop-blur-sm p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <ExportButton
+              file={file}
+              isProcessing={isProcessing}
+              isExportReady={isExportReady}
+              onClick={handleExport}
+            />
+            <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-2">
+              {isMac ? "⌘" : "Ctrl"} + Enter to export
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
