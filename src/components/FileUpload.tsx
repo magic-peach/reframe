@@ -173,7 +173,36 @@ export default function FileUpload({ onFileSelect, currentFile }: Props) {
       <p className="text-xs text-gray-500 text-center">
         Supports most common video formats up to 2GB
       </p>
+      
+<div className="text-xs text-[var(--muted)] mt-4 space-y-2 border-t pt-3">
+  <p className="font-semibold text-[var(--text)]">
+    ℹ️ Before uploading, please ensure:
+  </p>
 
+  <ul className="space-y-1 list-disc pl-4">
+    <li>
+      <span className="font-medium">Max file size:</span>{" "}
+      {formatBytes(MAX_FILE_SIZE)} (larger files may fail upload)
+    </li>
+
+    <li>
+      <span className="font-medium">Warning threshold:</span>{" "}
+      {formatBytes(WARNING_FILE_SIZE)} (may cause slow performance)
+    </li>
+
+    <li>
+      <span className="font-medium">Supported formats:</span> MP4, MOV, AVI, WebM
+    </li>
+
+    <li>
+      <span className="font-medium">Recommended format:</span> MP4 (H.264 codec)
+    </li>
+
+    <li>
+      <span className="font-medium">Browser limitation:</span> Large files may fail due to memory limits (FFmpeg.wasm processing)
+    </li>
+  </ul>
+</div>
       {/* Show file size preview if file exists */}
       {currentFile && (
         <p className="text-xs text-[var(--muted)] mt-2">
