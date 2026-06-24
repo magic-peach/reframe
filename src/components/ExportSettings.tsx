@@ -141,6 +141,50 @@ export default function ExportSettings({
         )}
       </div>
 
+      {/* VIDEO TRANSITIONS SECTION */}
+      <div className="border-t border-[var(--border)] pt-4 mt-2">
+        <label className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2 mb-3">
+          <SlidersHorizontal size={10} />
+          Video Transitions
+        </label>
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <label htmlFor="fade-in-input" className="block text-xs font-medium text-[var(--muted)] mb-1">
+              Fade In (sec)
+            </label>
+            <input
+              id="fade-in-input"
+              type="number"
+              min={0}
+              max={5}
+              step={0.5}
+              value={(recipe as any).fadeInDuration || 0}
+              onChange={(e) =>
+                onChange({ fadeInDuration: parseFloat(e.target.value) || 0 })
+              }
+              className="w-full rounded-md border border-[var(--border)] bg-transparent p-2 text-sm text-[var(--text)] focus:outline-none focus:border-film-600"
+            />
+          </div>
+          <div className="flex-1">
+            <label htmlFor="fade-out-input" className="block text-xs font-medium text-[var(--muted)] mb-1">
+              Fade Out (sec)
+            </label>
+            <input
+              id="fade-out-input"
+              type="number"
+              min={0}
+              max={5}
+              step={0.5}
+              value={(recipe as any).fadeOutDuration || 0}
+              onChange={(e) =>
+                onChange({ fadeOutDuration: parseFloat(e.target.value) || 0 })
+              }
+              className="w-full rounded-md border border-[var(--border)] bg-transparent p-2 text-sm text-[var(--text)] focus:outline-none focus:border-film-600"
+            />
+          </div>
+        </div>
+      </div>
+
       <div>
         <div className="flex items-center justify-between mb-1">
           <label
