@@ -10,6 +10,18 @@ import TipCarousel from "./TipCarousel";
 interface Props {
   status: ExportStatus;
   progress: number;
+
+  etaSeconds?: number | null;
+  onCancel?: () => void;
+}
+
+ export default function ExportOverlay({
+  status,
+  progress,
+  etaSeconds,
+  onCancel,
+  }: Props){
+      
   exportStartedAt?: number | null;
   onCancel?: () => void;
 }
@@ -22,6 +34,7 @@ function formatElapsed(ms: number): string {
 }
 
 export default function ExportOverlay({ status, progress, exportStartedAt, onCancel }: Props) {
+
   const visible = status === "loading-engine" || status === "exporting";
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -142,6 +155,24 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
                   style={{ width: `${progress}%` }}
                 />
               </div>
+
+              <p className="text-xs font-heading font-semibold text-[var(--muted)]">
+               {progress}%
+               </p>
+
+               {!isLoading &&  
+               etaSeconds !== null &&
+               progress > 2 &&
+               progress < 100 && (
+               <p className="text-sm text-[var(--muted)]">
+               ⏱ ~{etaSeconds} seconds remaining
+               </p>
+               )}
+
+                <TipCarousel />
+               {!isLoading && (
+               <div className="flex flex-col items-center gap-3 mt-4">
+
               <div className="flex items-center justify-between gap-4 text-xs font-heading font-semibold text-[var(--muted)]">
                 <span>{progress}%</span>
                 {!isLoading && (
@@ -150,7 +181,7 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
               </div>
               <TipCarousel />
               {!isLoading && (
-              <div className="flex flex-col items-center gap-3 mt-4">
+              <div className="flex flex-col items-center gap-3 mt-4
                 <button
                   type="button"
                   onClick={() => onCancel?.()}

@@ -171,6 +171,7 @@ export function useVideoEditor() {
   });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
+  const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   const [result, setResult] = useState<ExportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
@@ -470,7 +471,13 @@ export function useVideoEditor() {
       const exportResult = await exportVideo(
         file,
         recipe,
-        setProgress,
+        (percent, eta) => {
+        setProgress(percent);
+ 
+         if (typeof eta === "number") {
+         setEtaSeconds(eta);
+          }
+         },
         abortController.signal,
         {
           file: musicFile,
@@ -492,6 +499,7 @@ export function useVideoEditor() {
         exportDurationMs: Date.now() - startedAt,
       });
       setStatus("done");
+      setEtaSeconds(null);
      }  catch (err) {
       if (exportCancelledRef.current) return;
 
@@ -638,6 +646,7 @@ export function useVideoEditor() {
     terminateFFmpeg();
     setStatus("idle");
     setProgress(0);
+    setEtaSeconds(null);
     setError(null);
     setExportStartedAt(null);
   }, []);
@@ -651,6 +660,7 @@ export function useVideoEditor() {
     setRecipe(DEFAULT_RECIPE);
     setStatus("idle");
     setProgress(0);
+    setEtaSeconds(null);
     setResult(null);
     setError(null);
     setExportStartedAt(null);
@@ -689,7 +699,11 @@ export function useVideoEditor() {
     recipe,
     status,
     progress,
+
+    etaSeconds,
+    
     exportStartedAt,
+
     result,
     error,
     videoRef,
