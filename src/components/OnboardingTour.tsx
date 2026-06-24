@@ -44,7 +44,7 @@ const TOUR_STEPS: TourStep[] = [
   },
 ];
 
-const PADDING = 12; // spotlight padding around target element
+const PADDING = 12;
 const TOOLTIP_OFFSET = 16;
 
 interface Rect {
@@ -76,16 +76,19 @@ function getTooltipStyle(
         top: sr.top - th - TOOLTIP_OFFSET,
         left: sr.left + sr.width / 2 - tw / 2,
       };
+
     case "left":
       return {
         top: sr.top + sr.height / 2 - th / 2,
         left: sr.left - tw - TOOLTIP_OFFSET,
       };
+
     case "right":
       return {
         top: sr.top + sr.height / 2 - th / 2,
         left: sr.left + sr.width + TOOLTIP_OFFSET,
       };
+
     case "bottom":
     default:
       return {
@@ -126,13 +129,14 @@ function Spotlight({ rect }: SpotlightProps) {
           />
         </mask>
       </defs>
+
       <rect
         width="100%"
         height="100%"
         fill="rgba(0,0,0,0.65)"
         mask="url(#spotlight-mask)"
       />
-      {/* Highlight ring */}
+
       <rect
         x={r.left}
         y={r.top}
@@ -166,6 +170,7 @@ function Tooltip({
   onSkip,
   tooltipRef,
 }: TooltipProps) {
+  if(!step) return null;
   const style = getTooltipStyle(rect, step.position, tooltipRef);
   const isLast = stepIndex === totalSteps - 1;
 
@@ -192,12 +197,12 @@ function Tooltip({
       </div>
 
       <div className="p-5">
-        {/* Step counter */}
         <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 mb-1">
           Step {stepIndex + 1} of {totalSteps}
         </p>
 
         <h2 className="text-base font-semibold mb-1">{step.title}</h2>
+
         <p className="text-sm text-[var(--muted)] leading-relaxed mb-4">
           {step.description}
         </p>
@@ -209,6 +214,7 @@ function Tooltip({
           >
             Skip tour
           </button>
+
           <button
             onClick={onNext}
             ref={(el) => {
@@ -216,8 +222,9 @@ function Tooltip({
             }}
             className="px-4 py-2 rounded-lg text-sm font-medium
               bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700
-              text-white transition-colors focus-visible:outline focus-visible:outline-2
-              focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              text-white transition-colors focus-visible:outline
+              focus-visible:outline-2 focus-visible:outline-offset-2
+              focus-visible:outline-indigo-500"
           >
             {isLast ? "Done" : "Next →"}
           </button>
@@ -231,8 +238,10 @@ export default function OnboardingTour() {
   const [stepIndex, setStepIndex] = useState(0);
   const [visible, setVisible] = useState(false);
   const [targetRect, setTargetRect] = useState<Rect | null>(null);
+
   const tooltipRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
+
   const currentStep = TOUR_STEPS[stepIndex];
 
   const dismiss = useCallback(() => {
@@ -240,53 +249,71 @@ export default function OnboardingTour() {
     setVisible(false);
   }, []);
 
-  const measureTarget = useCallback((id: string): Promise<Rect | null> => {
-    return new Promise((resolve) => {
-      const attempt = (tries: number) => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-          setTimeout(() => {
-            const r = el.getBoundingClientRect();
-            resolve({
-              top: r.top,
-              left: r.left,
-              width: r.width,
-              height: r.height,
+  const measureTarget = useCallback(
+    (id: string): Promise<Rect | null> => {
+      return new Promise((resolve) => {
+        const attempt = (tries: number) => {
+          const el = document.getElementById(id);
+
+          if (el) {
+            el.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
             });
-          }, 400); // wait for scroll to finish
-          return;
-        }
-        if (tries <= 0) {
-          resolve(null);
-          return;
-        }
-        setTimeout(() => attempt(tries - 1), 300);
-      };
-      attempt(5);
-    });
-  }, []);
+
+            setTimeout(() => {
+              const r = el.getBoundingClientRect();
+
+              resolve({
+                top: r.top,
+                left: r.left,
+                width: r.width,
+                height: r.height,
+              });
+            }, 400);
+
+            return;
+          }
+
+          if (tries <= 0) {
+            resolve(null);
+            return;
+          }
+
+          setTimeout(() => attempt(tries - 1), 300);
+        };
+
+        attempt(5);
+      });
+    },
+    [],
+  );
 
   // Initialise on mount
   useEffect(() => {
     if (localStorage.getItem(TOUR_KEY)) return;
+
     const t = setTimeout(async () => {
       const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
+
       if (rect) {
         setTargetRect(rect);
         setVisible(true);
       }
     }, 600);
+
     return () => clearTimeout(t);
   }, [measureTarget]);
 
-  // Measure target whenever step changes (skip on first render — init effect handles that)
+  // Measure target whenever step changes
   useEffect(() => {
     if (!visible) return;
+
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
+
     if (!currentStep) {
       dismiss();
       return;
@@ -298,26 +325,37 @@ export default function OnboardingTour() {
     let cancelled = false;
 
     const tryMeasure = () => {
-      measureTarget(currentStep.targetId)
-        .then((rect) => {
-          if (cancelled) return;
-          if (rect) {
-            setTargetRect(rect);
-            setTimeout(() => tooltipRef.current?.focus(), 50);
-            retryCount = 0;
-          } else if (retryCount < maxRetries) {
-            retryCount++;
-            retryTimer = window.setTimeout(tryMeasure, 500);
-          } else {
-            // If we've retried enough, fallback to advancing or dismissing
-            if (stepIndex < TOUR_STEPS.length - 1) setStepIndex((i) => i + 1);
-            else dismiss();
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to measure tour target:", error);
+ measureTarget(currentStep.targetId)
+    .then((rect) => {
+      if (cancelled) return;
+
+      if (rect) {
+        setTargetRect(rect);
+
+        setTimeout(() => {
+          tooltipRef.current?.focus();
+        }, 50);
+
+        retryCount = 0;
+      } else if (retryCount < maxRetries) {
+        retryCount++;
+
+        retryTimer = window.setTimeout(() => {
+          tryMeasure();
+        }, 500);
+      } else {
+        // Fallback if target never appears
+        if (stepIndex < TOUR_STEPS.length - 1) {
+          setStepIndex((i) => i + 1);
+        } else {
           dismiss();
-        });
+        }
+      }
+    })
+    .catch((error) => {
+      console.error("Failed to measure tour target:", error);
+      dismiss();
+    });
     };
 
     tryMeasure();
@@ -332,56 +370,78 @@ export default function OnboardingTour() {
   // requestAnimationFrame prevents layout thrashing on rapid scroll/resize events.
   useEffect(() => {
     if (!visible) return;
-    let rafId: number;
-    const remeasure = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(setTargetRect);
-      });
-    };
-    window.addEventListener("resize", remeasure);
-    window.addEventListener("scroll", remeasure, true);
-    return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", remeasure);
-      window.removeEventListener("scroll", remeasure, true);
-    };
+let rafId: number;
+
+  const remeasure = () => {
+    cancelAnimationFrame(rafId);
+
+    rafId = requestAnimationFrame(() => {
+      measureTarget(TOUR_STEPS[stepIndex]?.targetId ?? "").then(
+        setTargetRect
+      );
+    });
+  };
+
+  window.addEventListener("resize", remeasure);
+  window.addEventListener("scroll", remeasure, true);
+
+  return () => {
+    cancelAnimationFrame(rafId);
+
+    window.removeEventListener("resize", remeasure);
+    window.removeEventListener("scroll", remeasure, true);
+  };
   }, [visible, stepIndex, measureTarget]);
 
   // Keyboard support
   useEffect(() => {
     if (!visible) return;
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") dismiss();
+      if (e.key === "Escape") {
+        dismiss();
+      }
+
       if (e.key === "ArrowRight" || e.key === "Enter") {
-        if (stepIndex < TOUR_STEPS.length - 1) setStepIndex((i) => i + 1);
-        else dismiss();
+        if (stepIndex < TOUR_STEPS.length - 1) {
+          setStepIndex((i) => i + 1);
+        } else {
+          dismiss();
+        }
       }
     };
+
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
   }, [visible, stepIndex, dismiss]);
 
-  if (!visible || !targetRect || !currentStep) return null;
+  if (!visible || !targetRect || !currentStep) {
+    return null;
+  }
 
   return createPortal(
     <>
-      {/* Clickable backdrop to skip */}
       <div
         className="fixed inset-0"
         style={{ zIndex: 9997 }}
         aria-hidden="true"
         onClick={dismiss}
       />
+
       <Spotlight rect={targetRect} />
+
       <Tooltip
         step={currentStep}
         stepIndex={stepIndex}
         totalSteps={TOUR_STEPS.length}
         rect={targetRect}
         onNext={() => {
-          if (stepIndex < TOUR_STEPS.length - 1) setStepIndex((i) => i + 1);
-          else dismiss();
+          if (stepIndex < TOUR_STEPS.length - 1) {
+            setStepIndex((i) => i + 1);
+          } else {
+            dismiss();
+          }
         }}
         onSkip={dismiss}
         tooltipRef={tooltipRef}
