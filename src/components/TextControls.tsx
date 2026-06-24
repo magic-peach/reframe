@@ -10,6 +10,7 @@ import { useFontManager } from "@/hooks/useFontManager";
 
 interface TextControlsProps {
   recipe: EditRecipe;
+  duration?: number;
   onChange: (patch: Partial<EditRecipe>) => void;
   selectedTextId: string | null;
   onSelectText: (id: string | null) => void;
@@ -21,6 +22,7 @@ interface TextControlsProps {
  */
 export default function TextControls({
   recipe,
+  duration = 0,
   onChange,
   selectedTextId,
   onSelectText,
@@ -43,7 +45,7 @@ export default function TextControls({
    * Adds a new text overlay to the recipe.
    */
   const handleAddText = () => {
-    const newOverlay = createDefaultTextOverlay();
+    const newOverlay = createDefaultTextOverlay(duration);
     const updatedOverlays = [...textOverlays, newOverlay];
     onChange({ textOverlays: updatedOverlays });
     onSelectText(newOverlay.id);
@@ -64,9 +66,11 @@ export default function TextControls({
    * Updates a text overlay property.
    */
   const handleUpdateText = (id: string, updates: Partial<TextOverlay>) => {
+    console.log("[TextControls] handleUpdateText:", { id, updates });
     const updatedOverlays = textOverlays.map((overlay) =>
       overlay.id === id ? { ...overlay, ...updates } : overlay
     );
+    console.log("[TextControls] updated overlays:", updatedOverlays);
     onChange({ textOverlays: updatedOverlays });
   };
 
@@ -233,6 +237,55 @@ export default function TextControls({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Text Duration Controls */}
+          <div className="pt-2 border-t border-[var(--border)] space-y-2">
+            <div>
+              <label htmlFor="start-time" className="text-xs text-[var(--muted)] font-medium mb-1 block">
+                Start Time (seconds)
+              </label>
+              <input
+                id="start-time"
+                type="number"
+                min="0"
+                max={Math.max(0, duration)}
+                step="0.1"
+                value={selectedOverlay.startTime ?? 0}
+                onChange={(e) => {
+                  const value = Math.max(0, Number(e.target.value));
+                  handleUpdateText(selectedTextId!, { startTime: value });
+                }}
+                className="w-full px-2 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-film-500"
+                aria-label="Text overlay start time"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="end-time" className="text-xs text-[var(--muted)] font-medium mb-1 block">
+                End Time (seconds)
+              </label>
+              <input
+                id="end-time"
+                type="number"
+                min="0"
+                max={Math.max(0, duration)}
+                step="0.1"
+                value={selectedOverlay.endTime ?? duration}
+                onChange={(e) => {
+                  const value = Math.min(Math.max(0, Number(e.target.value)), Math.max(0, duration));
+                  handleUpdateText(selectedTextId!, { endTime: value });
+                }}
+                className="w-full px-2 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-film-500"
+                aria-label="Text overlay end time"
+              />
+            </div>
+
+            {duration > 0 && (
+              <div className="text-xs text-[var(--muted)]">
+                Duration: <span className="text-[var(--text)] font-medium">{((selectedOverlay.endTime ?? duration) - (selectedOverlay.startTime ?? 0)).toFixed(1)}s</span> / {duration.toFixed(1)}s
+              </div>
+            )}
           </div>
         </div>
       )}

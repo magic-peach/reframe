@@ -123,14 +123,14 @@ function handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
   }
 
   if (data.type === "error") {
-    if (data.id && pendingExport?.id === data.id) {
-      pendingExport.reject(new Error(data.message));
+    if (data.id && pendingExport && pendingExport.id === data.id) {
+      pendingExport.reject(new Error((data as WorkerErrorResponse).message));
       pendingExport = null;
       pendingProgress = null;
       return;
     }
 
-    workerReadyReject?.(new FFmpegLoadError(data.message));
+    workerReadyReject?.(new FFmpegLoadError((data as WorkerErrorResponse).message));
     workerReady = null;
     workerReadyResolve = null;
     workerReadyReject = null;
@@ -139,7 +139,7 @@ function handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
   }
 
   if (data.type === "cancelled") {
-    if (data.id && pendingExport?.id === data.id) {
+    if (data.id && pendingExport && pendingExport.id === data.id) {
       pendingExport.reject(new DOMException("Export cancelled", "AbortError"));
       pendingExport = null;
       pendingProgress = null;
@@ -325,7 +325,7 @@ function buildSessionId(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
+export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number, videoDuration: number = 0): string {
   const filters: string[] = [];
 
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
@@ -386,7 +386,7 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   // Add text overlays
   const textOverlays = recipe.textOverlays || [];
   textOverlays.forEach((overlay) => {
-    filters.push(buildTextFilter(overlay, targetW, targetH));
+    filters.push(buildTextFilter(overlay, targetW, targetH, videoDuration));
   });
 
   return filters.join(",");
@@ -438,7 +438,7 @@ function buildArguments(
   hasOriginalAudio: boolean,
   videoDuration: number
 ): string[] {
-  const vf = buildVideoFilter(recipe, targetW, targetH);
+  const vf = buildVideoFilter(recipe, targetW, targetH, videoDuration);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
   const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);

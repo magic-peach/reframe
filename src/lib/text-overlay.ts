@@ -1,4 +1,4 @@
-import { TextOverlay } from "./types";
+import { TextOverlay, EditRecipe } from "./types";
 import { getFFmpegFontArg } from "@/utils/fontLoader";
 
 /**
@@ -10,8 +10,9 @@ export function generateTextOverlayId(): string {
 
 /**
  * Creates a default text overlay with sensible defaults.
+ * @param videoDuration - Video duration in seconds. If provided, endTime defaults to this value.
  */
-export function createDefaultTextOverlay(): TextOverlay {
+export function createDefaultTextOverlay(videoDuration?: number): TextOverlay {
   return {
     id: generateTextOverlayId(),
     text: "Enter text",
@@ -21,6 +22,8 @@ export function createDefaultTextOverlay(): TextOverlay {
     color: "#ffffff",
     fontWeight: "normal",
     fontFamily: "Arial", // Default to Arial for immediate visibility
+    startTime: 0, // Appears from start
+    endTime: videoDuration && videoDuration > 0 ? videoDuration : Number.MAX_SAFE_INTEGER, // Show until end (or forever if duration unknown)
   };
 }
 
@@ -59,14 +62,79 @@ export function getTextPercentPosition(
 }
 
 /**
+ * Checks whether a text overlay should be visible at the given time.
+ * @param overlay - The text overlay to check
+ * @param currentTime - Current playback time in seconds
+ * @param videoDuration - Total video duration in seconds (used for backward compatibility)
+ * @returns true if the overlay should be displayed at this time
+ */
+export function isTextOverlayVisible(
+  overlay: TextOverlay,
+  currentTime: number,
+  videoDuration: number = 0
+): boolean {
+  // Backward compatibility: if no timing specified, show for entire duration
+  const startTime = overlay.startTime ?? 0;
+  const endTime = overlay.endTime ?? videoDuration;
+
+  return currentTime >= startTime && currentTime < endTime;
+}
+
+/**
+ * Normalizes timing for an overlay to ensure it has valid start/end times.
+ * Used for backward compatibility when loading old overlays without timing.
+ * @param overlay - The overlay to normalize
+ * @param videoDuration - Total video duration in seconds
+ * @returns Overlay with guaranteed startTime and endTime values
+ */
+export function normalizeOverlayTiming(
+  overlay: TextOverlay,
+  videoDuration: number = 0
+): TextOverlay {
+  return {
+    ...overlay,
+    startTime: overlay.startTime ?? 0,
+    endTime: overlay.endTime ?? videoDuration,
+  };
+}
+
+/**
+ * Normalizes all text overlays in an EditRecipe to have valid timing.
+ * Used for backward compatibility with recipes created before duration support.
+ * @param recipe - The recipe to normalize
+ * @param videoDuration - Total video duration in seconds
+ * @returns Recipe with all overlays having guaranteed timing
+ */
+export function normalizeRecipeOverlays(
+  recipe: EditRecipe,
+  videoDuration: number = 0
+): EditRecipe {
+  const overlays = recipe.textOverlays ?? [];
+  const normalizedOverlays = overlays.map(overlay =>
+    normalizeOverlayTiming(overlay, videoDuration)
+  );
+
+  if (normalizedOverlays === overlays) {
+    return recipe;
+  }
+
+  return {
+    ...recipe,
+    textOverlays: normalizedOverlays,
+  };
+}
+
+/**
  * Generates a drawText FFmpeg filter for a single text overlay.
  * Escapes special characters and positions text on the output video.
  * Includes font family and custom font file support.
+ * Respects overlay timing: text only appears during its active duration.
  */
 export function buildTextFilter(
   overlay: TextOverlay,
   targetWidth: number,
-  targetHeight: number
+  targetHeight: number,
+  videoDuration: number = 0
 ): string {
   // Escape special characters for FFmpeg drawtext filter
   const escapedText = overlay.text
@@ -88,15 +156,13 @@ export function buildTextFilter(
   // Get font file parameter for custom fonts (if available)
   const fontFileParam = getFFmpegFontArg(overlay.fontFamily, overlay.fontPath);
 
-  // Build the drawtext filter with font support
-  let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:fontweight=${fontWeightParam}`;
+  // Get normalized timing (backward compatible: defaults to full duration)
+  const startTime = overlay.startTime ?? 0;
+  const endTime = overlay.endTime ?? videoDuration;
 
-  // Add font family if specified
-  if (overlay.fontFamily) {
-    // Sanitize font name for FFmpeg
-    const safeFontName = overlay.fontFamily.replace(/[^a-zA-Z0-9-]/g, "");
-    filter += `:fontfile='${safeFontName}'`;
-  }
+  // Build the drawtext filter with font support and timing
+  // The enable parameter uses the between(t,a,b) function to control visibility timing
+  let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:fontweight=${fontWeightParam}:enable='between(t,${startTime},${endTime})'`;
 
   // Add custom font file path if available
   if (fontFileParam) {

@@ -13,6 +13,8 @@ export interface TextOverlay {
   fontWeight: "normal" | "bold" | "900";
   fontFamily?: string; // Font family name (e.g., "Arial", "Inter", "CustomFont")
   fontPath?: string; // Path/URL to custom font file for export
+  startTime?: number; // When text appears (seconds, 0-based). Defaults to 0.
+  endTime?: number; // When text disappears (seconds, 0-based). Defaults to video duration.
 }
 
 export interface EditRecipe {

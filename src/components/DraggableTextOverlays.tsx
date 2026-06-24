@@ -2,7 +2,7 @@
 
 import { TextOverlay, EditRecipe } from "@/lib/types";
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
-import { getTextPixelPosition, getTextPercentPosition } from "@/lib/text-overlay";
+import { getTextPixelPosition, getTextPercentPosition, isTextOverlayVisible } from "@/lib/text-overlay";
 import { getFontFamily, ensureFontLoaded } from "@/utils/fontLoader";
 
 interface DraggableTextOverlaysProps {
@@ -10,6 +10,8 @@ interface DraggableTextOverlaysProps {
   containerWidth: number;
   containerHeight: number;
   selectedTextId: string | null;
+  currentTime?: number;
+  videoDuration?: number;
   onUpdateText: (id: string, updates: Partial<TextOverlay>) => void;
   onSelectText: (id: string | null) => void;
 }
@@ -17,12 +19,15 @@ interface DraggableTextOverlaysProps {
 /**
  * Renders draggable text overlays on the video preview.
  * Users can click and drag text to reposition it on the canvas.
+ * Overlays are filtered based on current playback time.
  */
 export default function DraggableTextOverlays({
   recipe,
   containerWidth,
   containerHeight,
   selectedTextId,
+  currentTime = 0,
+  videoDuration = 0,
   onUpdateText,
   onSelectText,
 }: DraggableTextOverlaysProps) {
@@ -211,6 +216,36 @@ export default function DraggableTextOverlays({
     }
   }, [editingId, editText]);
 
+  /**
+   * Determine which overlays to render.
+   * - Always show the selected overlay (even if outside its time window, for editing)
+   * - Show other overlays only if they're visible during the current time
+   * This ensures timing is respected for non-selected overlays while allowing
+   * users to edit overlays outside their active duration.
+   */
+  const overlaysToRender = useMemo(() => {
+    // Only render overlays that are within their time window
+    // Respect timing for ALL overlays, whether selected or not
+    return textOverlays.filter((overlay) =>
+      isTextOverlayVisible(overlay, currentTime, videoDuration)
+    );
+  }, [textOverlays, currentTime, videoDuration]);
+
+  /**
+   * Handle ESC key to deselect overlays.
+   */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && selectedTextId) {
+        onSelectText(null);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [selectedTextId, onSelectText]);
+
+  // Early return after all hooks have been called (required by React Rules of Hooks)
   if (!textOverlays || textOverlays.length === 0) return null;
 
   return (
@@ -219,7 +254,7 @@ export default function DraggableTextOverlays({
       className="absolute inset-0 pointer-events-none"
       style={{ width: containerWidth, height: containerHeight }}
     >
-      {textOverlays.map((overlay) => {
+      {overlaysToRender.map((overlay) => {
         const { left, top } = getTextPixelPosition(
           overlay.x,
           overlay.y,

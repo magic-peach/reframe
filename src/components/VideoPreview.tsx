@@ -14,8 +14,11 @@ interface Props {
   recipe?: EditRecipe;
   videoRef: RefObject<HTMLVideoElement | null>;
   selectedTextId?: string | null;
+  currentTime?: number;
+  videoDuration?: number;
   onSelectText?: (id: string | null) => void;
   onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
+  onCurrentTimeChange?: (time: number) => void;
   // Phase 1 MVP: Multi-track support
   multiTrackState?: MultiTrackEditorState | null;
   multiTrackVideoRefs?: Record<string, RefObject<HTMLVideoElement | null>>;
@@ -26,8 +29,11 @@ export default function VideoPreview({
   recipe,
   videoRef,
   selectedTextId = null,
+  currentTime = 0,
+  videoDuration = 0,
   onSelectText,
   onUpdateText,
+  onCurrentTimeChange,
   multiTrackState,
   multiTrackVideoRefs,
 }: Props) {
@@ -185,6 +191,21 @@ export default function VideoPreview({
     window.addEventListener("resize", updateDimensions);
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
+
+  /**
+   * Track video playback time and notify parent.
+   * Polls video.currentTime every 100ms to get accurate playback position.
+   */
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !onCurrentTimeChange) return;
+
+    const interval = setInterval(() => {
+      onCurrentTimeChange(video.currentTime);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [videoRef, onCurrentTimeChange]);
 
   const overlay = (() => {
     if (!recipe || !showOverlay) return null;
@@ -371,6 +392,8 @@ export default function VideoPreview({
             containerWidth={containerDimensions.width}
             containerHeight={containerDimensions.height}
             selectedTextId={selectedTextId ?? null}
+            currentTime={currentTime}
+            videoDuration={videoDuration}
             onSelectText={onSelectText || (() => {})}
             onUpdateText={onUpdateText || (() => {})}
           />

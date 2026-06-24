@@ -671,13 +671,8 @@ export function useVideoEditor() {
       videoRef.current.currentTime = time;
     }
   }, []);
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
-    video.addEventListener("timeupdate", handleTimeUpdate);
-    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  },[]);
+  // Video playback time is now updated via onCurrentTimeChange callback from VideoPreview
+  // No need for polling here since VideoPreview has direct access to the video element;
 
   const toggleSound = useCallback(() => {
   updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
@@ -719,6 +714,7 @@ export function useVideoEditor() {
     setOverlayOpacity,
     recommendedPreset,
     currentTime,
+    setCurrentTime,
     toggleSound,
     // Phase 1 MVP: Multi-track timeline support
     multiTrackState,

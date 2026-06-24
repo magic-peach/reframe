@@ -79,7 +79,7 @@ async function fetchWithIntegrity(url: string, mimeType: string): Promise<string
   return URL.createObjectURL(blob);
 }
 
-function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
+function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number, videoDuration: number = 0): string {
   const filters: string[] = [];
 
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
@@ -137,7 +137,7 @@ function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number):
 
   const textOverlays = recipe.textOverlays || [];
   textOverlays.forEach((overlay) => {
-    filters.push(buildTextFilter(overlay, targetW, targetH));
+    filters.push(buildTextFilter(overlay, targetW, targetH, videoDuration));
   });
 
   return filters.join(",");
@@ -189,7 +189,7 @@ function buildArguments(
   hasOriginalAudio: boolean,
   videoDuration: number
 ): string[] {
-  const vf = buildVideoFilter(recipe, targetW, targetH);
+  const vf = buildVideoFilter(recipe, targetW, targetH, videoDuration);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
   const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);

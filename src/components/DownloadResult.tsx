@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
-import { Download, RotateCcw, Share2, AlertCircle, Volume2, VolumeX } from "lucide-react";
+import { Download, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import { NativeShareButton } from "./NativeShareButton";
+import ExportFilenameInput from "./export/ExportFilenameInput";
 import successAnim from "@/lib/lottie/success.json";
 import { cn } from "@/lib/utils";
+import { sanitizeFilename } from "@/utils/sanitizeFilename";
 
 const SHARE_TWEET_TEXT =
   "I just edited my video with @reframevideo — free browser-based video editor! Check it out: https://github.com/magic-peach/reframe";
@@ -33,9 +35,17 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
   const defaultName = `reframe_${result.width}x${result.height}`;
   const [name, setName] = useState(defaultName);
 
-  const invalidCharRegex = /[<>:"/\\|?*]/;
-  const isValid = !invalidCharRegex.test(name) && name.trim().length > 0;
-  const filename = `${name.trim() || "untitled"}.${result.format}`;
+  // Validate against forbidden characters (visual feedback)
+  const forbiddenCharRegex = /[<>:"/\\|?*]/;
+  const containsForbiddenChars = forbiddenCharRegex.test(name);
+  const isEmpty = name.trim().length === 0;
+  
+  // Sanitize and generate final filename
+  const sanitized = sanitizeFilename(name);
+  const filename = `${sanitized}.${result.format}`;
+  
+  // isValid: no forbidden chars and not empty, OR let sanitizeFilename handle fallback
+  const isValid = !containsForbiddenChars && !isEmpty;
 
   const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(SHARE_TWEET_TEXT)}`;
 
@@ -101,37 +111,14 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
       </div>
 
       <div className="space-y-1.5 pt-2">
-        <div className="flex justify-between items-center text-xs px-1">
-          <label htmlFor="filename-input" className="text-[var(--muted)] font-heading font-semibold uppercase tracking-wider">
-            Filename
-          </label>
-          <span className={cn("transition-colors", name.length >= 100 ? "text-[var(--error)] font-medium" : "text-[var(--muted)]")}>
-            {100 - name.length} chars remaining
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            id="filename-input"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={100}
-            className={cn(
-              "flex-1 px-3 py-2.5 bg-[var(--bg)] border rounded-lg text-sm transition-colors text-[var(--text)] placeholder:text-[var(--muted)]",
-              !isValid && name.length > 0 ? "border-[var(--error)] focus:outline-[var(--error)] focus:ring-1 focus:ring-[var(--error)]" : "border-[var(--border)] focus:outline-[var(--accent)]"
-            )}
-            placeholder="Enter filename"
-          />
-          <span className="text-sm text-[var(--muted)] shrink-0 font-medium bg-[var(--bg)] px-3 py-2.5 border border-[var(--border)] rounded-lg">
-            .{result.format}
-          </span>
-        </div>
-        {!isValid && name.length > 0 && (
-          <p className="text-xs text-[var(--error)] px-1 flex items-center gap-1.5 mt-1 animate-fade-in">
-            <AlertCircle size={12} />
-            Filename contains invalid characters (\ / : * ? &quot; &lt; &gt; |)
-          </p>
-        )}
+        <ExportFilenameInput
+          value={name}
+          onChange={setName}
+          fileFormat={result.format}
+          maxLength={100}
+          placeholder="Enter filename"
+          label="Filename"
+        />
       </div>
 
       <div className="flex flex-wrap gap-2 pt-2">
