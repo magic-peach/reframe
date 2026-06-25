@@ -14,6 +14,11 @@ interface Props {
   duration: number;
 }
 
+function isFileDrag(e: DragEvent) {
+  const types = e.dataTransfer?.types;
+  return Boolean(types && Array.prototype.includes.call(types, "Files"));
+}
+
 export default function FileUpload({
   onFileSelect,
   currentFile,
@@ -44,22 +49,30 @@ export default function FileUpload({
   // Uses a counter so nested dragenter/dragleave don't flicker
   useEffect(() => {
     const onDragEnter = (e: DragEvent) => {
+      if (!isFileDrag(e)) return;
+
       e.preventDefault();
       dragCounterRef.current += 1;
       if (dragCounterRef.current === 1) setPageDragging(true);
     };
 
     const onDragLeave = (e: DragEvent) => {
+      if (!isFileDrag(e)) return;
+
       e.preventDefault();
-      dragCounterRef.current -= 1;
+      dragCounterRef.current = Math.max(0, dragCounterRef.current - 1);
       if (dragCounterRef.current === 0) setPageDragging(false);
     };
 
     const onDragOver = (e: DragEvent) => {
+      if (!isFileDrag(e)) return;
+
       e.preventDefault(); // required to allow drop
     };
 
     const onDrop = (e: DragEvent) => {
+      if (!isFileDrag(e)) return;
+
       e.preventDefault();
       dragCounterRef.current = 0;
       setPageDragging(false);
