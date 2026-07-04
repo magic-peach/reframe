@@ -183,54 +183,56 @@ export default function PresetSelector({ recipe, onChange }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {filteredPresets.length === 0 ? (
-          <div className="col-span-full py-4 text-center text-sm text-[var(--muted)]">
-            No presets found
-          </div>
-        ) : (
-          filteredPresets.map((preset) => {
-            const active = recipe.preset === preset.id;
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {filteredPresets.length === 0 ? (
+            <div className="col-span-full py-4 text-center text-sm text-[var(--muted)]">
+              No presets found
+            </div>
+          ) : (
+            filteredPresets.map((preset) => {
+              const active = recipe.preset === preset.id;
 
-            return (
-              <button
-                key={preset.id}
-                type="button"
-                onClick={() => handlePresetSelect(preset.id)}
-                title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
-                aria-label={`${preset.label.replaceAll(":", " is to ")} output ratio`}
-                aria-pressed={active}
-                className={cn(
-                  "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
-                  active
-                    ? "border-film-500 bg-film-50"
-                    : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
-                )}
-              >
-                <RatioBox
-                  width={preset.width}
-                  height={preset.height}
-                  active={active}
-                />
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => handlePresetSelect(preset.id)}
+                  title={`${preset.label} — ${preset.width}×${preset.height} — ${getOrientationLabel(preset.width, preset.height)}`}
+                  aria-label={`${preset.label.replaceAll(":", " is to ")} output ratio`}
+                  aria-pressed={active}
+                  className={cn(
+                    "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+                    active
+                      ? "border-film-500 bg-film-50"
+                      : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
+                  )}
+                >
+                  <RatioBox
+                    width={preset.width}
+                    height={preset.height}
+                    active={active}
+                  />
 
-                <div className="min-w-0 w-full">
-                  <p
-                    className={cn(
-                      "text-sm font-heading font-bold leading-tight",
-                      active ? "text-film-700" : "text-[var(--text)]",
-                    )}
-                  >
-                    {preset.label}
-                  </p>
+                  <div className="min-w-0 w-full">
+                    <p
+                      className={cn(
+                        "text-sm font-heading font-bold leading-tight",
+                        active ? "text-film-700" : "text-[var(--text)]",
+                      )}
+                    >
+                      {preset.label}
+                    </p>
 
-                  <p className="mt-0.5 text-[11px] leading-tight text-[var(--muted)]">
-                    {preset.platform}
-                  </p>
-                </div>
-              </button>
-            );
-          })
-        )}
+                    <p className="mt-0.5 text-[11px] leading-tight text-[var(--muted)]">
+                      {preset.platform}
+                    </p>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
 
         <button
           type="button"
@@ -239,7 +241,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
           aria-pressed={recipe.preset === "custom"}
           onClick={() => handlePresetSelect("custom")}
           className={cn(
-            "min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
+            "min-h-[44px] w-full flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border text-center transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]",
             recipe.preset === "custom"
               ? "border-film-500 bg-film-50"
               : "border-[var(--border)] bg-[var(--surface)] hover:border-film-300 hover:bg-film-50/30",
