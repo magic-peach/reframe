@@ -428,22 +428,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide including development 
 
 ---
 
-## Contributors
-
-Thank you to everyone who has contributed to Reframe! 🎉
-
-[![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
-
----
-
 ## Privacy
 
 Reframe processes all videos **100% client-side**. Your video files are never uploaded to any server. You can even use Reframe offline (after first load). The source code is fully open for inspection.
+
 ---
 
 ## Contributors
 
-Thanks to all the amazing people who have contributed to Reframe!
+Thanks to all the amazing people who have contributed to Reframe! 🎉
 
 [![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
 
