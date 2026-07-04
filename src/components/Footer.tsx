@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   Github,
-  Twitter,
   Instagram,
   Linkedin,
   ArrowRight,
@@ -135,17 +134,31 @@ export default function Footer() {
                   label: "GitHub",
                 },
                 {
-                  href: "https://twitter.com",
-                  icon: <Twitter size={18} />,
-                  label: "Twitter",
+                  href: "https://x.com/magicpeach",
+                  icon: (
+                    <svg
+                      viewBox="0 0 24 24"
+                      width={18}
+                      height={18}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 4l11.733 16h4.267l-11.733 -16z" />
+                      <path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772" />
+                    </svg>
+                  ),
+                  label: "X (Twitter)",
                 },
                 {
-                  href: "https://instagram.com",
+                  href: "https://instagram.com/magicpeach",
                   icon: <Instagram size={18} />,
                   label: "Instagram",
                 },
                 {
-                  href: "https://linkedin.com",
+                  href: "https://linkedin.com/company/magicpeach",
                   icon: <Linkedin size={18} />,
                   label: "LinkedIn",
                 },
