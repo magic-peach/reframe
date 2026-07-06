@@ -350,7 +350,7 @@ return () => {
   }, [videoSrc]);
 
   return (
-    <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
+    <div className="relative flex flex-col" style={{ background: "var(--bg)" }}>
       <ExportOverlay
         status={status}
         progress={progress}
