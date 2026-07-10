@@ -5,7 +5,8 @@ import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
 import { cn, formatBytes, formatDuration } from "@/lib/utils";
-import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
+import { WARNING_FILE_SIZE } from "@/lib/types";
+import { validateVideoFileBasics } from "@/utils/videoImportValidation";
 
 interface Props {
   onFileSelect: (file: File | null) => void;
@@ -87,15 +88,9 @@ export default function FileUpload({
     setError("");
     setWarning("");
 
-    if (!file.type.startsWith("video/")) {
-      setError("Please drop a valid video file (MP4, MOV, AVI, WebM, etc.)");
-      return;
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      setError(
-        `File too large (${formatBytes(file.size)}). Maximum allowed size is 2GB.`
-      );
+    const validation = validateVideoFileBasics(file);
+    if (!validation.valid) {
+      setError(validation.error ?? "Please drop a supported video file.");
       return;
     }
 

@@ -1,12 +1,18 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, OverlayPosition, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import {
+  getMetadataImportErrorMessage,
+  getUnsupportedVideoMessage,
+  validateVideoFileBasics,
+  verifyVideoSignature,
+} from "@/utils/videoImportValidation";
 import {
   createMultiTrackState,
   addTrackToTimeline,
@@ -52,31 +58,6 @@ export function extractMetadata(file: File): Promise<{ width: number; height: nu
       reject(new Error("Failed to load video metadata"));
     };
     video.src = url;
-  });
-}
-
-function verifyMagicBytes(file: File): Promise<boolean> {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = (e) => {
-      if (!e.target?.result) {
-        resolve(false);
-        return;
-      }
-      const arr = new Uint8Array(e.target.result as ArrayBuffer);
-      const hex = Array.from(arr).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
-      const ascii = String.fromCharCode(...arr);
-
-      // WebM / MKV
-      if (hex.startsWith("1A45DFA3")) resolve(true);
-      // AVI
-      else if (hex.startsWith("52494646")) resolve(true);
-      // MP4 / MOV (checks for 'ftyp' in first 12 bytes)
-      else if (ascii.substring(0, 12).includes("ftyp")) resolve(true);
-      else resolve(false);
-    };
-    reader.onerror = () => resolve(false);
-    reader.readAsArrayBuffer(file.slice(0, 12));
   });
 }
 
@@ -356,54 +337,50 @@ export function useVideoEditor() {
       return;
     }
 
-    if (!selectedFile.type.startsWith("video/")) {
-      setFileError("Please upload a video file only.");
+    const basicValidation = validateVideoFileBasics(selectedFile);
+    if (!basicValidation.valid) {
+      const message = basicValidation.error ?? getUnsupportedVideoMessage("This file cannot be imported.");
+      console.error("[Reframe] Video import rejected:", {
+        name: selectedFile.name,
+        type: selectedFile.type || "unknown",
+        size: selectedFile.size,
+        reason: message,
+      });
+      setFileError(message);
+      setError(message);
+      setStatus("error");
       return;
     }
 
     setFileError("");
 
-    // LAYER 0: Size check
-    if (selectedFile.size > MAX_FILE_SIZE) {
-      setError(`Validation Failed: File too large. Maximum size is 2GB.`);
-      setStatus("error");
-      return;
-    }
-
-    const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
-    const filename = selectedFile.name.toLowerCase();
-    const hasValidExtension = validExtensions.some(ext => filename.endsWith(ext));
-    if (!hasValidExtension) {
-      setError(`Layer 1 Validation Failed: Invalid file extension. Expected one of: ${validExtensions.join(', ')}`);
-      setStatus("error");
-      return;
-    }
-
-    if (!selectedFile.type.startsWith("video/")) {
-      setError(`Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || 'unknown'}`);
-      setStatus("error");
-      return;
-    }
-
     // Run validation and metadata extraction in background
     (async () => {
       try {
-        const isVideo = await verifyMagicBytes(selectedFile);
+        const isVideo = await verifyVideoSignature(selectedFile);
         if (!isVideo) {
-          setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
+          const message = getUnsupportedVideoMessage(
+            "This file does not appear to be a valid or supported video."
+          );
+          console.error("[Reframe] Video import rejected: unrecognized file signature", {
+            name: selectedFile.name,
+            type: selectedFile.type || "unknown",
+            size: selectedFile.size,
+          });
+          setFileError(message);
+          setError(message);
           setStatus("error");
           return;
         }
 
         const { width, height, duration: dur } = await extractMetadata(selectedFile);
 
-        // Layer 5: Resolution check
         const dimensionCheck = validateDimensions(width, height);
         if (dimensionCheck === "blocked") {
           const suggested = getDownscaledDimensions(width, height);
           setError(
-            `Layer 5 Validation Failed: Resolution too high (${width}×${height}). ` +
-            `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
+            `Resolution too high (${width}x${height}). ` +
+            `Maximum supported is 8K. Suggested safe size: ${suggested.width}x${suggested.height}.`
           );
           setStatus("error");
           return;
@@ -428,7 +405,10 @@ export function useVideoEditor() {
           };
         });
       } catch (err) {
-        setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
+        const message = getMetadataImportErrorMessage(err);
+        console.error("[Reframe] Video import metadata failed:", err);
+        setFileError(message);
+        setError(message);
         setStatus("error");
       }
     })();
