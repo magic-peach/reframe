@@ -34,11 +34,11 @@ export default function FormatSelector({ recipe, onChange }: Props) {
             aria-label={`Select ${option.label} format`}
             aria-pressed={recipe.format === option.id}
             className={cn(
-              "relative px-3 py-2.5 rounded-lg border-2 transition-all",
-              "text-xs font-heading font-semibold uppercase tracking-wider",
+              "relative flex min-h-[4rem] flex-col items-center justify-center gap-1 rounded-xl border-2 px-3 py-2.5 transition-all duration-150",
+              "text-xs font-heading font-semibold uppercase tracking-wider focus:outline-none focus-visible:ring-2 focus-visible:ring-film-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]",
               recipe.format === option.id
-                ? "border-film-600 bg-film-50 text-film-600"
-                : "border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-film-400 hover:text-film-600"
+                ? "border-film-600 bg-film-50 text-film-700 shadow-[var(--shadow)] ring-1 ring-film-200"
+                : "border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] hover:-translate-y-0.5 hover:border-film-400 hover:bg-[var(--accent-muted)] hover:text-[var(--text)] hover:shadow-sm"
             )}
           >
             {option.label}
