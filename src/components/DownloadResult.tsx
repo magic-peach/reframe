@@ -50,6 +50,15 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
       });
     }
   }, [soundOnCompletion]);
+
+  useEffect(() => {
+    const blobUrl = result.blobUrl;
+
+    return () => {
+      URL.revokeObjectURL(blobUrl);
+    };
+  }, [result.blobUrl]);
+
   const handleReset = () => {
     if (window.confirm("This will clear the current video and all settings. Continue?")) {
       onReset();
