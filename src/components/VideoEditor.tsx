@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
@@ -118,86 +119,141 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Collapsible panel that lists all keyboard shortcuts. */
-function KeyboardShortcutsPanel() {
-  const [open, setOpen] = useState(false);
+const KEYBOARD_SHORTCUTS = [
+  { label: "Open video file", keys: ["Ctrl", "O"] },
+  { label: "Export video", keys: ["Ctrl", "Shift", "E"] },
+  { label: "Reset all settings", keys: ["R"] },
+  { label: "Toggle fit/fill mode", keys: ["F"] },
+  { label: "Toggle audio mute", keys: ["M"] },
+  { label: "Switch preset by index", keys: ["1-9"] },
+  { label: "Close modal", keys: ["Esc"] },
+] as const;
 
-  const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
-  {
-    keys: [
-      <Kbd key="ctrl">Ctrl</Kbd>,
-      <span key="plus1" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="shift">Shift</Kbd>,
-      <span key="plus2" className="text-[var(--muted)] text-xs">+</span>,
-      <Kbd key="e">E</Kbd>
-    ],
-    label: "Export video",
-  },
-  {
-    keys: [<Kbd key="m">M</Kbd>],
-    label: "Toggle audio mute",
-  },
-  {
-    keys: [<Kbd key="r">R</Kbd>],
-    label: "Reset all settings",
-  },
-  {
-    keys: [<Kbd key="esc">Esc</Kbd>],
-    label: "Cancel export",
-  },
-  {
-    keys: [<Kbd key="1">1</Kbd>, <span key="dash" className="text-[var(--muted)] text-xs">–</span>, <Kbd key="9">9</Kbd>],
-    label: "Switch preset by index",
-  },
-  {
-    keys: [<Kbd key="question">?</Kbd>],
-    label: "Toggle this panel",
-  },
-];
+function KeyboardShortcutsModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
 
-  return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-fade-in overflow-hidden">
-      <button
-        type="button"
-        aria-expanded={open}
-        aria-controls="keyboard-shortcuts-list"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[var(--border)] transition-colors duration-150"
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm p-4 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Keyboard shortcuts"
+        className="w-full max-w-xl rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
       >
-        <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] flex items-center gap-2">
-          <Kbd>⌨</Kbd>
-          Keyboard Shortcuts
-        </span>
-        <svg
-          aria-hidden="true"
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
-          className={cn("text-[var(--muted)] transition-transform duration-200", open && "rotate-180")}
-        >
-          <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)]">
+              Keyboard Shortcuts
+            </p>
+            <h2 className="mt-1 text-lg font-bold text-[var(--text)]">
+              Quick actions
+            </h2>
+          </div>
 
-      {open && (
-        <ul
-          id="keyboard-shortcuts-list"
-          className="px-4 pb-3 space-y-2 border-t border-[var(--border)]"
-        >
-          {shortcuts.map(({ keys, label }) => (
-            <li key={label} className="flex items-center justify-between gap-3 pt-2">
-              <span className="text-xs text-[var(--muted)]">{label}</span>
-              <span className="flex items-center gap-1 shrink-0">{keys}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-xs font-semibold uppercase tracking-widest text-[var(--muted)] transition-colors hover:text-[var(--text)]"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-lg border border-[var(--border)]">
+          <table className="w-full text-sm">
+            <thead className="bg-[var(--bg)] text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
+              <tr>
+                <th className="px-4 py-3 text-left">Action</th>
+                <th className="px-4 py-3 text-right">Shortcut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {KEYBOARD_SHORTCUTS.map((shortcut, index) => (
+                <tr
+                  key={shortcut.label}
+                  className={cn(index !== KEYBOARD_SHORTCUTS.length - 1 && "border-b border-[var(--border)]")}
+                >
+                  <td className="px-4 py-3 text-[var(--text)]">
+                    {shortcut.label}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {shortcut.keys.map((key) => (
+                        <Kbd key={key}>{key}</Kbd>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="mt-4 text-xs text-[var(--muted)]">
+          Press <Kbd>?</Kbd> to reopen this panel.
+        </p>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function KeyboardShortcutsPanel({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-left animate-fade-in transition-colors hover:bg-[var(--bg)] hover:border-film-400"
+    >
+      <p className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] flex items-center gap-2">
+        <Kbd>⌨</Kbd>
+        Keyboard Shortcuts
+      </p>
+      <p className="mt-2 text-sm text-[var(--text)] font-medium">
+        View the key commands for editing and export.
+      </p>
+      <p className="mt-1 text-xs text-[var(--muted)]">
+        Open the shortcut guide and keep it nearby while editing.
+      </p>
+    </button>
   );
 }
 
 export default function VideoEditor() {
+  const [copied, setCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
   const {
     file, duration, recipe, status, progress,
     result, error, exportStartedAt, updateRecipe,
@@ -221,11 +277,8 @@ export default function VideoEditor() {
     handleExport,
     status,
     cancelExport,
-    onToggleShortcutsModal: () => {},
+    onToggleShortcutsModal: () => setShortcutsOpen((v) => !v),
   });
-
-  const [copied, setCopied] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
   const initialOverlayState = useRef({
     overlayPosition,
     overlaySize,
@@ -364,6 +417,11 @@ return () => {
         {status === "done" && "Export complete! Video ready to download."}
         {status === "error" && `Export failed: ${error}`}
       </div>
+
+      <KeyboardShortcutsModal
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
 
       <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
         <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
@@ -722,7 +780,7 @@ return () => {
               </div>
             </div>
 
-            <KeyboardShortcutsPanel />
+            <KeyboardShortcutsPanel onOpen={() => setShortcutsOpen(true)} />
 
             {file && (
               <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)] leading-relaxed">
