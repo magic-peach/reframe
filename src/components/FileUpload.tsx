@@ -6,6 +6,7 @@ import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
 import { cn, formatBytes, formatDuration } from "@/lib/utils";
 import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
+import { isAcceptableVideoCandidate } from "@/lib/fileValidation";
 
 interface Props {
   onFileSelect: (file: File | null) => void;
@@ -87,7 +88,7 @@ export default function FileUpload({
     setError("");
     setWarning("");
 
-    if (!file.type.startsWith("video/")) {
+    if (!isAcceptableVideoCandidate(file)) {
       setError("Please drop a valid video file (MP4, MOV, AVI, WebM, etc.)");
       return;
     }

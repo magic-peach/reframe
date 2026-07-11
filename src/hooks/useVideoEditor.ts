@@ -24,6 +24,7 @@ import {
   RECIPE_STORAGE_KEY,
   LEGACY_SETTINGS_KEY,
 } from "@/lib/editorPersistence";
+import { SUPPORTED_VIDEO_EXTENSIONS, hasSupportedVideoExtension } from "@/lib/fileValidation";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
 
@@ -356,11 +357,6 @@ export function useVideoEditor() {
       return;
     }
 
-    if (!selectedFile.type.startsWith("video/")) {
-      setFileError("Please upload a video file only.");
-      return;
-    }
-
     setFileError("");
 
     // LAYER 0: Size check
@@ -370,17 +366,8 @@ export function useVideoEditor() {
       return;
     }
 
-    const validExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
-    const filename = selectedFile.name.toLowerCase();
-    const hasValidExtension = validExtensions.some(ext => filename.endsWith(ext));
-    if (!hasValidExtension) {
-      setError(`Layer 1 Validation Failed: Invalid file extension. Expected one of: ${validExtensions.join(', ')}`);
-      setStatus("error");
-      return;
-    }
-
-    if (!selectedFile.type.startsWith("video/")) {
-      setError(`Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || 'unknown'}`);
+    if (!hasSupportedVideoExtension(selectedFile.name)) {
+      setError(`Layer 1 Validation Failed: Invalid file extension. Expected one of: ${SUPPORTED_VIDEO_EXTENSIONS.join(', ')}`);
       setStatus("error");
       return;
     }
