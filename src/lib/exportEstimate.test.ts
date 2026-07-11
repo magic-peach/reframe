@@ -49,10 +49,15 @@ describe("estimateExportSize", () => {
     expect(long / short).toBeCloseTo(4, 0);
   });
 
-  test("higher resolution (4k) produces a larger estimate than 720p", () => {
-    const hd  = estimateExportSize(makeRecipe({ preset: "720p" }), 60);
-    const uhd = estimateExportSize(makeRecipe({ preset: "4k"   }), 60);
-    expect(uhd).toBeGreaterThan(hd);
+  test("real named presets use their own dimensions instead of falling back to 1080p", () => {
+    const base = estimateExportSize(makeRecipe({ preset: "1080p" }), 60);
+    const instagram = estimateExportSize(makeRecipe({ preset: "instagram-4-5" }), 60);
+    const twitter = estimateExportSize(makeRecipe({ preset: "twitter-hd" }), 60);
+    const ultrawide = estimateExportSize(makeRecipe({ preset: "ultrawide-21-9" }), 60);
+
+    expect(instagram).not.toBeCloseTo(base, 5);
+    expect(twitter).not.toBeCloseTo(base, 5);
+    expect(ultrawide).toBeGreaterThan(base);
   });
 
   test("trim reduces effective duration and therefore file size", () => {
