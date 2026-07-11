@@ -42,16 +42,28 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      if (!file) return;
-
       switch (e.key) {
+        case "?":
+          onToggleShortcutsModal();
+          break;
+
+        case "f":
+        case "F":
+          if (!file) return;
+          updateRecipe({
+            framing: recipe.framing === "fit" ? "fill" : "fit",
+          });
+          break;
+
         case "m":
         case "M":
+          if (!file) return;
           updateRecipe({ keepAudio: !recipe.keepAudio });
           break;
 
         case "r":
         case "R":
+          if (!file) return;
           resetSettings();
           break;
 
@@ -59,11 +71,8 @@ export function useKeyboardShortcuts({
           if (status === "exporting") cancelExport();
           break;
 
-        case "?":
-          onToggleShortcutsModal();
-          break;
-
         default:
+          if (!file) return;
           if (e.key >= "1" && e.key <= "9") {
             const index = parseInt(e.key) - 1;
             if (PRESETS[index]) {
