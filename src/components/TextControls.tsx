@@ -15,10 +15,6 @@ interface TextControlsProps {
   onSelectText: (id: string | null) => void;
 }
 
-/**
- * Controls for managing text overlays on the video.
- * Allows users to add, remove, and select text overlays.
- */
 export default function TextControls({
   recipe,
   onChange,
@@ -27,10 +23,6 @@ export default function TextControls({
 }: TextControlsProps) {
   const { customFonts, addFonts, removeFont, getErrors } = useFontManager();
 
-  /**
-   * Memoize text overlays to prevent unnecessary dependency changes.
-   * Always ensures textOverlays is an array, even if recipe is malformed.
-   */
   const textOverlays = useMemo(
     (): TextOverlay[] => {
       const overlays = recipe?.textOverlays;
@@ -39,9 +31,6 @@ export default function TextControls({
     [recipe?.textOverlays]
   );
 
-  /**
-   * Adds a new text overlay to the recipe.
-   */
   const handleAddText = () => {
     const newOverlay = createDefaultTextOverlay();
     const updatedOverlays = [...textOverlays, newOverlay];
@@ -49,9 +38,6 @@ export default function TextControls({
     onSelectText(newOverlay.id);
   };
 
-  /**
-   * Removes a text overlay from the recipe.
-   */
   const handleRemoveText = (id: string) => {
     const updatedOverlays = textOverlays.filter((overlay) => overlay.id !== id);
     onChange({ textOverlays: updatedOverlays });
@@ -60,9 +46,6 @@ export default function TextControls({
     }
   };
 
-  /**
-   * Updates a text overlay property.
-   */
   const handleUpdateText = (id: string, updates: Partial<TextOverlay>) => {
     const updatedOverlays = textOverlays.map((overlay) =>
       overlay.id === id ? { ...overlay, ...updates } : overlay
@@ -70,9 +53,6 @@ export default function TextControls({
     onChange({ textOverlays: updatedOverlays });
   };
 
-  /**
-   * Get the currently selected overlay.
-   */
   const selectedOverlay = useMemo(
     (): TextOverlay | undefined =>
       textOverlays.find((o) => o.id === selectedTextId),
