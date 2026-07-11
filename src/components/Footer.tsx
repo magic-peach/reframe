@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   Github,
@@ -16,6 +17,15 @@ import {
 } from "lucide-react";
 
 export default function Footer() {
+  const [email, setEmail] = useState("");
+  const [formMessage, setFormMessage] = useState<string | null>(null);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setFormMessage("Thanks - we'll keep you posted.");
+    setEmail("");
+  };
+
   return (
     <footer className="w-full border-t border-[var(--border)] bg-[var(--bg)] text-[var(--text)] px-6 py-16 mt-20 transition-colors duration-300">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-y-12 md:gap-x-12">
@@ -100,7 +110,7 @@ export default function Footer() {
 
             <form
               className="flex items-center w-full sm:w-80 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 focus-within:border-[var(--accent)] transition"
-              onSubmit={(e) => e.preventDefault()}
+              onSubmit={handleSubmit}
               aria-label="Newsletter signup"
             >
               <input
@@ -108,6 +118,11 @@ export default function Footer() {
                 required
                 placeholder="Enter your email"
                 aria-label="Email address"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (formMessage) setFormMessage(null);
+                }}
                 className="w-full bg-transparent py-3 text-[11px] font-semibold tracking-widest uppercase placeholder:opacity-30 focus:outline-none"
               />
 
@@ -119,6 +134,13 @@ export default function Footer() {
                 <ArrowRight size={16} />
               </button>
             </form>
+
+            <p
+              aria-live="polite"
+              className="min-h-4 text-[10px] font-medium text-[var(--muted)]"
+            >
+              {formMessage}
+            </p>
           </div>
 
           {/* Community */}
