@@ -27,6 +27,7 @@ const TOUR_STEPS: TourStep[] = [
     description:
       "Choose a preset optimised for your platform — Instagram, YouTube, TikTok and more.",
     position: "left",
+    requiresFile: true,
   },
   {
     targetId: "trim",
@@ -34,6 +35,7 @@ const TOUR_STEPS: TourStep[] = [
     description:
       "After uploading, set in/out points and tweak colour in the controls that appear on the left.",
     position: "left",
+    requiresFile: true,
   },
   {
     targetId: "export-button",
@@ -41,6 +43,7 @@ const TOUR_STEPS: TourStep[] = [
     description:
       "Click Export (or press ⌘↵) to process your video locally — nothing ever leaves your device.",
     position: "top",
+    requiresFile: true,
   },
 ];
 
@@ -62,6 +65,9 @@ function getTooltipStyle(
   const tooltip = tooltipRef.current;
   const tw = tooltip?.offsetWidth ?? 320;
   const th = tooltip?.offsetHeight ?? 140;
+  const margin = 12;
+  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1280;
+  const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 720;
 
   const sr = {
     top: rect.top - PADDING,
@@ -73,24 +79,36 @@ function getTooltipStyle(
   switch (position) {
     case "top":
       return {
-        top: sr.top - th - TOOLTIP_OFFSET,
-        left: sr.left + sr.width / 2 - tw / 2,
+        top: Math.max(margin, sr.top - th - TOOLTIP_OFFSET),
+        left: Math.min(
+          viewportWidth - tw - margin,
+          Math.max(margin, sr.left + sr.width / 2 - tw / 2),
+        ),
       };
     case "left":
       return {
-        top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left - tw - TOOLTIP_OFFSET,
+        top: Math.min(
+          viewportHeight - th - margin,
+          Math.max(margin, sr.top + sr.height / 2 - th / 2),
+        ),
+        left: Math.max(margin, sr.left - tw - TOOLTIP_OFFSET),
       };
     case "right":
       return {
-        top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left + sr.width + TOOLTIP_OFFSET,
+        top: Math.min(
+          viewportHeight - th - margin,
+          Math.max(margin, sr.top + sr.height / 2 - th / 2),
+        ),
+        left: Math.min(viewportWidth - tw - margin, sr.left + sr.width + TOOLTIP_OFFSET),
       };
     case "bottom":
     default:
       return {
-        top: sr.top + sr.height + TOOLTIP_OFFSET,
-        left: sr.left + sr.width / 2 - tw / 2,
+        top: Math.min(viewportHeight - th - margin, sr.top + sr.height + TOOLTIP_OFFSET),
+        left: Math.min(
+          viewportWidth - tw - margin,
+          Math.max(margin, sr.left + sr.width / 2 - tw / 2),
+        ),
       };
   }
 }
@@ -292,8 +310,9 @@ export default function OnboardingTour() {
       return;
     }
 
+    setTargetRect(null);
     let retryCount = 0;
-    const maxRetries = 10; // Retry up to ~5s with 500ms delays
+    const maxRetries = currentStep.requiresFile ? Number.POSITIVE_INFINITY : 10; // Retry up to ~5s with 500ms delays
     let retryTimer: number | null = null;
     let cancelled = false;
 
