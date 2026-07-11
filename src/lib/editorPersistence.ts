@@ -33,7 +33,7 @@ export function loadPersistedRecipe(
     try {
       const parsed = JSON.parse(raw);
       if (isValidRecipe(parsed)) {
-        return parsed;
+        return migrateRecipe(parsed);
       }
     } catch {
       // fall through to legacy state

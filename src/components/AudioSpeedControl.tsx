@@ -145,6 +145,54 @@ export default function AudioSpeedControl({ recipe, onChange }: Props) {
         </button>
       )}
 
+      <div className={cn("space-y-3", !recipe.keepAudio && "opacity-50")}>
+        <div className="flex items-center justify-between gap-3">
+          <label htmlFor="audio-fade-in" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Fade in
+          </label>
+          <span className="text-sm text-[var(--muted)] font-medium">
+            {recipe.audioFadeIn.toFixed(1)}s
+          </span>
+        </div>
+        <input
+          id="audio-fade-in"
+          type="range"
+          min={0}
+          max={5}
+          step={0.1}
+          value={recipe.audioFadeIn}
+          disabled={!recipe.keepAudio}
+          onChange={(e) => onChange({ audioFadeIn: Number(e.target.value) })}
+          aria-label="Audio fade in duration"
+          className="w-full accent-film-600 disabled:cursor-not-allowed"
+        />
+        <div className="flex items-center justify-between gap-3">
+          <label htmlFor="audio-fade-out" className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
+            Fade out
+          </label>
+          <span className="text-sm text-[var(--muted)] font-medium">
+            {recipe.audioFadeOut.toFixed(1)}s
+          </span>
+        </div>
+        <input
+          id="audio-fade-out"
+          type="range"
+          min={0}
+          max={5}
+          step={0.1}
+          value={recipe.audioFadeOut}
+          disabled={!recipe.keepAudio}
+          onChange={(e) => onChange({ audioFadeOut: Number(e.target.value) })}
+          aria-label="Audio fade out duration"
+          className="w-full accent-film-600 disabled:cursor-not-allowed"
+        />
+        {!recipe.keepAudio && (
+          <p className="text-xs text-[var(--muted)]">
+            Enable audio to adjust fade timing.
+          </p>
+        )}
+      </div>
+
       {recipe.keepAudio && (recipe.trimStart !== 0 || recipe.trimEnd !== null) && (
         <div role="note" className="mt-3 p-3 bg-[var(--accent-muted)] border border-[var(--border)] rounded text-sm text-[var(--text)] leading-relaxed flex items-start gap-2 animate-fade-in">
           <AlertTriangle size={12} aria-hidden="true" className="shrink-0 mt-0.5" />
