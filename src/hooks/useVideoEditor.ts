@@ -24,6 +24,7 @@ import {
   RECIPE_STORAGE_KEY,
   LEGACY_SETTINGS_KEY,
 } from "@/lib/editorPersistence";
+import { decodeRecipe, encodeRecipe } from "@/lib/shareLink";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
 
@@ -132,19 +133,6 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
     validations.find(([condition]) => condition)?.[1] ??
     null
   );
-}
-
-function encodeRecipe(recipe: EditRecipe): string {
-  return btoa(JSON.stringify(recipe));
-}
-
-function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
-  try {
-    const decoded = JSON.parse(atob(encoded));
-    return decoded as Partial<EditRecipe>;
-  } catch {
-    return null;
-  }
 }
 
 export function useVideoEditor() {
