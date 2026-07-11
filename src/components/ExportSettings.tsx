@@ -11,6 +11,7 @@ import {
   estimateExportSize,
   formatEstimatedSize,
 } from "@/lib/exportEstimate";
+import { sanitizeFilenameBase } from "@/lib/fileNaming";
 
 interface Props {
   recipe: EditRecipe;
@@ -18,12 +19,16 @@ interface Props {
   onChange: (
     patch: Partial<EditRecipe>
   ) => void;
+  exportName: string;
+  onExportNameChange: (name: string) => void;
 }
 
 export default function ExportSettings({
   recipe,
   duration,
   onChange,
+  exportName,
+  onExportNameChange,
 }: Props) {
   const label =
     recipe.quality <= 21
@@ -44,6 +49,28 @@ export default function ExportSettings({
 
   return (
     <>
+      <div>
+        <label
+          htmlFor="export-name"
+          className="text-sm font-heading font-semibold uppercase tracking-wider text-[var(--muted)] flex items-center gap-2 mb-2"
+        >
+          <SlidersHorizontal size={10} />
+          Export name
+        </label>
+        <input
+          id="export-name"
+          type="text"
+          value={exportName}
+          onChange={(e) => onExportNameChange(sanitizeFilenameBase(e.target.value))}
+          placeholder="reframe-video"
+          maxLength={80}
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm font-heading text-[var(--text)] transition-shadow focus:outline-none focus:ring-2 focus:ring-film-400"
+        />
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Used as the default filename when the export completes.
+        </p>
+      </div>
+
       <div>
         <div className="flex items-center justify-between mb-2">
           <label
