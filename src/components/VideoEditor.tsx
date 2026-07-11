@@ -426,6 +426,7 @@ return () => {
                     file={file}
                     recipe={recipe}
                     videoRef={videoRef}
+                    currentTime={currentTime}
                     selectedTextId={selectedTextId}
                     onSelectText={setSelectedTextId}
                     onUpdateText={handleUpdateTextOverlay}
@@ -497,6 +498,7 @@ return () => {
                       onChange={updateRecipe}
                       selectedTextId={selectedTextId}
                       onSelectText={setSelectedTextId}
+                      duration={duration}
                     />
                   </AccordionSection>
                 </div>

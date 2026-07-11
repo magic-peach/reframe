@@ -2,13 +2,14 @@
 
 import { TextOverlay, EditRecipe } from "@/lib/types";
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
-import { getTextPixelPosition, getTextPercentPosition } from "@/lib/text-overlay";
+import { getTextPixelPosition, getTextPercentPosition, isTextOverlayActive } from "@/lib/text-overlay";
 import { getFontFamily, ensureFontLoaded } from "@/utils/fontLoader";
 
 interface DraggableTextOverlaysProps {
   recipe?: EditRecipe;
   containerWidth: number;
   containerHeight: number;
+  currentTime?: number;
   selectedTextId: string | null;
   onUpdateText: (id: string, updates: Partial<TextOverlay>) => void;
   onSelectText: (id: string | null) => void;
@@ -22,6 +23,7 @@ export default function DraggableTextOverlays({
   recipe,
   containerWidth,
   containerHeight,
+  currentTime,
   selectedTextId,
   onUpdateText,
   onSelectText,
@@ -40,8 +42,9 @@ export default function DraggableTextOverlays({
    */
   const textOverlays = useMemo(() => {
     const overlays = recipe?.textOverlays;
-    return Array.isArray(overlays) ? overlays : [];
-  }, [recipe?.textOverlays]);
+    const all = Array.isArray(overlays) ? overlays : [];
+    return all.filter((overlay) => isTextOverlayActive(overlay, currentTime));
+  }, [currentTime, recipe?.textOverlays]);
 
   /**
    * Handles the start of a drag operation.

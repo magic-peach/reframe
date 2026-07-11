@@ -21,6 +21,8 @@ export function createDefaultTextOverlay(): TextOverlay {
     color: "#ffffff",
     fontWeight: "normal",
     fontFamily: "Arial", // Default to Arial for immediate visibility
+    startTime: 0,
+    endTime: null,
   };
 }
 
@@ -78,24 +80,22 @@ export function buildTextFilter(
   const pixelX = Math.round((overlay.x / 100) * targetWidth);
   const pixelY = Math.round((overlay.y / 100) * targetHeight);
 
-  // Build font parameters
-  const fontWeightParam = overlay.fontWeight === "900"
-    ? "bold"
-    : overlay.fontWeight === "bold"
-    ? "bold"
-    : "normal";
-
   // Get font file parameter for custom fonts (if available)
   const fontFileParam = getFFmpegFontArg(overlay.fontFamily, overlay.fontPath);
 
   // Build the drawtext filter with font support
-  let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:fontweight=${fontWeightParam}`;
+  let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}`;
 
-  // Add font family if specified
-  if (overlay.fontFamily) {
-    // Sanitize font name for FFmpeg
-    const safeFontName = overlay.fontFamily.replace(/[^a-zA-Z0-9-]/g, "");
-    filter += `:fontfile='${safeFontName}'`;
+  if (overlay.fontWeight === "bold" || overlay.fontWeight === "900") {
+    filter += `:bold=1`;
+  }
+
+  if (typeof overlay.startTime === "number" && overlay.startTime > 0 && typeof overlay.endTime === "number") {
+    filter += `:enable='between(t,${overlay.startTime.toFixed(3)},${overlay.endTime.toFixed(3)})'`;
+  } else if (typeof overlay.startTime === "number" && overlay.startTime > 0) {
+    filter += `:enable='gte(t,${overlay.startTime.toFixed(3)})'`;
+  } else if (typeof overlay.endTime === "number") {
+    filter += `:enable='lte(t,${overlay.endTime.toFixed(3)})'`;
   }
 
   // Add custom font file path if available
@@ -104,4 +104,18 @@ export function buildTextFilter(
   }
 
   return filter;
+}
+
+export function isTextOverlayActive(
+  overlay: TextOverlay,
+  currentTime: number | null | undefined,
+): boolean {
+  if (typeof currentTime !== "number" || Number.isNaN(currentTime)) return true;
+
+  const start = typeof overlay.startTime === "number" ? overlay.startTime : 0;
+  const end = typeof overlay.endTime === "number" ? overlay.endTime : null;
+
+  if (currentTime < start) return false;
+  if (end !== null && currentTime > end) return false;
+  return true;
 }
