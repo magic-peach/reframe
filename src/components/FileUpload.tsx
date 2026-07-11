@@ -3,7 +3,6 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { Film, FolderOpen } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
-import uploadAnim from "@/lib/lottie/upload.json";
 import { cn, formatBytes, formatDuration } from "@/lib/utils";
 import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
 
@@ -26,6 +25,7 @@ export default function FileUpload({
   const [pageDragging, setPageDragging] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
+  const [uploadAnim, setUploadAnim] = useState<object | null>(null);
   const dragCounterRef = useRef(0);
 
   // ── Keyboard shortcut Ctrl+O ──────────────────────────
@@ -38,6 +38,26 @@ export default function FileUpload({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    import("@/lib/lottie/upload.json")
+      .then((mod) => {
+        if (!cancelled) {
+          setUploadAnim(mod.default ?? mod);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUploadAnim(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ── Page-level drag overlay ───────────────────────────
@@ -174,7 +194,7 @@ export default function FileUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="video/*"
+        accept="video/*,.mp4,.mov,.avi,.mkv,.webm"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -216,7 +236,7 @@ export default function FileUpload({
       )}
 
       <div className="w-20 h-20 opacity-80 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-200">
-        <LottiePlayer animationData={uploadAnim} loop autoplay />
+        {uploadAnim ? <LottiePlayer animationData={uploadAnim} loop autoplay /> : null}
       </div>
 
       <div className="text-center">
@@ -305,7 +325,7 @@ export default function FileUpload({
         <input
           ref={inputRef}
           type="file"
-          accept="video/*"
+          accept="video/*,.mp4,.mov,.avi,.mkv,.webm"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
