@@ -13,6 +13,7 @@ interface TextControlsProps {
   onChange: (patch: Partial<EditRecipe>) => void;
   selectedTextId: string | null;
   onSelectText: (id: string | null) => void;
+  duration?: number;
 }
 
 /**
@@ -24,6 +25,7 @@ export default function TextControls({
   onChange,
   selectedTextId,
   onSelectText,
+  duration = 0,
 }: TextControlsProps) {
   const { customFonts, addFonts, removeFont, getErrors } = useFontManager();
 
@@ -139,6 +141,47 @@ export default function TextControls({
               className="w-full px-2 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-film-500 resize-none"
               rows={2}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label htmlFor="overlay-start" className="text-xs text-[var(--muted)] font-medium mb-1 block">
+                Start
+              </label>
+              <input
+                id="overlay-start"
+                type="number"
+                min="0"
+                max={duration > 0 ? duration : undefined}
+                step="0.1"
+                value={selectedOverlay.startTime ?? 0}
+                onChange={(e) =>
+                  handleUpdateText(selectedTextId!, {
+                    startTime: Number(e.target.value),
+                  })
+                }
+                className="w-full px-2 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-film-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="overlay-end" className="text-xs text-[var(--muted)] font-medium mb-1 block">
+                End
+              </label>
+              <input
+                id="overlay-end"
+                type="number"
+                min="0"
+                max={duration > 0 ? duration : undefined}
+                step="0.1"
+                value={selectedOverlay.endTime ?? ""}
+                onChange={(e) =>
+                  handleUpdateText(selectedTextId!, {
+                    endTime: e.target.value === "" ? null : Number(e.target.value),
+                  })
+                }
+                className="w-full px-2 py-1.5 text-xs rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-film-500"
+              />
+            </div>
           </div>
 
           {/* Font Selector */}

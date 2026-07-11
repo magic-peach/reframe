@@ -13,6 +13,7 @@ interface Props {
   file: File | null;
   recipe?: EditRecipe;
   videoRef: RefObject<HTMLVideoElement | null>;
+  currentTime?: number;
   selectedTextId?: string | null;
   onSelectText?: (id: string | null) => void;
   onUpdateText?: (id: string, updates: Partial<TextOverlay>) => void;
@@ -25,6 +26,7 @@ export default function VideoPreview({
   file,
   recipe,
   videoRef,
+  currentTime,
   selectedTextId = null,
   onSelectText,
   onUpdateText,
@@ -369,8 +371,9 @@ export default function VideoPreview({
           <DraggableTextOverlays
             recipe={recipe}
             containerWidth={containerDimensions.width}
-            containerHeight={containerDimensions.height}
-            selectedTextId={selectedTextId ?? null}
+                    containerHeight={containerDimensions.height}
+                    currentTime={currentTime}
+                    selectedTextId={selectedTextId ?? null}
             onSelectText={onSelectText || (() => {})}
             onUpdateText={onUpdateText || (() => {})}
           />
