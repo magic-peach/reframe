@@ -410,7 +410,7 @@ return () => {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
-            <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in">
+            <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in lg:sticky lg:top-8 lg:self-start">
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
               {!file && (
