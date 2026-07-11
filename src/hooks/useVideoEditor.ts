@@ -126,6 +126,14 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       recipe.saturation < 0 || recipe.saturation > 3,
       "Saturation must be between 0 and 3.",
     ],
+    [
+      recipe.audioFadeIn < 0 || recipe.audioFadeIn > 5,
+      "Audio fade in must be between 0 and 5 seconds.",
+    ],
+    [
+      recipe.audioFadeOut < 0 || recipe.audioFadeOut > 5,
+      "Audio fade out must be between 0 and 5 seconds.",
+    ],
   ];
 
   return (
@@ -249,6 +257,9 @@ export function useVideoEditor() {
         return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 2;
       case "saturation":
         return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 3;
+      case "audioFadeIn":
+      case "audioFadeOut":
+        return typeof val === "number" && !isNaN(val) && val >= 0 && val <= 5;
       default:
         return true;
     }
