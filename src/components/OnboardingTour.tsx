@@ -62,6 +62,9 @@ function getTooltipStyle(
   const tooltip = tooltipRef.current;
   const tw = tooltip?.offsetWidth ?? 320;
   const th = tooltip?.offsetHeight ?? 140;
+  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1280;
+  const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 720;
+  const margin = 12;
 
   const sr = {
     top: rect.top - PADDING,
@@ -70,29 +73,36 @@ function getTooltipStyle(
     height: rect.height + PADDING * 2,
   };
 
-  switch (position) {
-    case "top":
-      return {
-        top: sr.top - th - TOOLTIP_OFFSET,
-        left: sr.left + sr.width / 2 - tw / 2,
-      };
-    case "left":
-      return {
-        top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left - tw - TOOLTIP_OFFSET,
-      };
-    case "right":
-      return {
-        top: sr.top + sr.height / 2 - th / 2,
-        left: sr.left + sr.width + TOOLTIP_OFFSET,
-      };
-    case "bottom":
-    default:
-      return {
-        top: sr.top + sr.height + TOOLTIP_OFFSET,
-        left: sr.left + sr.width / 2 - tw / 2,
-      };
-  }
+  const rawStyle = (() => {
+    switch (position) {
+      case "top":
+        return {
+          top: sr.top - th - TOOLTIP_OFFSET,
+          left: sr.left + sr.width / 2 - tw / 2,
+        };
+      case "left":
+        return {
+          top: sr.top + sr.height / 2 - th / 2,
+          left: sr.left - tw - TOOLTIP_OFFSET,
+        };
+      case "right":
+        return {
+          top: sr.top + sr.height / 2 - th / 2,
+          left: sr.left + sr.width + TOOLTIP_OFFSET,
+        };
+      case "bottom":
+      default:
+        return {
+          top: sr.top + sr.height + TOOLTIP_OFFSET,
+          left: sr.left + sr.width / 2 - tw / 2,
+        };
+    }
+  })();
+
+  return {
+    top: Math.max(margin, Math.min(rawStyle.top, viewportHeight - th - margin)),
+    left: Math.max(margin, Math.min(rawStyle.left, viewportWidth - tw - margin)),
+  };
 }
 
 interface SpotlightProps {
@@ -240,6 +250,12 @@ export default function OnboardingTour() {
     setVisible(false);
   }, []);
 
+  const advanceStep = useCallback(() => {
+    setTargetRect(null);
+    if (stepIndex < TOUR_STEPS.length - 1) setStepIndex((i) => i + 1);
+    else dismiss();
+  }, [dismiss, stepIndex]);
+
   const measureTarget = useCallback((id: string): Promise<Rect | null> => {
     return new Promise((resolve) => {
       const attempt = (tries: number) => {
@@ -354,13 +370,12 @@ export default function OnboardingTour() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") dismiss();
       if (e.key === "ArrowRight" || e.key === "Enter") {
-        if (stepIndex < TOUR_STEPS.length - 1) setStepIndex((i) => i + 1);
-        else dismiss();
+        advanceStep();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [visible, stepIndex, dismiss]);
+  }, [advanceStep, dismiss, visible]);
 
   if (!visible || !targetRect || !currentStep) return null;
 
@@ -379,10 +394,7 @@ export default function OnboardingTour() {
         stepIndex={stepIndex}
         totalSteps={TOUR_STEPS.length}
         rect={targetRect}
-        onNext={() => {
-          if (stepIndex < TOUR_STEPS.length - 1) setStepIndex((i) => i + 1);
-          else dismiss();
-        }}
+        onNext={advanceStep}
         onSkip={dismiss}
         tooltipRef={tooltipRef}
       />
