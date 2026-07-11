@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
 import ComparisonPreview from "./ComparisonPreview";
 import DraggableTextOverlays from "./DraggableTextOverlays";
+import { buildPreviewEffects } from "@/lib/previewEffects";
 
 interface Props {
   file: File | null;
@@ -229,6 +230,7 @@ export default function VideoPreview({
       }
     }
   })();
+  const previewEffects = buildPreviewEffects(recipe);
 
   if (!file) return null;
 
@@ -276,6 +278,7 @@ export default function VideoPreview({
           ref={videoRef}
           controls
           className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+          style={previewEffects}
           onLoadedData={() => setIsLoading(false)}
           playsInline
           muted={!recipe?.keepAudio}
