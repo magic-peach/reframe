@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
 import { EditRecipe } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
+import { buildPreviewAdjustmentFilter } from "@/lib/adjustmentFilters";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -193,6 +194,7 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
           <video
             ref={rightVideoRef}
             className="w-full h-full object-contain"
+            style={recipe ? { filter: buildPreviewAdjustmentFilter(recipe) || undefined } : undefined}
             playsInline
             muted
             autoPlay

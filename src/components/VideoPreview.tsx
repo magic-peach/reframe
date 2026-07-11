@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, useCallback, RefObject } from "react";
 import { EditRecipe, TextOverlay, TimelineTrack, MultiTrackEditorState } from "@/lib/types";
 import { getPresetById } from "@/lib/presets";
+import { buildPreviewAdjustmentFilter } from "@/lib/adjustmentFilters";
 import { cn } from "@/lib/utils";
 import { Camera } from "lucide-react";
 import ComparisonPreview from "./ComparisonPreview";
@@ -276,6 +277,7 @@ export default function VideoPreview({
           ref={videoRef}
           controls
           className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+          style={recipe ? { filter: buildPreviewAdjustmentFilter(recipe) || undefined } : undefined}
           onLoadedData={() => setIsLoading(false)}
           playsInline
           muted={!recipe?.keepAudio}
