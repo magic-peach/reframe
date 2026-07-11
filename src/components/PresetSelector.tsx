@@ -320,7 +320,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
             />
           </div>
 
-          <div className="hidden h-full flex-col justify-end sm:flex">
+          <div className="hidden h-full flex-col justify-start sm:flex">
             <span className="mb-1.5 block text-center text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)]">
               Ratio
             </span>
