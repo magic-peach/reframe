@@ -703,11 +703,11 @@ return () => {
                 </div>
               </AccordionSection>
 
-              <div className="pt-2 flex justify-center items-center gap-6">
+              <div className="pt-2 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3 sm:gap-6">
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-film-500 hover:text-film-600 hover:opacity-100 transition-all cursor-pointer min-h-[44px] px-3"
                 >
                   <Copy size={12} />
                   {shareCopied ? "Copied!" : "Copy Link"}
@@ -715,7 +715,7 @@ return () => {
                 <button
                   type="button"
                   onClick={resetSettings}
-                  className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
+                  className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100 min-h-[44px] px-3"
                 >
                   Reset all settings
                 </button>
