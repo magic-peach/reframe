@@ -1,16 +1,19 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
-import { Search, Settings2 } from "lucide-react";
+import { Link2, Search, Settings2 } from "lucide-react";
 
 import { PRESETS } from "@/lib/presets";
 import { EditRecipe } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { getLockedCustomDimensions } from "@/lib/customDimensions";
 
 interface Props {
   recipe: EditRecipe;
   onChange: (patch: Partial<EditRecipe>) => void;
+  sourceWidth?: number | null;
+  sourceHeight?: number | null;
 }
 
 function getOrientationLabel(width: number, height: number): string {
@@ -102,8 +105,15 @@ const QUICK_ACTIONS = [
   },
 ] as const;
 
-export default function PresetSelector({ recipe, onChange }: Props) {
+export default function PresetSelector({ recipe, onChange, sourceWidth, sourceHeight }: Props) {
   const [search, setSearch] = useState("");
+  const [lockAspectRatio, setLockAspectRatio] = useState(false);
+
+  const sourceAspectRatio = useMemo(() => {
+    if (!sourceWidth || !sourceHeight) return null;
+    if (sourceHeight === 0) return null;
+    return sourceWidth / sourceHeight;
+  }, [sourceWidth, sourceHeight]);
 
   const filteredPresets = PRESETS.filter(
     (preset) =>
@@ -123,19 +133,43 @@ export default function PresetSelector({ recipe, onChange }: Props) {
   const handleWidthChange = useCallback(
     (width: number) => {
       if (!isNaN(width) && width >= 16 && width <= 7680) {
+        if (lockAspectRatio && sourceAspectRatio) {
+          onChange({
+            ...getLockedCustomDimensions(
+              "width",
+              width,
+              sourceAspectRatio,
+              recipe.customWidth,
+              recipe.customHeight,
+            ),
+          });
+          return;
+        }
         onChange({ customWidth: width });
       }
     },
-    [onChange],
+    [lockAspectRatio, onChange, recipe.customHeight, recipe.customWidth, sourceAspectRatio],
   );
 
   const handleHeightChange = useCallback(
     (height: number) => {
       if (!isNaN(height) && height >= 16 && height <= 7680) {
+        if (lockAspectRatio && sourceAspectRatio) {
+          onChange({
+            ...getLockedCustomDimensions(
+              "height",
+              height,
+              sourceAspectRatio,
+              recipe.customWidth,
+              recipe.customHeight,
+            ),
+          });
+          return;
+        }
         onChange({ customHeight: height });
       }
     },
-    [onChange],
+    [lockAspectRatio, onChange, recipe.customHeight, recipe.customWidth, sourceAspectRatio],
   );
 
   return (
@@ -295,9 +329,23 @@ export default function PresetSelector({ recipe, onChange }: Props) {
           </div>
 
           <div className="flex h-full flex-col items-center justify-center">
-            <span className="font-heading text-sm font-medium text-[var(--muted)]">
-              ×
-            </span>
+            <button
+              type="button"
+              aria-pressed={lockAspectRatio}
+              aria-label={lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"}
+              title={lockAspectRatio ? "Unlock aspect ratio" : "Lock aspect ratio"}
+              disabled={!sourceAspectRatio}
+              onClick={() => setLockAspectRatio((current) => !current)}
+              className={cn(
+                "inline-flex h-9 w-9 items-center justify-center rounded-md border transition-all duration-150",
+                sourceAspectRatio
+                  ? "border-[var(--border)] bg-[var(--bg)] hover:border-film-300 hover:text-film-600"
+                  : "cursor-not-allowed border-[var(--border)] bg-[var(--bg)] text-[var(--muted)] opacity-50",
+                lockAspectRatio && "border-film-500 bg-film-50 text-film-600",
+              )}
+            >
+              <Link2 size={14} />
+            </button>
           </div>
 
           <div className="flex-1">

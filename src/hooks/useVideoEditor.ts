@@ -686,6 +686,7 @@ export function useVideoEditor() {
   return {
     file,
     duration,
+    videoMetadata,
     recipe,
     status,
     progress,
