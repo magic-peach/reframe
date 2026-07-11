@@ -622,6 +622,13 @@ export function useVideoEditor() {
   }, []);
 
   const resetSettings = useCallback(() => {
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(
+        "Reset all settings to defaults? This cannot be undone.",
+      );
+      if (!confirmed) return;
+    }
+
     setRecipe(DEFAULT_RECIPE);
     try {
       localStorage.removeItem(RECIPE_STORAGE_KEY);
