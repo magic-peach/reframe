@@ -238,7 +238,7 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
       {/* Draggable divider slider */}
       <div
         className={cn(
-          "absolute top-0 bottom-0 w-1 bg-white pointer-events-none transition-opacity",
+          "absolute top-0 bottom-0 w-1 bg-[var(--surface)] pointer-events-none transition-opacity",
           isDragging ? "opacity-100" : "opacity-75 hover:opacity-100"
         )}
         style={{ left: `${sliderPosition}%`, transform: "translateX(-50%)" }}
@@ -249,15 +249,15 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
           type="button"
           onMouseDown={handleMouseDown}
           onTouchStart={handleMouseDown}
-          className="absolute top-1/2 left-1/2 w-8 h-8 -ml-4 -mt-4 rounded-full bg-white shadow-lg pointer-events-auto cursor-grab active:cursor-grabbing flex items-center justify-center transition-shadow"
+          className="absolute top-1/2 left-1/2 w-8 h-8 -ml-4 -mt-4 rounded-full bg-[var(--surface)] shadow-lg pointer-events-auto cursor-grab active:cursor-grabbing flex items-center justify-center transition-shadow border border-[var(--border)]"
           style={{
-            boxShadow: isDragging ? "0 0 12px rgba(255, 255, 255, 0.8)" : undefined,
+            boxShadow: isDragging ? "0 0 12px var(--accent-muted)" : undefined,
           }}
           aria-label="Drag to compare original vs reframed"
           title="Drag left/right to compare"
         >
           <svg
-            className="w-4 h-4 text-black"
+            className="w-4 h-4 text-[var(--text)]"
             fill="currentColor"
             viewBox="0 0 24 24"
           >
