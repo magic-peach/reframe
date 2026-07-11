@@ -3,6 +3,7 @@ import { toBlobURL } from "@ffmpeg/util";
 import { EditRecipe, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { hasBackgroundMusicTrack, shouldKeepAudioTrack } from "./audioMix";
 
 const CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd";
 const MT_CORE_BASE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.6/dist/esm";
@@ -209,7 +210,7 @@ function buildArguments(
   }
 
   const needsFilterComplex = hasOverlay || hasMusicTrack;
-  const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
+  const shouldKeepAudio = shouldKeepAudioTrack(recipe.keepAudio, hasOriginalAudio, hasMusicTrack);
 
   if (needsFilterComplex) {
     const filterParts: string[] = [];
@@ -250,7 +251,7 @@ interface PositionCoords {
     if (shouldKeepAudio) {
       if (hasMusicTrack) {
         const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
-        if (hasOriginalAudio) {
+        if (recipe.keepAudio && hasOriginalAudio) {
           const origVol = (musicOptions!.originalAudioVolume / 100).toFixed(2);
           const origChain = afParts.length > 0
             ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
@@ -263,7 +264,7 @@ interface PositionCoords {
           filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
           audioOut = "[aout]";
         }
-      } else if (hasOriginalAudio && af) {
+      } else if (recipe.keepAudio && hasOriginalAudio && af) {
         filterParts.push(`[0:a]${af}[aout]`);
         audioOut = "[aout]";
       }
@@ -410,7 +411,7 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
   const fileBytes = serializeFileBuffer(request.file);
   await ffmpeg.writeFile(inputName, fileBytes, { signal: activeExportAbortController?.signal });
 
-  const hasMusicTrack = !!(request.musicFile && recipe.keepAudio);
+  const hasMusicTrack = hasBackgroundMusicTrack(request.musicFile);
   const musicInputName = `music_input_${sessionId}.mp3`;
   if (hasMusicTrack) {
     cleanupFiles.add(musicInputName);
