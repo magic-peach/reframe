@@ -354,6 +354,49 @@ function serializeFileBuffer(file: SerializedFile): Uint8Array {
   return new Uint8Array(file.data);
 }
 
+async function materializeCustomFontPaths(
+  recipe: EditRecipe,
+  cleanupFiles: Set<string>,
+  sessionId: string
+): Promise<EditRecipe> {
+  const nextRecipe = JSON.parse(JSON.stringify(recipe)) as EditRecipe;
+  const fontCache = new Map<string, string>();
+  let fontIndex = 0;
+
+  for (const overlay of nextRecipe.textOverlays || []) {
+    const fontPath = overlay.fontPath;
+    if (!fontPath) continue;
+
+    const shouldFetch =
+      fontPath.startsWith("blob:") ||
+      fontPath.startsWith("data:") ||
+      fontPath.startsWith("http://") ||
+      fontPath.startsWith("https://");
+
+    if (!shouldFetch) continue;
+
+    const cachedPath = fontCache.get(fontPath);
+    if (cachedPath) {
+      overlay.fontPath = cachedPath;
+      continue;
+    }
+
+    const response = await fetch(fontPath);
+    if (!response.ok) {
+      throw new Error(`Failed to load custom font for export: ${overlay.fontFamily || overlay.id}`);
+    }
+
+    const localPath = `custom-font-${sessionId}-${fontIndex++}.ttf`;
+    const fontBytes = new Uint8Array(await response.arrayBuffer());
+    await ffmpeg!.writeFile(localPath, fontBytes, { signal: activeExportAbortController?.signal });
+    cleanupFiles.add(localPath);
+    fontCache.set(fontPath, localPath);
+    overlay.fontPath = localPath;
+  }
+
+  return nextRecipe;
+}
+
 function getOutputConfig(format: string, sessionId: string) {
   switch (format) {
     case "webm":
@@ -430,6 +473,7 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
   }
 
   const videoDuration = request.videoDuration;
+  const exportRecipe = await materializeCustomFontPaths(recipe, cleanupFiles, sessionId);
 
   const handleProgress = ({ progress }: { progress: number }) => {
     if (activeExportId !== sessionId) return;
@@ -441,16 +485,16 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
 
   try {
     if (recipe.format === "gif") {
-      const vf = buildVideoFilter(recipe, targetW, targetH);
+      const vf = buildVideoFilter(exportRecipe, targetW, targetH);
       const vfWithPalette = vf ? `${vf},palettegen` : "palettegen";
       const vfWithPaletteUse = vf
         ? `[0:v]${vf}[x];[x][1:v]paletteuse`
         : "[0:v][1:v]paletteuse";
 
-      const gifDurationArgs = recipe.speed !== 1
+      const gifDurationArgs = exportRecipe.speed !== 1
         ? (() => {
-            const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
-            const outputDuration = sourceDuration / recipe.speed;
+            const sourceDuration = (exportRecipe.trimEnd ?? videoDuration) - exportRecipe.trimStart;
+            const outputDuration = sourceDuration / exportRecipe.speed;
             return ["-t", outputDuration.toFixed(6)];
           })()
         : [];
@@ -499,8 +543,8 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     ffmpeg.on("log", logListener);
 
     let args = buildArguments(
-      recipe,
-      recipe.format,
+      exportRecipe,
+      exportRecipe.format,
       outputName,
       inputName,
       targetW,

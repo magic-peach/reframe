@@ -91,8 +91,8 @@ export function buildTextFilter(
   // Build the drawtext filter with font support
   let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:fontweight=${fontWeightParam}`;
 
-  // Add font family if specified
-  if (overlay.fontFamily) {
+  // Add a fallback font name when no explicit export path is available.
+  if (overlay.fontFamily && !fontFileParam) {
     // Sanitize font name for FFmpeg
     const safeFontName = overlay.fontFamily.replace(/[^a-zA-Z0-9-]/g, "");
     filter += `:fontfile='${safeFontName}'`;
