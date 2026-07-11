@@ -37,6 +37,10 @@ export default function VideoPreview({
   const [showOverlay, setShowOverlay] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
   const [showGridOverlay, setShowGridOverlay] = useState(false);
+  const [intrinsicSize, setIntrinsicSize] = useState({
+    width: 0,
+    height: 0,
+  });
   const [containerDimensions, setContainerDimensions] = useState({
     width: 0,
     height: 0,
@@ -230,6 +234,16 @@ export default function VideoPreview({
     }
   })();
 
+  const isRotatedPreview = !!recipe && (recipe.rotate === 90 || recipe.rotate === 270);
+  const previewAspectRatio =
+    intrinsicSize.width > 0 && intrinsicSize.height > 0
+      ? isRotatedPreview
+        ? intrinsicSize.height / intrinsicSize.width
+        : intrinsicSize.width / intrinsicSize.height
+      : isRotatedPreview
+      ? 9 / 16
+      : 16 / 9;
+
   if (!file) return null;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -260,7 +274,8 @@ export default function VideoPreview({
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        style={{ aspectRatio: previewAspectRatio }}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"
@@ -275,8 +290,23 @@ export default function VideoPreview({
         <video
           ref={videoRef}
           controls
-          className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
-          onLoadedData={() => setIsLoading(false)}
+          className={cn(
+            "w-full h-full object-contain transition-opacity duration-300 transition-transform duration-300",
+            isLoading ? "opacity-0" : "opacity-100"
+          )}
+          style={{
+            transform: `rotate(${recipe?.rotate ?? 0}deg)`,
+          }}
+          onLoadedData={() => {
+            setIsLoading(false);
+            const video = videoRef.current;
+            if (video) {
+              setIntrinsicSize({
+                width: video.videoWidth || 0,
+                height: video.videoHeight || 0,
+              });
+            }
+          }}
           playsInline
           muted={!recipe?.keepAudio}
         >
