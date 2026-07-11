@@ -144,9 +144,13 @@ export default function TextControls({
           {/* Font Selector */}
           <FontSelector
             selectedFont={selectedOverlay.fontFamily}
-            onSelectFont={(fontName) =>
-              handleUpdateText(selectedTextId!, { fontFamily: fontName })
-            }
+            onSelectFont={(fontName) => {
+              const customFont = customFonts.find((font) => font.name === fontName);
+              handleUpdateText(selectedTextId!, {
+                fontFamily: fontName,
+                fontPath: customFont?.blobUrl,
+              });
+            }}
             customFonts={customFonts}
             onAddFonts={addFonts}
             onRemoveFont={removeFont}
