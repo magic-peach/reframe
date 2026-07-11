@@ -1,5 +1,5 @@
 import { DEFAULT_RECIPE } from "@/lib/constants";
-import { EditRecipe, OverlayPosition, isValidRecipe } from "@/lib/types";
+import { EditRecipe, OverlayPosition } from "@/lib/types";
 
 export const RECIPE_STORAGE_KEY = "reframe:recipe";
 export const LEGACY_SETTINGS_KEY = "reframe-settings";
@@ -32,8 +32,8 @@ export function loadPersistedRecipe(
   if (raw) {
     try {
       const parsed = JSON.parse(raw);
-      if (isValidRecipe(parsed)) {
-        return parsed;
+      if (parsed && typeof parsed === "object") {
+        return migrateRecipe(parsed as Partial<EditRecipe>);
       }
     } catch {
       // fall through to legacy state

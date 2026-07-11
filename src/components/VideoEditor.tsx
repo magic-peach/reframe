@@ -202,6 +202,7 @@ export default function VideoEditor() {
     file, duration, recipe, status, progress,
     result, error, exportStartedAt, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
+    handleQuickExport, lastExportRecipe,
     videoRef,
     seekTo,
     overlayFile, setOverlayFile,
@@ -662,7 +663,18 @@ return () => {
 
             {status === "done" && result && (
               <div role="status" className="animate-fade-in" ref={downloadRef}>
-                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
+                <DownloadResult
+                  result={result}
+                  onReset={reset}
+                  soundOnCompletion={recipe.soundOnCompletion}
+                  onToggleSound={toggleSound}
+                  onQuickExport={lastExportRecipe ? handleQuickExport : undefined}
+                  quickExportTooltip={
+                    lastExportRecipe
+                      ? `Re-export with the last settings: ${lastExportRecipe.format.toUpperCase()} · ${lastExportRecipe.framing} · ${lastExportRecipe.speed}x`
+                      : undefined
+                  }
+                />
               </div>
             )}
           </div>

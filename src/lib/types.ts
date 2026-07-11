@@ -34,6 +34,8 @@ export interface EditRecipe {
   contrast: number;
   saturation: number;
   soundOnCompletion: boolean;
+  audioFadeIn: number;
+  audioFadeOut: number;
   textOverlays: TextOverlay[];
   version: number;
 }
@@ -141,6 +143,8 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
+  if (typeof v.audioFadeIn !== "number" || !isFinite(v.audioFadeIn)) return false;
+  if (typeof v.audioFadeOut !== "number" || !isFinite(v.audioFadeOut)) return false;
   if (!Array.isArray(v.textOverlays)) return false;
 
   return true;

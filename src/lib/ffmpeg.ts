@@ -392,7 +392,39 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   return filters.join(",");
 }
 
-export function buildAudioFilter(speed: number, normalizeAudio: boolean): string {
+function buildAudioFadeFilter(
+  recipe: EditRecipe,
+  speed: number,
+  videoDuration: number
+): string {
+  const fadeIn = Math.max(0, recipe.audioFadeIn || 0);
+  const fadeOut = Math.max(0, recipe.audioFadeOut || 0);
+  if (fadeIn === 0 && fadeOut === 0) return "";
+
+  const trimmedDuration = Math.max(
+    0,
+    (recipe.trimEnd ?? videoDuration) - recipe.trimStart
+  );
+  const effectiveDuration = speed > 0 ? trimmedDuration / speed : trimmedDuration;
+  const filters: string[] = [];
+
+  if (fadeIn > 0) {
+    filters.push(`afade=t=in:st=0:d=${fadeIn}`);
+  }
+  if (fadeOut > 0 && effectiveDuration > 0) {
+    const fadeOutStart = Math.max(0, effectiveDuration - fadeOut);
+    filters.push(`afade=t=out:st=${Number(fadeOutStart.toFixed(3))}:d=${fadeOut}`);
+  }
+
+  return filters.join(",");
+}
+
+export function buildAudioFilter(
+  recipe: EditRecipe,
+  normalizeAudio: boolean,
+  videoDuration: number
+): string {
+  const speed = recipe.speed;
   if (speed <= 0) return "";
   const filters: string[] = [];
 
@@ -412,6 +444,8 @@ export function buildAudioFilter(speed: number, normalizeAudio: boolean): string
   }
 
   if (normalizeAudio) filters.push("loudnorm=I=-14:TP=-1.5:LRA=11");
+  const fadeFilter = buildAudioFadeFilter(recipe, speed, videoDuration);
+  if (fadeFilter) filters.push(fadeFilter);
 
   return filters.join(",");
 }
@@ -440,7 +474,9 @@ function buildArguments(
 ): string[] {
   const vf = buildVideoFilter(recipe, targetW, targetH);
   const audioTrim = hasOriginalAudio ? buildAudioTrimFilter(recipe) : "";
-  const audioSpeed = hasOriginalAudio ? buildAudioFilter(recipe.speed, recipe.normalizeAudio ?? false) : "";
+  const audioSpeed = hasOriginalAudio
+    ? buildAudioFilter(recipe, recipe.normalizeAudio ?? false, videoDuration)
+    : "";
   const afParts = [audioTrim, audioSpeed].filter(Boolean);
   const af = afParts.join(",");
 

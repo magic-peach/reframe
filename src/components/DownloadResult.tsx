@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
-import { Download, RotateCcw, Share2, AlertCircle, Volume2, VolumeX } from "lucide-react";
+import { Download, RotateCcw, Share2, AlertCircle, Volume2, VolumeX, RotateCw } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import { NativeShareButton } from "./NativeShareButton";
 import successAnim from "@/lib/lottie/success.json";
@@ -27,9 +27,11 @@ interface Props {
   onReset: () => void;
   soundOnCompletion: boolean;
   onToggleSound: () => void;
+  onQuickExport?: () => void;
+  quickExportTooltip?: string;
 }
 
-export default function DownloadResult({ result, onReset, soundOnCompletion, onToggleSound }: Props) {
+export default function DownloadResult({ result, onReset, soundOnCompletion, onToggleSound, onQuickExport, quickExportTooltip }: Props) {
   const defaultName = `reframe_${result.width}x${result.height}`;
   const [name, setName] = useState(defaultName);
 
@@ -156,6 +158,17 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
           fileName={filename}
           className="flex-1 min-w-[10rem] py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg"
         />
+        {onQuickExport && (
+          <button
+            type="button"
+            title={quickExportTooltip || "Run the previous export settings again"}
+            onClick={onQuickExport}
+            className="flex items-center justify-center gap-2 px-4 py-3 border border-[var(--border)] text-[var(--text)] text-sm rounded-lg hover:border-[var(--accent)] hover:bg-[var(--accent-muted)] transition-colors"
+          >
+            <RotateCw size={14} aria-hidden="true" />
+            Quick Export
+          </button>
+        )}
         <a
           href={result.blobUrl}
           target="_blank"

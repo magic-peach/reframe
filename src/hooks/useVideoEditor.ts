@@ -175,6 +175,7 @@ export function useVideoEditor() {
   const [error, setError] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
   const [exportStartedAt, setExportStartedAt] = useState<number | null>(null);
+  const [lastExportRecipe, setLastExportRecipe] = useState<EditRecipe | null>(null);
   const exportAbortControllerRef = useRef<AbortController | null>(null);
   const exportCancelledRef = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -435,13 +436,13 @@ export function useVideoEditor() {
 
   }, []);
 
-  const handleExport = useCallback(async () => {
+  const performExport = useCallback(async (exportRecipe: EditRecipe) => {
     if (!file) return;
     if (status === "loading-engine" || status === "exporting") {
       return;
     }
 
-    const validationError = validateRecipe(recipe, duration);
+    const validationError = validateRecipe(exportRecipe, duration);
     if (validationError) {
       setError(validationError);
       setStatus("error");
@@ -469,7 +470,7 @@ export function useVideoEditor() {
 
       const exportResult = await exportVideo(
         file,
-        recipe,
+        exportRecipe,
         setProgress,
         abortController.signal,
         {
@@ -491,6 +492,7 @@ export function useVideoEditor() {
         ...exportResult,
         exportDurationMs: Date.now() - startedAt,
       });
+      setLastExportRecipe(exportRecipe);
       setStatus("done");
      }  catch (err) {
       if (exportCancelledRef.current) return;
@@ -524,10 +526,18 @@ export function useVideoEditor() {
     overlayOpacity,
     overlayPosition,
     overlaySize,
-    recipe,
     result,
     status,
   ]);
+
+  const handleExport = useCallback(() => {
+    return performExport(recipe);
+  }, [performExport, recipe]);
+
+  const handleQuickExport = useCallback(() => {
+    if (!lastExportRecipe) return;
+    return performExport(lastExportRecipe);
+  }, [lastExportRecipe, performExport]);
 
 
   useEffect(() => {
@@ -623,6 +633,7 @@ export function useVideoEditor() {
 
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
+    setLastExportRecipe(null);
     try {
       localStorage.removeItem(RECIPE_STORAGE_KEY);
       localStorage.removeItem(LEGACY_SETTINGS_KEY);
@@ -649,6 +660,7 @@ export function useVideoEditor() {
     setVideoMetadata(null);
     setDuration(0);
     setRecipe(DEFAULT_RECIPE);
+    setLastExportRecipe(null);
     setStatus("idle");
     setProgress(0);
     setResult(null);
@@ -698,9 +710,11 @@ export function useVideoEditor() {
     handleFileSelect,
     fileError,
     handleExport,
+    handleQuickExport,
     cancelExport,
     reset,
     resetSettings,
+    lastExportRecipe,
     musicFile,
     setMusicFile,
     musicVolume,

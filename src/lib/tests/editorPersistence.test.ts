@@ -12,26 +12,42 @@ import {
 } from "@/lib/editorPersistence";
 import { EditRecipe } from "@/lib/types";
 
+function createStorage() {
+  const store = new Map<string, string>();
+  return {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      store.set(key, value);
+    },
+    removeItem: (key: string) => {
+      store.delete(key);
+    },
+    clear: () => store.clear(),
+  };
+}
+
 describe("editorPersistence", () => {
+  const storage = createStorage();
+
   beforeEach(() => {
-    localStorage.clear();
+    storage.clear();
   });
 
   it("loads the canonical recipe key first", () => {
     const recipe: EditRecipe = { ...DEFAULT_RECIPE, quality: 28, version: DEFAULT_RECIPE.version };
-    localStorage.setItem(RECIPE_STORAGE_KEY, JSON.stringify(recipe));
-    localStorage.setItem(LEGACY_SETTINGS_KEY, JSON.stringify({ quality: 18 }));
+    storage.setItem(RECIPE_STORAGE_KEY, JSON.stringify(recipe));
+    storage.setItem(LEGACY_SETTINGS_KEY, JSON.stringify({ quality: 18 }));
 
-    expect(loadPersistedRecipe(localStorage, DEFAULT_RECIPE)).toEqual(recipe);
+    expect(loadPersistedRecipe(storage, DEFAULT_RECIPE)).toEqual(recipe);
   });
 
   it("migrates legacy settings when the canonical key is missing", () => {
-    localStorage.setItem(
+    storage.setItem(
       LEGACY_SETTINGS_KEY,
       JSON.stringify({ preset: "custom", quality: 19, speed: 1.5, customWidth: 1280, customHeight: 720 })
     );
 
-    const loaded = loadPersistedRecipe(localStorage, DEFAULT_RECIPE);
+    const loaded = loadPersistedRecipe(storage, DEFAULT_RECIPE);
 
     expect(loaded.preset).toBe("custom");
     expect(loaded.quality).toBe(19);
@@ -41,20 +57,20 @@ describe("editorPersistence", () => {
   });
 
   it("persists only the canonical recipe key and clears legacy recipe settings", () => {
-    persistRecipe(localStorage, DEFAULT_RECIPE);
+    persistRecipe(storage, DEFAULT_RECIPE);
 
-    expect(localStorage.getItem(RECIPE_STORAGE_KEY)).toBe(JSON.stringify(DEFAULT_RECIPE));
-    expect(localStorage.getItem(LEGACY_SETTINGS_KEY)).toBeNull();
+    expect(storage.getItem(RECIPE_STORAGE_KEY)).toBe(JSON.stringify(DEFAULT_RECIPE));
+    expect(storage.getItem(LEGACY_SETTINGS_KEY)).toBeNull();
   });
 
   it("persists overlay state without recipe data", () => {
-    persistOverlayState(localStorage, {
+    persistOverlayState(storage, {
       overlayPosition: "top-left",
       overlaySize: 120,
       overlayOpacity: 85,
     });
 
-    expect(JSON.parse(localStorage.getItem(EDITOR_STATE_KEY) ?? "{}")).toEqual({
+    expect(JSON.parse(storage.getItem(EDITOR_STATE_KEY) ?? "{}")).toEqual({
       overlayPosition: "top-left",
       overlaySize: 120,
       overlayOpacity: 85,
@@ -62,7 +78,7 @@ describe("editorPersistence", () => {
   });
 
   it("reads overlay state while ignoring any legacy embedded recipe", () => {
-    localStorage.setItem(
+    storage.setItem(
       EDITOR_STATE_KEY,
       JSON.stringify({
         recipe: { quality: 12 },
@@ -72,7 +88,7 @@ describe("editorPersistence", () => {
       })
     );
 
-    expect(loadOverlayState(localStorage, {
+    expect(loadOverlayState(storage, {
       overlayPosition: "bottom-right",
       overlaySize: 150,
       overlayOpacity: 100,
@@ -84,7 +100,7 @@ describe("editorPersistence", () => {
   });
 
   it("persists sound preference separately", () => {
-    persistSoundPreference(localStorage, true);
-    expect(localStorage.getItem("soundOnCompletion")).toBe("true");
+    persistSoundPreference(storage, true);
+    expect(storage.getItem("soundOnCompletion")).toBe("true");
   });
 });
