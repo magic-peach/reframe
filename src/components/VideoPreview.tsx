@@ -255,6 +255,10 @@ export default function VideoPreview({
     }
   };
 
+  const previewFilter = recipe
+    ? `brightness(${1 + recipe.brightness}) contrast(${recipe.contrast}) saturate(${recipe.saturation})`
+    : undefined;
+
   return (
     <>
       <div
@@ -275,7 +279,11 @@ export default function VideoPreview({
         <video
           ref={videoRef}
           controls
-          className={cn("w-full h-full object-contain transition-opacity duration-300", isLoading ? "opacity-0" : "opacity-100")}
+          className={cn(
+            "w-full h-full object-contain transition-opacity duration-300",
+            isLoading ? "opacity-0" : "opacity-100",
+          )}
+          style={{ filter: previewFilter }}
           onLoadedData={() => setIsLoading(false)}
           playsInline
           muted={!recipe?.keepAudio}
