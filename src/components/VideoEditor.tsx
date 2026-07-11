@@ -20,6 +20,7 @@ import ImageOverlay from "./ImageOverlay"
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
+import { encodeRecipe } from "@/lib/shareLink";
 import {
   Layers, Crop, Scissors, RotateCw, Volume2, Type,
   SlidersHorizontal, Zap, AlertTriangle, Github, Copy
@@ -277,7 +278,7 @@ export default function VideoEditor() {
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
-    const encoded = btoa(JSON.stringify(recipe));
+    const encoded = encodeRecipe(recipe);
     const url = new URL(window.location.href);
     url.searchParams.set("settings", encoded);
     history.replaceState(null, "", url.toString());
