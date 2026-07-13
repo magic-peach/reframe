@@ -539,10 +539,13 @@ export function useVideoEditor() {
     } else {
       document.title = DEFAULT_TITLE;
     }
+  }, [status, progress, file]);
+
+  useEffect(() => {
     return () => {
       document.title = DEFAULT_TITLE;
     };
-  }, [status, progress, file]);
+  }, []);
 
   useEffect(() => {
     const shouldWarn =
