@@ -97,6 +97,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.quality !== "number" || !isFinite(v.quality)) return false;
   if (!["mp4", "webm", "mkv", "gif"].includes(v.format)) return false;
   if (typeof v.stabilization !== "boolean") return false;
+  if (typeof v.denoise !== "boolean") return false;
   if (typeof v.brightness !== "number" || !isFinite(v.brightness)) return false;
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
