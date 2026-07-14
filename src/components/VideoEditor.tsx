@@ -365,7 +365,11 @@ return () => {
         {status === "error" && `Export failed: ${error}`}
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
+      <div className={cn(
+        "max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full",
+        // Reserve space on mobile so the fixed export bar never covers content.
+        file && "max-lg:pb-28"
+      )}>
         <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
         <div
           className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
@@ -739,7 +743,8 @@ return () => {
                 aria-disabled={!file || isProcessing ? "true" : undefined}
                 title={!file ? "Upload a video to enable export" : undefined}
               className={cn(
-                "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
+                // Hidden on mobile — replaced by the fixed bottom bar below.
+                "w-full hidden lg:flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
@@ -751,13 +756,36 @@ return () => {
             </button>
 
             {file && !isProcessing && (
-              <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
+              <p className="hidden lg:block text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
                 {isMac ? "⌘" : "Ctrl"} + Enter to export
               </p>
             )}
           </div>
         </div>
       </div>
+
+      {/* Mobile-only export bar — keeps Export reachable without scrolling to the sidebar. */}
+      {file && (
+        <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border)] bg-[var(--bg)]/95 px-4 py-3 backdrop-blur [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={isProcessing}
+            aria-label="Export video"
+            aria-disabled={isProcessing ? "true" : undefined}
+            className={cn(
+              "w-full flex items-center justify-center gap-3 py-4 min-h-[44px] rounded-xl",
+              "font-display text-xl tracking-widest transition-all duration-200",
+              !isProcessing
+                ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
+                : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+            )}
+          >
+            <Zap size={18} className={cn(!isProcessing && "animate-pulse")} />
+            {isProcessing ? "PROCESSING" : "EXPORT"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
