@@ -140,7 +140,7 @@ function encodeRecipe(recipe: EditRecipe): string {
 
 function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   try {
-    const decoded = JSON.parse(atob(encoded));
+    const decoded = JSON.parse(decodeURIComponent(atob(encoded)));
     return decoded as Partial<EditRecipe>;
   } catch {
     return null;
