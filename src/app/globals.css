@@ -163,7 +163,7 @@ textarea:focus {
   border-radius: var(--radius);
 }
 
-detail > summary {
+details > summary {
   list-style: none;
 }
 details > summary::-webkit-details-marker {
