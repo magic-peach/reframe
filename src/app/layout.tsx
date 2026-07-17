@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import ScrollToTop from "@/components/ScrollToTop";
 import BrandLogo from "@/components/BrandLogo";
+import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
@@ -68,7 +69,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
       </head>
       <body className="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased">
-        
+
       <a href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-[var(--radius)] focus:border focus:border-[var(--border)] focus:bg-[var(--surface)] focus:px-4 focus:py-2 focus:text-[var(--text)]"
         >
@@ -89,6 +90,7 @@ export default function RootLayout({
             <main id="main-content" tabIndex={-1}>
               {children}
             </main>
+            <Footer />
             <ScrollToTop />
           </ErrorBoundary>
         </ThemeProvider>
