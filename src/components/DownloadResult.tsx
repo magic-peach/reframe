@@ -6,7 +6,6 @@ import { formatBytes } from "@/lib/utils";
 import { Download, RotateCcw, Share2, AlertCircle, Volume2, VolumeX } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import { NativeShareButton } from "./NativeShareButton";
-import successAnim from "@/lib/lottie/success.json";
 import { cn } from "@/lib/utils";
 
 const SHARE_TWEET_TEXT =
@@ -32,6 +31,7 @@ interface Props {
 export default function DownloadResult({ result, onReset, soundOnCompletion, onToggleSound }: Props) {
   const defaultName = `reframe_${result.width}x${result.height}`;
   const [name, setName] = useState(defaultName);
+  const [successAnim, setSuccessAnim] = useState<object | null>(null);
 
   const invalidCharRegex = /[<>:"/\\|?*]/;
   const isValid = !invalidCharRegex.test(name) && name.trim().length > 0;
@@ -50,6 +50,26 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
       });
     }
   }, [soundOnCompletion]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    import("@/lib/lottie/success.json")
+      .then((mod) => {
+        if (!cancelled) {
+          setSuccessAnim(mod.default ?? mod);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSuccessAnim(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const handleReset = () => {
     if (window.confirm("This will clear the current video and all settings. Continue?")) {
       onReset();
@@ -61,7 +81,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
       <div className="flex items-center justify-between">
   <div className="flex items-center gap-4">
     <div className="w-12 h-12 shrink-0">
-      <LottiePlayer animationData={successAnim} loop={false} autoplay />
+      {successAnim ? <LottiePlayer animationData={successAnim} loop={false} autoplay /> : null}
     </div>
     <div>
       <p className="font-heading font-bold text-base text-[var(--text)]">Export complete</p>
