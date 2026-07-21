@@ -269,7 +269,11 @@ export default function OnboardingTour() {
 
   // Initialise on mount
   useEffect(() => {
-    if (localStorage.getItem(TOUR_KEY)) return;
+    try {
+      if (localStorage.getItem(TOUR_KEY)) return;
+    } catch {
+      return;
+    }
     const t = setTimeout(async () => {
       const rect = await measureTarget(TOUR_STEPS[0]?.targetId ?? "");
       if (rect) {
