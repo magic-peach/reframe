@@ -91,11 +91,10 @@ export function buildTextFilter(
   // Build the drawtext filter with font support
   let filter = `drawtext=text='${escapedText}':x=${pixelX}:y=${pixelY}:fontsize=${overlay.fontSize}:fontcolor=${overlay.color}:fontweight=${fontWeightParam}`;
 
-  // Add font family if specified
-  if (overlay.fontFamily) {
-    // Sanitize font name for FFmpeg
-    const safeFontName = overlay.fontFamily.replace(/[^a-zA-Z0-9-]/g, "");
-    filter += `:fontfile='${safeFontName}'`;
+  // Add font file if specified
+  if (overlay.fontPath) {
+    const escapedPath = overlay.fontPath.replace(/:/g, "\\:");
+    filter += `:fontfile='${escapedPath}'`;
   }
 
   // Add custom font file path if available

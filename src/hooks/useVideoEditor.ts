@@ -379,12 +379,6 @@ export function useVideoEditor() {
       return;
     }
 
-    if (!selectedFile.type.startsWith("video/")) {
-      setError(`Layer 2 Validation Failed: Invalid MIME type. Expected video/*, got ${selectedFile.type || 'unknown'}`);
-      setStatus("error");
-      return;
-    }
-
     // Run validation and metadata extraction in background
     (async () => {
       try {
