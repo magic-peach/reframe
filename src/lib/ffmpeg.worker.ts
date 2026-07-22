@@ -225,9 +225,9 @@ if (hasOverlay) {
   const alpha = (overlayOptions!.opacity / 100).toFixed(2);
   const posMap: Record<string, string> = {
     "top-left":     "20:20",
-    "top-right":    "W-w-20:20",
-    "bottom-left":  "20:H-h-20",
-    "bottom-right": "W-w-20:H-h-20",
+    "top-right":    "main_w-w-20:20",
+    "bottom-left":  "20:main_h-h-20",
+    "bottom-right": "main_w-w-20:main_h-h-20",
   };
 
 interface PositionCoords {
@@ -236,10 +236,10 @@ interface PositionCoords {
   }
 
   const pos = typeof overlayOptions?.position === "string"
-    ? (posMap[overlayOptions.position] ?? "W-w-20:H-h-20")
+    ? (posMap[overlayOptions.position] ?? "main_w-w-20:main_h-h-20")
     : overlayOptions?.position
-    ? `(W-w)*${(overlayOptions.position as PositionCoords).x}/100:(H-h)*${(overlayOptions.position as PositionCoords).y}/100`
-    : "W-w-20:H-h-20";
+    ? `(main_w)*${(overlayOptions.position as PositionCoords).x}/100:(main_h)*${(overlayOptions.position as PositionCoords).y}/100`
+    : "main_w-w-20:main_h-h-20";
 
   filterParts.push(`[${overlayIdx}:v]scale=${scaledW}:-2,format=rgba,colorchannelmixer=aa=${alpha}[logo]`);
   filterParts.push(`${videoOut}[logo]overlay=${pos}[vout]`);
@@ -486,7 +486,7 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     }
 
     let missingAudioDetected = false;
-    const logListener = ({ message }: { message: string }) => {
+    logListener = ({ message }: { message: string }) => {
       const msg = message.toLowerCase();
       if (
         msg.includes("matches no streams") ||

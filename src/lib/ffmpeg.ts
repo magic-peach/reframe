@@ -97,7 +97,6 @@ function handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
     workerReadyResolve?.();
     workerReadyResolve = null;
     workerReadyReject = null;
-    pendingProgress?.(100);
     return;
   }
 
