@@ -3,7 +3,7 @@
  * Handles font file uploads, validation, and registration.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { validateFontFile, extractFontName, detectDuplicateFonts } from "@/utils/fontValidation";
 import {
   registerCustomFont,
@@ -46,6 +46,7 @@ interface UseFontManagerReturn {
  */
 export function useFontManager(): UseFontManagerReturn {
   const [customFonts, setCustomFonts] = useState<CustomFont[]>([]);
+  const customFontsRef = useRef(customFonts);
   const [errors, setErrors] = useState<string[]>([]);
 
   // Initialize font registry on mount
@@ -80,7 +81,7 @@ export function useFontManager(): UseFontManagerReturn {
         const fontName = extractFontName(file.name);
 
         // Check for duplicate name
-        if (customFonts.some((f) => f.name === fontName)) {
+        if (customFontsRef.current.some((f) => f.name === fontName)) {
           newErrors.push(`${file.name}: Font "${fontName}" already uploaded`);
           continue;
         }
@@ -130,7 +131,7 @@ export function useFontManager(): UseFontManagerReturn {
         errors: newErrors,
       };
     },
-    [customFonts]
+    []
   );
 
   /**
@@ -153,6 +154,8 @@ export function useFontManager(): UseFontManagerReturn {
     // Clear errors when removing fonts
     setErrors([]);
   }, []);
+
+  customFontsRef.current = customFonts;
 
   return {
     customFonts,

@@ -75,6 +75,10 @@ export async function captureFrameAsPng(
     video.videoHeight
   );
 
+  if (width === 0 || height === 0 || !isFinite(scale) || scale <= 0) {
+    throw new Error("Invalid output dimensions computed for frame export.");
+  }
+
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
