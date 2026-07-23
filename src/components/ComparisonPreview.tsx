@@ -81,16 +81,55 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
 
     if (!leftVideo || !rightVideo || !file) return;
 
-    const handleTimeUpdate = () => {
+    // const handleTimeUpdate = () => {
+    //   rightVideo.currentTime = leftVideo.currentTime;
+    // };
+
+    // Track the active frame callback so it can be cancelled when playback stops.
+    let animationFrameId: number | null = null;
+
+    // Synchronize the comparison video once per rendered frame for smoother playback.
+    const syncVideos = () => {
+      // Sync the playback time
       rightVideo.currentTime = leftVideo.currentTime;
+        
+      // Schedule the next sync on the next rendered frame
+      if ('requestVideoFrameCallback' in leftVideo) {
+        animationFrameId = leftVideo.requestVideoFrameCallback(syncVideos);
+      } else {
+        animationFrameId = requestAnimationFrame(syncVideos);
+      }
+    };
+
+    // Cancel any pending frame callback to stop synchronization.
+    const stopSync = () => {
+      if (animationFrameId !== null) {
+        if ('cancelVideoFrameCallback' in leftVideo) {
+          leftVideo.cancelVideoFrameCallback(animationFrameId);
+        } else {
+          cancelAnimationFrame(animationFrameId);
+        }
+
+        animationFrameId = null;
+      }
     };
 
     const handlePlay = () => {
       rightVideo.play().catch(() => {});
+      
+      // Start synchronization only if a frame callback isn't already running.
+      if (animationFrameId === null) {
+        syncVideos();
+      }
     };
 
-    const handlePause = () => {
+    const handleSeek = () => {
+      rightVideo.currentTime = leftVideo.currentTime;
+    }
+
+    const handleStop = () => {
       rightVideo.pause();
+      stopSync();
     };
 
     const handleRateChange = () => {
@@ -101,16 +140,21 @@ export default function ComparisonPreview({ file, recipe, videoRef }: Props) {
       leftVideo.play().catch(() => {});
     };
 
-    leftVideo.addEventListener("timeupdate", handleTimeUpdate);
     leftVideo.addEventListener("play", handlePlay);
-    leftVideo.addEventListener("pause", handlePause);
+    leftVideo.addEventListener("pause", handleStop);
+    leftVideo.addEventListener("seeking", handleSeek);
+    leftVideo.addEventListener("seeked", handleSeek);
+    leftVideo.addEventListener("ended", handleStop);
     leftVideo.addEventListener("ratechange", handleRateChange);
     leftVideo.addEventListener("loadeddata", handleLoadedData);
 
     return () => {
-      leftVideo.removeEventListener("timeupdate", handleTimeUpdate);
+      stopSync();
       leftVideo.removeEventListener("play", handlePlay);
-      leftVideo.removeEventListener("pause", handlePause);
+      leftVideo.removeEventListener("pause", handleStop);
+      leftVideo.removeEventListener("seeking", handleSeek);
+      leftVideo.removeEventListener("seeked", handleSeek);
+      leftVideo.removeEventListener("ended", handleStop);
       leftVideo.removeEventListener("ratechange", handleRateChange);
       leftVideo.removeEventListener("loadeddata", handleLoadedData);
     };
