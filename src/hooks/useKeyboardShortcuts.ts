@@ -65,7 +65,7 @@ export function useKeyboardShortcuts({
 
         default:
           if (e.key >= "1" && e.key <= "9") {
-            const index = parseInt(e.key) - 1;
+            const index = parseInt(e.key, 10) - 1;
             if (PRESETS[index]) {
               updateRecipe({ preset: PRESETS[index].id });
             }
