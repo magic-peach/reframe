@@ -329,8 +329,14 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   const filters: string[] = [];
 
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
-    const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
-    filters.push(`trim=start=${recipe.trimStart}:end=${end}`);
+    // Only use trim filter with precise bounds to avoid scanning entire file
+    // If trimEnd is null, use duration parameter instead of large placeholder value
+    if (recipe.trimEnd !== null) {
+      filters.push(`trim=start=${recipe.trimStart}:end=${recipe.trimEnd}`);
+    } else if (recipe.trimStart > 0) {
+      // When only trimStart is set, let FFmpeg infer end (don't use 999999 placeholder)
+      filters.push(`trim=start=${recipe.trimStart}`);
+    }
   }
 
   if (recipe.stabilization) {
@@ -418,8 +424,15 @@ export function buildAudioFilter(speed: number, normalizeAudio: boolean): string
 
 function buildAudioTrimFilter(recipe: EditRecipe): string {
   if (recipe.trimStart === 0 && recipe.trimEnd === null) return "";
-  const end = recipe.trimEnd !== null ? recipe.trimEnd : 999999;
-  return `atrim=start=${recipe.trimStart}:end=${end},asetpts=PTS-STARTPTS`;
+
+  // Avoid scanning entire audio with large placeholder values
+  // Use precise trim bounds when available
+  let trimFilter = `atrim=start=${recipe.trimStart}`;
+  if (recipe.trimEnd !== null) {
+    trimFilter += `:end=${recipe.trimEnd}`;
+  }
+  // asetpts normalizes timestamps after trim for correct stream positioning
+  return `${trimFilter},asetpts=PTS-STARTPTS`;
 }
 
 function buildArguments(
