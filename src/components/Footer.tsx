@@ -31,9 +31,9 @@ function XIcon({ size = 18 }: { size?: number }) {
 export default function Footer() {
   return (
     <footer className="w-full border-t border-[var(--border)] bg-[var(--bg)] text-[var(--text)] px-6 py-16 mt-20 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-y-12 md:gap-x-12">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-y-12 gap-x-8 lg:gap-x-12">
         {/* Brand Section */}
-        <div className="md:col-span-5 space-y-6">
+        <div className="sm:col-span-2 lg:col-span-5 space-y-6">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">Reframe</h2>
             <p className="text-[10px] font-mono tracking-[0.35em] uppercase opacity-50 mt-1">
@@ -65,7 +65,7 @@ export default function Footer() {
         </div>
 
         {/* Navigation */}
-        <div className="md:col-span-3 space-y-5">
+        <div className="sm:col-span-1 lg:col-span-3 space-y-5">
           <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] opacity-60">
             Navigation
           </h3>
@@ -104,7 +104,7 @@ export default function Footer() {
         </div>
 
         {/* Right Section */}
-        <div className="md:col-span-4 space-y-10 md:justify-self-end w-full md:w-auto">
+        <div className="sm:col-span-2 lg:col-span-4 space-y-10 lg:justify-self-end w-full lg:w-auto">
           {/* Newsletter */}
           <div className="space-y-3">
             <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] opacity-60">
