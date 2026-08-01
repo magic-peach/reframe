@@ -3,7 +3,7 @@
 import { EditRecipe } from "@/lib/types";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AlertCircle } from "lucide-react";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, formatTimeWithDecimal } from "@/lib/utils";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import WaveformCanvas from "@/components/WaveformCanvas";
 
@@ -241,7 +241,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             htmlFor="trim-start"
             className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
           >
-            Start (sec)
+            Start ({formatTimeWithDecimal(recipe.trimStart)})
           </label>
 
           <input
@@ -278,7 +278,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             htmlFor="trim-end"
             className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
           >
-            End (sec)
+            End ({formatTimeWithDecimal(recipe.trimEnd ?? duration)})
           </label>
 
           <input
