@@ -322,7 +322,27 @@ function buildSessionId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  // Fallback: use crypto.getRandomValues for cryptographically secure random bytes
+  // converted to hex string, ensuring uniqueness even in concurrent scenarios
+  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
+    try {
+      const randomBytes = new Uint8Array(16);
+      (crypto as Crypto).getRandomValues(randomBytes);
+      return Array.from(randomBytes)
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    } catch {
+      // Silently fall through to next fallback if getRandomValues fails
+    }
+  }
+
+  // Final fallback: if crypto methods are unavailable,
+  // use a combination of timestamp and high-precision counter to reduce collisions
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 15);
+  const counterPart = (Math.random() * 10000000).toString(36);
+  return `${timestamp}-${randomPart}${counterPart}`;
 }
 
 export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
