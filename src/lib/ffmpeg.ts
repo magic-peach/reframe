@@ -109,13 +109,19 @@ function handleWorkerMessage(event: MessageEvent<WorkerResponse>) {
   if (data.type === "result") {
     if (pendingExport?.id !== data.id) return;
     const blob = new Blob([data.data], { type: data.mimeType });
+    const blobUrl = URL.createObjectURL(blob);
     pendingExport.resolve({
-      blobUrl: URL.createObjectURL(blob),
+      blobUrl,
       blob,
       size: data.size,
       width: data.width,
       height: data.height,
       format: data.format,
+      // Dispose method allows cleanup of blob URLs to prevent memory leaks
+      // Call this when the exported video is no longer needed by the application
+      dispose: () => {
+        URL.revokeObjectURL(blobUrl);
+      },
     });
     pendingExport = null;
     pendingProgress = null;
