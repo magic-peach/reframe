@@ -1,4 +1,4 @@
-import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions } from "./types";
+import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions, MAX_FILE_SIZE } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
 
@@ -221,6 +221,10 @@ export async function exportVideo(
     throw new Error("FFmpeg worker is not available.");
   }
 
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`Video file exceeds maximum size of ${MAX_FILE_SIZE / (1024 * 1024 * 1024)}GB`);
+  }
+
   const sessionId = buildSessionId();
   const arrayBuffer = await file.arrayBuffer();
   const filePayload: SerializedFile = {
@@ -229,6 +233,10 @@ export async function exportVideo(
     data: arrayBuffer,
   };
 
+  if (musicOptions?.file && musicOptions.file.size > MAX_FILE_SIZE) {
+    throw new Error(`Music file exceeds maximum size of ${MAX_FILE_SIZE / (1024 * 1024 * 1024)}GB`);
+  }
+
   const musicFilePayload = musicOptions?.file
     ? {
         name: musicOptions.file.name,
@@ -236,6 +244,10 @@ export async function exportVideo(
         data: await musicOptions.file.arrayBuffer(),
       }
     : undefined;
+
+  if (overlayOptions?.file && overlayOptions.file.size > MAX_FILE_SIZE) {
+    throw new Error(`Overlay file exceeds maximum size of ${MAX_FILE_SIZE / (1024 * 1024 * 1024)}GB`);
+  }
 
   const overlayFilePayload = overlayOptions?.file
     ? {
