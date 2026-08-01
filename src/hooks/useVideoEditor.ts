@@ -135,12 +135,12 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
 }
 
 function encodeRecipe(recipe: EditRecipe): string {
-  return btoa(JSON.stringify(recipe));
+  return encodeURIComponent(JSON.stringify(recipe));
 }
 
 function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   try {
-    const decoded = JSON.parse(atob(encoded));
+    const decoded = JSON.parse(decodeURIComponent(encoded));
     return decoded as Partial<EditRecipe>;
   } catch {
     return null;
