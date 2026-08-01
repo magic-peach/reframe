@@ -3,7 +3,7 @@
 import { EditRecipe } from "@/lib/types";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AlertCircle } from "lucide-react";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, formatTimeWithDecimal } from "@/lib/utils";
 import { useAudioWaveform } from "@/hooks/useAudioWaveform";
 import WaveformCanvas from "@/components/WaveformCanvas";
 
@@ -208,7 +208,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             aria-valuemin={0}
             aria-valuemax={duration}
             tabIndex={0}
-            className="absolute w-4 h-4 rounded-full bg-white border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
+            className="absolute w-4 h-4 rounded-full bg-[var(--surface)] border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
             style={{ left: `${(recipe.trimStart / duration) * 100}%` }}
             onMouseDown={() => { dragging.current = "start"; }}
             onTouchStart={() => { dragging.current = "start"; }}
@@ -224,7 +224,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             aria-valuemin={0}
             aria-valuemax={duration}
             tabIndex={0}
-            className="absolute w-4 h-4 rounded-full bg-white border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
+            className="absolute w-4 h-4 rounded-full bg-[var(--surface)] border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
             style={{ left: `${((recipe.trimEnd ?? duration) / duration) * 100}%` }}
             onMouseDown={() => { dragging.current = "end"; }}
             onTouchStart={() => { dragging.current = "end"; }}
@@ -241,7 +241,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             htmlFor="trim-start"
             className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
           >
-            Start (sec)
+            Start ({formatTimeWithDecimal(recipe.trimStart)})
           </label>
 
           <input
@@ -278,7 +278,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             htmlFor="trim-end"
             className="font-heading mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]"
           >
-            End (sec)
+            End ({formatTimeWithDecimal(recipe.trimEnd ?? duration)})
           </label>
 
           <input
