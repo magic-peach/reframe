@@ -473,6 +473,8 @@ return () => {
                     />
                   </AccordionSection>
 
+                  <hr className="border-[var(--border)] opacity-50" />
+
                   <AccordionSection
                     id="rotation"
                     icon={<RotateCw size={12} />}
@@ -483,6 +485,8 @@ return () => {
                   >
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
                   </AccordionSection>
+
+                  <hr className="border-[var(--border)] opacity-50" />
 
                   <AccordionSection
                     id="text"
