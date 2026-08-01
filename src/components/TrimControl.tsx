@@ -208,7 +208,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             aria-valuemin={0}
             aria-valuemax={duration}
             tabIndex={0}
-            className="absolute w-4 h-4 rounded-full bg-white border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
+            className="absolute w-4 h-4 rounded-full bg-[var(--surface)] border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
             style={{ left: `${(recipe.trimStart / duration) * 100}%` }}
             onMouseDown={() => { dragging.current = "start"; }}
             onTouchStart={() => { dragging.current = "start"; }}
@@ -224,7 +224,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
             aria-valuemin={0}
             aria-valuemax={duration}
             tabIndex={0}
-            className="absolute w-4 h-4 rounded-full bg-white border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
+            className="absolute w-4 h-4 rounded-full bg-[var(--surface)] border-2 border-film-400 shadow cursor-grab active:cursor-grabbing -translate-x-1/2 focus:outline-none focus:ring-2 focus:ring-film-400"
             style={{ left: `${((recipe.trimEnd ?? duration) / duration) * 100}%` }}
             onMouseDown={() => { dragging.current = "end"; }}
             onTouchStart={() => { dragging.current = "end"; }}
