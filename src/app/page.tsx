@@ -1,5 +1,6 @@
 import VideoEditor from "@/components/VideoEditor";
 import Footer from "@/components/Footer";
+import FAQ from "@/components/FAQ";
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
 
       <main id="main-content" tabIndex={-1}>
         <VideoEditor />
+        <FAQ />
       </main>
 
       <Footer />
