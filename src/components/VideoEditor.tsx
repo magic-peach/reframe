@@ -277,7 +277,7 @@ export default function VideoEditor() {
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
-    const encoded = btoa(JSON.stringify(recipe));
+    const encoded = encodeURIComponent(JSON.stringify(recipe));
     const url = new URL(window.location.href);
     url.searchParams.set("settings", encoded);
     history.replaceState(null, "", url.toString());
@@ -473,6 +473,8 @@ return () => {
                     />
                   </AccordionSection>
 
+                  <hr className="border-[var(--border)] opacity-50" />
+
                   <AccordionSection
                     id="rotation"
                     icon={<RotateCw size={12} />}
@@ -483,6 +485,8 @@ return () => {
                   >
                     <RotateControl recipe={recipe} onChange={updateRecipe} />
                   </AccordionSection>
+
+                  <hr className="border-[var(--border)] opacity-50" />
 
                   <AccordionSection
                     id="text"
@@ -732,6 +736,7 @@ return () => {
 
             <button
               id="export-button"
+              data-testid="export-button"
               type="button"
               onClick={handleExport}
                 disabled={!file || isProcessing}
@@ -742,7 +747,7 @@ return () => {
                 "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
-                  ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
+                  ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer animate-pulse-subtle"
                   : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
               )}
             >
