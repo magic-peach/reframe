@@ -280,6 +280,12 @@ export default function VideoEditor() {
     const encoded = encodeURIComponent(JSON.stringify(recipe));
     const url = new URL(window.location.href);
     url.searchParams.set("settings", encoded);
+    
+    // Warn if URL exceeds browser limits (~2000 chars for older browsers)
+    if (url.toString().length > 2000) {
+      console.warn("Share URL is very long and may not work in all browsers");
+    }
+    
     history.replaceState(null, "", url.toString());
     navigator.clipboard.writeText(url.toString()).then(() => {
       setShareCopied(true);
