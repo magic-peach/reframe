@@ -86,7 +86,7 @@ export default function ThumbnailStrip({
       for (let t = 0; t <= duration; t += intervalSeconds) {
         times.push(Math.min(t, duration - 0.1));
       }
-      if ((times[times.length - 1] ?? 0) < duration - 0.5) {
+      if ((times.at(-1) ?? 0) < duration - 0.5) {
         times.push(duration - 0.1);
       }
 
