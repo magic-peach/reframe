@@ -136,7 +136,7 @@ export function formatEstimatedSize(sizeMb: number): string {
     return `~${(sizeMb / 1024).toFixed(1)} GB`;
   }
   if (sizeMb < 1) {
-    return `~${Math.round(sizeMb * 1024)} KB`;
+    return `~${Math.round(sizeMb * 1024 + Number.EPSILON)} KB`;
   }
   return `~${sizeMb.toFixed(1)} MB`;
 }
