@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
@@ -119,9 +119,13 @@ function Kbd({ children }: { children: React.ReactNode }) {
 }
 
 /** Collapsible panel that lists all keyboard shortcuts. */
-function KeyboardShortcutsPanel() {
-  const [open, setOpen] = useState(false);
-
+function KeyboardShortcutsPanel({
+  open,
+  onToggle,
+}: {
+  open: boolean;
+  onToggle: () => void;
+}) {
   const shortcuts: { keys: React.ReactNode[]; label: string }[] = [
   {
     keys: [
@@ -161,7 +165,7 @@ function KeyboardShortcutsPanel() {
         type="button"
         aria-expanded={open}
         aria-controls="keyboard-shortcuts-list"
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
         className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[var(--border)] transition-colors duration-150"
       >
         <span className="text-[10px] font-heading font-bold uppercase tracking-widest text-[var(--muted)] flex items-center gap-2">
@@ -213,6 +217,11 @@ export default function VideoEditor() {
     toggleSound,
   } = useVideoEditor();
 
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const toggleShortcutsPanel = useCallback(() => {
+    setShortcutsOpen((open) => !open);
+  }, []);
+
   useKeyboardShortcuts({
     file,
     recipe,
@@ -221,7 +230,7 @@ export default function VideoEditor() {
     handleExport,
     status,
     cancelExport,
-    onToggleShortcutsModal: () => {},
+    onToggleShortcutsModal: toggleShortcutsPanel,
   });
 
   const [copied, setCopied] = useState(false);
@@ -722,7 +731,10 @@ return () => {
               </div>
             </div>
 
-            <KeyboardShortcutsPanel />
+            <KeyboardShortcutsPanel
+              open={shortcutsOpen}
+              onToggle={toggleShortcutsPanel}
+            />
 
             {file && (
               <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs text-[var(--muted)] leading-relaxed">

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { EditRecipe, ExportStatus } from "@/lib/types";
-import { PRESETS } from "@/lib/presets";
+import { PRESETS } from "../lib/presets";
 
 interface UseKeyboardShortcutsProps {
   file: File | null;
@@ -42,6 +42,12 @@ export function useKeyboardShortcuts({
         return;
       }
 
+      if (e.key === "?") {
+        e.preventDefault();
+        onToggleShortcutsModal();
+        return;
+      }
+
       if (!file) return;
 
       switch (e.key) {
@@ -57,10 +63,6 @@ export function useKeyboardShortcuts({
 
         case "Escape":
           if (status === "exporting") cancelExport();
-          break;
-
-        case "?":
-          onToggleShortcutsModal();
           break;
 
         default:
