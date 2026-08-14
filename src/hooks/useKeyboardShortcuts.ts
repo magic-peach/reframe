@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { EditRecipe, ExportStatus } from "@/lib/types";
+import { DEFAULT_RECIPE } from "@/lib/constants";
 import { PRESETS } from "@/lib/presets";
 
 interface UseKeyboardShortcutsProps {

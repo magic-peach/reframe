@@ -119,6 +119,19 @@ export const MAX_FILE_SIZE =
 export const WARNING_FILE_SIZE =
   500 * 1024 * 1024; // 500MB
 
+function isValidTextOverlay(o: unknown): boolean {
+  if (typeof o !== "object" || o === null) return false;
+  const v = o as Record<string, unknown>;
+  if (typeof v.id !== "string" || v.id.trim() === "") return false;
+  if (typeof v.text !== "string") return false;
+  if (typeof v.x !== "number" || !isFinite(v.x) || v.x < 0 || v.x > 100) return false;
+  if (typeof v.y !== "number" || !isFinite(v.y) || v.y < 0 || v.y > 100) return false;
+  if (typeof v.fontSize !== "number" || !isFinite(v.fontSize) || v.fontSize < 8 || v.fontSize > 300) return false;
+  if (typeof v.color !== "string" || !/^#[0-9a-fA-F]{3,8}$/.test(v.color)) return false;
+  if (!["normal", "bold", "900"].includes(v.fontWeight as string)) return false;
+  return true;
+}
+
 export function isValidRecipe(value: unknown): value is EditRecipe {
   if (!value || typeof value !== "object") return false;
   const v = value as any;
@@ -142,6 +155,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
   if (typeof v.soundOnCompletion !== "boolean") return false;
   if (!Array.isArray(v.textOverlays)) return false;
+  if (!v.textOverlays.every(isValidTextOverlay)) return false;
 
   return true;
 }

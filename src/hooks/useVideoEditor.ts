@@ -460,7 +460,6 @@ export function useVideoEditor() {
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
-      await loadFFmpeg(abortController.signal, setProgress);
       if (exportCancelledRef.current) return;
 
       const startedAt = Date.now();
