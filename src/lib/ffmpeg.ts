@@ -174,9 +174,14 @@ export async function loadFFmpeg(
     return;
   }
 
-  // 2. Use the captured flag to securely trigger the worker's internal load phase
-  if (isFirstLoad) {
+if (isFirstLoad) {
     ffmpegWorker!.postMessage({ type: "load" });
+    if (process.env.NODE_ENV === "development") {
+      console.warn(
+        "%c[Reframe DEV] FFmpeg loaded. If you modified ffmpeg.ts and changes are not reflecting, do a full manual page reload (Ctrl+Shift+R). Hot reload does NOT work for FFmpeg/WASM modules.",
+        "background: #ff6b00; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;"
+      );
+    }
   }
 
   pendingProgress = onProgress ?? null;
