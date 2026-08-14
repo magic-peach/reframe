@@ -66,6 +66,8 @@ export interface ExportResult {
   height: number;
   format: "mp4" | "webm" | "mkv" | "gif";
   exportDurationMs?: number;
+  usedFallback?: boolean;    
+  fallbackReason?: string; 
 }
 
 export type ExportStatus =

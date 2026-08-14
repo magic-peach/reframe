@@ -290,7 +290,15 @@ export async function exportVideo(
   );
 
   try {
-    return await exportPromise;
+    const exportResult = await exportPromise;
+    if (exportResult.format !== recipe.format) {
+      return {
+        ...exportResult,
+        usedFallback: true,
+        fallbackReason: `${recipe.format.toUpperCase()} encoding failed. Your video was exported as ${exportResult.format.toUpperCase()} instead.`,
+      };
+    }
+    return exportResult;
   } finally {
     signal?.removeEventListener("abort", onAbort);
   }

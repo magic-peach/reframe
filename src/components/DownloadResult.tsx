@@ -82,7 +82,16 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
   {soundError && (
     <p className="text-xs text-[var(--muted)]">Completion sound could not be played on this device.</p>
   )}
-
+      
+  {result.usedFallback && result.fallbackReason && (
+    <div
+      role="alert"
+      className="flex items-start gap-2 rounded-lg border border-[var(--warning)] bg-[var(--surface)] px-3 py-2.5 text-sm text-[var(--warning)] animate-fade-in"
+    >
+      <AlertCircle size={14} className="shrink-0 mt-0.5" aria-hidden="true" />
+      <p>{result.fallbackReason}</p>
+    </div>
+  )}
       <div className="grid grid-cols-2 gap-2 text-sm">
         <div className="bg-[var(--bg)] rounded-lg p-3 border border-[var(--border)]">
           <p className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[var(--muted)] mb-1">Resolution</p>
