@@ -9,6 +9,7 @@ import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
 
 interface Props {
   onFileSelect: (file: File | null) => void;
+  onMultipleFileSelect?: (files: FileList | null) => void;
   currentFile: File | null;
   fileError: string;
   duration: number;
@@ -16,6 +17,7 @@ interface Props {
 
 export default function FileUpload({
   onFileSelect,
+  onMultipleFileSelect,
   currentFile,
   fileError,
   duration,
@@ -114,44 +116,60 @@ export default function FileUpload({
 
   // ── Drop zone (inner) handler ─────────────────────────
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleFile(file);
-  };
+  e.preventDefault();
+  setDragging(false);
+
+  const files = e.dataTransfer.files;
+
+  if (!files?.length) return;
+
+  if (files.length === 1 && files[0]) {
+    handleFile(files[0]);
+  }
+
+  onMultipleFileSelect?.(files);
+};
 
   // ── File info (shown after upload) ───────────────────
-  const FileInfo = () => (
-    <div className="px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow)]">
-      <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="hidden lg:flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--surface)] border border-[var(--border)] shrink-0">
-            <Film size={16} className="text-film-600" />
+const FileInfo = () => (
+  <div className="px-4 py-3 bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius)] shadow-[var(--shadow)]">
+    <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+      <div className="flex items-start gap-3 flex-1 min-w-0">
+        <div className="hidden lg:flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--surface)] border border-[var(--border)] shrink-0">
+          <Film size={16} className="text-film-600" />
+        </div>
+
+        <Film
+          size={18}
+          className="lg:hidden text-film-600 shrink-0 mt-0.5"
+        />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-0.5">
+            <p className="text-sm font-semibold text-[var(--text)] truncate max-w-[320px] xl:max-w-[420px]">
+              {currentFile?.name}
+            </p>
+
+            {currentFile && (
+              <span className="px-2 py-0.5 bg-[var(--accent-muted)] text-[var(--text)] font-bold tracking-wider rounded text-[10px] uppercase shrink-0">
+                {currentFile.name.includes(".")
+                  ? currentFile.name.split(".").pop()
+                  : "VIDEO"}
+              </span>
+            )}
           </div>
-          <Film size={18} className="lg:hidden text-film-600 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-0.5">
-              <p className="text-sm font-semibold text-[var(--text)] truncate max-w-[320px] xl:max-w-[420px]">
-                {currentFile?.name}
-              </p>
-              {currentFile && (
-                <span className="px-2 py-0.5 bg-[var(--accent-muted)] text-[var(--text)] font-bold tracking-wider rounded text-[10px] uppercase shrink-0">
-                  {currentFile.name.includes(".")
-                    ? currentFile.name.split(".").pop()
-                    : "VIDEO"}
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-[var(--muted)] mt-1 space-y-0.5">
-              <p>{formatBytes(currentFile?.size ?? 0)}</p>
-              <p>
-                {duration > 0
-                  ? `Duration: ${formatDuration(duration)}`
-                  : "Loading duration..."}
-              </p>
-            </div>
+
+          <div className="text-xs text-[var(--muted)] mt-1 space-y-0.5">
+            <p>{formatBytes(currentFile?.size ?? 0)}</p>
+
+            <p>
+              {duration > 0
+                ? `Duration: ${formatDuration(duration)}`
+                : "Loading duration..."}
+            </p>
           </div>
         </div>
+      </div>
 
         <button
           type="button"
@@ -163,28 +181,28 @@ export default function FileUpload({
         </button>
       </div>
 
-      <p className="text-xs text-[var(--muted)] mt-3 break-words">
-        Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
-      </p>
+    <p className="text-xs text-[var(--muted)] mt-3 break-words">
+  Supports: MP4, MOV, AVI, MKV, WebM, and most video formats
+</p>
 
-      {fileError && (
-        <p className="text-xs text-[var(--error)] mt-2 font-medium">{fileError}</p>
-      )}
+{fileError && (
+  <p className="text-xs text-[var(--error)] mt-2 font-medium">
+    {fileError}
+  </p>
+)}
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
-      />
-    </div>
-  );
-
-  // ── Drop zone (inner) ─────────────────────────────────
+    <input
+      ref={inputRef}
+      type="file"
+      multiple
+      accept="video/*"
+      className="hidden"
+      onChange={(e) => {
+        onMultipleFileSelect?.(e.target.files)
+      }}
+    />
+  </div>
+);
   const DropZone = () => (
     <div
       id="upload-zone"
@@ -246,14 +264,24 @@ export default function FileUpload({
         )}
       </div>
 
-      <p className="text-xs text-[var(--muted)] text-center">
+      <p className="text-xs text-gray-500 text-center">
         Supports: MP4, MOV, AVI, MKV, WebM, and most video formats up to 2GB
       </p>
 
       {fileError && (
         <p className="text-sm text-[var(--error)] text-center">{fileError}</p>
       )}
-    </div>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept="video/*"
+          className="hidden"
+          onChange={(e) => {
+            onMultipleFileSelect?.(e.target.files)
+          }}
+        />
+      </div>
   );
 
   return (

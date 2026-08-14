@@ -1,5 +1,7 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions, MAX_FILE_SIZE } from "./types";
 import { getPresetById } from "./presets";
+import { fetchFile } from "@ffmpeg/util";
+import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { buildTextFilter } from "./text-overlay";
 
 export class FFmpegLoadError extends Error {}
@@ -45,6 +47,7 @@ type WorkerResponse =
   | WorkerErrorResponse
   | WorkerCancelledResponse;
 
+let mergeFFmpeg: FFmpeg | null = null
 let ffmpegWorker: Worker | null = null;
 let workerReady: Promise<void> | null = null;
 let workerReadyResolve: (() => void) | null = null;
@@ -625,6 +628,187 @@ interface PositionCoords {
   args.push(outputName);
   return args;
 }
+
+export async function mergeVideos(
+  clips: File[],
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal
+): Promise<ExportResult> {
+  const sessionId = buildSessionId()
+if (typeof window === "undefined") {
+  throw new Error("FFmpeg is only available in the browser")
+}
+
+if (!mergeFFmpeg) {
+  mergeFFmpeg = new FFmpeg()
+}
+  if (!mergeFFmpeg!.loaded) {
+    await mergeFFmpeg!.load()
+  }
+
+  const concatFileName = `concat_${sessionId}.txt`
+  const outputName = `merged_${sessionId}.mp4`
+
+  const cleanupFiles = new Set<string>([
+    concatFileName,
+    outputName,
+  ])
+
+  const handleProgress = ({ progress }: { progress: number }) => {
+    if (!Number.isFinite(progress) || progress < 0) {
+      return
+    }
+
+    onProgress(
+      Math.min(99, Math.max(0, Math.round(progress * 100)))
+    )
+  }
+
+  try {
+    mergeFFmpeg!.on("progress", handleProgress)
+
+    const concatLines: string[] = []
+
+    for (let i = 0; i < clips.length; i++) {
+      const clip = clips[i]!
+
+      const ext = clip.name.split(".").pop() ?? "mp4"
+
+      const inputName = `clip_${sessionId}_${i}.${ext}`
+      const normalizedName = `normalized_${sessionId}_${i}.mp4`
+
+      cleanupFiles.add(inputName)
+      cleanupFiles.add(normalizedName)
+
+      await mergeFFmpeg!.writeFile(
+        inputName,
+        await fetchFile(clip)
+      )
+
+      const normalizeExit = await mergeFFmpeg!.exec([
+        "-fflags",
+        "+genpts",
+
+        "-i",
+        inputName,
+
+        "-vf",
+        "fps=30,format=yuv420p",
+
+        "-r",
+        "30",
+
+        "-vsync",
+        "cfr",
+
+        "-af",
+        "aresample=async=1",
+
+        "-c:v",
+        "libx264",
+
+        "-preset",
+        "veryfast",
+
+        "-pix_fmt",
+        "yuv420p",
+
+        "-c:a",
+        "aac",
+
+        "-ar",
+        "48000",
+
+        "-avoid_negative_ts",
+        "make_zero",
+
+        "-movflags",
+        "+faststart",
+
+        "-y",
+        normalizedName,
+      ])
+
+      if (normalizeExit !== 0) {
+        throw new Error(`Normalization failed for clip ${i + 1}`)
+      }
+
+      concatLines.push(`file '${normalizedName}'`)
+    }
+
+    await mergeFFmpeg!.writeFile(
+      concatFileName,
+      new TextEncoder().encode(concatLines.join("\n"))
+    )
+
+    const exitCode = await mergeFFmpeg!.exec([
+      "-f",
+      "concat",
+      "-safe",
+      "0",
+      "-i",
+      concatFileName,
+
+      "-c",
+      "copy",
+
+      "-y",
+      outputName,
+    ])
+
+    if (exitCode !== 0) {
+      throw new Error("Video merge failed")
+    }
+
+    const data = await mergeFFmpeg!.readFile(outputName)
+
+    const blob = new Blob(
+      [new Uint8Array(data as Uint8Array)],
+      { type: "video/mp4" }
+    )
+
+    onProgress(100)
+
+    const blobUrl = URL.createObjectURL(blob)
+
+    const dimensions = await new Promise<{
+      width: number
+      height: number
+    }>((resolve) => {
+      const video = document.createElement("video")
+
+      video.preload = "metadata"
+
+      video.onloadedmetadata = () => {
+        resolve({
+          width: video.videoWidth,
+          height: video.videoHeight,
+        })
+      }
+
+      video.src = blobUrl
+    })
+
+    return {
+      blob,
+      blobUrl,
+      size: blob.size,
+      width: dimensions.width,
+      height: dimensions.height,
+      format: "mp4",
+    }
+
+  } finally {
+    mergeFFmpeg!.off("progress", handleProgress)
+
+    for (const path of cleanupFiles) {
+      try {
+        await mergeFFmpeg!.deleteFile(path)
+      } catch {}
+    }
+  }
+}
+
 
 export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
