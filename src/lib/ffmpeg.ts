@@ -1,6 +1,7 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions, MAX_FILE_SIZE } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { getFontFileEntry } from "@/utils/fontLoader";
 
 export class FFmpegLoadError extends Error {}
 
@@ -8,6 +9,12 @@ export class FFmpegLoadError extends Error {}
 type SerializedFile = {
   name: string;
   type: string;
+  data: ArrayBuffer;
+};
+
+type FontSerializedFile = {
+  name: string;
+  extension: string;
   data: ArrayBuffer;
 };
 
@@ -21,6 +28,7 @@ type WorkerExportRequest = {
   musicOptions?: BackgroundMusicOptions;
   overlayFile?: SerializedFile;
   overlayOptions?: ImageOverlayOptions;
+  fontFiles?: FontSerializedFile[];
 };
 
 type WorkerLoadResponse = { type: "ready" };
@@ -270,6 +278,19 @@ export async function exportVideo(
     ? { ...overlayOptions, file: null }
     : undefined;
 
+  const seenFonts = new Set<string>();
+  const fontFiles: FontSerializedFile[] = [];
+  for (const overlay of recipe.textOverlays) {
+    if (overlay.fontFamily && !seenFonts.has(overlay.fontFamily)) {
+      seenFonts.add(overlay.fontFamily);
+      const entry = getFontFileEntry(overlay.fontFamily);
+      if (entry) {
+        const data = await entry.file.arrayBuffer();
+        fontFiles.push({ name: overlay.fontFamily, extension: entry.extension, data });
+      }
+    }
+  }
+
   pendingProgress = onProgress;
 
   const exportPromise = new Promise<ExportResult>((resolve, reject) => {
@@ -291,6 +312,7 @@ export async function exportVideo(
   const transfers: Transferable[] = [arrayBuffer];
   if (musicFilePayload) transfers.push(musicFilePayload.data);
   if (overlayFilePayload) transfers.push(overlayFilePayload.data);
+  for (const f of fontFiles) transfers.push(f.data);
 
   ffmpegWorker.postMessage(
     {
@@ -303,6 +325,7 @@ export async function exportVideo(
       musicOptions: sanitizedMusicOptions,
       overlayFile: overlayFilePayload,
       overlayOptions: sanitizedOverlayOptions,
+      fontFiles: fontFiles.length > 0 ? fontFiles : undefined,
     } as WorkerExportRequest,
     transfers
   );
