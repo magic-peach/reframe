@@ -277,7 +277,7 @@ export default function VideoEditor() {
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
-    const encoded = btoa(JSON.stringify(recipe));
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(recipe))));
     const url = new URL(window.location.href);
     url.searchParams.set("settings", encoded);
     history.replaceState(null, "", url.toString());
