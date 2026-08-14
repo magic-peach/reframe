@@ -260,7 +260,7 @@ export default function VideoPreview({
       <div
         ref={previewContainerRef}
         role="group"
-        className="relative w-full rounded-lg overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        className="relative w-full rounded-2xl overflow-hidden bg-[var(--bg)] aspect-video focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] shadow-sm border border-[var(--border)]"
         tabIndex={0}
         onKeyDown={handleKeyDown}
         aria-label="Video preview (press Space to play/pause)"
@@ -378,70 +378,67 @@ export default function VideoPreview({
 
         {/* Toggle button */}
         {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowOverlay((v) => !v)}
-            className={`absolute top-2 left-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showOverlay
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showOverlay}
-            aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-            title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
-          >
-            {showOverlay ? "Hide overlay" : "Show overlay"}
-          </button>
-        )}
+          <div className="absolute inset-x-2 top-2 z-10 flex flex-wrap gap-2 justify-between pointer-events-none">
+            <div className="flex flex-wrap gap-2 pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => setShowOverlay((v) => !v)}
+                className={`px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors ${
+                  showOverlay
+                    ? "bg-[var(--accent)] text-white"
+                    : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+                }`}
+                aria-pressed={showOverlay}
+                aria-label={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
+                title={showOverlay ? "Hide framing overlay" : "Show framing overlay"}
+              >
+                {showOverlay ? "Hide overlay" : "Show overlay"}
+              </button>
 
-        {/* Grid overlay button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowGridOverlay((v) => !v)}
-            className={`absolute top-2 left-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showGridOverlay
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showGridOverlay}
-            aria-label={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
-            title={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
-          >
-            {showGridOverlay ? "Hide grid" : "Show grid"}
-          </button>
-        )}
+              <button
+                type="button"
+                onClick={() => setShowGridOverlay((v) => !v)}
+                className={`px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors ${
+                  showGridOverlay
+                    ? "bg-[var(--accent)] text-white"
+                    : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+                }`}
+                aria-pressed={showGridOverlay}
+                aria-label={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
+                title={showGridOverlay ? "Hide grid overlay" : "Show grid overlay"}
+              >
+                {showGridOverlay ? "Hide grid" : "Show grid"}
+              </button>
+            </div>
 
-        {/* Compare button */}
-        {recipe && !isLoading && (
-          <button
-            type="button"
-            onClick={() => setShowComparison((v) => !v)}
-            className={`absolute top-2 right-32 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto ${
-              showComparison
-                ? "bg-[var(--accent)] text-white"
-                : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
-            }`}
-            aria-pressed={showComparison}
-            aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
-            title={showComparison ? "Hide comparison preview" : "Show comparison preview"}
-          >
-            Compare
-          </button>
-        )}
+            <div className="flex flex-wrap gap-2 justify-end pointer-events-auto">
+              <button
+                type="button"
+                onClick={() => setShowComparison((v) => !v)}
+                className={`px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors ${
+                  showComparison
+                    ? "bg-[var(--accent)] text-white"
+                    : "bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)]"
+                }`}
+                aria-pressed={showComparison}
+                aria-label={showComparison ? "Hide comparison preview" : "Show comparison preview"}
+                title={showComparison ? "Hide comparison preview" : "Show comparison preview"}
+              >
+                Compare
+              </button>
 
-        {/* Grab frame button */}
-        {!isLoading && (
-          <button
-            type="button"
-            onClick={handleGrabFrame}
-            className="absolute top-2 right-2 px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors z-10 pointer-events-auto bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
-            aria-label="Grab frame as PNG"
-            title="Download current frame as PNG"
-          >
-            <Camera className="w-3 h-3" />
-            Grab frame
-          </button>
+              <button
+                type="button"
+                onClick={handleGrabFrame}
+                className="px-2 py-1 text-[10px] font-heading font-bold uppercase tracking-wider rounded transition-colors bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--accent-muted)] hover:text-[var(--text)] flex items-center gap-1"
+                aria-label="Grab frame as PNG"
+                title="Download current frame as PNG"
+              >
+                <Camera className="w-3 h-3" />
+                Grab frame
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
