@@ -317,7 +317,7 @@ export function useVideoEditor() {
       } else {
         // Try full recipe restore first (new key)
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
+          const raw = localStorage.getItem(RECIPE_STORAGE_KEY);
           if (raw) {
             const parsed = JSON.parse(raw);
             if (isValidRecipe(parsed)) {
