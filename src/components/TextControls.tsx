@@ -4,7 +4,9 @@ import { EditRecipe, TextOverlay } from "@/lib/types";
 import { createDefaultTextOverlay } from "@/lib/text-overlay";
 import { Trash2, Plus } from "lucide-react";
 import { useMemo } from "react";
-import BaseButton from "./ui/BaseButton";
+import FontSelector from "./FontSelector";
+import ColorPicker from "./ColorPicker"
+import { useFontManager } from "@/hooks/useFontManager";
 
 interface TextControlsProps {
   recipe: EditRecipe;
@@ -23,10 +25,18 @@ export default function TextControls({
   selectedTextId,
   onSelectText,
 }: TextControlsProps) {
+  const { customFonts, addFonts, removeFont, getErrors } = useFontManager();
+
   /**
-   * Memoize text overlays to prevent unnecessary dependency changes.
+   * Always ensures textOverlays is an array, even if recipe is malformed.
    */
-  const textOverlays = useMemo(() => recipe.textOverlays || [], [recipe.textOverlays]);
+  const textOverlays = useMemo(
+    (): TextOverlay[] => {
+      const overlays = recipe?.textOverlays;
+      return Array.isArray(overlays) ? overlays : [];
+    },
+    [recipe?.textOverlays]
+  );
 
   /**
    * Adds a new text overlay to the recipe.
@@ -63,7 +73,8 @@ export default function TextControls({
    * Get the currently selected overlay.
    */
   const selectedOverlay = useMemo(
-    () => textOverlays.find((o) => o.id === selectedTextId),
+    (): TextOverlay | undefined =>
+      textOverlays.find((o) => o.id === selectedTextId),
     [textOverlays, selectedTextId]
   );
 
@@ -129,6 +140,18 @@ export default function TextControls({
             />
           </div>
 
+          {/* Font Selector */}
+          <FontSelector
+            selectedFont={selectedOverlay.fontFamily}
+            onSelectFont={(fontName) =>
+              handleUpdateText(selectedTextId!, { fontFamily: fontName })
+            }
+            customFonts={customFonts}
+            onAddFonts={addFonts}
+            onRemoveFont={removeFont}
+            errors={getErrors()}
+          />
+
           {/* Font Size Slider */}
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -155,32 +178,13 @@ export default function TextControls({
             />
           </div>
 
-          {/* Text Color Picker */}
+          {/* 🎨 Custom Glassmorphic Color Picker Implementation */}
           <div>
-            <label htmlFor="color-picker" className="text-xs text-[var(--muted)] font-medium mb-1 block">
-              Color
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                id="color-picker"
-                type="color"
-                value={selectedOverlay.color}
-                onChange={(e) =>
-                  handleUpdateText(selectedTextId!, { color: e.target.value })
-                }
-                className="w-10 h-8 rounded border border-[var(--border)] cursor-pointer"
-              />
-              <input
-                type="text"
-                value={selectedOverlay.color}
-                onChange={(e) =>
-                  handleUpdateText(selectedTextId!, { color: e.target.value })
-                }
-                className="flex-1 px-2 py-1 text-xs rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] font-mono focus:outline-none focus:ring-2 focus:ring-film-500"
-                placeholder="#ffffff"
-                aria-label="Hex color input"
-              />
-            </div>
+            <ColorPicker
+              label="Text Color"
+              value={selectedOverlay.color}
+              onChange={(hex) => handleUpdateText(selectedTextId!, { color: hex })}
+            />
           </div>
 
           {/* Font Weight */}
@@ -215,3 +219,5 @@ export default function TextControls({
     </div>
   );
 }
+
+// help

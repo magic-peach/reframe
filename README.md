@@ -41,6 +41,8 @@
     <img src="https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml/badge.svg">
   </a>
 </p>
+<<<<<<< HEAD
+=======
 
 </div>
 
@@ -56,6 +58,7 @@
 ![FFmpeg](https://img.shields.io/badge/FFmpeg.wasm-0.12.10-green?style=flat-square&logo=ffmpeg)
 ![Lucide](https://img.shields.io/badge/Lucide_React-latest-orange?style=flat-square)
 ![Lottie](https://img.shields.io/badge/Lottie_Web-latest-purple?style=flat-square)
+>>>>>>> f3b7ebeac4ae0b71305509eb79f9285c952b467a
 
 </div>
 
@@ -149,7 +152,7 @@ Reframe uses static export (`output: 'export'`) and can be deployed easily on Ve
 4. Configure:
    - Framework Preset: Next.js
    - Build Command: `bun run build`
-   - Output Directory: `out`
+   - Output Directory: leave blank (Vercel auto-detects `out` for static exports)
 5. Click **Deploy**
 
 Vercel will automatically build and host the static output.
@@ -214,7 +217,7 @@ The quickest way to get Reframe live:
 3. Vercel auto-detects Next.js settings:
    - **Framework Preset:** Next.js
    - **Build Command:** `bun run build`
-   - **Output Directory:** `out`
+   - **Output Directory:** leave blank (Vercel auto-detects `out` for static exports)
 4. Click **Deploy** — your site will be live in ~2 minutes
 
 **Option 2 — Vercel CLI**
@@ -426,15 +429,7 @@ Reframe is an **official project in GirlScript Summer of Code (GSSoC) 2026**! We
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide including development setup, code style, and PR checklist.
 
----
 
-## Contributors
-
-Thank you to everyone who has contributed to Reframe! 🎉
-
-[![Contributors](https://contrib.rocks/image?repo=magic-peach/reframe)](https://github.com/magic-peach/reframe/graphs/contributors)
-
----
 
 ## Privacy
 

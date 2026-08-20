@@ -1,15 +1,32 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, isValidRecipe } from "@/lib/types";
+import { EditRecipe, ExportResult, ExportStatus, MAX_FILE_SIZE, OverlayPosition, TimelineTrack, MultiTrackEditorState, isValidRecipe } from "@/lib/types";
 import { DEFAULT_RECIPE, SPEED_STEPS } from "@/lib/constants";
 import { getPresetById } from "@/lib/presets";
 import { loadFFmpeg, exportVideo, terminateFFmpeg, FFmpegLoadError } from "@/lib/ffmpeg";
 import { suggestPreset } from "@/lib/presetSuggestion";
 import { validateDimensions, getDownscaledDimensions } from "@/utils/video-validation";
+import {
+  createMultiTrackState,
+  addTrackToTimeline,
+  removeTrackFromTimeline,
+  updateTrackInTimeline,
+  createTimelineTrack,
+  validateMultiTrackState,
+} from "@/lib/timeline";
+import {
+  getStoredSoundPreference,
+  loadPersistedRecipe,
+  migrateRecipe as migratePersistedRecipe,
+  persistRecipe,
+  persistSoundPreference,
+  RECIPE_STORAGE_KEY,
+  LEGACY_SETTINGS_KEY,
+} from "@/lib/editorPersistence";
+import { saveSessionFile, loadSessionFile, clearSessionFile } from "@/lib/sessionDB";
 
 const DEFAULT_TITLE = "Reframe — Resize, trim, and export videos in your browser";
-  const STORAGE_KEY = "reframe:recipe";
 
 export function extractMetadata(file: File): Promise<{ width: number; height: number; duration: number }> {
   return new Promise((resolve, reject) => {
@@ -54,7 +71,7 @@ function verifyMagicBytes(file: File): Promise<boolean> {
       // WebM / MKV
       if (hex.startsWith("1A45DFA3")) resolve(true);
       // AVI
-      else if (hex.startsWith("52494646")) resolve(true);
+      else if (hex.startsWith("52494646") && hex.substring(16, 24) === "41564920") resolve(true);
       // MP4 / MOV (checks for 'ftyp' in first 12 bytes)
       else if (ascii.substring(0, 12).includes("ftyp")) resolve(true);
       else resolve(false);
@@ -110,6 +127,10 @@ function validateRecipe(recipe: EditRecipe, duration: number ): string | null {
       recipe.saturation < 0 || recipe.saturation > 3,
       "Saturation must be between 0 and 3.",
     ],
+    [
+      recipe.sharpness < 0 || recipe.sharpness > 3,
+      "Sharpness must be between 0 and 3.",
+    ],
   ];
 
   return (
@@ -125,6 +146,14 @@ function encodeRecipe(recipe: EditRecipe): string {
 function decodeRecipe(encoded: string): Partial<EditRecipe> | null {
   try {
     const decoded = JSON.parse(atob(encoded));
+    if (!decoded || typeof decoded !== "object") return null;
+    // Validate the merged recipe before accepting any decoded values.
+    // This prevents a tampered or malformed share URL from injecting
+    // out-of-range numbers, invalid enum strings, or other unexpected
+    // values into the editor state. If any field fails, the whole link
+    // is rejected and the editor starts from safe defaults.
+    const merged = { ...DEFAULT_RECIPE, ...decoded };
+    if (!isValidRecipe(merged)) return null;
     return decoded as Partial<EditRecipe>;
   } catch {
     return null;
@@ -139,21 +168,7 @@ export function useVideoEditor() {
     height: number;
     duration: number;
   } | null>(null);
-  const [recipe, setRecipe] = useState<EditRecipe>(() => {
-    if (typeof window === "undefined") return { ...DEFAULT_RECIPE };
-    const params = new URLSearchParams(window.location.search);
-    const encoded = params.get("settings");
-    if (encoded) {
-      const decoded = decodeRecipe(encoded);
-      if (decoded) return { ...DEFAULT_RECIPE, ...decoded };
-    }
-    return {
-      ...DEFAULT_RECIPE,
-      soundOnCompletion:
-        typeof window !== "undefined" &&
-        localStorage.getItem("soundOnCompletion") === "true",
-    };
-  });
+  const [recipe, setRecipe] = useState<EditRecipe>({ ...DEFAULT_RECIPE });
   const [status, setStatus] = useState<ExportStatus>("idle");
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<ExportResult | null>(null);
@@ -174,7 +189,29 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
- const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+
+  // Phase 1 MVP: Multi-track timeline support
+  const [multiTrackState, setMultiTrackState] = useState<MultiTrackEditorState>(createMultiTrackState);
+
+  const addTrack = useCallback((track: TimelineTrack) => {
+    setMultiTrackState(prev => addTrackToTimeline(prev, track));
+  }, []);
+
+  const removeTrack = useCallback((trackId: string) => {
+    setMultiTrackState(prev => removeTrackFromTimeline(prev, trackId));
+  }, []);
+
+  const updateTrack = useCallback((trackId: string, updates: Partial<TimelineTrack>) => {
+    setMultiTrackState(prev => updateTrackInTimeline(prev, trackId, updates));
+  }, []);
+
+  const addVideoTrack = useCallback((videoFile: File, startTime: number = 0) => {
+    const track = createTimelineTrack("video", videoFile, startTime);
+    addTrack(track);
+    return track;
+  }, [addTrack]);
+
+  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
   setRecipe((prev) => {
     const next = { ...prev, ...patch };
     // GIF has no audio — force keepAudio off
@@ -219,8 +256,33 @@ export function useVideoEditor() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    
+    // Auto-restore saved video session
+    loadSessionFile().then(async (savedFile) => {
+      if (savedFile) {
+        try {
+          const { width, height, duration: dur } = await extractMetadata(savedFile);
+          setDuration(dur);
+          setVideoMetadata({ width, height, duration: dur });
+          setFile(savedFile);
+        } catch (e) {
+          console.error("Failed to restore video session:", e);
+          clearSessionFile().catch(console.error);
+        }
+      }
+    }).catch(console.error);
+
     try {
       const params = new URLSearchParams(window.location.search);
+      const encoded = params.get("settings");
+      if (encoded) {
+        const decoded = decodeRecipe(encoded);
+        if (decoded) {
+          setRecipe(migratePersistedRecipe(decoded));
+          return;
+        }
+      }
+
       const recipeKeys = Object.keys(DEFAULT_RECIPE) as Array<keyof EditRecipe>;
       const hasRecipeParams = recipeKeys.some(key => params.has(key));
 
@@ -253,37 +315,10 @@ export function useVideoEditor() {
           }));
         }
       } else {
-        // Try full recipe restore first (new key)
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            if (isValidRecipe(parsed)) {
-              setRecipe(parsed);
-              return;
-            }
-          }
-        } catch {
-          // ignore parse/validation errors and fall back to legacy
-        }
-
-        // Legacy partial settings (keep for backward compatibility)
-        const saved = localStorage.getItem("reframe-settings");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          const sanitizeDimension = (val: unknown, fallback: number): number => {
-            const n = Number(val);
-            return Number.isFinite(n) && n >= 16 && n <= 7680 ? n : fallback;
-          };
-          setRecipe(prev => ({
-            ...prev,
-            preset: parsed.preset ?? prev.preset,
-            quality: parsed.quality ?? prev.quality,
-            speed: parsed.speed ?? prev.speed,
-            customWidth: sanitizeDimension(parsed.customWidth, prev.customWidth),
-            customHeight: sanitizeDimension(parsed.customHeight, prev.customHeight),
-          }));
-        }
+        setRecipe((current) => loadPersistedRecipe(localStorage, migratePersistedRecipe({
+          ...current,
+          soundOnCompletion: getStoredSoundPreference(localStorage),
+        })));
       }
     } catch (e) {
       // ignore
@@ -319,26 +354,12 @@ export function useVideoEditor() {
     }
   }, [recipe]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem("reframe-settings", JSON.stringify({
-        preset: recipe.preset,
-        quality: recipe.quality,
-        speed: recipe.speed,
-        customWidth: recipe.customWidth,
-        customHeight: recipe.customHeight
-      }));
-    } catch (e) {
-      // ignore
-    }
-  }, [recipe.preset, recipe.quality, recipe.speed, recipe.customWidth, recipe.customHeight]);
-
   // Persist the full recipe (debounced)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const timer = setTimeout(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(recipe));
+        persistRecipe(localStorage, recipe);
       } catch {
         // ignore
       }
@@ -351,12 +372,18 @@ export function useVideoEditor() {
     return getPresetById(suggestPreset(videoMetadata.width, videoMetadata.height)) ?? null;
   }, [videoMetadata]);
 
-  const handleFileSelect = useCallback(async (selectedFile: File) => {
+  const handleFileSelect = useCallback((selectedFile: File | null) => {
     setResult(null);
     setStatus("idle");
     setError(null);
     setFile(null);
     setVideoMetadata(null);
+    
+    if (!selectedFile) {
+      setFileError("");
+      return;
+    }
+
     if (!selectedFile.type.startsWith("video/")) {
       setFileError("Please upload a video file only.");
       return;
@@ -386,50 +413,55 @@ export function useVideoEditor() {
       return;
     }
 
-    const isVideo = await verifyMagicBytes(selectedFile);
-    if (!isVideo) {
-      setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
-      setStatus("error");
-      return;
-    }
+    // Run validation and metadata extraction in background
+    (async () => {
+      try {
+        const isVideo = await verifyMagicBytes(selectedFile);
+        if (!isVideo) {
+          setError("Layer 3 Validation Failed: Invalid file content. The file's magic bytes do not match known video formats.");
+          setStatus("error");
+          return;
+        }
 
-    try {
-      const { width, height, duration: dur } = await extractMetadata(selectedFile);
+        const { width, height, duration: dur } = await extractMetadata(selectedFile);
 
-      // Layer 5: Resolution check
-      const dimensionCheck = validateDimensions(width, height);
-      if (dimensionCheck === "blocked") {
-        const suggested = getDownscaledDimensions(width, height);
-        setError(
-          `Layer 5 Validation Failed: Resolution too high (${width}×${height}). ` +
-          `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
-        );
+        // Layer 5: Resolution check
+        const dimensionCheck = validateDimensions(width, height);
+        if (dimensionCheck === "blocked") {
+          const suggested = getDownscaledDimensions(width, height);
+          setError(
+            `Layer 5 Validation Failed: Resolution too high (${width}×${height}). ` +
+            `Maximum supported is 8K. Suggested safe size: ${suggested.width}×${suggested.height}.`
+          );
+          setStatus("error");
+          return;
+        }
+
+        setDuration(dur);
+        setVideoMetadata({ width, height, duration: dur });
+        setFile(selectedFile);
+        saveSessionFile(selectedFile).catch(console.error);
+
+        if (dimensionCheck === "warning") {
+          console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
+        }
+        setRecipe((prev) => {
+          const suggestedPreset = suggestPreset(width, height);
+          const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
+
+          return {
+            ...prev,
+            trimStart: 0,
+            trimEnd: null,
+            ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
+          };
+        });
+      } catch (err) {
+        setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
         setStatus("error");
-        return;
       }
+    })();
 
-      setDuration(dur);
-      setVideoMetadata({ width, height, duration: dur });
-      setFile(selectedFile);
-
-      if (dimensionCheck === "warning") {
-        console.warn(`[Reframe] High resolution video detected (${width}×${height}). Export may be slow.`);
-      }
-      setRecipe((prev) => {
-        const suggestedPreset = suggestPreset(width, height);
-        const shouldApplySuggestion = prev.preset === DEFAULT_RECIPE.preset;
-
-        return {
-          ...prev,
-          trimStart: 0,
-          trimEnd: null,
-          ...(shouldApplySuggestion ? { preset: suggestedPreset } : {}),
-        };
-      });
-    } catch (err) {
-      setError(`Layer 4 Validation Failed: ${err instanceof Error ? err.message : "Unknown error"}`);
-      setStatus("error");
-    }
   }, []);
 
   const handleExport = useCallback(async () => {
@@ -457,7 +489,7 @@ export function useVideoEditor() {
       if (result?.blobUrl) URL.revokeObjectURL(result.blobUrl);
       setResult(null);
 
-      const ffmpeg = await loadFFmpeg(abortController.signal);
+      await loadFFmpeg(abortController.signal, setProgress);
       if (exportCancelledRef.current) return;
 
       const startedAt = Date.now();
@@ -465,7 +497,6 @@ export function useVideoEditor() {
       setStatus("exporting");
 
       const exportResult = await exportVideo(
-        ffmpeg,
         file,
         recipe,
         setProgress,
@@ -540,21 +571,24 @@ export function useVideoEditor() {
     } else {
       document.title = DEFAULT_TITLE;
     }
+  }, [status, progress, file]);
+
+  useEffect(() => {
     return () => {
       document.title = DEFAULT_TITLE;
     };
-  }, [status, progress, file]);
+  }, []);
 
   useEffect(() => {
     const shouldWarn =
       status === "exporting" ||
-      status === "loading-engine" ||
-      status === "done";
+      status === "loading-engine";
 
     if (!shouldWarn) return;
 
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
+      e.returnValue = "";
     };
 
     window.addEventListener("beforeunload", handler);
@@ -622,7 +656,9 @@ export function useVideoEditor() {
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(RECIPE_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_SETTINGS_KEY);
+      clearSessionFile().catch(console.error);
     } catch {
       // ignore
     }
@@ -652,7 +688,9 @@ export function useVideoEditor() {
     setError(null);
     setExportStartedAt(null);
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(RECIPE_STORAGE_KEY);
+      localStorage.removeItem(LEGACY_SETTINGS_KEY);
+      clearSessionFile().catch(console.error);
     } catch {
       // ignore
     }
@@ -660,7 +698,7 @@ export function useVideoEditor() {
 
 
   useEffect(() => {
-    localStorage.setItem("soundOnCompletion", String(recipe.soundOnCompletion));
+    persistSoundPreference(localStorage, recipe.soundOnCompletion);
   }, [recipe.soundOnCompletion]);
   const seekTo = useCallback((time: number) => {
     if (videoRef.current) {
@@ -673,7 +711,7 @@ export function useVideoEditor() {
     const handleTimeUpdate = () => setCurrentTime(video.currentTime);
     video.addEventListener("timeupdate", handleTimeUpdate);
     return () => video.removeEventListener("timeupdate", handleTimeUpdate);
-  },[]);
+  });
 
   const toggleSound = useCallback(() => {
   updateRecipe({ soundOnCompletion: !recipe.soundOnCompletion });
@@ -716,5 +754,11 @@ export function useVideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    // Phase 1 MVP: Multi-track timeline support
+    multiTrackState,
+    addTrack,
+    removeTrack,
+    updateTrack,
+    addVideoTrack,
   };
 }

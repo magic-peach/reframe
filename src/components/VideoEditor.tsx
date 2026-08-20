@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
+import PrivacyBanner from "./PrivacyBanner";
 import VideoPreview from "./VideoPreview";
 import ThumbnailStrip from "./ThumbnailStrip";
 import PresetSelector from "./PresetSelector";
@@ -26,6 +27,7 @@ import {
 } from "lucide-react";
 import OnboardingTour from "./OnboardingTour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { loadOverlayState, persistOverlayState } from "@/lib/editorPersistence";
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -77,10 +79,10 @@ function AccordionSection({
         aria-expanded={isOpen}
         aria-controls={`${id}-panel`}
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[var(--border)] transition-colors duration-150"
+        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[var(--border)] transition-all duration-200 group rounded-lg"
       >
         <div className="flex items-center gap-2">
-          <span className="text-film-500 opacity-80">{icon}</span>
+          <span className="text-film-500 opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-transform duration-200">{icon}</span>
           <span className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)]">{title}</span>
         </div>
         <svg
@@ -152,6 +154,14 @@ function KeyboardShortcutsPanel() {
     keys: [<Kbd key="question">?</Kbd>],
     label: "Toggle this panel",
   },
+  {
+    keys: [<Kbd key="i">I</Kbd>],
+    label: "Set trim in point",
+  },
+  {
+    keys: [<Kbd key="o">O</Kbd>],
+    label: "Set trim out point",
+  },
 ];
 
   return (
@@ -221,10 +231,26 @@ export default function VideoEditor() {
     status,
     cancelExport,
     onToggleShortcutsModal: () => {},
+    currentTime,
+    duration,
   });
 
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const initialOverlayState = useRef({
+    overlayPosition,
+    overlaySize,
+    overlayOpacity,
+  });
+  useEffect(() => {
+    if (!file) return;
+
+    persistOverlayState(localStorage, {
+      overlayPosition,
+      overlaySize,
+      overlayOpacity,
+    });
+  }, [overlayPosition, overlaySize, overlayOpacity, file]);
   const [selectedTextId, setSelectedTextId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState({
     resize: true,
@@ -234,6 +260,17 @@ export default function VideoEditor() {
     audio: false,
     export: false,
   });
+  useEffect(() => {
+    const restored = loadOverlayState(localStorage, {
+      overlayPosition: initialOverlayState.current.overlayPosition,
+      overlaySize: initialOverlayState.current.overlaySize,
+      overlayOpacity: initialOverlayState.current.overlayOpacity,
+    });
+
+    if (restored.overlayPosition) setOverlayPosition(restored.overlayPosition);
+    if (typeof restored.overlaySize === "number") setOverlaySize(restored.overlaySize);
+    if (typeof restored.overlayOpacity === "number") setOverlayOpacity(restored.overlayOpacity);
+  }, [setOverlayOpacity, setOverlayPosition, setOverlaySize]);
 
   const toggleSection = (key: keyof typeof openSections) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -263,6 +300,7 @@ export default function VideoEditor() {
 
   useEffect(() => {
     if (status === "done" && downloadRef.current) {
+      
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       downloadRef.current.scrollIntoView({
         behavior: prefersReducedMotion ? "instant" : "smooth",
@@ -271,8 +309,13 @@ export default function VideoEditor() {
     }
   }, [status]);
 
+
   const isProcessing = status === "loading-engine" || status === "exporting";
-  const isMac = typeof navigator !== "undefined" && /Mac/i.test(navigator.platform);
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    setIsMac(typeof navigator !== "undefined" && /Mac/i.test(navigator.platform));
+  }, []);
 
   const intervalSeconds = useMemo(() => {
     if (duration <= 30) return 2;
@@ -324,7 +367,11 @@ export default function VideoEditor() {
         {status === "error" && `Export failed: ${error}`}
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full">
+      <div className={cn(
+        "max-w-6xl mx-auto px-4 py-8 pb-6 flex-1 w-full",
+        // Reserve space on mobile so the fixed export bar never covers content.
+        file && "max-lg:pb-28"
+      )}>
         <header className="mb-10 flex flex-col items-center justify-center gap-4 animate-fade-in">
         <div
           className="inline-block rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm border-l-4 border-l-film-600 mx-auto w-fit min-w-min"
@@ -369,6 +416,7 @@ export default function VideoEditor() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
 
           <div className="space-y-4 min-w-0">
+            {!file && <PrivacyBanner />}
             <div className="bg-[var(--surface)] rounded-xl p-3 border border-[var(--border)] animate-fade-in">
               <FileUpload onFileSelect={handleFileSelect} currentFile={file} fileError={fileError} duration={duration} />
 
@@ -551,6 +599,30 @@ export default function VideoEditor() {
                           className="w-full accent-film-600"
                         />
                       </div>
+                      {/* Sharpness */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <label htmlFor="sharpness-slider">Sharpness</label>
+                          <button
+                            type="button"
+                            onClick={() => updateRecipe({ sharpness: 0 })}
+                            className="text-film-500 hover:underline"
+                          >
+                            Reset
+                          </button>
+                        </div>
+                        <input
+                          id="sharpness-slider"
+                          type="range"
+                          min="0"
+                          max="3"
+                          step="1"
+                          value={recipe.sharpness}
+                          onChange={(e) => updateRecipe({ sharpness: Number(e.target.value) })}
+                          aria-label="Adjust sharpness"
+                          className="w-full accent-film-600"
+                        />
+                      </div>
                     </div>
                   </Section>
                   <Section icon={<SlidersHorizontal size={12} />} title="Output format" delay={190}>
@@ -676,7 +748,7 @@ export default function VideoEditor() {
                   onClick={resetSettings}
                   className="text-sm font-heading font-bold uppercase tracking-widest text-[var(--muted)] hover:text-film-600 transition-all opacity-60 hover:opacity-100"
                 >
-                  Reset all settings
+                  Clear saved session
                 </button>
               </div>
             </div>
@@ -698,7 +770,8 @@ export default function VideoEditor() {
                 aria-disabled={!file || isProcessing ? "true" : undefined}
                 title={!file ? "Upload a video to enable export" : undefined}
               className={cn(
-                "w-full flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
+                // Hidden on mobile — replaced by the fixed bottom bar below.
+                "w-full hidden lg:flex items-center justify-center gap-3 py-5 min-h-[44px] rounded-xl",
                 "font-display text-2xl tracking-widest transition-all duration-200",
                 file && !isProcessing
                   ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
@@ -710,13 +783,36 @@ export default function VideoEditor() {
             </button>
 
             {file && !isProcessing && (
-              <p className="text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
+              <p className="hidden lg:block text-xs text-center font-mono text-[var(--muted)] opacity-50 mt-1">
                 {isMac ? "⌘" : "Ctrl"} + Enter to export
               </p>
             )}
           </div>
         </div>
       </div>
+
+      {/* Mobile-only export bar — keeps Export reachable without scrolling to the sidebar. */}
+      {file && (
+        <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-[var(--border)] bg-[var(--bg)]/95 px-4 py-3 backdrop-blur [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]">
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={isProcessing}
+            aria-label="Export video"
+            aria-disabled={isProcessing ? "true" : undefined}
+            className={cn(
+              "w-full flex items-center justify-center gap-3 py-4 min-h-[44px] rounded-xl",
+              "font-display text-xl tracking-widest transition-all duration-200",
+              !isProcessing
+                ? "bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white shadow-[var(--shadow)] active:scale-[0.98] cursor-pointer"
+                : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+            )}
+          >
+            <Zap size={18} className={cn(!isProcessing && "animate-pulse")} />
+            {isProcessing ? "PROCESSING" : "EXPORT"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

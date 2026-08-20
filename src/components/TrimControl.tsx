@@ -247,6 +247,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
           <input
             id="trim-start"
             type="number"
+            inputMode="decimal"
             autoComplete="off"
             min={0}
             max={duration > 0 ? duration : undefined}
@@ -284,6 +285,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
           <input
             id="trim-end"
             type="number"
+            inputMode="decimal"
             autoComplete="off"
             min={0}
             max={duration > 0 ? duration : undefined}
