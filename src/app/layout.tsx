@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { Bebas_Neue, Syne, DM_Sans } from "next/font/google";
+import ErrorBoundary from "@/components/ErrorBoundaryWrapper";
 import { Bebas_Neue, Syne, DM_Sans, Inter, Roboto, Poppins, Montserrat } from "next/font/google";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
