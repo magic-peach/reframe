@@ -361,8 +361,9 @@ export default function VideoEditor() {
       />
       <OnboardingTour />
 
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {status === "exporting" && `Exporting video: ${progress}%`}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {status === "loading-engine" && "Loading engine. Video processing engine is loading, please wait."}
+        {status === "exporting" && `Export started. Exporting video: ${progress}%`}
         {status === "done" && "Export complete! Video ready to download."}
         {status === "error" && `Export failed: ${error}`}
       </div>
