@@ -34,7 +34,7 @@ export default function VideoPreview({
   const lastId = useRef(0);
   const urlRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showOverlay, setShowOverlay] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(true);
   const [showComparison, setShowComparison] = useState(false);
   const [showGridOverlay, setShowGridOverlay] = useState(false);
   const [containerDimensions, setContainerDimensions] = useState({
@@ -228,6 +228,28 @@ export default function VideoPreview({
         return { mode: "fill", barTop: "0", barBottom: "0", barLeft: `${cropW}%`, barRight: `${cropW}%` };
       }
     }
+  })();
+
+  const livePreviewDetails = (() => {
+    if (!recipe) return null;
+
+    const preset = recipe.preset === "custom"
+      ? { width: recipe.customWidth, height: recipe.customHeight }
+      : getPresetById(recipe.preset);
+
+    if (!preset) return null;
+
+    const framingLabel = recipe.framing === "fit" ? "Fit" : "Fill";
+    const framingDescription = recipe.framing === "fit"
+      ? "The full video stays visible with padding where the aspect ratio differs."
+      : "The preview highlights the area kept after cropping to the export frame.";
+
+    return {
+      sizeLabel: `${preset.width}x${preset.height}`,
+      formatLabel: recipe.format.toUpperCase(),
+      framingLabel,
+      framingDescription,
+    };
   })();
 
   if (!file) return null;
@@ -449,6 +471,25 @@ export default function VideoPreview({
           </button>
         )}
       </div>
+
+      {livePreviewDetails && !isLoading && (
+        <div
+          className="mt-3 flex flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between"
+          aria-live="polite"
+        >
+          <div>
+            <p className="font-heading font-bold uppercase tracking-widest text-film-600">
+              Live export frame
+            </p>
+            <p className="mt-0.5 text-[var(--muted)]">
+              {livePreviewDetails.sizeLabel} {livePreviewDetails.formatLabel} - {livePreviewDetails.framingLabel}
+            </p>
+          </div>
+          <p className="max-w-xl text-[var(--muted)]">
+            {livePreviewDetails.framingDescription}
+          </p>
+        </div>
+      )}
 
       {showComparison && file && (
         <div className="mt-4">
