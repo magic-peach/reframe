@@ -22,6 +22,11 @@ name: 🎨 Chromatic Fork — Build
 on:
   pull_request:
     branches: [main]
+    # `labeled` lets a maintainer re-run visual review on a fork PR on demand
+    # by applying the `visual-review` label, without asking the contributor to
+    # push a no-op commit. It is also the only way to exercise this workflow
+    # end-to-end without waiting for a fresh fork PR to arrive.
+    types: [opened, synchronize, reopened, labeled]
 
 # No secrets are used here, and the token is read-only.
 permissions:
@@ -36,10 +41,19 @@ jobs:
     name: Build Storybook (fork)
     runs-on: ubuntu-latest
 
-    # Same-repo PRs already get a full Chromatic run from chromatic.yml, which
-    # can use the secret directly. Restricting this to forks avoids building
-    # and snapshotting every same-repo PR twice.
-    if: github.event.pull_request.head.repo.full_name != github.repository
+    # Two gates:
+    #
+    #  * forks only — same-repo PRs already get a full Chromatic run from
+    #    chromatic.yml, which can use the secret directly, so building here too
+    #    would snapshot every same-repo PR twice.
+    #
+    #  * on a `labeled` event, only the `visual-review` label counts. Without
+    #    this, the auto-labeller applying `gssoc'26`, `level:*` and `type:*` to
+    #    every new PR would fire a duplicate build per label.
+    if: >-
+      github.event.pull_request.head.repo.full_name != github.repository &&
+      (github.event.action != 'labeled' ||
+       github.event.label.name == 'visual-review')
 
     steps:
       - name: Checkout PR code

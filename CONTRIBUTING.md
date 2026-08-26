@@ -378,6 +378,10 @@ You'll see up to three checks:
 accepting, that is a maintainer's call, not a problem with your branch — a
 maintainer accepts or rejects each change in the Chromatic UI.
 
+**Maintainers:** to re-run visual review on a fork PR without asking the
+contributor to push again, apply the `visual-review` label. Fork PRs are built
+automatically on open and on every push; the label is for re-running on demand.
+
 If your PR touches a component, please **add or update its story** in
 `src/components/<Component>.stories.tsx`. Stories are what Chromatic can see;
 a change with no story gets no visual review.
