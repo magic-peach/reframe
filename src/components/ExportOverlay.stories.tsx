@@ -3,83 +3,61 @@ import type { Meta, StoryObj, Decorator } from "@storybook/nextjs";
 import ExportOverlay from "./ExportOverlay";
 
 /**
- * ExportOverlay renders a <TipCarousel/>, which rotates to the next tip every
- * 6000ms. Chromatic screenshots at an arbitrary moment after the story
- * settles, so on a slow CI run the capture can land on a different tip — or
- * mid fade-transition — and report a diff that reflects nothing but timing.
+ * Full-screen modal shown while an export runs.
  *
- * Neutralising setInterval for the lifetime of these stories pins the carousel
- * to its first tip. It is patched during the render phase deliberately: a
- * child's useEffect runs before its parent's, so patching from an effect here
- * would be too late to stop TipCarousel installing its interval.
+ * ── Why this file works the way it does ──────────────────────────────────────
+ * Two things inside this overlay move on their own, and a visual regression
+ * service screenshots at an arbitrary moment:
+ *
+ *   1. a Lottie spinner, played by lottie-web via requestAnimationFrame
+ *   2. a <TipCarousel/>, which rotates to the next tip every 6000ms
+ *
+ * An earlier version of this file froze both by stubbing window.setInterval
+ * and window.requestAnimationFrame. That was a mistake: Chromatic's capture
+ * instrumentation relies on requestAnimationFrame to decide a story has
+ * settled, so with rAF stubbed the story never signalled ready and all six
+ * snapshots (3 stories x light/dark) failed with "took too long to load".
+ *
+ * Never stub browser globals to stabilise a snapshot. Instead, tell Chromatic
+ * which regions to ignore: it excludes them from the diff but still renders
+ * them, and the rest of the overlay — heading, progress bar, percentage,
+ * cancel button — is compared normally.
  */
-/**
- * Hooks must live in a real component for react-hooks/rules-of-hooks, and the
- * patch has to land in the render phase: a child's effects run before its
- * parent's, so patching from an effect here would be too late to stop
- * TipCarousel and lottie-web installing their timers.
- */
-function FrozenAnimations({ children }: { children: React.ReactNode }) {
-  const saved = React.useRef<{
-    setInterval: typeof window.setInterval;
-    raf: typeof window.requestAnimationFrame;
-  } | null>(null);
+const withMovingPartsIgnored: Decorator = (Story) => (
+  <IgnoreMovingParts>
+    <Story />
+  </IgnoreMovingParts>
+);
 
-  if (typeof window !== "undefined" && saved.current === null) {
-    saved.current = {
-      setInterval: window.setInterval,
-      raf: window.requestAnimationFrame,
-    };
-    // Stops TipCarousel's 6s rotation.
-    window.setInterval = (() => 0) as unknown as typeof window.setInterval;
-    // Stops the Lottie spinner. lottie-web drives playback with
-    // requestAnimationFrame, so no amount of CSS can freeze it — an
-    // uncontrolled spinner is a guaranteed diff on every Chromatic build.
-    // It still paints its first frame; it just never advances past it.
-    window.requestAnimationFrame = (() =>
-      0) as unknown as typeof window.requestAnimationFrame;
-  }
-
+function IgnoreMovingParts({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
-    return () => {
-      if (saved.current) {
-        window.setInterval = saved.current.setInterval;
-        window.requestAnimationFrame = saved.current.raf;
-        saved.current = null;
-      }
-    };
+    // .w-20.h-20        -> the wrapper LottiePlayer fills with its <svg>
+    // [class*=min-h-]   -> the TipCarousel root (min-h-[142px])
+    const selectors = ['.w-20.h-20', '[class*="min-h-[142px]"]'];
+    const marked: Element[] = [];
+
+    for (const selector of selectors) {
+      document.querySelectorAll(selector).forEach((el) => {
+        el.setAttribute("data-chromatic", "ignore");
+        marked.push(el);
+      });
+    }
+
+    return () => marked.forEach((el) => el.removeAttribute("data-chromatic"));
   }, []);
 
   return <>{children}</>;
 }
 
-const withoutIntervals: Decorator = (Story) => (
-  <FrozenAnimations>
-    <Story />
-  </FrozenAnimations>
-);
-
-/**
- * Full-screen modal shown while an export runs.
- *
- * Determinism note: when `status === "exporting"` and `exportStartedAt` is a
- * real timestamp, the component starts a 1s interval and renders
- * `Date.now() - exportStartedAt` as elapsed time. That text would change
- * between Chromatic builds and flag a diff on every run. Passing
- * `exportStartedAt: null` takes the component's own early-return branch and
- * pins the elapsed readout at zero, so these snapshots are stable.
- *
- * The overlay only renders for "loading-engine" and "exporting" — the other
- * ExportStatus values return null, so they aren't worth stories.
- */
 const meta = {
   title: "Editor/Modals/ExportOverlay",
   component: ExportOverlay,
-  parameters: { layout: "fullscreen", chromatic: { delay: 500 } },
-  decorators: [withoutIntervals],
-  // The Lottie spinner is loaded via a dynamic import(), so give it time to
-  // mount before capture — otherwise the race is "empty box" vs "first frame".
+  parameters: { layout: "fullscreen" },
+  decorators: [withMovingPartsIgnored],
   args: {
+    // With a real timestamp the component starts a 1s interval and renders
+    // Date.now() - exportStartedAt as elapsed time, which would differ between
+    // builds. null takes its own early-return branch and pins it at zero.
     exportStartedAt: null,
     onCancel: () => {},
   },
@@ -88,7 +66,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** FFmpeg.wasm (~30 MB) is being fetched on first export. */
+/**
+ * FFmpeg.wasm (~30 MB) is being fetched on first export.
+ *
+ * The overlay only renders for "loading-engine" and "exporting"; the other
+ * ExportStatus values return null, so they aren't worth stories.
+ */
 export const LoadingEngine: Story = {
   args: { status: "loading-engine", progress: 0 },
 };
