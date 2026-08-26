@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "./ThemeProvider";
+// import { useEffect, useState } from "react";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
@@ -27,6 +28,9 @@ export function ThemeToggle() {
       />
     );
   }
+
+  const isDark = theme === "dark";
+  // const [mounted, setMounted] = useState(false);
 
   return (
     <button
