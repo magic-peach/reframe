@@ -3,9 +3,8 @@ import { Bebas_Neue, Syne, DM_Sans, Inter, Roboto, Poppins, Montserrat } from "n
 import ErrorBoundary from "@/components/ErrorBoundary";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import Header from "@/components/Header";
 import ScrollToTop from "@/components/ScrollToTop";
-import BrandLogo from "@/components/BrandLogo";
 
 export const metadata: Metadata = {
   title: "Reframe — Resize, trim, and export videos in your browser",
@@ -76,16 +75,7 @@ export default function RootLayout({
         </a>
         <ThemeProvider>
           <ErrorBoundary>
-            <header
-              role="banner"
-              className="sticky top-0 z-50 flex items-center justify-between border-b border-[var(--border)] bg-[var(--bg)]/95 px-6 py-3 backdrop-blur"
-            >
-              <div className="flex items-center gap-2">
-                <BrandLogo size={24} />
-                <h1 className="text-lg font-semibold">Reframe</h1>
-              </div>
-              <ThemeToggle />
-            </header>
+            <Header />
             <main id="main-content" tabIndex={-1}>
               {children}
             </main>
