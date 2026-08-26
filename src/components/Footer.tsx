@@ -109,13 +109,14 @@ export default function Footer() {
                 required
                 placeholder="Enter your email"
                 aria-label="Email address"
-                className="w-full bg-transparent py-3 text-[11px] font-semibold tracking-widest uppercase placeholder:opacity-30 focus:outline-none"
+                className="w-full bg-transparent py-3 px-1 text-[11px] font-semibold tracking-widest uppercase placeholder:opacity-30 border-0 outline-none focus:outline-none focus:ring-0 focus:shadow-none focus:border-0"
               />
 
               <button
                 type="submit"
                 aria-label="Subscribe to updates"
-                onMouseDown={(e) => e.preventDefault()} className="text-[var(--accent)] hover:text-[var(--accent-hover)] transition p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] rounded"
+                onMouseDown={(e) => e.preventDefault()}
+                className="text-[var(--accent)] hover:text-[var(--accent-hover)] transition p-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] rounded shrink-0"
               >
                 <ArrowRight size={16} />
               </button>
