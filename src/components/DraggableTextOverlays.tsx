@@ -121,6 +121,44 @@ export default function DraggableTextOverlays({
     [handleSaveEdit]
   );
 
+  const handleOverlayKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>, overlayId: string) => {
+      const overlay = textOverlays.find((o) => o.id === overlayId);
+      if (!overlay) return;
+
+      if (editingId === overlayId) {
+        handleEditKeyDown(e, overlayId);
+        return;
+      }
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        setEditingId(overlayId);
+        setEditText(overlay.text);
+        return;
+      }
+
+      const moveBy = e.shiftKey ? 5 : 1;
+      const moves: Record<string, { x: number; y: number }> = {
+        ArrowUp: { x: 0, y: -moveBy },
+        ArrowDown: { x: 0, y: moveBy },
+        ArrowLeft: { x: -moveBy, y: 0 },
+        ArrowRight: { x: moveBy, y: 0 },
+      };
+
+      const delta = moves[e.key];
+      if (!delta) return;
+
+      e.preventDefault();
+      onSelectText(overlayId);
+      onUpdateText(overlayId, {
+        x: Math.max(0, Math.min(100, overlay.x + delta.x)),
+        y: Math.max(0, Math.min(100, overlay.y + delta.y)),
+      });
+    },
+    [editingId, handleEditKeyDown, onSelectText, onUpdateText, textOverlays]
+  );
+
   /**
    * Handles dragging of text overlays.
    */
@@ -237,14 +275,7 @@ export default function DraggableTextOverlays({
             tabIndex={0}
             onMouseDown={(e) => handleMouseDown(e, overlay.id)}
             onDoubleClick={(e) => handleDoubleClick(e, overlay.id)}
-            onKeyDown={(e) => {
-              if (editingId === overlay.id) {
-                handleEditKeyDown(e, overlay.id);
-              } else if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onSelectText(overlay.id);
-              }
-            }}
+            onKeyDown={(e) => handleOverlayKeyDown(e, overlay.id)}
             className={`absolute pointer-events-auto ${
               editingId === overlay.id ? "cursor-text" : "cursor-move"
             } select-none transition-all ${
@@ -253,7 +284,7 @@ export default function DraggableTextOverlays({
               isSelected
                 ? "ring-2 ring-film-500 ring-offset-1 ring-offset-black/50"
                 : ""
-            }`}
+            } focus-visible:ring-2 focus-visible:ring-film-500 focus-visible:ring-offset-1 focus-visible:ring-offset-black/50`}
             style={{
               left: `${left}px`,
               top: `${top}px`,
