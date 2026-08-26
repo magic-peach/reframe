@@ -364,6 +364,10 @@ function buildSessionId(): string {
 }
 
 export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: number): string {
+  // Ensure target dimensions are even to prevent libx264 "not divisible by 2" errors
+  targetW = Math.floor(targetW / 2) * 2;
+  targetH = Math.floor(targetH / 2) * 2;
+
   const filters: string[] = [];
 
   if (recipe.trimStart > 0 || recipe.trimEnd !== null) {
@@ -614,13 +618,12 @@ interface PositionCoords {
     if (shouldKeepAudio) args.push("-c:a", "aac", "-b:a", "128k");
   }
 
-  // Add explicit output duration when speed != 1 to prevent slight duration
-  // overshoot caused by encoder/filter pipeline frame flush at stream end.
-  if (recipe.speed !== 1) {
-    const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
-    const outputDuration = sourceDuration / recipe.speed;
-    args.push("-t", outputDuration.toFixed(6));
-  }
+  // Add explicit output duration to prevent slight duration overshoot
+  // caused by encoder/filter pipeline frame flush at stream end,
+  // and to prevent infinite loops when adding looped audio to silent videos.
+  const sourceDuration = (recipe.trimEnd ?? videoDuration) - recipe.trimStart;
+  const outputDuration = sourceDuration / recipe.speed;
+  args.push("-t", outputDuration.toFixed(6));
 
   args.push(outputName);
   return args;
