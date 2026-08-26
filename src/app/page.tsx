@@ -1,5 +1,17 @@
-import VideoEditor from "@/components/VideoEditor";
+import dynamic from "next/dynamic";
 import Footer from "@/components/Footer";
+
+const VideoEditor = dynamic(() => import("@/components/VideoEditor"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full max-w-6xl mx-auto h-[600px] flex items-center justify-center animate-pulse bg-[var(--surface)] border border-[var(--border)] rounded-xl mt-8">
+      <div className="text-[var(--muted)] font-heading uppercase tracking-widest text-sm flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-[var(--accent)] animate-ping" />
+        Loading Video Editor...
+      </div>
+    </div>
+  ),
+});
 
 export default function Home() {
   return (

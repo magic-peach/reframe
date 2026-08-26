@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { Film, FolderOpen } from "lucide-react";
-import LottiePlayer from "./LottiePlayer";
+
+const LottiePlayer = dynamic(() => import("./LottiePlayer"), { ssr: false });
 import uploadAnim from "@/lib/lottie/upload.json";
 import { cn, formatBytes, formatDuration } from "@/lib/utils";
 import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";

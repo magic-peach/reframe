@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 import { Download, RotateCcw, Share2, AlertCircle, Volume2, VolumeX } from "lucide-react";
-import LottiePlayer from "./LottiePlayer";
+const LottiePlayer = dynamic(() => import("./LottiePlayer"), { ssr: false });
 import { NativeShareButton } from "./NativeShareButton";
 import successAnim from "@/lib/lottie/success.json";
 import { cn } from "@/lib/utils";

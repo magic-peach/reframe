@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useVideoEditor } from "@/hooks/useVideoEditor";
 import { TextOverlay } from "@/lib/types";
+import dynamic from "next/dynamic";
 import FileUpload from "./FileUpload";
 import PrivacyBanner from "./PrivacyBanner";
 import VideoPreview from "./VideoPreview";
@@ -15,9 +16,10 @@ import TextControls from "./TextControls";
 import AudioSpeedControl from "./AudioSpeedControl";
 import FormatSelector from "./FormatSelector";
 import ExportSettings from "./ExportSettings";
-import ExportOverlay from "./ExportOverlay";
-import DownloadResult from "./DownloadResult";
-import ImageOverlay from "./ImageOverlay"
+
+const ExportOverlay = dynamic(() => import("./ExportOverlay"), { ssr: false });
+const DownloadResult = dynamic(() => import("./DownloadResult"), { ssr: false });
+const ImageOverlay = dynamic(() => import("./ImageOverlay"), { ssr: false });
 import { getPresetById } from "@/lib/presets";
 
 import { cn } from "@/lib/utils";
@@ -25,7 +27,7 @@ import {
   Layers, Crop, Scissors, RotateCw, Volume2, Type,
   SlidersHorizontal, Zap, AlertTriangle, Github, Copy
 } from "lucide-react";
-import OnboardingTour from "./OnboardingTour";
+const OnboardingTour = dynamic(() => import("./OnboardingTour"), { ssr: false });
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { loadOverlayState, persistOverlayState } from "@/lib/editorPersistence";
 
