@@ -101,7 +101,7 @@ export default function TrimControl({ recipe, onChange, duration, file }: Props)
 
     const n = parseFloat(val);
 
-    if (isNaN(n)) {
+    if (Number.isNaN(n)) {
       setStart(true);
       setStartErrorMsg("Enter a valid number.");
       return;

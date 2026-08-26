@@ -122,7 +122,7 @@ export default function PresetSelector({ recipe, onChange }: Props) {
 
   const handleWidthChange = useCallback(
     (width: number) => {
-      if (!isNaN(width) && width >= 16 && width <= 7680) {
+      if (!Number.isNaN(width) && width >= 16 && width <= 7680) {
         onChange({ customWidth: width });
       }
     },
