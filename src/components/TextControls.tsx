@@ -188,7 +188,7 @@ export default function TextControls({
           </div>
 
           {/* Font Weight */}
-          <div>
+          <fieldset>
             <legend className="text-xs text-[var(--muted)] font-medium mb-1 block">
               Weight
             </legend>
@@ -213,7 +213,7 @@ export default function TextControls({
                 </button>
               ))}
             </div>
-          </div>
+          </fieldset>
         </div>
       )}
     </div>

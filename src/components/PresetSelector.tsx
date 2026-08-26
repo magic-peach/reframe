@@ -171,10 +171,14 @@ export default function PresetSelector({ recipe, onChange }: Props) {
       </div>
 
       <div className="relative">
+        <label htmlFor="preset-search" className="sr-only">
+          Search output formats
+        </label>
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
           <Search size={14} className="text-[var(--muted)]" />
         </div>
         <input
+          id="preset-search"
           type="text"
           placeholder="Search formats..."
           value={search}
