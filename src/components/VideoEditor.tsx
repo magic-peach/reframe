@@ -208,7 +208,7 @@ function KeyboardShortcutsPanel() {
 
 export default function VideoEditor() {
   const {
-    file, duration, recipe, status, progress,
+    file, duration, videoMetadata, recipe, status, progress,
     result, error, exportStartedAt, updateRecipe,
     handleFileSelect, fileError, handleExport, cancelExport, reset, resetSettings,
     videoRef,
@@ -729,7 +729,12 @@ export default function VideoEditor() {
                   </div>
                 )}
                 <div className="space-y-3">
-                  <PresetSelector recipe={recipe} onChange={updateRecipe} />
+                  <PresetSelector
+                    recipe={recipe}
+                    onChange={updateRecipe}
+                    sourceWidth={videoMetadata?.width ?? null}
+                    sourceHeight={videoMetadata?.height ?? null}
+                  />
                   <FramingControl recipe={recipe} onChange={updateRecipe} />
                 </div>
               </AccordionSection>
