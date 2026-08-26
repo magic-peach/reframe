@@ -189,6 +189,7 @@ export function useVideoEditor() {
   const [overlaySize, setOverlaySize] = useState(150);
   const [overlayOpacity, setOverlayOpacity] = useState(100);
   const [currentTime, setCurrentTime] = useState(0);
+  const [exportName, setExportName] = useState("reframe-video");
 
   // Phase 1 MVP: Multi-track timeline support
   const [multiTrackState, setMultiTrackState] = useState<MultiTrackEditorState>(createMultiTrackState);
@@ -378,6 +379,7 @@ export function useVideoEditor() {
     setError(null);
     setFile(null);
     setVideoMetadata(null);
+    setExportName("reframe-video");
     
     if (!selectedFile) {
       setFileError("");
@@ -655,6 +657,7 @@ export function useVideoEditor() {
 
   const resetSettings = useCallback(() => {
     setRecipe(DEFAULT_RECIPE);
+    setExportName("reframe-video");
     try {
       localStorage.removeItem(RECIPE_STORAGE_KEY);
       localStorage.removeItem(LEGACY_SETTINGS_KEY);
@@ -682,6 +685,7 @@ export function useVideoEditor() {
     setVideoMetadata(null);
     setDuration(0);
     setRecipe(DEFAULT_RECIPE);
+    setExportName("reframe-video");
     setStatus("idle");
     setProgress(0);
     setResult(null);
@@ -754,6 +758,8 @@ export function useVideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    exportName,
+    setExportName,
     // Phase 1 MVP: Multi-track timeline support
     multiTrackState,
     addTrack,

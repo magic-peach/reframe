@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { ExportResult } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
-import { Download, RotateCcw, Share2, AlertCircle, Volume2, VolumeX } from "lucide-react";
+import { buildDownloadFilename } from "@/lib/fileNaming";
+import { Download, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import LottiePlayer from "./LottiePlayer";
 import { NativeShareButton } from "./NativeShareButton";
 import successAnim from "@/lib/lottie/success.json";
@@ -27,15 +28,17 @@ interface Props {
   onReset: () => void;
   soundOnCompletion: boolean;
   onToggleSound: () => void;
+  defaultName?: string;
 }
 
-export default function DownloadResult({ result, onReset, soundOnCompletion, onToggleSound }: Props) {
-  const defaultName = `reframe_${result.width}x${result.height}`;
-  const [name, setName] = useState(defaultName);
+export default function DownloadResult({ result, onReset, soundOnCompletion, onToggleSound, defaultName }: Props) {
+  const [name, setName] = useState(defaultName ?? `reframe_${result.width}x${result.height}`);
 
-  const invalidCharRegex = /[<>:"/\\|?*]/;
-  const isValid = !invalidCharRegex.test(name) && name.trim().length > 0;
-  const filename = `${name.trim() || "untitled"}.${result.format}`;
+  useEffect(() => {
+    setName(defaultName ?? `reframe_${result.width}x${result.height}`);
+  }, [defaultName, result.width, result.height]);
+
+  const filename = buildDownloadFilename(name, result.format);
 
   const shareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(SHARE_TWEET_TEXT)}`;
 
@@ -105,7 +108,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
           <label htmlFor="filename-input" className="text-[var(--muted)] font-heading font-semibold uppercase tracking-wider">
             Filename
           </label>
-          <span className={cn("transition-colors", name.length >= 100 ? "text-[var(--error)] font-medium" : "text-[var(--muted)]")}>
+          <span className="text-[var(--muted)]">
             {100 - name.length} chars remaining
           </span>
         </div>
@@ -117,8 +120,7 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
             onChange={(e) => setName(e.target.value)}
             maxLength={100}
             className={cn(
-              "flex-1 px-3 py-2.5 bg-[var(--bg)] border rounded-lg text-sm transition-colors text-[var(--text)] placeholder:text-[var(--muted)]",
-              !isValid && name.length > 0 ? "border-[var(--error)] focus:outline-[var(--error)] focus:ring-1 focus:ring-[var(--error)]" : "border-[var(--border)] focus:outline-[var(--accent)]"
+              "flex-1 px-3 py-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-lg text-sm transition-colors text-[var(--text)] placeholder:text-[var(--muted)] focus:outline-[var(--accent)]"
             )}
             placeholder="Enter filename"
           />
@@ -126,27 +128,16 @@ export default function DownloadResult({ result, onReset, soundOnCompletion, onT
             .{result.format}
           </span>
         </div>
-        {!isValid && name.length > 0 && (
-          <p className="text-xs text-[var(--error)] px-1 flex items-center gap-1.5 mt-1 animate-fade-in">
-            <AlertCircle size={12} />
-            Filename contains invalid characters (\ / : * ? &quot; &lt; &gt; |)
-          </p>
-        )}
       </div>
 
       <div className="flex flex-wrap gap-2 pt-2">
         <a
-          href={isValid ? result.blobUrl : undefined}
-          download={isValid ? filename : undefined}
+          href={result.blobUrl}
+          download={filename}
           className={cn(
             "flex-1 min-w-[10rem] flex items-center justify-center gap-2 py-3 text-sm font-heading font-bold uppercase tracking-wide rounded-lg transition-all",
-            isValid 
-              ? "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.99] cursor-pointer"
-              : "bg-[var(--border)] text-[var(--muted)] cursor-not-allowed"
+            "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.99] cursor-pointer"
           )}
-          onClick={(e) => {
-            if (!isValid) e.preventDefault();
-          }}
         >
           <Download size={15} aria-hidden="true" />
           Download {result.format.toUpperCase()}

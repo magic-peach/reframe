@@ -220,6 +220,8 @@ export default function VideoEditor() {
     recommendedPreset,
     currentTime,
     toggleSound,
+    exportName,
+    setExportName,
   } = useVideoEditor();
 
   useKeyboardShortcuts({
@@ -636,7 +638,13 @@ export default function VideoEditor() {
                     onToggle={() => toggleSection("export")}
                     delay={200}
                   >
-                    <ExportSettings recipe={recipe} duration={duration} onChange={updateRecipe} />
+                    <ExportSettings
+                      recipe={recipe}
+                      duration={duration}
+                      onChange={updateRecipe}
+                      exportName={exportName}
+                      onExportNameChange={setExportName}
+                    />
                   </AccordionSection>
                   <Section icon={<Layers size={12} />} title="Image overlay" delay={120}>
                     <ImageOverlay
@@ -693,7 +701,13 @@ export default function VideoEditor() {
 
             {status === "done" && result && (
               <div role="status" className="animate-fade-in" ref={downloadRef}>
-                <DownloadResult result={result} onReset={reset} soundOnCompletion={recipe.soundOnCompletion} onToggleSound={toggleSound} />
+                <DownloadResult
+                  result={result}
+                  onReset={reset}
+                  soundOnCompletion={recipe.soundOnCompletion}
+                  onToggleSound={toggleSound}
+                  defaultName={exportName}
+                />
               </div>
             )}
           </div>
