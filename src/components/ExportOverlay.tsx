@@ -4,7 +4,6 @@ import FocusTrap from "focus-trap-react";
 import { useEffect, useRef, useCallback, useState } from "react";
 import { ExportStatus } from "@/lib/types";
 import LottiePlayer from "./LottiePlayer";
-import spinnerAnim from "@/lib/lottie/spinner.json";
 import TipCarousel from "./TipCarousel";
 
 interface Props {
@@ -26,6 +25,7 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const focusAnchorRef = useRef<HTMLDivElement | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [spinnerAnim, setSpinnerAnim] = useState<object | null>(null);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -74,6 +74,26 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
     return () => window.clearInterval(timer);
   }, [status, exportStartedAt]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    import("@/lib/lottie/spinner.json")
+      .then((mod) => {
+        if (!cancelled) {
+          setSpinnerAnim(mod.default ?? mod);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSpinnerAnim(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (!visible) return null;
 
   const isLoading = status === "loading-engine";
@@ -105,12 +125,14 @@ export default function ExportOverlay({ status, progress, exportStartedAt, onCan
             aria-hidden="true"
           />
           <div className="mx-auto w-20 h-20">
-            <LottiePlayer
-              animationData={spinnerAnim}
-              loop
-              autoplay
-              aria-hidden="true"
-            />
+            {spinnerAnim ? (
+              <LottiePlayer
+                animationData={spinnerAnim}
+                loop
+                autoplay
+                aria-hidden="true"
+              />
+            ) : null}
           </div>
           <div className="export-text">
             <h2 className="font-heading font-bold text-xl tracking-tight text-[var(--text)]">
