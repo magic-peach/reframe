@@ -1,5 +1,8 @@
-import VideoEditor from "@/components/VideoEditor";
-import Footer from "@/components/Footer";
+"use client";
+
+import React from "react";
+// Import your own project tools and workspace icons here as needed
+import { Video, Scissors, Crop, Download, Globe, Github, Twitter } from "lucide-react";
 
 export default function Home() {
   return (
@@ -14,11 +17,9 @@ export default function Home() {
         ⭐ Star on GitHub
       </a>
 
-      <main id="main-content" tabIndex={-1}>
-        <VideoEditor />
-      </main>
+        </div>
+      </footer>
 
-      <Footer />
-    </>
+    </div>
   );
 }
