@@ -48,6 +48,23 @@
 
 ---
 
+## Project Snapshot
+
+| Item | Details |
+| ---- | ------- |
+| **Project** | Reframe, a private browser-based video editor |
+| **Core stack** | Next.js 15, TypeScript, Tailwind CSS, FFmpeg.wasm |
+| **Privacy model** | Local-first editing with no account, uploads, or server-side processing |
+| **Best for** | Resizing, trimming, rotating, muting, speeding up, and exporting videos for social platforms |
+| **Setup** | Install with `bun install`, then run `bun run dev` |
+| **Deployment** | Static export to `out/` for Vercel, Netlify, GitHub Pages, or any static host |
+| **License** | MIT |
+| **Contributions** | Open to community contributions and GSSoC'26 contributors |
+
+> New here? Start with [Getting Started](#getting-started), then read the [Contributing Guide](CONTRIBUTING.md) before picking an issue.
+
+---
+
 ## Built With
 
 <div align="center">
