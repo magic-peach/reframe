@@ -204,7 +204,7 @@ export default function FileUpload({
         }
       }}
       className={cn(
-        "group flex flex-col items-center justify-center gap-4 py-12 px-6",
+        "group flex flex-col items-center justify-center gap-4 py-8 px-6",
         "border-2 border-dashed rounded-xl cursor-pointer transition-all duration-300 relative overflow-hidden",
         dragging
           ? "border-[var(--accent)] bg-[var(--accent-muted)] scale-[1.02] shadow-[var(--shadow)] ring-4 ring-[var(--accent-muted)]"
