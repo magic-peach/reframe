@@ -351,6 +351,26 @@ export default function VideoEditor() {
     };
   }, [videoSrc]);
 
+  const exportStatusAnnouncement = useMemo(() => {
+    if (status === "loading-engine") {
+      return "Loading video processing engine, please wait.";
+    }
+
+    if (status === "exporting") {
+      return `Export started. Exporting video: ${progress}%`;
+    }
+
+    if (status === "done") {
+      return "Export complete! Video ready to download.";
+    }
+
+    if (status === "error") {
+      return `Export failed: ${error}`;
+    }
+
+    return "";
+  }, [error, progress, status]);
+
   return (
     <div className="min-h-screen relative flex flex-col" style={{ background: "var(--bg)" }}>
       <ExportOverlay
@@ -361,10 +381,8 @@ export default function VideoEditor() {
       />
       <OnboardingTour />
 
-      <div aria-live="polite" aria-atomic="true" className="sr-only">
-        {status === "exporting" && `Exporting video: ${progress}%`}
-        {status === "done" && "Export complete! Video ready to download."}
-        {status === "error" && `Export failed: ${error}`}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {exportStatusAnnouncement}
       </div>
 
       <div className={cn(
