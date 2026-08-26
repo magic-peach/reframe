@@ -1,6 +1,7 @@
 import { EditRecipe, ExportResult, BackgroundMusicOptions, ImageOverlayOptions, MAX_FILE_SIZE } from "./types";
 import { getPresetById } from "./presets";
 import { buildTextFilter } from "./text-overlay";
+import { shouldKeepAudioTrack } from "./audioMix";
 
 export class FFmpegLoadError extends Error {}
 
@@ -516,7 +517,7 @@ function buildArguments(
   }
 
   const needsFilterComplex = hasOverlay || hasMusicTrack;
-  const shouldKeepAudio = recipe.keepAudio && (hasOriginalAudio || hasMusicTrack);
+  const shouldKeepAudio = shouldKeepAudioTrack(recipe.keepAudio, hasOriginalAudio, hasMusicTrack);
 
   if (needsFilterComplex) {
     const filterParts: string[] = [];
@@ -557,7 +558,7 @@ interface PositionCoords {
     if (shouldKeepAudio) {
       if (hasMusicTrack) {
         const musicVol = (musicOptions!.musicVolume / 100).toFixed(2);
-        if (hasOriginalAudio) {
+        if (recipe.keepAudio && hasOriginalAudio) {
           const origVol  = (musicOptions!.originalAudioVolume / 100).toFixed(2);
           const origChain = afParts.length > 0
             ? `[0:a]${afParts.join(",")},volume=${origVol}[orig]`
@@ -570,7 +571,7 @@ interface PositionCoords {
           filterParts.push(`[${musicIdx}:a]volume=${musicVol}[aout]`);
           audioOut = "[aout]";
         }
-      } else if (hasOriginalAudio && af) {
+      } else if (recipe.keepAudio && hasOriginalAudio && af) {
         filterParts.push(`[0:a]${af}[aout]`);
         audioOut = "[aout]";
       }
