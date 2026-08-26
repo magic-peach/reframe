@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useVideoEditor } from "@/hooks/useVideoEditor";
+import { useVideoEditor, encodeRecipe } from "@/hooks/useVideoEditor";
 import { TextOverlay } from "@/lib/types";
 import FileUpload from "./FileUpload";
 import PrivacyBanner from "./PrivacyBanner";
@@ -288,7 +288,7 @@ export default function VideoEditor() {
 
   const handleCopyLink = () => {
     if (typeof window === "undefined") return;
-    const encoded = btoa(JSON.stringify(recipe));
+    const encoded = encodeRecipe(recipe);
     const url = new URL(window.location.href);
     url.searchParams.set("settings", encoded);
     history.replaceState(null, "", url.toString());
