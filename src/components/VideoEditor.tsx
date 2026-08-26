@@ -728,7 +728,7 @@ export default function VideoEditor() {
                     </p>
                   </div>
                 )}
-                <div className="space-y-3">
+                <div id="preset-selector" className="space-y-3">
                   <PresetSelector recipe={recipe} onChange={updateRecipe} />
                   <FramingControl recipe={recipe} onChange={updateRecipe} />
                 </div>
