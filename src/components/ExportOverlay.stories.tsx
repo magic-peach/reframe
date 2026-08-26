@@ -6,42 +6,38 @@ import ExportOverlay from "./ExportOverlay";
  * Full-screen modal shown while an export runs.
  *
  * ── Why this file works the way it does ──────────────────────────────────────
- * Two things inside this overlay move on their own, and a visual regression
- * service screenshots at an arbitrary moment:
+ * The overlay contains a <TipCarousel/> that rotates to the next tip every
+ * 6000ms. A visual regression service screenshots at an arbitrary moment, so
+ * that rotation reports a change on every build that reflects nothing but
+ * timing. It is marked data-chromatic="ignore": Chromatic still renders it,
+ * but excludes it from the diff.
  *
- *   1. a Lottie spinner, played by lottie-web via requestAnimationFrame
- *   2. a <TipCarousel/>, which rotates to the next tip every 6000ms
+ * The Lottie spinner used to need the same treatment. It no longer does —
+ * LottiePlayer checks isChromatic() and renders frame 0 statically, so the
+ * spinner is deterministic and stays fully covered by the diff.
  *
- * An earlier version of this file froze both by stubbing window.setInterval
- * and window.requestAnimationFrame. That was a mistake: Chromatic's capture
- * instrumentation relies on requestAnimationFrame to decide a story has
- * settled, so with rAF stubbed the story never signalled ready and all six
- * snapshots (3 stories x light/dark) failed with "took too long to load".
- *
- * Never stub browser globals to stabilise a snapshot. Instead, tell Chromatic
- * which regions to ignore: it excludes them from the diff but still renders
- * them, and the rest of the overlay — heading, progress bar, percentage,
- * cancel button — is compared normally.
+ * A word of warning from how this file got here: an earlier version froze both
+ * by stubbing window.setInterval and window.requestAnimationFrame. Chromatic's
+ * capture instrumentation relies on requestAnimationFrame to decide a story
+ * has settled, so starving it meant all six snapshots (3 stories x light/dark)
+ * failed with "took too long to load". Never stub browser globals to stabilise
+ * a snapshot.
  */
-const withMovingPartsIgnored: Decorator = (Story) => (
-  <IgnoreMovingParts>
+const withCarouselIgnored: Decorator = (Story) => (
+  <IgnoreCarousel>
     <Story />
-  </IgnoreMovingParts>
+  </IgnoreCarousel>
 );
 
-function IgnoreMovingParts({ children }: { children: React.ReactNode }) {
+function IgnoreCarousel({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
-    // .w-20.h-20        -> the wrapper LottiePlayer fills with its <svg>
-    // [class*=min-h-]   -> the TipCarousel root (min-h-[142px])
-    const selectors = ['.w-20.h-20', '[class*="min-h-[142px]"]'];
+    // The TipCarousel root, identified by its min-h-[142px] utility.
     const marked: Element[] = [];
 
-    for (const selector of selectors) {
-      document.querySelectorAll(selector).forEach((el) => {
-        el.setAttribute("data-chromatic", "ignore");
-        marked.push(el);
-      });
-    }
+    document.querySelectorAll('[class*="min-h-[142px]"]').forEach((el) => {
+      el.setAttribute("data-chromatic", "ignore");
+      marked.push(el);
+    });
 
     return () => marked.forEach((el) => el.removeAttribute("data-chromatic"));
   }, []);
@@ -53,7 +49,7 @@ const meta = {
   title: "Editor/Modals/ExportOverlay",
   component: ExportOverlay,
   parameters: { layout: "fullscreen" },
-  decorators: [withMovingPartsIgnored],
+  decorators: [withCarouselIgnored],
   args: {
     // With a real timestamp the component starts a 1s interval and renders
     // Date.now() - exportStartedAt as elapsed time, which would differ between

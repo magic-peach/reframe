@@ -8,8 +8,14 @@ import VideoEditor from "./VideoEditor";
  *
  * It renders its pre-upload state here. VideoEditor owns real state via
  * useVideoEditor, but FFmpeg.wasm is lazy-loaded and only touched on export,
- * so mounting it is cheap and side-effect free. Without a file the editor
- * shows the upload screen and its surrounding chrome, which is deterministic.
+ * so mounting it is cheap and side-effect free.
+ *
+ * The onboarding tour is marked complete before the story renders. Two
+ * reasons: it measures its target element and animates a spotlight over a
+ * chain of timeouts, so a screenshot taken at an arbitrary moment catches it
+ * mid-move and reports a change that is purely timing; and the tour's dimming
+ * overlay covers most of the editor, which is precisely what this story exists
+ * to show.
  *
  * Interacting further (choosing a file, exporting) needs real media and a
  * ~30 MB WASM download, so those paths are covered by the individual control
@@ -20,8 +26,11 @@ const meta = {
   component: VideoEditor,
   parameters: {
     layout: "fullscreen",
-    // The shell is tall; give Chromatic the full page rather than a viewport crop.
     chromatic: { delay: 300 },
+  },
+  beforeEach: async () => {
+    // Matches TOUR_KEY in OnboardingTour.tsx.
+    window.localStorage.setItem("reframe_onboarding_complete", "1");
   },
 } satisfies Meta<typeof VideoEditor>;
 
