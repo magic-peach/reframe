@@ -31,6 +31,7 @@ If you're ready to tackle some open issues, **[we've collected some good first i
 - [Claiming Issues](#-claiming-issues)
 - [Making Changes](#making-changes)
 - [Submitting a Pull Request](#submitting-a-pull-request)
+- [Visual Review (Chromatic)](#visual-review-chromatic)
 - [Code Style](#code-style)
 - [Development Tips](#development-tips)
 - [GSSoC'26 Participants](#gssoc26-participants)
@@ -356,6 +357,36 @@ Attach the recording directly to the PR by dragging the file into the GitHub com
 - [ ] Accessibility: new interactive elements have ARIA labels
 - [ ] Issue number referenced in PR description
 - [ ] **Screen recording attached** (required for all UI/feature PRs)
+
+---
+
+## Visual Review (Chromatic)
+
+Every PR gets its Storybook screenshotted and diffed against `main` by
+[Chromatic](https://www.chromatic.com/), so UI changes are reviewed visually
+rather than guessed at from a diff.
+
+You'll see up to three checks:
+
+| Check | What it means |
+|---|---|
+| `Storybook Publish` | Your Storybook built and uploaded |
+| `UI Tests` | Snapshots compared against the baseline |
+| `Visual regression` / `Visual regression (fork)` | The workflow that ran it |
+
+**Visual changes do not fail your PR.** If `UI Tests` says changes need
+accepting, that is a maintainer's call, not a problem with your branch — a
+maintainer accepts or rejects each change in the Chromatic UI.
+
+If your PR touches a component, please **add or update its story** in
+`src/components/<Component>.stories.tsx`. Stories are what Chromatic can see;
+a change with no story gets no visual review.
+
+Avoid anything time-dependent inside a story — live clocks, carousels,
+autoplaying animations. A screenshot taken at an arbitrary moment will differ
+between runs and report a change that isn't real. Existing examples:
+`ExportOverlay` marks its spinner and tip carousel `data-chromatic="ignore"`,
+and `TrimControl` passes `file={null}` to avoid async audio decoding.
 
 ---
 
