@@ -6,6 +6,7 @@ import LottiePlayer from "./LottiePlayer";
 import uploadAnim from "@/lib/lottie/upload.json";
 import { cn, formatBytes, formatDuration } from "@/lib/utils";
 import { MAX_FILE_SIZE, WARNING_FILE_SIZE } from "@/lib/types";
+import { validateVideoFile } from "@/utils/video-validation";
 
 interface Props {
   onFileSelect: (file: File | null) => void;
@@ -83,12 +84,13 @@ export default function FileUpload({
   }, []);
 
   // ── File validation ───────────────────────────────────
-  const handleFile = useCallback((file: File) => {
+  const handleFile = useCallback(async (file: File) => {
     setError("");
     setWarning("");
 
-    if (!file.type.startsWith("video/")) {
-      setError("Please drop a valid video file (MP4, MOV, AVI, WebM, etc.)");
+    const validation = await validateVideoFile(file);
+    if (!validation.valid) {
+      setError(validation.error);
       return;
     }
 
@@ -174,7 +176,7 @@ export default function FileUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="video/*"
+        accept="video/*,.mp4,.mov,.avi,.mkv,.webm"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -305,7 +307,7 @@ export default function FileUpload({
         <input
           ref={inputRef}
           type="file"
-          accept="video/*"
+          accept="video/*,.mp4,.mov,.avi,.mkv,.webm"
           className="hidden"
           onChange={(e) => {
             const f = e.target.files?.[0];
