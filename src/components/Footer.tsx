@@ -3,9 +3,6 @@
 import Link from "next/link";
 import {
   Github,
-  Twitter,
-  Instagram,
-  Linkedin,
   ArrowRight,
   ShieldCheck,
   Zap,
@@ -136,21 +133,6 @@ export default function Footer() {
                   href: "https://github.com/magic-peach/reframe",
                   icon: <Github size={18} />,
                   label: "GitHub",
-                },
-                {
-                  href: "https://twitter.com",
-                  icon: <Twitter size={18} />,
-                  label: "Twitter",
-                },
-                {
-                  href: "https://instagram.com",
-                  icon: <Instagram size={18} />,
-                  label: "Instagram",
-                },
-                {
-                  href: "https://linkedin.com",
-                  icon: <Linkedin size={18} />,
-                  label: "LinkedIn",
                 },
               ].map((social) => (
 
