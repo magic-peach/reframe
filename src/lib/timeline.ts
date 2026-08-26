@@ -152,6 +152,7 @@ export function validateMultiTrackState(state: MultiTrackEditorState): {
 
   if (!Array.isArray(state.timelineTracks)) {
     errors.push("timelineTracks must be an array");
+    return { valid: false, errors };
   }
 
   const videoTracks = state.timelineTracks.filter(t => t.type === "video");
