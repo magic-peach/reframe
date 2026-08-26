@@ -507,7 +507,7 @@ async function runExport(request: ExportRequest): Promise<ResultPayload> {
     }
 
     let missingAudioDetected = false;
-    const logListener = ({ message }: { message: string }) => {
+    logListener = ({ message }: { message: string }) => {
       const msg = message.toLowerCase();
       if (
         msg.includes("matches no streams") ||
