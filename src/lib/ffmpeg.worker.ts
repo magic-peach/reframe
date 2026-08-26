@@ -342,6 +342,7 @@ async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
   }
 
   ffmpeg = new FFmpeg();
+  const blobUrls: string[] = [];
 
   const isIsolated = typeof self !== "undefined" && self.crossOriginIsolated;
   const baseURL = isIsolated ? MT_CORE_BASE_URL : CORE_BASE_URL;
@@ -353,18 +354,25 @@ async function loadCore(onProgress?: (percent: number) => void): Promise<void> {
   ffmpeg.on("progress", handleProgress);
 
   try {
+    const coreURL = await fetchWithIntegrity(`${baseURL}/ffmpeg-core.js`, "text/javascript");
+    const wasmURL = await fetchWithIntegrity(`${baseURL}/ffmpeg-core.wasm`, "application/wasm");
+    blobUrls.push(coreURL, wasmURL);
+    const workerURL = isIsolated
+      ? await fetchWithIntegrity(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript")
+      : null;
+    if (workerURL) blobUrls.push(workerURL);
+
     await ffmpeg.load({
-      coreURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-      ...(isIsolated && {
-        workerURL: await fetchWithIntegrity(`${baseURL}/ffmpeg-core.worker.js`, "text/javascript"),
-      }),
+      coreURL,
+      wasmURL,
+      ...(workerURL ? { workerURL } : {}),
     });
 
     ffmpegLoaded = true;
     onProgress?.(100);
   } finally {
     ffmpeg.off("progress", handleProgress);
+    blobUrls.forEach((url) => URL.revokeObjectURL(url));
   }
 }
 
