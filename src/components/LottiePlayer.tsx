@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import isChromatic from "chromatic/isChromatic";
+import { isChromatic } from "@/lib/isChromatic";
 
 interface Props {
   animationData: object;
@@ -29,7 +29,8 @@ export default function LottiePlayer({
   // deterministic while still exercising the component.
   //
   // isChromatic() is false everywhere except inside Chromatic's renderer, so
-  // this has no effect on the app or on local Storybook.
+  // this has no effect on the app or on local Storybook. The helper is
+  // inlined in src/lib so app code never imports the chromatic package.
   const shouldAutoplay = autoplay && !isChromatic();
 
   useEffect(() => {
