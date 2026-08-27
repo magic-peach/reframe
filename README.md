@@ -41,8 +41,6 @@
     <img src="https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml/badge.svg">
   </a>
 </p>
-<<<<<<< HEAD
-=======
 
 </div>
 
@@ -58,7 +56,6 @@
 ![FFmpeg](https://img.shields.io/badge/FFmpeg.wasm-0.12.10-green?style=flat-square&logo=ffmpeg)
 ![Lucide](https://img.shields.io/badge/Lucide_React-latest-orange?style=flat-square)
 ![Lottie](https://img.shields.io/badge/Lottie_Web-latest-purple?style=flat-square)
->>>>>>> f3b7ebeac4ae0b71305509eb79f9285c952b467a
 
 </div>
 
