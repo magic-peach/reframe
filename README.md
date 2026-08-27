@@ -37,12 +37,19 @@
   <a href="https://gssoc.girlscript.tech">
     <img src="https://img.shields.io/badge/GSSoC-2026-FF6B35?style=flat-square">
   </a>
-  <a href="https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml">
-    <img src="https://github.com/Sneha079-codes/reframe/actions/workflows/main.yml/badge.svg">
+  <a href="https://github.com/magic-peach/reframe/actions/workflows/main.yml">
+    <img src="https://github.com/magic-peach/reframe/actions/workflows/main.yml/badge.svg">
+  </a>
+  <a href="CODE_OF_CONDUCT.md">
+    <img src="https://img.shields.io/badge/Code%20of%20Conduct-v2.1-purple?style=flat-square">
   </a>
 </p>
-<<<<<<< HEAD
-=======
+
+<p align="center">
+  <a href="https://www.netlify.com">
+    <img src="https://www.netlify.com/assets/badges/netlify-badge-color-accent.svg" alt="Deploys by Netlify" width="114" height="50">
+  </a>
+</p>
 
 </div>
 
@@ -58,7 +65,6 @@
 ![FFmpeg](https://img.shields.io/badge/FFmpeg.wasm-0.12.10-green?style=flat-square&logo=ffmpeg)
 ![Lucide](https://img.shields.io/badge/Lucide_React-latest-orange?style=flat-square)
 ![Lottie](https://img.shields.io/badge/Lottie_Web-latest-purple?style=flat-square)
->>>>>>> f3b7ebeac4ae0b71305509eb79f9285c952b467a
 
 </div>
 
