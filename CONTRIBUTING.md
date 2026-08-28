@@ -1,8 +1,8 @@
-> ⭐ **If Reframe helped you, [star the repo](https://github.com/magic-peach/reframe)** — it helps more people discover it!
+> ⭐ **If Reframe helped you, [star the repo](https://github.com/reframe-oss/reframe)** — it helps more people discover it!
 >
-> 💬 **Have a question or idea?** Head to [Discussions](https://github.com/magic-peach/reframe/discussions) instead of opening an issue.
+> 💬 **Have a question or idea?** Head to [Discussions](https://github.com/reframe-oss/reframe/discussions) instead of opening an issue.
 >
-> 🟢 **Ready to contribute?** Check out our [Good First Issues](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22) — perfect for first-time contributors!
+> 🟢 **Ready to contribute?** Check out our [Good First Issues](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22) — perfect for first-time contributors!
 
 ***
 
@@ -14,11 +14,11 @@ Whether you're fixing a typo, adding a feature, improving accessibility, or writ
 
 ---
 
-## 👋 Want to contribute to magic-peach/reframe?
+## 👋 Want to contribute to reframe-oss/reframe?
 
 If you have a bug or an idea, read this guide before opening an issue.
 
-If you're ready to tackle some open issues, **[we've collected some good first issues for you](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22)**.
+If you're ready to tackle some open issues, **[we've collected some good first issues for you](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22)**.
 
 ---
 
@@ -57,7 +57,7 @@ git clone https://github.com/<your-username>/reframe.git
 cd reframe
 
 # 3. Add the upstream remote
-git remote add upstream https://github.com/magic-peach/reframe.git
+git remote add upstream https://github.com/reframe-oss/reframe.git
 ```
 
 ---
@@ -230,14 +230,14 @@ We have **300+ open issues** across all skill levels:
 
 | Level | Where to look |
 |-------|--------------|
-| 🟢 **Beginner** | [`good first issue`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22) label — 100+ beginner tasks |
-| 🟡 **Intermediate** | [`enhancement`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Aenhancement) label |
-| 🔴 **Advanced** | [`feature`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Afeature) label |
-| 🐛 **Bug Fixes** | [`bug`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Abug) label |
-| ♿ **Accessibility** | [`accessibility`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Aaccessibility) label |
-| 📝 **Documentation** | [`documentation`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Adocumentation) label |
-| 🔒 **Security** | [`security`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Asecurity) label |
-| ⚡ **Performance** | [`performance`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3Aperformance) label |
+| 🟢 **Beginner** | [`good first issue`](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22) label — 100+ beginner tasks |
+| 🟡 **Intermediate** | [`enhancement`](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3Aenhancement) label |
+| 🔴 **Advanced** | [`feature`](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3Afeature) label |
+| 🐛 **Bug Fixes** | [`bug`](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3Abug) label |
+| ♿ **Accessibility** | [`accessibility`](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3Aaccessibility) label |
+| 📝 **Documentation** | [`documentation`](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3Adocumentation) label |
+| 🔒 **Security** | [`security`](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3Asecurity) label |
+| ⚡ **Performance** | [`performance`](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3Aperformance) label |
 
 **Before claiming an issue:**
 1. Check if it already has an assignee — if so, pick a different one
@@ -423,8 +423,8 @@ Reframe is an **official GirlScript Summer of Code 2026 project**!
 
 ### Getting Started as a GSSoC Contributor
 
-1. Browse issues labeled [`gssoc'26`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22gssoc%2726%22)
-2. Start with [`good first issue`](https://github.com/magic-peach/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22+label%3A%22gssoc%2726%22) if you're new to open source
+1. Browse issues labeled [`gssoc'26`](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3A%22gssoc%2726%22)
+2. Start with [`good first issue`](https://github.com/reframe-oss/reframe/issues?q=is%3Aopen+label%3A%22good+first+issue%22+label%3A%22gssoc%2726%22) if you're new to open source
 3. Comment `/assign` on the issue — our bot will assign it to you instantly, no maintainer needed
 4. Submit your PR within **5 days** and remember to link it with `Fixes #issue_number`
 
@@ -440,8 +440,8 @@ Reframe is an **official GirlScript Summer of Code 2026 project**!
 
 ## Questions?
 
-- **Found a bug?** → [Open a bug report](https://github.com/magic-peach/reframe/issues/new?labels=bug)
-- **Have a feature idea?** → [Open a feature request](https://github.com/magic-peach/reframe/issues/new?labels=feature)
+- **Found a bug?** → [Open a bug report](https://github.com/reframe-oss/reframe/issues/new?labels=bug)
+- **Have a feature idea?** → [Open a feature request](https://github.com/reframe-oss/reframe/issues/new?labels=feature)
 - **Stuck on an issue?** → Comment on the issue and tag `@magic-peach`
 
 ---

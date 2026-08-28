@@ -59,7 +59,7 @@ export default function Footer() {
 
           <nav className="flex flex-col gap-3 text-sm">
             <a
-              href="https://github.com/magic-peach/reframe"
+              href="https://github.com/reframe-oss/reframe"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub repository"
@@ -133,7 +133,7 @@ export default function Footer() {
 
               {[
                 {
-                  href: "https://github.com/magic-peach/reframe",
+                  href: "https://github.com/reframe-oss/reframe",
                   icon: <Github size={18} />,
                   label: "GitHub",
                 },
