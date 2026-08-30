@@ -211,16 +211,6 @@ export function useVideoEditor() {
     return track;
   }, [addTrack]);
 
-  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
-  setRecipe((prev) => {
-    const next = { ...prev, ...patch };
-    // GIF has no audio — force keepAudio off
-    if (next.format === "gif") {
-      next.keepAudio = false;
-    }
-    return next;
-  });
-}, []);
   const isValidValue = (key: keyof EditRecipe, val: any): boolean => {
     switch (key) {
       case "preset":
@@ -254,6 +244,23 @@ export function useVideoEditor() {
     }
   };
 
+  const updateRecipe = useCallback((patch: Partial<EditRecipe>) => {
+    setRecipe((prev) => {
+      const validated: Partial<EditRecipe> = {};
+      for (const [key, val] of Object.entries(patch)) {
+        if (isValidValue(key as keyof EditRecipe, val)) {
+          (validated as any)[key] = val;
+        }
+      }
+      const next = { ...prev, ...validated };
+      // GIF has no audio — force keepAudio off
+      if (next.format === "gif") {
+        next.keepAudio = false;
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     
@@ -280,6 +287,10 @@ export function useVideoEditor() {
         if (decoded) {
           setRecipe(migratePersistedRecipe(decoded));
           return;
+        } else {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("settings");
+          window.history.replaceState(null, "", url.toString());
         }
       }
 
