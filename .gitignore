@@ -46,3 +46,7 @@ package-lock.json
 *.storybook.log
 build-storybook.log
 chromatic.log
+.env*
+
+# Local Netlify folder
+.netlify
