@@ -314,6 +314,9 @@ export default function VideoEditor() {
   const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
+    // Genuinely needs an effect: navigator is a browser-only API, unavailable
+    // during SSR/render, so it can't be computed as derived state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMac(typeof navigator !== "undefined" && /Mac/i.test(navigator.platform));
   }, []);
 
