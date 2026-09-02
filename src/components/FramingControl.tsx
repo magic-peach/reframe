@@ -1,7 +1,7 @@
 "use client";
 
 import { EditRecipe } from "@/lib/types";
-import { Maximize2, Crop } from "lucide-react";
+import { Maximize2, Crop, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -12,14 +12,14 @@ interface Props {
 export default function FramingControl({ recipe, onChange }: Props) {
   return (
     <div className="flex gap-2">
-      {(["fit", "fill"] as const).map((mode) => {
-        const Icon = mode === "fit" ? Maximize2 : Crop;
+      {(["fit", "fit-blur", "fill"] as const).map((mode) => {
+        const Icon = mode === "fit" ? Maximize2 : mode === "fit-blur" ? ImageIcon : Crop;
         const active = recipe.framing === mode;
         return (
           <button
             type="button"
             key={mode}
-            title={mode === "fit" ? "Fit: Adds black bars (letterbox) to fill empty space" : "Fill: Crops the video to fill the entire frame"}
+            title={mode === "fit" ? "Fit: Adds black bars (letterbox) to fill empty space" : mode === "fit-blur" ? "Fit (Blur): Fills empty space with a blurred background" : "Fill: Crops the video to fill the entire frame"}
             onClick={() => onChange({ framing: mode })}
             className={cn(
               "flex-1 min-h-[44px] min-w-[44px] flex flex-col items-center justify-center gap-2 py-4 rounded-lg border transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]",
@@ -30,14 +30,14 @@ export default function FramingControl({ recipe, onChange }: Props) {
           >
             <Icon size={18} aria-hidden="true" />
             <span className="sr-only">
-              Set framing to {mode === "fit" ? "fit within frame" : "fill frame by cropping"}
+              Set framing to {mode === "fit" ? "fit within frame" : mode === "fit-blur" ? "fit within frame with blurred background" : "fill frame by cropping"}
             </span>
             <div className="text-center">
               <p className="text-xs font-heading font-semibold uppercase tracking-wider">
-                {mode === "fit" ? "Fit" : "Fill"}
+                {mode === "fit" ? "Fit" : mode === "fit-blur" ? "Fit (Blur)" : "Fill"}
               </p>
               <p className="text-[10px] text-[var(--muted)] mt-0.5">
-                {mode === "fit" ? "Letterbox / pillarbox" : "Crop to frame"}
+                {mode === "fit" ? "Letterbox / pillarbox" : mode === "fit-blur" ? "Blurred padding" : "Crop to frame"}
               </p>
             </div>
           </button>

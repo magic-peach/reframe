@@ -64,6 +64,13 @@ describe("buildVideoFilter", () => {
     expect(result).toContain("crop=1280:720");
   });
 
+  it("should use fit-blur framing with split, boxblur, and overlay", () => {
+    const result = buildVideoFilter(base({ framing: "fit-blur" }), 1280, 720);
+    expect(result).toContain("split=2[bg][fg]");
+    expect(result).toContain("boxblur=20:20");
+    expect(result).toContain("overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2");
+  });
+
   it("should include deshake when stabilization is true", () => {
     const result = buildVideoFilter(base({ stabilization: true }), 1280, 720);
     expect(result).toContain("deshake");
