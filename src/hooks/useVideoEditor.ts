@@ -278,6 +278,9 @@ export function useVideoEditor() {
       if (encoded) {
         const decoded = decodeRecipe(encoded);
         if (decoded) {
+          // Genuinely needs an effect: window.location.search is a browser-
+          // only API, unavailable during SSR/render.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setRecipe(migratePersistedRecipe(decoded));
           return;
         }
