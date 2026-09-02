@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Lock,
   Mail,
+  HeartHandshake,
 } from "lucide-react";
 
 export default function Footer() {
@@ -59,7 +60,7 @@ export default function Footer() {
 
           <nav className="flex flex-col gap-3 text-sm">
             <a
-              href="https://github.com/magic-peach/reframe"
+              href="https://github.com/reframe-oss/reframe"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub repository"
@@ -87,6 +88,21 @@ export default function Footer() {
               <Lock size={14} />
               Privacy Policy
             </Link>
+
+            {/* Netlify's open source plan expects a publicly reachable Code of
+                Conduct. Points at the repo file rather than an in-site route,
+                since CODE_OF_CONDUCT.md is the canonical copy. */}
+            <a
+              href="https://github.com/magic-peach/reframe/blob/main/CODE_OF_CONDUCT.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Code of Conduct"
+              className="flex items-center gap-2 opacity-70 hover:opacity-100 hover:text-[var(--accent)] transition-all w-fit focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] rounded"
+            >
+              <HeartHandshake size={14} />
+              Code of Conduct
+              <ExternalLink size={10} className="opacity-60" />
+            </a>
           </nav>
         </div>
 
@@ -133,7 +149,7 @@ export default function Footer() {
 
               {[
                 {
-                  href: "https://github.com/magic-peach/reframe",
+                  href: "https://github.com/reframe-oss/reframe",
                   icon: <Github size={18} />,
                   label: "GitHub",
                 },
@@ -177,9 +193,35 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-[var(--border)] flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-50">
         <p>© {new Date().getFullYear()} Reframe · MIT License</p>
 
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
-          Processing happens locally
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+            Processing happens locally
+          </div>
+
+          {/* Deploys by Netlify.
+              The SVG is self-hosted rather than hotlinked from netlify.com on
+              purpose: this site sends Cross-Origin-Embedder-Policy:require-corp
+              to enable SharedArrayBuffer for the multi-threaded FFmpeg core, and
+              netlify.com serves this asset with no CORP and no CORS header, so a
+              cross-origin <img> would be blocked by the browser and the badge
+              would silently not render. Same-origin assets are exempt. The link
+              still points at netlify.com, which is what their OSS plan asks for. */}
+          <a
+            href="https://www.netlify.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Deploys by Netlify"
+            className="opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] rounded"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/badges/netlify-badge-color-accent.svg"
+              alt="Deploys by Netlify"
+              width={114}
+              height={50}
+            />
+          </a>
         </div>
       </div>
     </footer>
