@@ -34,6 +34,7 @@ export interface EditRecipe {
   brightness: number;
   contrast: number;
   saturation: number;
+  hue: number;
   soundOnCompletion: boolean;
   sharpness: number;
   textOverlays: TextOverlay[];
@@ -145,6 +146,7 @@ export function isValidRecipe(value: unknown): value is EditRecipe {
   if (typeof v.brightness !== "number" || !isFinite(v.brightness)) return false;
   if (typeof v.contrast !== "number" || !isFinite(v.contrast)) return false;
   if (typeof v.saturation !== "number" || !isFinite(v.saturation)) return false;
+  if (typeof v.hue !== "number" || !isFinite(v.hue)) return false;  
   if (typeof v.soundOnCompletion !== "boolean") return false;
   if (!Array.isArray(v.textOverlays)) return false;
 

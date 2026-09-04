@@ -599,27 +599,27 @@ export default function VideoEditor() {
                           className="w-full accent-film-600"
                         />
                       </div>
-                      {/* Sharpness */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
-                          <label htmlFor="sharpness-slider">Sharpness</label>
+                          <label htmlFor="hue-slider">Hue</label>
                           <button
                             type="button"
-                            onClick={() => updateRecipe({ sharpness: 0 })}
+                            onClick={() => updateRecipe({ hue: 0 })}
                             className="text-film-500 hover:underline"
+                            aria-label="reset-hue"
                           >
                             Reset
                           </button>
                         </div>
                         <input
-                          id="sharpness-slider"
+                          id="hue-slider"
                           type="range"
-                          min="0"
-                          max="3"
+                          min="-180"
+                          max="180"
                           step="1"
-                          value={recipe.sharpness}
-                          onChange={(e) => updateRecipe({ sharpness: Number(e.target.value) })}
-                          aria-label="Adjust sharpness"
+                          value={recipe.hue}
+                          onChange={(e) => updateRecipe({ hue: Number(e.target.value) })}
+                          aria-label="Adjust hue"
                           className="w-full accent-film-600"
                         />
                       </div>

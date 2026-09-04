@@ -422,11 +422,13 @@ export function buildVideoFilter(recipe: EditRecipe, targetW: number, targetH: n
   const needsEq =
     recipe.brightness !== 0 ||
     recipe.contrast !== 1 ||
-    recipe.saturation !== 1;
+    recipe.saturation !== 1 || 
+    recipe.hue != 0;
 
   if (needsEq) {
     filters.push(
-      `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`
+      `eq=brightness=${recipe.brightness}:contrast=${recipe.contrast}:saturation=${recipe.saturation}`,
+      ...(recipe.hue !== 0 ? [`hue=h=${recipe.hue}`] : [])
     );
   }
 
